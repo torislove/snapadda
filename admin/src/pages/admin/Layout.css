@@ -1,0 +1,133 @@
+.admin-layout {
+  display: flex;
+  min-height: 100vh;
+  background-color: var(--bg-primary);
+}
+
+.admin-sidebar {
+  width: 260px;
+  background-color: var(--bg-secondary);
+  border-right: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-header {
+  padding: var(--spacing-xl);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.logo-link {
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.sidebar-nav {
+  padding: var(--spacing-md) 0;
+  flex: 1;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md) var(--spacing-xl);
+  color: var(--text-secondary);
+  transition: all var(--transition-fast);
+}
+
+.nav-item:hover, .nav-item.active {
+  color: var(--accent-gold);
+  background-color: rgba(212, 175, 55, 0.05);
+  border-right: 3px solid var(--accent-gold);
+}
+
+.sidebar-footer {
+  padding: var(--spacing-md) 0;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.admin-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-topbar {
+  height: 70px;
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 var(--spacing-xl);
+  background-color: var(--bg-secondary);
+}
+
+.user-profile .avatar {
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+}
+
+.admin-page-content {
+  padding: var(--spacing-xl);
+  flex: 1;
+  overflow-y: auto;
+}
+
+/* Mobile Responsive Sidebar Overrides */
+.admin-mobile-toggle {
+  display: none;
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  cursor: pointer;
+  padding: 4px;
+}
+
+.admin-sidebar-overlay {
+  display: none;
+}
+
+@media (max-width: 1024px) {
+  .admin-mobile-toggle {
+    display: block;
+  }
+
+  .admin-sidebar {
+    position: fixed;
+    top: 0;
+    left: -280px;
+    height: 100vh;
+    width: 260px;
+    z-index: 100;
+    transition: left 0.3s ease-in-out;
+    box-shadow: var(--shadow-xl);
+  }
+
+  .admin-sidebar.open {
+    left: 0;
+  }
+
+  .admin-sidebar-overlay {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 90;
+    backdrop-filter: blur(2px);
+  }
+
+  .admin-content {
+    width: 100%;
+  }
+
+  .admin-page-content {
+    padding: var(--spacing-md);
+  }
+}

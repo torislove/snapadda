@@ -1,0 +1,18 @@
+{
+  "projects": {
+    "default": "snapadda-7a6e6"
+  },
+  "targets": {
+    "snapadda-7a6e6": {
+      "hosting": {
+        "client": [
+          "snapadda-7a6e6"
+        ],
+        "admin": [
+          "snapaddaadmin"
+        ]
+      }
+    }
+  },
+  "etags": {}
+}

@@ -1,0 +1,100 @@
+/* Client Dashboard Style - Quiet Luxury App Experience */
+.client-dashboard {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.dashboard-content {
+  flex: 1;
+  padding-bottom: 80px; /* Space for bottom nav */
+  padding-top: 20px;
+  overflow-y: auto;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.page-wrapper {
+  padding: 0 16px;
+}
+
+/* Bottom Navigation */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: rgba(10, 10, 10, 0.95);
+  backdrop-filter: blur(20px);
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  height: 72px;
+  padding: 0 12px;
+  padding-bottom: env(safe-area-inset-bottom);
+  z-index: 1000;
+  box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  text-decoration: none;
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  font-weight: 500;
+  width: 80px;
+  position: relative;
+}
+
+.nav-item.active {
+  color: var(--accent-gold);
+}
+
+.icon-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  width: 32px;
+}
+
+.active-indicator {
+  position: absolute;
+  top: -6px;
+  width: 100%;
+  height: 2px;
+  background-color: var(--accent-gold);
+  border-radius: 4px;
+}
+
+/* Page titles */
+.dashboard-title {
+  font-family: var(--font-accent);
+  font-size: 1.7rem;
+  margin-bottom: 8px;
+  color: var(--accent-gold);
+}
+
+.dashboard-subtitle {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin-bottom: 24px;
+}
+
+/* Desktop Sidebar Simulation for better UX */
+@media screen and (min-width: 768px) {
+  .dashboard-content {
+    padding-bottom: 20px; /* No bottom nav on desktop? No, let's keep it for "app feel" but hide indicators? */
+  }
+}

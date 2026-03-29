@@ -1,0 +1,53 @@
+{
+  "functions": [
+    {
+      "source": "server",
+      "codebase": "default",
+      "ignore": [
+        "node_modules",
+        ".env",
+        "firebase-debug.log"
+      ]
+    }
+  ],
+  "hosting": [
+    {
+      "target": "client",
+      "public": "client/dist",
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
+      ],
+      "rewrites": [
+        {
+          "source": "/api/**",
+          "function": "api"
+        },
+        {
+          "source": "**",
+          "destination": "/index.html"
+        }
+      ]
+    },
+    {
+      "target": "admin",
+      "public": "admin/dist",
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
+      ],
+      "rewrites": [
+        {
+          "source": "/api/**",
+          "function": "api"
+        },
+        {
+          "source": "**",
+          "destination": "/index.html"
+        }
+      ]
+    }
+  ]
+}
