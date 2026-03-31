@@ -9,7 +9,10 @@ import AdminLeads from './pages/admin/Leads';
 import AdminSettings from './pages/admin/Settings';
 import AdminClients from './pages/admin/Clients';
 import AdminContacts from './pages/admin/Contacts';
-import AdminFranchise from './pages/admin/Franchise';
+import AdminPromotions from './pages/admin/Promotions';
+import AdminMarquee from './pages/admin/MarqueeStrips';
+import AdminEngagement from './pages/admin/AdminEngagement';
+import SystemGuide from './pages/admin/SystemGuide';
 import AdminLogin from './pages/admin/Login';
 
 const AdminProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -57,9 +60,12 @@ function App() {
           <Route path="cities" element={<AdminCities />} />
           <Route path="leads" element={<AdminLeads />} />
           <Route path="contacts" element={<AdminContacts />} />
-          <Route path="franchise" element={<AdminFranchise />} />
           <Route path="settings" element={<AdminSettings />} />
           <Route path="clients" element={<AdminClients />} />
+          <Route path="promotions" element={<AdminPromotions />} />
+          <Route path="engagement" element={<AdminEngagement />} />
+          <Route path="marquee" element={<AdminMarquee />} />
+          <Route path="guide" element={<SystemGuide />} />
         </Route>
       </Routes>
     </BrowserRouter>

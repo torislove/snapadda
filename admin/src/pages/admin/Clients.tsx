@@ -1,131 +1,211 @@
-import { useState, useEffect } from 'react';
-import { Mail, Calendar, Search, Filter } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { useState, useEffect, useMemo } from 'react';
+import { Mail, Calendar, Search, Users, UserCheck, Clock, Download, MapPin } from 'lucide-react';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
+const getAvatarBorderColor = (client: any) => {
+  if (!client.onboardingCompleted) return '#ff8c42'; // orange = pending
+  return '#9b59f5'; // violet = complete
+};
+
+const getRoleColor = (role: string) => {
+  switch (role) {
+    case 'admin':  return { color: '#f5c842', bg: 'rgba(245,200,66,0.1)',  border: 'rgba(245,200,66,0.2)'  };
+    case 'client': return { color: '#9b59f5', bg: 'rgba(155,89,245,0.1)', border: 'rgba(155,89,245,0.2)' };
+    default:       return { color: '#71717a', bg: 'rgba(113,113,122,0.1)', border: 'rgba(113,113,122,0.2)' };
+  }
+};
+
+const exportCSV = (clients: any[]) => {
+  const headers = ['Name', 'Email', 'Role', 'Property Type', 'Budget', 'Locations', 'Joined'];
+  const rows = clients.map(c => [
+    c.name || '', c.email || '', c.role || '',
+    c.preferences?.propertyType || '',
+    c.preferences?.budget || '',
+    (c.preferences?.locations || []).join('; '),
+    c.createdAt ? new Date(c.createdAt).toLocaleDateString() : '',
+  ]);
+  const csv = [headers, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url;
+  a.download = `snapadda-clients-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click(); URL.revokeObjectURL(url);
+};
 
 const AdminClients = () => {
   const [clients, setClients] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [roleFilter, setRoleFilter] = useState('All');
 
   useEffect(() => {
-    fetchClients();
+    fetch(`${API_URL}/users`)
+      .then(r => r.json())
+      .then(d => setClients(d.data || []))
+      .catch(console.error)
+      .finally(() => setLoading(false));
   }, []);
 
-  const fetchClients = async () => {
-    try {
-      const res = await fetch(`${API_URL}/users`);
-      if (!res.ok) throw new Error("Failed to fetch clients");
-      const data = await res.json();
-      setClients(data.data || []);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const filtered = useMemo(() => {
+    return clients.filter(c => {
+      const q = search.toLowerCase();
+      const matchSearch = !q || (c.name || '').toLowerCase().includes(q) || (c.email || '').toLowerCase().includes(q);
+      const matchRole = roleFilter === 'All' || c.role === roleFilter;
+      return matchSearch && matchRole;
+    });
+  }, [clients, search, roleFilter]);
+
+  const onboardedCount = clients.filter(c => c.onboardingCompleted).length;
+  const pendingCount = clients.filter(c => !c.onboardingCompleted).length;
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center flex-wrap gap-4">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
-          <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-gold-400 to-gold-600">
-            Registered Clients
-          </h1>
-          <p className="text-gray-400">Manage your user base and their real estate requirements</p>
+          <div style={{ fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--rose)', marginBottom: '0.25rem', fontFamily: 'var(--font-mono)' }}>✦ User Base</div>
+          <h1 style={{ fontSize: '1.8rem', background: 'linear-gradient(135deg,#f5397b,#9b59f5)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: '0.2rem' }}>Registered Clients</h1>
+          <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>All platform users and their real estate preferences.</p>
         </div>
-        
-        <div className="flex items-center gap-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-            <input 
-              type="text" 
-              placeholder="Search clients..." 
-              className="pl-10 pr-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-gold-500 w-[300px]"
-            />
+        <button
+          onClick={() => exportCSV(filtered)}
+          className="btn btn-ghost"
+          style={{ gap: '6px' }}
+        >
+          <Download size={14} /> Export CSV
+        </button>
+      </div>
+
+      {/* Metric pills */}
+      <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+        {[
+          { label: 'Total Clients', val: clients.length, color: 'var(--violet)', icon: <Users size={14}/> },
+          { label: 'Onboarded',     val: onboardedCount, color: 'var(--emerald)', icon: <UserCheck size={14}/> },
+          { label: 'Pending',       val: pendingCount,   color: 'var(--orange)',  icon: <Clock size={14}/> },
+        ].map(m => (
+          <div key={m.label} style={{
+            display: 'flex', alignItems: 'center', gap: '0.5rem',
+            padding: '0.5rem 1rem', borderRadius: '99px',
+            background: 'var(--bg-glass)', border: '1px solid var(--border)',
+          }}>
+            <span style={{ color: m.color }}>{m.icon}</span>
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{m.label}</span>
+            <span style={{ fontSize: '0.9rem', fontWeight: 700, color: m.color, fontFamily: 'var(--font-mono)' }}>{m.val}</span>
           </div>
-          <button className="flex items-center gap-2 px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white hover:border-gold-500 transition-colors">
-            <Filter className="w-5 h-5" />
-            Filter
-          </button>
+        ))}
+      </div>
+
+      {/* Search + filter row */}
+      <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+        <div className="search-input-wrap" style={{ flex: 1, minWidth: '200px' }}>
+          <Search size={15} />
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by name or email..." />
+        </div>
+        <div style={{ display: 'flex', gap: '0.4rem' }}>
+          {['All', 'client', 'admin'].map(r => (
+            <button key={r} type="button"
+              onClick={() => setRoleFilter(r)}
+              className={roleFilter === r ? 'btn btn-rose btn-sm' : 'btn btn-ghost btn-sm'}
+              style={{ textTransform: 'capitalize' }}
+            >{r}</button>
+          ))}
         </div>
       </div>
 
-      <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden glass-effect">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+      {/* Table */}
+      <div style={{ background: 'var(--bg-glass)', border: '1px solid var(--border)', borderRadius: '18px', overflow: 'hidden' }}>
+        <div className="table-responsive">
+          <table className="admin-table">
             <thead>
-              <tr className="bg-gray-800/50 border-b border-gray-700">
-                <th className="p-4 text-sm font-semibold text-gray-300">Client Profile</th>
-                <th className="p-4 text-sm font-semibold text-gray-300">Property Requirement</th>
-                <th className="p-4 text-sm font-semibold text-gray-300">Budget Constraint</th>
-                <th className="p-4 text-sm font-semibold text-gray-300">Target Area</th>
-                <th className="p-4 text-sm font-semibold text-gray-300">Joined</th>
+              <tr>
+                <th>Client Profile</th>
+                <th>Role</th>
+                <th>Property Requirement</th>
+                <th>Budget</th>
+                <th>Target Area</th>
+                <th>Joined</th>
+                <th>Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-800">
+            <tbody>
               {loading ? (
-                <tr>
-                  <td colSpan={5} className="p-8 text-center text-gray-400">Loading clients data...</td>
-                </tr>
-              ) : clients.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="p-8 text-center text-gray-400">No registered clients found.</td>
-                </tr>
+                <tr><td colSpan={7} style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>Loading clients...</td></tr>
+              ) : filtered.length === 0 ? (
+                <tr><td colSpan={7} style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>No clients found.</td></tr>
               ) : (
-                clients.map((client, idx) => (
-                  <motion.tr 
-                    key={client._id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: idx * 0.05 }}
-                    className="hover:bg-gray-800/50 transition-colors"
-                  >
-                    <td className="p-4">
-                      <div className="flex items-center gap-3">
-                        <img 
-                          src={client.avatar || `https://ui-avatars.com/api/?name=${client.name}`} 
-                          alt={client.name} 
-                          className="w-10 h-10 rounded-full border border-gray-700"
-                        />
-                        <div>
-                          <p className="font-medium text-white">{client.name}</p>
-                          <p className="text-xs text-gray-400 flex items-center gap-1">
-                            <Mail className="w-3 h-3" /> {client.email}
-                          </p>
+                filtered.map((client, idx) => {
+                  const roleStyle = getRoleColor(client.role);
+                  return (
+                    <tr key={client._id} style={{ animation: `fadeInUp 0.3s ease-out ${idx * 0.04}s both` }}>
+                      <td>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                          <img
+                            src={client.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(client.name || 'U')}&background=111&color=9b59f5&bold=true`}
+                            alt={client.name}
+                            style={{
+                              width: '38px', height: '38px', borderRadius: '50%', objectFit: 'cover',
+                              border: `2px solid ${getAvatarBorderColor(client)}`,
+                              boxShadow: `0 0 8px ${getAvatarBorderColor(client)}44`,
+                            }}
+                          />
+                          <div>
+                            <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.86rem' }}>{client.name || 'Unknown'}</div>
+                            <div style={{ fontSize: '0.73rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <Mail size={10} /> {client.email}
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </td>
-                    <td className="p-4">
-                      {client.onboardingCompleted ? (
-                        <div>
-                          <p className="text-gold-400 font-medium">{client.preferences?.propertyType || 'Any'}</p>
-                          <p className="text-xs text-gray-400">{client.preferences?.purpose || 'N/A'}</p>
+                      </td>
+                      <td>
+                        <span style={{
+                          fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase',
+                          padding: '3px 10px', borderRadius: '99px',
+                          background: roleStyle.bg, color: roleStyle.color, border: `1px solid ${roleStyle.border}`,
+                        }}>{client.role || 'client'}</span>
+                      </td>
+                      <td>
+                        {client.onboardingCompleted ? (
+                          <div>
+                            <div style={{ fontSize: '0.83rem', fontWeight: 500, color: 'var(--violet)' }}>{client.preferences?.propertyType || 'Any'}</div>
+                            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{client.preferences?.purpose || 'Not specified'}</div>
+                          </div>
+                        ) : (
+                          <span style={{ fontSize: '0.68rem', fontWeight: 700, padding: '3px 10px', borderRadius: '99px', background: 'rgba(255,140,66,0.1)', color: 'var(--orange)', border: '1px solid rgba(255,140,66,0.2)' }}>
+                            Pending Setup
+                          </span>
+                        )}
+                      </td>
+                      <td style={{ fontFamily: 'var(--font-mono)', fontSize: '0.82rem', color: 'var(--gold)' }}>
+                        {client.preferences?.budget || '—'}
+                      </td>
+                      <td style={{ fontSize: '0.78rem' }}>
+                        {client.preferences?.locations?.length > 0 ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--cyan)' }}>
+                            <MapPin size={11} />
+                            {client.preferences.locations.slice(0, 2).join(', ')}
+                            {client.preferences.locations.length > 2 && <span style={{ color: 'var(--text-muted)' }}>+{client.preferences.locations.length - 2}</span>}
+                          </div>
+                        ) : (
+                          <span style={{ color: 'var(--text-muted)' }}>Any Location</span>
+                        )}
+                      </td>
+                      <td>
+                        <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                          <Calendar size={12} />
+                          {client.createdAt ? new Date(client.createdAt).toLocaleDateString() : '—'}
                         </div>
-                      ) : (
-                        <span className="px-2 py-1 bg-yellow-900/40 text-yellow-500 rounded text-xs border border-yellow-800/50">
-                          Pending Onboarding
-                        </span>
-                      )}
-                    </td>
-                    <td className="p-4">
-                      <span className="font-mono text-gray-300">
-                        {client.preferences?.budget || '--'}
-                      </span>
-                    </td>
-                    <td className="p-4">
-                      {client.preferences?.locations?.length > 0 
-                        ? client.preferences.locations.join(', ')
-                        : 'Any Location'}
-                    </td>
-                    <td className="p-4">
-                      <div className="text-sm text-gray-400 flex items-center gap-2">
-                        <Calendar className="w-4 h-4" />
-                        {new Date(client.createdAt).toLocaleDateString()}
-                      </div>
-                    </td>
-                  </motion.tr>
-                ))
+                      </td>
+                      <td>
+                        {client.onboardingCompleted
+                          ? <span style={{ fontSize:'0.65rem', fontWeight:700, padding:'3px 10px', borderRadius:'99px', background:'rgba(16,217,140,0.1)', color:'var(--emerald)', border:'1px solid rgba(16,217,140,0.2)' }}>● Active</span>
+                          : <span style={{ fontSize:'0.65rem', fontWeight:700, padding:'3px 10px', borderRadius:'99px', background:'rgba(255,140,66,0.1)', color:'var(--orange)', border:'1px solid rgba(255,140,66,0.2)' }}>○ Pending</span>
+                        }
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>

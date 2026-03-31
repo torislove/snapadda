@@ -1,0 +1,128 @@
+/* ══════════════════════════════════════════════════════
+   SNAPADDA — ANIMATED DOUBLE MARQUEE
+   Placed precisely below the header
+══════════════════════════════════════════════════════ */
+
+.animated-marquee-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1.2rem 0;
+  overflow: hidden;
+  background: linear-gradient(to bottom, rgba(7,7,15,0.8) 0%, rgba(7,7,15,0.4) 100%);
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  box-shadow: inset 0 20px 40px -20px rgba(0,0,0,0.5);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.marquee-band-container {
+  display: flex;
+  overflow: hidden;
+  white-space: nowrap;
+  width: 100vw;
+  position: relative;
+}
+
+/* Gradients on the edges for smooth fade out */
+.marquee-band-container::before,
+.marquee-band-container::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  width: 50px;
+  height: 100%;
+  z-index: 2;
+  pointer-events: none;
+}
+.marquee-band-container::before {
+  left: 0;
+  background: linear-gradient(to right, #07070f 0%, transparent 100%);
+}
+.marquee-band-container::after {
+  right: 0;
+  background: linear-gradient(to left, #07070f 0%, transparent 100%);
+}
+
+.marquee-track {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 0 0.625rem;
+  /* The animation drives the horizontal infinite scroll */
+  animation-name: marquee-scroll;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  will-change: transform;
+}
+
+/* Pause scroll on hover */
+.marquee-track:hover {
+  animation-play-state: paused;
+}
+
+@keyframes marquee-scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); } /* Shift exactly half since we repeated 4x, effectively showing 2 full sets */
+}
+
+/* Individual Interactive Item */
+.marquee-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+  background: rgba(255,255,255,0.04);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: var(--txt-secondary);
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  cursor: pointer;
+  transform-style: preserve-3d;
+  flex-shrink: 0;
+}
+
+.marquee-item .marquee-icon {
+  color: var(--gold);
+  transition: transform 0.3s ease;
+}
+
+.marquee-item:hover {
+  background: rgba(232,184,75,0.1);
+  border-color: rgba(232,184,75,0.4);
+  color: var(--gold);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4), inset 0 0 0 1px rgba(232,184,75,0.2);
+  transform: translateY(-2px) scale(1.03);
+}
+
+.marquee-item:hover .marquee-icon {
+  transform: scale(1.15) rotate(5deg);
+}
+
+/* Different styling for Band 1 vs Band 2 */
+.marquee-band-2 .marquee-item {
+  background: rgba(16,217,140,0.04);
+  border-color: rgba(16,217,140,0.15);
+}
+.marquee-band-2 .marquee-item .marquee-icon {
+  color: #10d98c;
+}
+.marquee-band-2 .marquee-item:hover {
+  background: rgba(16,217,140,0.1);
+  border-color: rgba(16,217,140,0.4);
+  color: #10d98c;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4), inset 0 0 0 1px rgba(16,217,140,0.2);
+}
+
+/* ─── RESPONSIVE ─── */
+@media (max-width: 768px) {
+  .animated-marquee-wrapper { padding: 0.8rem 0; gap: 0.4rem; }
+  .marquee-item { padding: 0.4rem 0.85rem; font-size: 0.75rem; }
+  .marquee-item .marquee-icon { width: 12px; height: 12px; }
+  .marquee-track { gap: 0.85rem; }
+}

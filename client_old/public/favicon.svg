@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f5c842;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#d4a017;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <rect width="100" height="100" rx="20" fill="#07070f"/>
+  <path d="M20 80 L20 40 L50 20 L80 40 L80 80 Z" fill="url(#goldGrad)" opacity="0.15"/>
+  <path d="M50 25 L85 50 L85 85 L15 85 L15 50 Z" stroke="url(#goldGrad)" stroke-width="4" fill="none"/>
+  <path d="M35 85 L35 65 L45 65 L45 85" stroke="url(#goldGrad)" stroke-width="3" fill="none"/>
+  <path d="M55 85 L55 65 L65 65 L65 85" stroke="url(#goldGrad)" stroke-width="3" fill="none"/>
+  <circle cx="50" cy="45" r="5" fill="url(#goldGrad)"/>
+</svg>

@@ -1,0 +1,1 @@
+import{c as e}from"./@firebase/analytics-Bx_9qNJf.js";import"./@firebase/auth-BJgJPQ3r.js";import"./@firebase/storage-0qvjbnkz.js";e(`firebase`,`11.10.0`,`app`);

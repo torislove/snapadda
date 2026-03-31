@@ -9,7 +9,7 @@ Disallow: /onboarding
 Disallow: /login
 
 # Sitemaps
-Sitemap: https://snapadda.com/sitemap.xml
+Sitemap: https://snapadda.com/api/seo/sitemap.xml
 
 # Crawl delay for politeness
 Crawl-delay: 1

@@ -1,0 +1,19 @@
+User-agent: *
+Allow: /
+Allow: /property/
+Allow: /about
+Allow: /terms
+Allow: /privacy
+
+# Block admin and private routes
+Disallow: /login
+Disallow: /dashboard
+Disallow: /onboarding
+Disallow: /admin
+Disallow: /api/
+
+# Sitemaps
+Sitemap: https://snapadda.com/sitemap.xml
+
+# Crawl delay
+Crawl-delay: 1

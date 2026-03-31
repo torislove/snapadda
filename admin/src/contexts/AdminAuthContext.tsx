@@ -13,6 +13,7 @@ interface AdminAuthContextType {
   adminUser: AdminUser | null;
   adminLogin: (userData: AdminUser, token: string) => void;
   adminLogout: () => void;
+  updateAdminUser: (updates: Partial<AdminUser>) => void;
   isLoading: boolean;
 }
 
@@ -23,16 +24,10 @@ export const AdminAuthProvider: React.FC<{ children: ReactNode }> = ({ children 
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check local storage for admin token
     const storedAdmin = localStorage.getItem('snapadda_admin');
     const token = localStorage.getItem('snapadda_admin_token');
-
     if (storedAdmin && token) {
-      try {
-        setAdminUser(JSON.parse(storedAdmin));
-      } catch (e) {
-        console.error("Failed to parse admin from local storage");
-      }
+      try { setAdminUser(JSON.parse(storedAdmin)); } catch { /* ignore */ }
     }
     setIsLoading(false);
   }, []);
@@ -49,8 +44,18 @@ export const AdminAuthProvider: React.FC<{ children: ReactNode }> = ({ children 
     localStorage.removeItem('snapadda_admin_token');
   };
 
+  // Patch local state + localStorage after profile update
+  const updateAdminUser = (updates: Partial<AdminUser>) => {
+    setAdminUser(prev => {
+      if (!prev) return prev;
+      const merged = { ...prev, ...updates };
+      localStorage.setItem('snapadda_admin', JSON.stringify(merged));
+      return merged;
+    });
+  };
+
   return (
-    <AdminAuthContext.Provider value={{ adminUser, adminLogin, adminLogout, isLoading }}>
+    <AdminAuthContext.Provider value={{ adminUser, adminLogin, adminLogout, updateAdminUser, isLoading }}>
       {children}
     </AdminAuthContext.Provider>
   );
@@ -58,8 +63,6 @@ export const AdminAuthProvider: React.FC<{ children: ReactNode }> = ({ children 
 
 export const useAdminAuth = () => {
   const context = useContext(AdminAuthContext);
-  if (context === undefined) {
-    throw new Error('useAdminAuth must be used within an AdminAuthProvider');
-  }
+  if (context === undefined) throw new Error('useAdminAuth must be used within an AdminAuthProvider');
   return context;
 };

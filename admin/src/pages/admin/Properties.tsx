@@ -1,25 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '../../components/ui/Button';
-import { fetchProperties, createProperty, deleteProperty, updateProperty } from '../../services/api';
-import { ShieldCheck, Plus, Trash2, Camera } from 'lucide-react';
+import { fetchProperties, createProperty, deleteProperty, updateProperty, uploadMedia, togglePropertyVerification } from '../../services/api';
+import { ShieldCheck, Plus, Trash2, Camera, Star, Check, X } from 'lucide-react';
 import { LivePreviewCard } from '../../components/ui/LivePreviewCard';
-import { storage } from '../../firebase';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import imageCompression from 'browser-image-compression';
-
-const MOCK_PROPERTIES = [
-  { id: 1, title: 'Premium 3BHK Apartment', price: '₹ 85,00,000', status: 'Active' },
-  { id: 2, title: 'Luxury Villa with Garden', price: '₹ 2,50,00,000', status: 'Pending' },
-  { id: 3, title: 'Commercial Agriculture Land', price: '₹ 4.2 Crore', status: 'Active' },
-];
 
 const AdminProperties = () => {
-  const [properties, setProperties] = useState<any[]>(MOCK_PROPERTIES);
+  const [properties, setProperties] = useState<any[]>([]);
   const [isAdding, setIsAdding] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editingProperty, setEditingProperty] = useState<any>(null);
   const [customFeatures, setCustomFeatures] = useState<{label: string, value: string}[]>([]);
   const [isVerified, setIsVerified] = useState(false);
+  const [isFeatured, setIsFeatured] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [liveData, setLiveData] = useState<any>({});
   const [images, setImages] = useState<File[]>([]);
@@ -31,6 +23,7 @@ const AdminProperties = () => {
     setEditingProperty(null);
     setCustomFeatures([]);
     setIsVerified(false);
+    setIsFeatured(false);
     setImages([]);
     setLiveData({});
     setImagePreviewUrls([]);
@@ -42,10 +35,11 @@ const AdminProperties = () => {
 
   const loadProperties = () => {
     fetchProperties().then(data => {
-      if (data && data.data && data.data.length > 0) setProperties(data.data);
-      else if (Array.isArray(data) && data.length > 0) setProperties(data);
-    }).catch(() => {
-      console.log("Using local mock properties.");
+      const p = data?.data || (Array.isArray(data) ? data : []);
+      setProperties(p);
+    }).catch(err => {
+      console.error("Database connection failed:", err);
+      setProperties([]);
     });
   };
 
@@ -53,6 +47,7 @@ const AdminProperties = () => {
     setEditingProperty(prop);
     setCustomFeatures(prop.customFeatures || []);
     setIsVerified(prop.isVerified || false);
+    setIsFeatured(prop.isFeatured || false);
     setImagePreviewUrls(prop.images || (prop.image ? [prop.image] : []));
     setLiveData(prop);
     setIsEditing(true);
@@ -67,45 +62,42 @@ const AdminProperties = () => {
     
     propData.customFeatures = customFeatures;
     propData.isVerified = isVerified;
+    propData.isFeatured = isFeatured;
 
     try {
-      // 1. Upload Images to Firebase Storage
+      // 1. Upload Media to Cloudinary via Backend
       let uploadedUrls: string[] = [...imagePreviewUrls.filter(url => url.startsWith('http'))];
       
       if (images.length > 0) {
-        const uploadPromises = images.map(async (file) => {
-          // Compress
-          const options = { maxSizeMB: 0.8, maxWidthOrHeight: 1920, useWebWorker: true };
-          const compressedFile = await imageCompression(file, options);
-          
-          // Upload
-          const storageRef = ref(storage, `properties/${Date.now()}_${file.name}`);
-          const snapshot = await uploadBytes(storageRef, compressedFile);
-          return await getDownloadURL(snapshot.ref);
-        });
-        
-        const newUrls = await Promise.all(uploadPromises);
-        uploadedUrls = [...uploadedUrls, ...newUrls];
+        const uploadResult = await uploadMedia(images);
+        if (uploadResult.status === 'success') {
+          uploadedUrls = [...uploadedUrls, ...uploadResult.data];
+        } else {
+          throw new Error('Upload failed');
+        }
       }
 
       propData.images = uploadedUrls;
       if (uploadedUrls.length > 0) propData.image = uploadedUrls[0];
+      
+      // Ensure numeric types
+      propData.price = Number(propData.price) || 0;
+      propData.areaSize = Number(propData.areaSize) || 0;
+      propData.bhk = Number(propData.bhk) || 0;
 
       if (isEditing && editingProperty) {
-        // Update existing
         await updateProperty(editingProperty._id || editingProperty.id, propData);
         alert('Property updated successfully!');
       } else {
-        // Create new
         const result = await createProperty(propData);
-        setProperties(prev => [...prev, result.data || { ...propData, id: Math.floor(Math.random() * 1000) }]);
+        setProperties(prev => [...prev, result.data]);
         alert('Property created successfully!');
       }
       loadProperties();
       handleCloseForm();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert('Failed to save property. Check console.');
+      alert('Failed to save: ' + err.message);
     } finally {
       setIsUploading(false);
     }
@@ -130,6 +122,7 @@ const AdminProperties = () => {
     const formData = new FormData(e.currentTarget);
     const updatedData: any = Object.fromEntries(formData.entries());
     updatedData.isVerified = isVerified;
+    updatedData.isFeatured = isFeatured;
     if (imagePreviewUrls.length > 0) {
       updatedData.image = imagePreviewUrls[0];
     }
@@ -212,6 +205,42 @@ const AdminProperties = () => {
                   <option>North</option>
                   <option>South</option>
                   <option>North-East</option>
+                  <option>North-West</option>
+                  <option>South-East</option>
+                  <option>South-West</option>
+                  <option>Any</option>
+                </select>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>BHK</label>
+                <select name="bhk" defaultValue={editingProperty?.bhk || 0} style={{ width: '100%', padding: '10px', borderRadius: '4px', backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-subtle)', color: 'white' }}>
+                  <option value={0}>N/A</option>
+                  <option value={1}>1 BHK</option>
+                  <option value={2}>2 BHK</option>
+                  <option value={3}>3 BHK</option>
+                  <option value={4}>4 BHK</option>
+                  <option value={5}>5+ BHK</option>
+                </select>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Furnishing</label>
+                <select name="furnishing" defaultValue={editingProperty?.furnishing || 'N/A'} style={{ width: '100%', padding: '10px', borderRadius: '4px', backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-subtle)', color: 'white' }}>
+                  <option>N/A</option>
+                  <option>Unfurnished</option>
+                  <option>Semi-Furnished</option>
+                  <option>Furnished</option>
+                </select>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Construction Status</label>
+                <select name="constructionStatus" defaultValue={editingProperty?.constructionStatus || 'N/A'} style={{ width: '100%', padding: '10px', borderRadius: '4px', backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-subtle)', color: 'white' }}>
+                  <option>N/A</option>
+                  <option>Ready to Move</option>
+                  <option>Under Construction</option>
+                  <option>New Launch</option>
                 </select>
               </div>
 
@@ -262,8 +291,8 @@ const AdminProperties = () => {
               </div>
 
               {/* Verification and Dynamic Fields */}
-              <div style={{ gridColumn: '1 / -1', padding: '16px', backgroundColor: 'var(--bg-primary)', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+              <div style={{ gridColumn: '1 / -1', display: 'flex', flexWrap: 'wrap', gap: '24px', padding: '16px', backgroundColor: 'var(--bg-primary)', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <input 
                     type="checkbox" 
                     id="verifyProp"
@@ -271,10 +300,26 @@ const AdminProperties = () => {
                     onChange={(e) => setIsVerified(e.target.checked)}
                     style={{ width: '18px', height: '18px' }}
                   />
-                  <label htmlFor="verifyProp" style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--success)', fontWeight: 600 }}>
-                    <ShieldCheck size={20} /> Verify this Property (Trusted Badge)
+                  <label htmlFor="verifyProp" style={{ display: 'flex', alignItems: 'center', gap: '6px', color: isVerified ? 'var(--success)' : 'var(--text-muted)', fontWeight: 600 }}>
+                    <ShieldCheck size={20} /> Verified Property
                   </label>
                 </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <input 
+                    type="checkbox" 
+                    id="featureProp"
+                    checked={isFeatured}
+                    onChange={(e) => setIsFeatured(e.target.checked)}
+                    style={{ width: '18px', height: '18px' }}
+                  />
+                  <label htmlFor="featureProp" style={{ display: 'flex', alignItems: 'center', gap: '6px', color: isFeatured ? 'var(--accent-gold)' : 'var(--text-muted)', fontWeight: 600 }}>
+                    <Star size={20} /> Featured Listing
+                  </label>
+                </div>
+              </div>
+
+              <div style={{ gridColumn: '1 / -1', padding: '16px', backgroundColor: 'var(--bg-primary)', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
 
                 <div style={{ marginBottom: '16px' }}>
                   <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.875rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Media Center</label>
@@ -316,7 +361,7 @@ const AdminProperties = () => {
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                     <label style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Custom Information Fields</label>
-                    <Button type="button" variant="outline" size="sm" onClick={addCustomFeature}>
+                    <Button type="button" variant="ghost" size="sm" onClick={addCustomFeature}>
                       <Plus size={16} style={{ marginRight: '4px' }} /> Add Field
                     </Button>
                   </div>
@@ -380,6 +425,8 @@ const AdminProperties = () => {
             <thead>
               <tr style={{ backgroundColor: 'var(--bg-tertiary)', borderBottom: '1px solid var(--border-subtle)' }}>
                 <th style={{ padding: 'var(--spacing-md)' }}>ID</th>
+                <th style={{ padding: 'var(--spacing-md)' }}>Verified</th>
+                <th style={{ padding: 'var(--spacing-md)' }}>Featured</th>
                 <th style={{ padding: 'var(--spacing-md)' }}>Title</th>
                 <th style={{ padding: 'var(--spacing-md)' }}>Price</th>
                 <th style={{ padding: 'var(--spacing-md)' }}>Status</th>
@@ -390,6 +437,17 @@ const AdminProperties = () => {
               {properties.map((prop) => (
                 <tr key={prop._id || prop.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                   <td style={{ padding: 'var(--spacing-md)', color: 'var(--text-muted)' }}>#{prop.id || prop._id?.substring(0, 4)}</td>
+                  <td style={{ padding: 'var(--spacing-md)' }}>
+                    <button 
+                      onClick={() => togglePropertyVerification(prop._id || prop.id, prop.isVerified).then(loadProperties)}
+                      style={{ color: prop.isVerified ? 'var(--success)' : 'var(--text-muted)', transition: 'all 0.2s' }}
+                    >
+                      {prop.isVerified ? <Check size={20} /> : <X size={20} />}
+                    </button>
+                  </td>
+                  <td style={{ padding: 'var(--spacing-md)', color: prop.isFeatured ? 'var(--accent-gold)' : 'var(--text-muted)' }}>
+                    {prop.isFeatured ? <Star size={18} fill="currentColor" /> : <Star size={18} />}
+                  </td>
                   <td style={{ padding: 'var(--spacing-md)', fontWeight: 500 }}>{prop.title}</td>
                   <td style={{ padding: 'var(--spacing-md)' }}>{prop.price}</td>
                   <td style={{ padding: 'var(--spacing-md)' }}>

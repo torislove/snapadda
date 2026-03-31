@@ -5,7 +5,7 @@ echo ===================================================
 echo.
 
 :: 1. Build Client
-echo [1/4] Building Client Dashboard...
+echo [1/3] Building Client Dashboard...
 cd client
 if not exist node_modules (
     echo.
@@ -23,7 +23,7 @@ cd ..
 
 :: 2. Build Admin
 echo.
-echo [2/4] Building Admin Panel...
+echo [2/3] Building Admin Panel...
 cd admin
 if not exist node_modules (
     echo.
@@ -39,32 +39,23 @@ if %errorlevel% neq 0 (
 )
 cd ..
 
-:: 3. Server Dependencies
+:: 3. Apply Firebase Targets (Safe to repeat)
 echo.
-echo [3/5] Checking Server Dependencies...
-cd server
-if not exist node_modules (
-    echo.
-    echo node_modules missing in server! Installing...
-    call npm install --legacy-peer-deps
-)
-cd ..
-
-:: 4. Apply Firebase Targets (Safe to repeat)
-echo.
-echo [4/5] Mapping Firebase Hosting Targets...
+echo [3/4] Mapping Firebase Hosting Targets...
 call firebase target:clear hosting client
 call firebase target:clear hosting admin
 call firebase target:apply hosting client snapadda-7a6e6
 call firebase target:apply hosting admin snapaddaadmin
 
-:: 5. Deploy to Firebase
+:: 4. Deploy to Firebase (Hosting & Functions)
 echo.
-echo [5/5] Deploying Hosting & Functions...
-call firebase deploy --only hosting,functions
+echo [4/4] Deploying to Firebase...
+call firebase deploy
+
+
 if %errorlevel% neq 0 (
     echo.
-    echo ERROR: Firebase Deployment failed!
+    echo ERROR: Deployment failed!
     pause
     exit /b %errorlevel%
 )
@@ -74,6 +65,6 @@ echo ===================================================
 echo   DEPLOYMENT SUCCESSFUL!
 echo   Client: https://snapadda-7a6e6.web.app
 echo   Admin:  https://snapaddaadmin.web.app
-echo   API:    https://snapadda-7a6e6.web.app/api
+echo   Server: Firebase Cloud Functions
 echo ===================================================
 pause
