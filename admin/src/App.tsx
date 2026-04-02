@@ -14,6 +14,7 @@ const AdminContacts = lazy(() => import('./pages/admin/Contacts'));
 const AdminPromotions = lazy(() => import('./pages/admin/Promotions'));
 const AdminTestimonials = lazy(() => import('./pages/admin/Testimonials'));
 const AdminFranchise = lazy(() => import('./pages/admin/Franchise'));
+const AdminQuestions = lazy(() => import('./pages/admin/Questions'));
 const AdminMarquee = lazy(() => import('./pages/admin/MarqueeStrips'));
 const AdminEngagement = lazy(() => import('./pages/admin/AdminEngagement'));
 const SystemGuide = lazy(() => import('./pages/admin/SystemGuide'));
@@ -85,6 +86,7 @@ function App() {
             <Route path="promotions" element={<AdminPromotions />} />
             <Route path="testimonials" element={<AdminTestimonials />} />
             <Route path="franchise" element={<AdminFranchise />} />
+            <Route path="questions" element={<AdminQuestions />} />
             <Route path="engagement" element={<AdminEngagement />} />
             <Route path="marquee" element={<AdminMarquee />} />
             <Route path="guide" element={<SystemGuide />} />

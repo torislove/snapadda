@@ -23,7 +23,7 @@ function formatPrice(price) {
 
 export default function PropertyCard({
   id, _id, image, images, title, price, location, beds, baths, sqft,
-  type, measurementUnit = 'Sq.Yds', approval, approvalAuthority, facing,
+  type, purpose, measurementUnit = 'Sq.Yds', approval, approvalAuthority, facing,
   areaSize, isVerified = false, isFeatured = false, listerType = 'Individual Owner',
   createdAt, onTriggerLead, likeCount: initialLikeCount = 0, initialLiked = false,
 }) {
@@ -100,6 +100,16 @@ export default function PropertyCard({
             <div className="property-tags-top-left" style={{ transform: 'translateZ(30px)' }}>
               {isFeatured && <div className="badge badge-featured">⭐ {t('card.featured')}</div>}
               {isNew && <div className="badge badge-new">✨ {t('card.new')}</div>}
+              {purpose && (
+                <div className="badge" style={{ 
+                  background: purpose === 'Rent' ? 'var(--cyan)' : 'var(--emerald)', 
+                  color: '#000', 
+                  fontWeight: 900,
+                  fontSize: '0.65rem'
+                }}>
+                  {purpose === 'Rent' ? 'FOR RENT' : 'FOR SALE'}
+                </div>
+              )}
             </div>
             <div className="property-tags-top-right" style={{ transform: 'translateZ(30px)' }}>
               {isHot && <div className="scarcity-badge" style={{ position: 'relative', top: 'auto', right: 'auto' }}>Only {Math.floor((propertyId?.charCodeAt(1) || 0) % 3) + 1} Left!</div>}

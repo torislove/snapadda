@@ -45,7 +45,24 @@ export const getProperties = async (req, res) => {
 // Create a new property
 export const createProperty = async (req, res) => {
   try {
-    const newProperty = new Property({ ...req.body });
+    let propertyData = { ...req.body };
+    
+    // Auto-generate about section if empty
+    if (!propertyData.description || propertyData.description.trim() === '') {
+      const { type, purpose, bhk, furnishing, facing, totalFloors, parking, location, district, constructionStatus } = propertyData;
+      
+      let generatedDesc = `A premium ${type} located in the prime area of ${location}${district ? ', ' + district : ''}. `;
+      if (bhk > 0) generatedDesc += `This ${bhk} BHK property is highly sought-after and available for ${purpose}. `;
+      if (furnishing && furnishing !== 'N/A') generatedDesc += `It comes ${furnishing} and is in ${constructionStatus || 'excellent'} condition. `;
+      if (facing && facing !== 'Any') generatedDesc += `As a ${facing}-facing property, it ensures natural light and great ventilation. `;
+      if (parking && parking !== 'None' && parking !== 'N/A') generatedDesc += `It includes ${parking} parking space for convenience. `;
+      
+      generatedDesc += `Ideal for families looking for a modern lifestyle in a well-connected neighborhood. Contact us for more details and a site visit!`;
+      
+      propertyData.description = generatedDesc;
+    }
+
+    const newProperty = new Property(propertyData);
     await newProperty.save();
     res.status(201).json({ status: 'success', data: newProperty });
   } catch (error) {

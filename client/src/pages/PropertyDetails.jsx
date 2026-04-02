@@ -1,13 +1,6 @@
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { ArrowLeft, ShieldCheck, MapPin, Building2, User, Phone, MessageSquare, Image, Video, BedDouble, Bath, Square, Compass, Award, Send, Star, ChevronRight } from 'lucide-react';
-import { fetchProperty, fetchSetting, submitLead } from '../services/api';
-import PropertyCard from '../components/PropertyCard';
-import ContactModal from '../components/ContactModal';
 import Logo from '../components/Logo';
+import { fetchProperty, fetchSetting, submitLead, askQuestion, fetchPropertyFAQs } from '../services/api';
 
-const API_BASE = 'http://localhost:5000/api';
 
 export default function PropertyDetails() {
   const { id } = useParams();
@@ -37,13 +30,14 @@ export default function PropertyDetails() {
     if (!id) return;
     setLoading(true);
     window.scrollTo(0, 0);
+    
     fetchProperty(id)
       .then(res => setProperty(res.data || res))
       .catch(() => setProperty(null))
       .finally(() => setLoading(false));
-    fetch(`${API_BASE}/properties/${id}/similar`).then(r => r.json()).then(r => { if (r.data) setSimilar(r.data); }).catch(() => {});
-    fetch(`${API_BASE}/inquiries/property/${id}`).then(r => r.json()).then(r => { if (r.status === 'success') setQna(r.data || []); }).catch(() => {});
-    fetchSetting('support_info').then(d => setSupportInfo(d || {})).catch(console.error);
+
+    fetchPropertyFAQs(id).then(setQna).catch(console.error);
+    fetchSetting('support_info').then(setSupportInfo).catch(console.error);
   }, [id]);
 
   useEffect(() => {
@@ -86,9 +80,14 @@ export default function PropertyDetails() {
     if (!qText || !qName || !qContact || !id) return;
     setQStatus('Sending...');
     try {
-      const res = await fetch(`${API_BASE}/inquiries`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ propertyId: id, clientName: qName, clientContact: qContact, question: qText }) });
-      if (res.ok) { setQStatus('Question submitted! Agent will respond soon.'); setQText(''); setQName(''); setQContact(''); setTimeout(() => setQStatus(''), 5000); }
-      else setQStatus('Failed to submit.');
+      const res = await askQuestion({ propertyId: id, clientName: qName, clientContact: qContact, question: qText });
+      if (res.status === 'success') { 
+        setQStatus('Question submitted! Agent will respond soon.'); 
+        setQText(''); setQName(''); setQContact(''); 
+        setTimeout(() => setQStatus(''), 5000); 
+      } else {
+        setQStatus('Failed to submit question.');
+      }
     } catch { setQStatus('Network error.'); }
   };
 
@@ -219,6 +218,22 @@ export default function PropertyDetails() {
               <div className="pd-ov-card"><Square size={22} className="text-gold" /><div><span className="pd-ov-val">{property.areaSize || property.sqft}</span><span className="pd-ov-label">{property.measurementUnit || 'Sq.Yds'}</span></div></div>
               {property.facing && property.facing !== 'Any' && <div className="pd-ov-card"><Compass size={22} className="text-gold" /><div><span className="pd-ov-val">{property.facing}</span><span className="pd-ov-label">Facing</span></div></div>}
               {authority && authority !== 'N/A' && <div className="pd-ov-card"><ShieldCheck size={22} style={{ color: 'var(--success)' }} /><div><span className="pd-ov-val">{authority}</span><span className="pd-ov-label">Approval</span></div></div>}
+            </div>
+            
+            {/* Extended Detail Grid */}
+            <div style={{ marginTop: '2.5rem', borderTop: '1px solid var(--border-light)', paddingTop: '2.5rem' }}>
+              <h3 style={{ fontSize: '1rem', fontWeight: 800, color: 'white', marginBottom: '1.25rem' }}>Technical Specifications</h3>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+                 {property.carpetArea > 0 && <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1rem', borderRadius: '12px' }}><div style={{ color: 'var(--txt-muted)', fontSize: '0.72rem', textTransform: 'uppercase' }}>Carpet Area</div><div style={{ fontWeight: 700 }}>{property.carpetArea} Sq.Ft</div></div>}
+                 {property.superBuiltupArea > 0 && <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1rem', borderRadius: '12px' }}><div style={{ color: 'var(--txt-muted)', fontSize: '0.72rem', textTransform: 'uppercase' }}>Super Builtup</div><div style={{ fontWeight: 700 }}>{property.superBuiltupArea} Sq.Ft</div></div>}
+                 {property.transactionType && property.transactionType !== 'N/A' && <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1rem', borderRadius: '12px' }}><div style={{ color: 'var(--txt-muted)', fontSize: '0.72rem', textTransform: 'uppercase' }}>Transaction</div><div style={{ fontWeight: 700 }}>{property.transactionType}</div></div>}
+                 {property.propertyAge && property.propertyAge !== 'N/A' && <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1rem', borderRadius: '12px' }}><div style={{ color: 'var(--txt-muted)', fontSize: '0.72rem', textTransform: 'uppercase' }}>Age of Asset</div><div style={{ fontWeight: 700 }}>{property.propertyAge}</div></div>}
+                 {property.ownershipType && property.ownershipType !== 'N/A' && <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1rem', borderRadius: '12px' }}><div style={{ color: 'var(--txt-muted)', fontSize: '0.72rem', textTransform: 'uppercase' }}>Ownership</div><div style={{ fontWeight: 700 }}>{property.ownershipType}</div></div>}
+                 {property.floorNo > 0 && <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1rem', borderRadius: '12px' }}><div style={{ color: 'var(--txt-muted)', fontSize: '0.72rem', textTransform: 'uppercase' }}>Floor Level</div><div style={{ fontWeight: 700 }}>{property.floorNo} of {property.totalFloors}</div></div>}
+                 {property.parking && property.parking !== 'N/A' && <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1rem', borderRadius: '12px' }}><div style={{ color: 'var(--txt-muted)', fontSize: '0.72rem', textTransform: 'uppercase' }}>Parking</div><div style={{ fontWeight: 700 }}>{property.parking}</div></div>}
+                 {property.waterSupply && property.waterSupply !== 'N/A' && <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1rem', borderRadius: '12px' }}><div style={{ color: 'var(--txt-muted)', fontSize: '0.72rem', textTransform: 'uppercase' }}>Water Supply</div><div style={{ fontWeight: 700 }}>{property.waterSupply}</div></div>}
+                 {property.reraId && <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1rem', borderRadius: '12px' }}><div style={{ color: 'var(--txt-muted)', fontSize: '0.72rem', textTransform: 'uppercase' }}>RERA Registration</div><div style={{ fontWeight: 700 }}>{property.reraId}</div></div>}
+              </div>
             </div>
           </section>
 

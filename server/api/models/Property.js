@@ -37,6 +37,27 @@ const propertySchema = new mongoose.Schema({
   furnishing: { type: String, enum: ['Furnished', 'Semi-Furnished', 'Unfurnished', 'N/A'], default: 'N/A' },
   constructionStatus: { type: String, enum: ['Ready to Move', 'Under Construction', 'New Launch', 'N/A'], default: 'N/A' },
   
+  // Advanced Spatial & Structural
+  carpetArea: { type: Number, default: 0 },
+  superBuiltupArea: { type: Number, default: 0 },
+  totalFloors: { type: Number, default: 0 },
+  floorNo: { type: Number, default: 0 },
+  propertyAge: { type: String, enum: ['0-1 yrs', '1-5 yrs', '5-10 yrs', '10+ yrs', 'N/A'], default: 'N/A' },
+  transactionType: { type: String, enum: ['New Property', 'Resale', 'N/A'], default: 'N/A' },
+  
+  // Utilities & Legal
+  parking: { type: String, enum: ['1 Covered', '2 Covered', '1 Open', '2 Open', 'None', 'N/A'], default: 'N/A' },
+  waterSupply: { type: String, enum: ['24 Hours Available', 'Municipal', 'Borewell', 'N/A'], default: 'N/A' },
+  electricityStatus: { type: String, enum: ['No/Rare Powercut', 'Frequent Powercut', 'N/A'], default: 'N/A' },
+  ownershipType: { type: String, enum: ['Freehold', 'Leasehold', 'Co-operative Society', 'Power of Attorney', 'N/A'], default: 'N/A' },
+  vastuCompliant: { type: Boolean, default: false },
+  reraId: { type: String, default: '' },
+  
+  // Specifics
+  cornerProperty: { type: Boolean, default: false },
+  boundaryWall: { type: Boolean, default: false }, // Useful for plots
+  overlooking: { type: String, enum: ['Park/Garden', 'Main Road', 'Club', 'Pool', 'N/A'], default: 'N/A' },
+  
   images: [{ type: String }],
   videos: [{ type: String }],
   videoUrl: { type: String }, // Primary walkthrough video

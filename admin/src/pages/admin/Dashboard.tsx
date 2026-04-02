@@ -236,7 +236,7 @@ const AdminDashboard = () => {
     >
 
       {/* ── Header ── */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '1.5rem' }}>
+      <div className="flex-row-mobile-stack" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '1.5rem' }}>
         <div>
           <motion.div 
             initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}
@@ -246,7 +246,7 @@ const AdminDashboard = () => {
           </motion.div>
           <motion.h1 
             initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-            style={{ fontSize: 'clamp(1.8rem, 5vw, 2.75rem)', fontWeight: 800, background: 'linear-gradient(135deg, #fff 0%, #9b59f5 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: '0.5rem', fontFamily: 'var(--font-heading)', letterSpacing: '-0.02em' }}
+            style={{ lineHeight: 1.2, fontWeight: 800, background: 'linear-gradient(135deg, #fff 0%, #9b59f5 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: '0.5rem', fontFamily: 'var(--font-heading)', letterSpacing: '-0.02em' }}
           >
             {greeting}, Admin
           </motion.h1>
@@ -254,7 +254,7 @@ const AdminDashboard = () => {
             System pulse is optimal. Here's a summary of your estate operations.
           </p>
         </div>
-        <Link to="/admin/properties">
+        <Link to="/admin/properties" style={{ width: 'auto' }}>
           <motion.button 
             whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
             className="btn btn-violet" style={{ gap: '10px', padding: '0.8rem 1.75rem', borderRadius: '14px', boxShadow: '0 10px 30px rgba(155,89,245,0.25)' }}

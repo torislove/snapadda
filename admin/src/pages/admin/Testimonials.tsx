@@ -1,12 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-  fetchTestimonials, createTestimonial, updateTestimonial,
+  fetchTestimonials, createTestimonial,
   deleteTestimonial, uploadMedia
 } from '../../services/api';
 import {
-  Plus, Trash2, Loader2, Image as ImageIcon,
-  Sparkles, X,
-  Zap, GripVertical, CheckCircle, AlertCircle, Quote, Star
+  Plus, Trash2, Loader2, X,
+  Zap, CheckCircle, AlertCircle, Quote, Star
 } from 'lucide-react';
 
 /* ── Color map ── */

@@ -133,6 +133,30 @@ export const deleteTestimonial = async (id: string) => {
   return res.json();
 };
 
+/* ─────────────── Questions / FAQs ─────────────── */
+export const fetchQuestions = async (status?: string) => {
+  const url = status ? `${API_URL}/questions?status=${status}` : `${API_URL}/questions`;
+  const res = await fetch(url, { headers: getAuthHeaders() });
+  if (!res.ok) throw new Error('Failed to fetch questions');
+  return res.json();
+};
+
+export const answerQuestion = async (id: string, answer: string, status: string = 'Answered') => {
+  const res = await fetch(`${API_URL}/questions/${id}`, { 
+    method: 'PUT', 
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ answer, status })
+  });
+  if (!res.ok) throw new Error('Failed to update question');
+  return res.json();
+};
+
+export const deleteQuestion = async (id: string) => {
+  const res = await fetch(`${API_URL}/questions/${id}`, { method: 'DELETE', headers: getAuthHeaders() });
+  if (!res.ok) throw new Error('Failed to delete question');
+  return res.json();
+};
+
 /* ─────────────── Admin Profile ─────────────── */
 export const updateAdminProfile = async (name: string, avatar: string) => {
   const res = await fetch(`${API_URL}/admin/profile`, {

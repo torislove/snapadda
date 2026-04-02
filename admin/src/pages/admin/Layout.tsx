@@ -56,6 +56,7 @@ const NAV_ITEMS = [
   { to: '/admin/engagement', label: 'User Engagement',icon: Activity,        exact: false, activeClass: 'active-engagement', color: 'var(--rose)'    },
   { to: '/admin/marquee',    label: 'Scrolling Bands',icon: Layers,          exact: false, activeClass: 'active-promotions', color: 'var(--cyan)'    },
   { to: '/admin/settings',   label: 'Settings',       icon: Settings,        exact: false, activeClass: 'active-settings',   color: 'var(--violet)'  },
+  { to: '/admin/questions',  label: 'Questions & FAQ',icon: MessageSquare,   exact: false, activeClass: 'active-promotions', color: 'var(--gold)'    },
   { to: '/admin/guide',      label: 'System Guide',   icon: BookOpen,        exact: false, activeClass: 'active-settings',   color: 'var(--emerald)' },
 ];
 
@@ -184,8 +185,12 @@ const AdminLayout = () => {
             >
               {isSidebarOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
-            <div className="topbar-left-group" style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+            <div className="topbar-left-group" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
               <span className="topbar-title desktop-only">{getPageTitle()}</span>
+              {/* Mobile-Only Title */}
+              <span className="topbar-title mobile-only" style={{ display: 'none', fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                {getPageTitle()}
+              </span>
               
               {/* Command Search Shortcut UI */}
               <div className="command-search-bar desktop-only" style={{

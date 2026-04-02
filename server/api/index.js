@@ -84,6 +84,7 @@ import cityRoutes from './routes/cityRoutes.js';
 import mediaRoutes from './routes/mediaRoutes.js';
 import promotionRoutes from './routes/promotionRoutes.js';
 import testimonialRoutes from './routes/testimonialRoutes.js';
+import questionRoutes from './routes/questionRoutes.js';
 
 app.use('/api/properties', propertyRoutes);
 app.use('/api/cities', cityRoutes);
@@ -99,6 +100,7 @@ app.use('/api/districts', districtRoutes);
 app.use('/api/media', mediaRoutes);
 app.use('/api/promotions', promotionRoutes);
 app.use('/api/testimonials', testimonialRoutes);
+app.use('/api/questions', questionRoutes);
 
 // Export for Firebase Functions
 export const api = onRequest({ cors: true }, app);

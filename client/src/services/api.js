@@ -229,3 +229,32 @@ export const validateProperties = async (ids) => {
     throw e;
   }
 };
+
+/**
+ * Property Q&A Interaction
+ */
+export const askQuestion = async (payload) => {
+  try {
+    const res = await fetch(`${API_BASE}/questions/ask`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error('Failed to submit question');
+    return await res.json();
+  } catch (e) {
+    console.error('API Error:', e);
+    throw e;
+  }
+};
+
+export const fetchPropertyFAQs = async (propertyId) => {
+  try {
+    const res = await fetch(`${API_BASE}/questions/faqs/${propertyId}`);
+    if (!res.ok) throw new Error('Failed to fetch FAQs');
+    return (await res.json()).data || [];
+  } catch (e) {
+    console.error('API Error:', e);
+    return [];
+  }
+};

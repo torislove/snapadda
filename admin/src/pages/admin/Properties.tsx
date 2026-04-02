@@ -94,6 +94,13 @@ const AdminProperties = () => {
       propData.price = Number(propData.price) || 0;
       propData.areaSize = Number(propData.areaSize) || 0;
       propData.bhk = Number(propData.bhk) || 0;
+      propData.carpetArea = Number(propData.carpetArea) || 0;
+      propData.superBuiltupArea = Number(propData.superBuiltupArea) || 0;
+      propData.totalFloors = Number(propData.totalFloors) || 0;
+      propData.floorNo = Number(propData.floorNo) || 0;
+      propData.vastuCompliant = !!propData.vastuCompliant;
+      propData.cornerProperty = !!propData.cornerProperty;
+      propData.boundaryWall = !!propData.boundaryWall;
 
       if (isEditing && editingProperty) {
         await updateProperty(editingProperty._id || editingProperty.id, propData);
@@ -160,10 +167,10 @@ const AdminProperties = () => {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
       
       {/* Header Section */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1.5rem' }}>
+      <div className="flex-row-mobile-stack" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1.5rem' }}>
         <div>
           <div style={{ fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.18em', color: 'var(--gold)', marginBottom: '0.6rem', fontFamily: 'var(--font-mono)' }}>✦ ASSET INTELLIGENCE</div>
-          <h1 style={{ fontSize: '2.8rem', fontWeight: 800, background: 'linear-gradient(135deg,#fff,#9b59f5)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', fontFamily: 'var(--font-heading)', letterSpacing: '-0.02em' }}>
+          <h1 style={{ lineHeight: 1.2, fontWeight: 800, background: 'linear-gradient(135deg,#fff,#9b59f5)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', fontFamily: 'var(--font-heading)', letterSpacing: '-0.02em' }}>
             Portfolio Command
           </h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', maxWidth: '600px' }}>Precision management of high-value real estate assets across the SnapAdda regional network.</p>
@@ -280,6 +287,123 @@ const AdminProperties = () => {
                         <option value="Panchayat">Grama Panchayat</option>
                         <option value="Municipal">Municipal Approval</option>
                       </select>
+                    </div>
+                  </div>
+                </section>
+
+                {/* Spatial & Structural Data */}
+                <section>
+                  <h3 style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--cyan)', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '1.75rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={{ width: '20px', height: '1px', background: 'var(--cyan)' }} /> STRUCTURAL & AREA
+                  </h3>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1.5rem' }}>
+                    <div>
+                      <label className="admin-label">Carpet Area (Sq.Ft)</label>
+                      <input name="carpetArea" type="number" defaultValue={editingProperty?.carpetArea || ''} className="admin-input" placeholder="Actual usable area" />
+                    </div>
+                    <div>
+                      <label className="admin-label">Super Builtup Area</label>
+                      <input name="superBuiltupArea" type="number" defaultValue={editingProperty?.superBuiltupArea || ''} className="admin-input" placeholder="Incl common areas" />
+                    </div>
+                    
+                    {['Apartment', 'Villa', 'Farmhouse', 'Commercial Space', 'Independent House'].includes(liveData.type) && (
+                      <>
+                        <div style={{ gridColumn: 'span 2' }}>
+                           <label className="admin-label">Residential Config (BHK)</label>
+                           <input name="bhk" type="number" defaultValue={editingProperty?.bhk || ''} className="admin-input" placeholder="e.g. 3" />
+                        </div>
+                        <div>
+                          <label className="admin-label">Total Floors</label>
+                          <input name="totalFloors" type="number" defaultValue={editingProperty?.totalFloors || ''} className="admin-input" />
+                        </div>
+                        {liveData.type === 'Apartment' && (
+                          <div>
+                            <label className="admin-label">Floor Number</label>
+                            <input name="floorNo" type="number" defaultValue={editingProperty?.floorNo || ''} className="admin-input" />
+                          </div>
+                        )}
+                        <div>
+                          <label className="admin-label">Furnishing</label>
+                          <select name="furnishing" defaultValue={editingProperty?.furnishing || 'N/A'} className="admin-select">
+                             <option value="N/A">N/A</option>
+                             <option value="Furnished">Fully Furnished</option>
+                             <option value="Semi-Furnished">Semi-Furnished</option>
+                             <option value="Unfurnished">Unfurnished</option>
+                          </select>
+                        </div>
+                      </>
+                    )}
+                    
+                    <div>
+                      <label className="admin-label">Property Age</label>
+                      <select name="propertyAge" defaultValue={editingProperty?.propertyAge || 'N/A'} className="admin-select">
+                         <option value="N/A">N/A</option>
+                         <option value="0-1 yrs">New (0-1 yrs)</option>
+                         <option value="1-5 yrs">1-5 Years</option>
+                         <option value="5-10 yrs">5-10 Years</option>
+                         <option value="10+ yrs">10+ Years</option>
+                      </select>
+                    </div>
+
+                    {['Residential Plot', 'Commercial Plot', 'Agricultural Land'].includes(liveData.type) && (
+                      <div style={{ gridColumn: '1 / -1', display: 'flex', gap: '2rem' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                          <input name="cornerProperty" type="checkbox" defaultChecked={editingProperty?.cornerProperty} /> Corner Property
+                        </label>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                          <input name="boundaryWall" type="checkbox" defaultChecked={editingProperty?.boundaryWall} /> Boundary Wall
+                        </label>
+                      </div>
+                    )}
+                  </div>
+                </section>
+
+                {/* Legal & Utilities */}
+                <section>
+                  <h3 style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--rose)', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '1.75rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={{ width: '20px', height: '1px', background: 'var(--rose)' }} /> LEGAL & UTILITIES
+                  </h3>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
+                    <div>
+                      <label className="admin-label">Ownership Type</label>
+                      <select name="ownershipType" defaultValue={editingProperty?.ownershipType || 'Freehold'} className="admin-select">
+                        <option value="Freehold">Freehold</option>
+                        <option value="Leasehold">Leasehold</option>
+                        <option value="Co-operative Society">Co-operative Society</option>
+                        <option value="Power of Attorney">Power of Attorney</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="admin-label">RERA ID</label>
+                      <input name="reraId" defaultValue={editingProperty?.reraId || ''} className="admin-input" placeholder="Registration Number" />
+                    </div>
+                    <div>
+                      <label className="admin-label">Parking Available</label>
+                      <select name="parking" defaultValue={editingProperty?.parking || 'N/A'} className="admin-select">
+                        <option value="N/A">N/A</option>
+                        <option value="1 Covered">1 Covered</option>
+                        <option value="2 Covered">2 Covered</option>
+                        <option value="1 Open">1 Open</option>
+                        <option value="2 Open">2 Open</option>
+                        <option value="None">None</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="admin-label">Water Supply</label>
+                      <select name="waterSupply" defaultValue={editingProperty?.waterSupply || 'N/A'} className="admin-select">
+                         <option value="N/A">N/A</option>
+                         <option value="24 Hours Available">24 Hours Available</option>
+                         <option value="Municipal">Municipal / Panchayat</option>
+                         <option value="Borewell">Borewell Only</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="admin-label">Vastu Choice</label>
+                      <div style={{ padding: '0.6rem 0' }}>
+                         <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', color: 'white', fontSize: '0.9rem' }}>
+                            <input name="vastuCompliant" type="checkbox" defaultChecked={editingProperty?.vastuCompliant} /> 100% Vastu Compliant
+                         </label>
+                      </div>
                     </div>
                   </div>
                 </section>

@@ -426,7 +426,13 @@ const AdminSettings = () => {
         <p style={{ fontSize:'0.82rem', color:'var(--text-muted)' }}>Manage your profile, security, and platform appearance.</p>
       </div>
 
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(140px,1fr))', gap:'0.75rem', marginTop:'1rem', marginBottom:'1.5rem' }}>
+      <div className="scroll-x-mobile" style={{ 
+        display:'flex', 
+        gap:'0.75rem', 
+        marginTop:'1rem', 
+        marginBottom:'1.5rem',
+        paddingBottom: '0.5rem'
+      }}>
         {[
           { key: 'appearance', label: 'Appearance' },
           { key: 'hero', label: 'Hero & Home' },
@@ -446,7 +452,9 @@ const AdminSettings = () => {
               onClick={() => setActiveSection(section.key as any)}
               className="btn"
               style={{
-                width: '100%',
+                width: 'auto',
+                minWidth: '120px',
+                flexShrink: 0,
                 justifyContent: 'center',
                 padding: '0.95rem 1rem',
                 borderRadius: '16px',

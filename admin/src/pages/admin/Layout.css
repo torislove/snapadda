@@ -348,6 +348,80 @@
   .admin-topbar { padding: 0 1.25rem; }
 }
 
+/* ── Universal Vertical Stacking Overrides (Surgical) ── */
+@media (max-width: 768px) {
+  /* Targets any element with inline grid styles having multiple columns */
+  div[style*="display: grid"], 
+  div[style*="display:grid"] {
+    grid-template-columns: 1fr !important;
+    gap: 1.25rem !important;
+  }
+
+  /* Target specific dashboard metric grids */
+  [style*="gridTemplateColumns: repeat(auto-fit"][style*="minmax(min(240px"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Ensures all flex-rows (like toolbar / headers) wrap on mobile */
+  div[style*="display: flex"][style*="justifyContent: space-between"],
+  div[style*="display:flex"][style*="justify-content: space-between"] {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 1.25rem !important;
+  }
+
+  /* Form & Input scaling (Touch-Friendly) */
+  .admin-input, .admin-select, .admin-textarea, textarea, input, select {
+    font-size: 16px !important; /* Prevents auto-zoom on iOS */
+    padding: 0.9rem !important;
+    height: auto !important;
+  }
+
+  button, .btn {
+    min-height: 48px !important; /* Min touch target */
+    width: 100% !important;
+    justify-content: center !important;
+  }
+
+  /* Padding scaling for smaller screens */
+  .admin-page-content { padding: 1rem !important; }
+  .glass-card { padding: 1.5rem !important; border-radius: 18px !important; }
+
+  /* Typography scale down */
+  h1 { font-size: 1.8rem !important; margin-bottom: 0.5rem !important; }
+  h2 { font-size: 1.4rem !important; }
+  h3 { font-size: 1.1rem !important; }
+  p { font-size: 0.85rem !important; }
+
+  /* Floating Render / Sticky items de-sticking */
+  div[style*="position: sticky"] {
+    position: relative !important;
+    top: 0 !important;
+    margin-top: 1.5rem;
+  }
+
+  /* Fix for fixed modals widths */
+  div[style*="position: fixed"][style*="width: 500px"] {
+    width: 94% !important;
+    left: 3% !important;
+    padding: 1.5rem !important;
+  }
+
+  /* Navigation Item Spacing */
+  .nav-item { padding: 0.8rem 1.5rem !important; }
+
+  /* Hidden items on mobile */
+  .desktop-only { display: none !important; }
+  .mobile-only { display: block !important; }
+}
+
 @media (max-width: 640px) {
   .topbar-time, .topbar-status-text, .topbar-divider { display: none; }
+  .sidebar-badge { display: none; }
+}
+
+@keyframes pulse-glow {
+  0% { transform: scale(1); opacity: 0.6; }
+  50% { transform: scale(1.1); opacity: 1; }
+  100% { transform: scale(1); opacity: 0.6; }
 }
