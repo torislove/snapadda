@@ -12,10 +12,16 @@ const propertySchema = new mongoose.Schema({
   
   type: { 
     type: String, 
-    enum: ['Agriculture', 'Flat', 'Apartment', 'Villa', 'Plot', 'House', 'Commercial', 'Farmhouse'], 
+    enum: ['Apartment', 'Independent House', 'Villa', 'Residential Plot', 'Commercial Plot', 'Agricultural Land', 'Commercial Space', 'Farmhouse'], 
     required: true 
   },
-  subType: { type: String, default: '' }, // e.g., "Open Plot", "Gated Community", "Independent House"
+  purpose: {
+    type: String,
+    enum: ['Sale', 'Rent', 'Lease'],
+    default: 'Sale',
+    required: true
+  },
+  subType: { type: String, default: '' }, // e.g., "Gated Community", "Open Plot"
   condition: { type: String, enum: ['1st Hand', '2nd Hand', 'Ready to Move', 'Under Construction', 'N/A'], default: 'N/A' },
   
   // Andhra Specific

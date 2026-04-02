@@ -1,19 +1,38 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAdminAuth } from './contexts/AdminAuthContext';
-import AdminLayout from './pages/admin/Layout';
-import AdminDashboard from './pages/admin/Dashboard';
-import AdminProperties from './pages/admin/Properties';
-import AdminCities from './pages/admin/Cities';
-import AdminLeads from './pages/admin/Leads';
-import AdminSettings from './pages/admin/Settings';
-import AdminClients from './pages/admin/Clients';
-import AdminContacts from './pages/admin/Contacts';
-import AdminPromotions from './pages/admin/Promotions';
-import AdminMarquee from './pages/admin/MarqueeStrips';
-import AdminEngagement from './pages/admin/AdminEngagement';
-import SystemGuide from './pages/admin/SystemGuide';
-import AdminLogin from './pages/admin/Login';
+
+// Lazy loading all admin modules
+const AdminLayout = lazy(() => import('./pages/admin/Layout'));
+const AdminDashboard = lazy(() => import('./pages/admin/Dashboard'));
+const AdminProperties = lazy(() => import('./pages/admin/Properties'));
+const AdminCities = lazy(() => import('./pages/admin/Cities'));
+const AdminLeads = lazy(() => import('./pages/admin/Leads'));
+const AdminSettings = lazy(() => import('./pages/admin/Settings'));
+const AdminClients = lazy(() => import('./pages/admin/Clients'));
+const AdminContacts = lazy(() => import('./pages/admin/Contacts'));
+const AdminPromotions = lazy(() => import('./pages/admin/Promotions'));
+const AdminTestimonials = lazy(() => import('./pages/admin/Testimonials'));
+const AdminFranchise = lazy(() => import('./pages/admin/Franchise'));
+const AdminMarquee = lazy(() => import('./pages/admin/MarqueeStrips'));
+const AdminEngagement = lazy(() => import('./pages/admin/AdminEngagement'));
+const SystemGuide = lazy(() => import('./pages/admin/SystemGuide'));
+const AdminLogin = lazy(() => import('./pages/admin/Login'));
+
+const AdminLoader = () => (
+  <div style={{ 
+    height: '100vh', 
+    display: 'flex', 
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    backgroundColor: '#07070f', 
+    color: '#c9a84c',
+    fontFamily: 'monospace',
+    letterSpacing: '0.1em'
+  }}>
+    CORE_SYSTEM_LOADING...
+  </div>
+);
 
 const AdminProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { adminUser, isLoading } = useAdminAuth();
@@ -41,33 +60,37 @@ const AntiAuthRoute = ({ children }: { children: React.ReactNode }) => {
 function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Navigate to="/admin" replace />} />
-        
-        <Route path="/admin/login" element={
-          <AntiAuthRoute>
-            <AdminLogin />
-          </AntiAuthRoute>
-        } />
+      <Suspense fallback={<AdminLoader />}>
+        <Routes>
+          <Route path="/" element={<Navigate to="/admin" replace />} />
+          
+          <Route path="/admin/login" element={
+            <AntiAuthRoute>
+              <AdminLogin />
+            </AntiAuthRoute>
+          } />
 
-        <Route path="/admin" element={
-          <AdminProtectedRoute>
-            <AdminLayout />
-          </AdminProtectedRoute>
-        }>
-          <Route index element={<AdminDashboard />} />
-          <Route path="properties" element={<AdminProperties />} />
-          <Route path="cities" element={<AdminCities />} />
-          <Route path="leads" element={<AdminLeads />} />
-          <Route path="contacts" element={<AdminContacts />} />
-          <Route path="settings" element={<AdminSettings />} />
-          <Route path="clients" element={<AdminClients />} />
-          <Route path="promotions" element={<AdminPromotions />} />
-          <Route path="engagement" element={<AdminEngagement />} />
-          <Route path="marquee" element={<AdminMarquee />} />
-          <Route path="guide" element={<SystemGuide />} />
-        </Route>
-      </Routes>
+          <Route path="/admin" element={
+            <AdminProtectedRoute>
+              <AdminLayout />
+            </AdminProtectedRoute>
+          }>
+            <Route index element={<AdminDashboard />} />
+            <Route path="properties" element={<AdminProperties />} />
+            <Route path="cities" element={<AdminCities />} />
+            <Route path="leads" element={<AdminLeads />} />
+            <Route path="contacts" element={<AdminContacts />} />
+            <Route path="settings" element={<AdminSettings />} />
+            <Route path="clients" element={<AdminClients />} />
+            <Route path="promotions" element={<AdminPromotions />} />
+            <Route path="testimonials" element={<AdminTestimonials />} />
+            <Route path="franchise" element={<AdminFranchise />} />
+            <Route path="engagement" element={<AdminEngagement />} />
+            <Route path="marquee" element={<AdminMarquee />} />
+            <Route path="guide" element={<SystemGuide />} />
+          </Route>
+        </Routes>
+      </Suspense>
     </BrowserRouter>
   );
 }

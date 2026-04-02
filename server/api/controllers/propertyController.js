@@ -23,11 +23,15 @@ export const getProperties = async (req, res) => {
     }
 
     if (search) {
+      // Free Typo-Tolerant Fuzzy Engine
+      const cleanSearch = search.replace(/\s+/g, '');
+      const fuzzyRegex = cleanSearch.split('').join('.*?'); 
+      
       filter.$or = [
-        { title: { $regex: search, $options: 'i' } },
-        { location: { $regex: search, $options: 'i' } },
-        { type: { $regex: search, $options: 'i' } },
-        { district: { $regex: search, $options: 'i' } }
+        { title: { $regex: fuzzyRegex, $options: 'i' } },
+        { location: { $regex: fuzzyRegex, $options: 'i' } },
+        { type: { $regex: fuzzyRegex, $options: 'i' } },
+        { district: { $regex: search, $options: 'i' } } // keep district strict or fuzzy too
       ];
     }
 

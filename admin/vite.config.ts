@@ -10,16 +10,25 @@ export default defineConfig({
   },
   build: {
     chunkSizeWarningLimit: 1200,
+    cssCodeSplit: true,
     rollupOptions: {
       output: {
         manualChunks(id) {
-          const normalizedId = id.toString().replace(/\\/g, '/');
-          if (!normalizedId.includes('node_modules')) return;
-          const parts = normalizedId.split('node_modules/')[1].split('/');
-          if (parts[0].startsWith('@')) {
-            return `${parts[0]}/${parts[1]}`;
+          if (!id.includes('node_modules')) return;
+
+          // React Core
+          if (id.includes('react') || id.includes('scheduler') || id.includes('react-router')) {
+            return 'vendor-core';
           }
-          return parts[0];
+
+          // UI & Icons
+          if (id.includes('framer-motion')) return 'vendor-motion';
+          if (id.includes('lucide-react')) return 'vendor-icons';
+
+          // Utils
+          if (id.includes('i18next') || id.includes('jwt-decode')) return 'vendor-utils';
+
+          // Let Rollup handle everything else dynamically to prevent circular dependencies
         }
       }
     }

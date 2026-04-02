@@ -2,11 +2,26 @@ import { useState, useEffect, useRef } from 'react';
 import {
   Building, Users, MessageSquare, ShieldCheck, TrendingUp,
   Plus, ArrowRight, Activity,
-  Zap, BarChart3, Target, Layers, Contact2, Megaphone, Settings, MapPin
+  Zap, Target, Layers, Contact2, Megaphone, Settings, MapPin
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { 
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area 
+} from 'recharts';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
+/* ─── Mock Chart Data ─── */
+const CHART_DATA = [
+  { name: 'Mon', leads: 4, views: 24 },
+  { name: 'Tue', leads: 7, views: 42 },
+  { name: 'Wed', leads: 5, views: 38 },
+  { name: 'Thu', leads: 12, views: 65 },
+  { name: 'Fri', leads: 9, views: 48 },
+  { name: 'Sat', leads: 15, views: 82 },
+  { name: 'Sun', leads: 11, views: 54 },
+];
 
 /* ─── Animated Counter ─── */
 const AnimatedNumber = ({ target }: { target: number }) => {
@@ -15,7 +30,7 @@ const AnimatedNumber = ({ target }: { target: number }) => {
   useEffect(() => {
     if (target === 0) return;
     let start = 0;
-    const step = Math.ceil(target / 40);
+    const step = Math.ceil(target / 40) || 1;
     ref.current = setInterval(() => {
       start += step;
       if (start >= target) { setVal(target); clearInterval(ref.current); }
@@ -26,138 +41,131 @@ const AnimatedNumber = ({ target }: { target: number }) => {
   return <>{val.toLocaleString()}</>;
 };
 
-/* ─── Metric Card ─── */
-const MetricCard = ({ title, value, icon: Icon, color, gradient, sub, trend, link }: any) => (
-  <Link to={link || '#'} style={{ textDecoration: 'none' }}>
-    <div style={{
-      background: `linear-gradient(135deg, ${gradient[0]} 0%, ${gradient[1]} 100%)`,
-      border: `1px solid ${color}22`,
-      borderRadius: '20px',
-      padding: '1.5rem',
-      position: 'relative',
-      overflow: 'hidden',
-      cursor: 'pointer',
-      transition: 'all 0.35s cubic-bezier(0.34,1.56,0.64,1)',
-      boxShadow: `0 4px 24px ${color}18`,
-    }}
-    onMouseEnter={e => {
-      (e.currentTarget as HTMLElement).style.transform = 'translateY(-4px) scale(1.01)';
-      (e.currentTarget as HTMLElement).style.boxShadow = `0 12px 40px ${color}30`;
-    }}
-    onMouseLeave={e => {
-      (e.currentTarget as HTMLElement).style.transform = 'translateY(0) scale(1)';
-      (e.currentTarget as HTMLElement).style.boxShadow = `0 4px 24px ${color}18`;
-    }}
-    >
-      {/* Decorative glow orb */}
-      <div style={{
-        position: 'absolute', top: '-20px', right: '-20px',
-        width: '100px', height: '100px',
-        borderRadius: '50%',
-        background: `radial-gradient(circle, ${color}22 0%, transparent 70%)`,
-        pointerEvents: 'none',
-      }} />
-
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
-        <div style={{
-          width: '44px', height: '44px', borderRadius: '12px',
-          background: `${color}15`,
-          border: `1px solid ${color}25`,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: color,
-        }}>
-          <Icon size={20} />
-        </div>
-        {trend && (
-          <span style={{
-            fontSize: '0.7rem', fontWeight: 700,
-            padding: '3px 10px', borderRadius: '99px',
-            background: trend > 0 ? 'rgba(16,217,140,0.12)' : 'rgba(245,57,123,0.12)',
-            color: trend > 0 ? '#10d98c' : '#f5397b',
-            border: `1px solid ${trend > 0 ? 'rgba(16,217,140,0.2)' : 'rgba(245,57,123,0.2)'}`,
+/* ─── Elite Metric Card ─── */
+const MetricCard = ({ title, value, icon: Icon, color, sub, trend, link, index }: any) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ delay: index * 0.1, duration: 0.5, type: 'spring' }}
+  >
+    <Link to={link || '#'} style={{ textDecoration: 'none' }}>
+      <div className="glass-card" style={{
+        padding: '1.75rem',
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
+        borderTop: `2px solid ${color}44`,
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.25rem' }}>
+          <div style={{
+            width: '48px', height: '48px', borderRadius: '14px',
+            background: `${color}12`,
+            border: `1px solid ${color}25`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: color,
+            boxShadow: `0 0 15px ${color}15`,
           }}>
-            {trend > 0 ? '↑' : '↓'} {Math.abs(trend)}%
-          </span>
-        )}
-      </div>
+            <Icon size={24} />
+          </div>
+          {trend && (
+            <span style={{
+              fontSize: '0.75rem', fontWeight: 700,
+              padding: '4px 12px', borderRadius: '99px',
+              background: trend > 0 ? 'rgba(16,217,140,0.1)' : 'rgba(245,57,123,0.1)',
+              color: trend > 0 ? '#10d98c' : '#f5397b',
+              border: `1px solid ${trend > 0 ? 'rgba(16,217,140,0.2)' : 'rgba(245,57,123,0.2)'}`,
+            }}>
+              {trend > 0 ? '↑' : '↓'} {Math.abs(trend)}%
+            </span>
+          )}
+        </div>
 
-      <div className="stat-number" style={{ color, marginBottom: '0.35rem' }}>
-        <AnimatedNumber target={value} />
+        <div>
+          <div style={{ fontSize: '2rem', fontWeight: 800, color: 'white', marginBottom: '0.25rem', fontFamily: 'var(--font-heading)' }}>
+            <AnimatedNumber target={value} />
+          </div>
+          <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>{title}</div>
+          {sub && <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{sub}</div>}
+        </div>
       </div>
-      <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'rgba(255,255,255,0.85)', marginBottom: '0.25rem', fontFamily: 'var(--font-body)' }}>{title}</div>
-      {sub && <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)' }}>{sub}</div>}
-    </div>
-  </Link>
+    </Link>
+  </motion.div>
 );
 
-/* ─── Activity Item ─── */
+/* ─── Elite Activity Item ─── */
 const ActivityRow = ({ icon: Icon, color, title, sub, time, badge }: any) => (
   <div style={{
-    display: 'flex', alignItems: 'center', gap: '0.75rem',
-    padding: '0.8rem 0',
+    display: 'flex', alignItems: 'center', gap: '1rem',
+    padding: '1rem 0',
     borderBottom: '1px solid rgba(255,255,255,0.04)',
+    transition: 'all 0.2s',
   }}>
     <div style={{
-      width: '36px', height: '36px', borderRadius: '10px',
-      background: `${color}12`, border: `1px solid ${color}20`,
+      width: '42px', height: '42px', borderRadius: '12px',
+      background: `${color}08`, border: `1px solid ${color}15`,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       color, flexShrink: 0,
     }}>
-      <Icon size={15} />
+      <Icon size={18} />
     </div>
     <div style={{ flex: 1, minWidth: 0 }}>
-      <div style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{title}</div>
-      <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{sub}</div>
+      <div style={{ 
+        fontSize: '0.9rem', 
+        fontWeight: 600, 
+        color: 'var(--text-primary)', 
+        marginBottom: '2px'
+      }}>{title}</div>
+      <div style={{ 
+        fontSize: '0.75rem', 
+        color: 'var(--text-muted)',
+        whiteSpace: 'nowrap',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis'
+      }}>{sub}</div>
     </div>
-    {badge && (
-      <span style={{
-        fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase',
-        padding: '2px 8px', borderRadius: '99px',
-        background: badge === 'Answered' ? 'rgba(16,217,140,0.1)' : badge === 'Pending' ? 'rgba(255,140,66,0.1)' : 'rgba(155,89,245,0.1)',
-        color: badge === 'Answered' ? '#10d98c' : badge === 'Pending' ? '#ff8c42' : '#9b59f5',
-        border: `1px solid ${badge === 'Answered' ? 'rgba(16,217,140,0.2)' : badge === 'Pending' ? 'rgba(255,140,66,0.2)' : 'rgba(155,89,245,0.2)'}`,
-        flexShrink: 0,
-      }}>{badge}</span>
-    )}
-    <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', flexShrink: 0 }}>{time}</div>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+      {badge && (
+        <span style={{
+          fontSize: '0.6rem', fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase',
+          padding: '2px 8px', borderRadius: '4px',
+          background: badge === 'Answered' || badge === 'Verified' ? 'rgba(16,217,140,0.1)' : 'rgba(255,140,66,0.1)',
+          color: badge === 'Answered' || badge === 'Verified' ? '#10d98c' : '#ff8c42',
+          border: `1px solid ${badge === 'Verified' ? 'rgba(16,217,140,0.2)' : 'rgba(255,140,66,0.2)'}`,
+        }}>{badge}</span>
+      )}
+      <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 500 }}>{time}</div>
+    </div>
   </div>
 );
 
-/* ─── Quick Action Button ─── */
+/* ─── Quick Action Elite ─── */
 const QuickAction = ({ icon: Icon, label, color, to }: any) => (
   <Link to={to} style={{ textDecoration: 'none' }}>
-    <div style={{
-      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem',
-      padding: '1rem 0.75rem',
-      background: 'var(--bg-glass)',
-      border: `1px solid ${color}18`,
-      borderRadius: '14px',
-      transition: 'all 0.3s cubic-bezier(0.34,1.56,0.64,1)',
-      cursor: 'pointer',
-      textAlign: 'center',
-    }}
-    onMouseEnter={e => {
-      (e.currentTarget as HTMLElement).style.transform = 'translateY(-3px)';
-      (e.currentTarget as HTMLElement).style.background = `${color}0a`;
-      (e.currentTarget as HTMLElement).style.borderColor = `${color}35`;
-      (e.currentTarget as HTMLElement).style.boxShadow = `0 8px 24px ${color}15`;
-    }}
-    onMouseLeave={e => {
-      (e.currentTarget as HTMLElement).style.transform = 'translateY(0)';
-      (e.currentTarget as HTMLElement).style.background = 'var(--bg-glass)';
-      (e.currentTarget as HTMLElement).style.borderColor = `${color}18`;
-      (e.currentTarget as HTMLElement).style.boxShadow = 'none';
-    }}
+    <motion.div 
+      whileHover={{ scale: 1.03, translateY: -3 }}
+      whileTap={{ scale: 0.97 }}
+      style={{
+        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem',
+        padding: '1.25rem 1rem',
+        background: 'rgba(255,255,255,0.02)',
+        border: `1px solid rgba(255,255,255,0.06)`,
+        borderRadius: '16px',
+        cursor: 'pointer',
+        textAlign: 'center',
+        transition: 'border-color 0.3s',
+      }}
     >
       <div style={{
-        width: '40px', height: '40px', borderRadius: '12px',
-        background: `${color}15`, color,
+        width: '46px', height: '46px', borderRadius: '13px',
+        background: `${color}12`, color,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
+        boxShadow: `0 8px 16px ${color}08`,
       }}>
-        <Icon size={18} />
+        <Icon size={22} />
       </div>
-      <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-secondary)' }}>{label}</span>
-    </div>
+      <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.01em' }}>{label}</span>
+    </motion.div>
   </Link>
 );
 
@@ -181,114 +189,189 @@ const AdminDashboard = () => {
       .then(r => r.json())
       .then(d => { if (d.status === 'success') setStats(d.data); })
       .catch(() => {
-        setStats({ propertyCount: 6, leadCount: 24, inquiryCount: 12, verifiedCount: 4, activeCount: 5, pendingInquiries: 3, recentProperties: [], recentInquiries: [] });
+        setStats({ propertyCount: 12, leadCount: 48, inquiryCount: 24, verifiedCount: 8, activeCount: 10, pendingInquiries: 5, recentProperties: [], recentInquiries: [] });
       })
       .finally(() => setLoading(false));
   }, []);
 
   const METRICS = [
     {
-      title: 'Total Properties', value: stats?.propertyCount || 0,
+      title: 'Properties', value: stats?.propertyCount || 0,
       icon: Building, color: '#9b59f5',
-      gradient: ['rgba(155,89,245,0.12)', 'rgba(14,14,26,0.95)'],
-      sub: `${stats?.activeCount || 0} active listings`, trend: 12, link: '/admin/properties',
+      sub: `${stats?.activeCount || 0} Live Listings`, trend: 12, link: '/admin/properties',
     },
     {
       title: 'Active Leads', value: stats?.leadCount || 0,
       icon: Target, color: '#22d9e0',
-      gradient: ['rgba(34,217,224,0.1)', 'rgba(14,14,26,0.95)'],
-      sub: 'From all channels', trend: 8, link: '/admin/leads',
+      sub: 'Qualifying Prospects', trend: 8, link: '/admin/leads',
     },
     {
       title: 'Inquiries', value: stats?.inquiryCount || 0,
       icon: MessageSquare, color: '#f5397b',
-      gradient: ['rgba(245,57,123,0.1)', 'rgba(14,14,26,0.95)'],
-      sub: `${stats?.pendingInquiries || 0} awaiting response`, trend: -3, link: '/admin/contacts',
+      sub: `${stats?.pendingInquiries || 0} Unanswered`, trend: -3, link: '/admin/contacts',
     },
     {
-      title: 'Verified Properties', value: stats?.verifiedCount || 0,
+      title: 'Verified', value: stats?.verifiedCount || 0,
       icon: ShieldCheck, color: '#10d98c',
-      gradient: ['rgba(16,217,140,0.1)', 'rgba(14,14,26,0.95)'],
-      sub: 'Trust-certified listings', trend: 5, link: '/admin/properties',
+      sub: 'Trust Badge Assets', trend: 5, link: '/admin/properties',
     },
   ];
 
   if (loading) return (
-    <div style={{ padding: '0' }}>
-      <div style={{ marginBottom: '2rem' }}>
-        <div style={{ height: '28px', width: '240px', borderRadius: '8px', background: 'var(--bg-glass)', marginBottom: '8px' }} />
-        <div style={{ height: '16px', width: '160px', borderRadius: '6px', background: 'var(--bg-glass)' }} />
-      </div>
+    <div style={{ padding: '0', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+      <div style={{ height: '100px', width: '300px', borderRadius: '20px', background: 'var(--bg-glass)', animation: 'pulse 1.5s infinite' }} />
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.25rem' }}>
         {[1,2,3,4].map(i => (
-          <div key={i} style={{ height: '140px', borderRadius: '20px', background: 'var(--bg-glass)', border: '1px solid var(--border)', animation: 'pulse 1.5s ease-in-out infinite' }} />
+          <div key={i} style={{ height: '160px', borderRadius: '24px', background: 'var(--bg-glass)', animation: 'pulse 1.5s infinite' }} />
         ))}
       </div>
     </div>
   );
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}
+    >
 
       {/* ── Header ── */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '1.5rem' }}>
         <div>
-          <div style={{ fontSize: '0.78rem', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--violet)', marginBottom: '0.25rem', fontFamily: 'var(--font-mono)' }}>
-            ✦ Dashboard Overview
-          </div>
-          <h1 style={{ fontSize: '2rem', background: 'linear-gradient(135deg, #f0eeff 0%, #9b59f5 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: '0.25rem', fontFamily: 'var(--font-heading)' }}>
+          <motion.div 
+            initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}
+            style={{ fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--violet)', marginBottom: '0.5rem', fontFamily: 'var(--font-mono)' }}
+          >
+            ✦ EXECUTIVE COMMAND
+          </motion.div>
+          <motion.h1 
+            initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+            style={{ fontSize: 'clamp(1.8rem, 5vw, 2.75rem)', fontWeight: 800, background: 'linear-gradient(135deg, #fff 0%, #9b59f5 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: '0.5rem', fontFamily: 'var(--font-heading)', letterSpacing: '-0.02em' }}
+          >
             {greeting}, Admin
-          </h1>
-          <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-            Here's what's happening with SnapAdda today.
+          </motion.h1>
+          <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', maxWidth: '400px' }}>
+            System pulse is optimal. Here's a summary of your estate operations.
           </p>
         </div>
         <Link to="/admin/properties">
-          <button className="btn btn-violet" style={{ gap: '8px' }}>
-            <Plus size={16} /> Add Property
-          </button>
+          <motion.button 
+            whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+            className="btn btn-violet" style={{ gap: '10px', padding: '0.8rem 1.75rem', borderRadius: '14px', boxShadow: '0 10px 30px rgba(155,89,245,0.25)' }}
+          >
+            <Plus size={18} strokeWidth={3} /> Add Listing
+          </motion.button>
         </Link>
       </div>
 
       {/* ── Metrics Grid ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.25rem' }}>
-        {METRICS.map(m => <MetricCard key={m.title} {...m} />)}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(240px, 100%), 1fr))', gap: '1.5rem' }}>
+        {METRICS.map((m, i) => <MetricCard key={m.title} index={i} {...m} />)}
       </div>
 
-      {/* ── Quick Actions ── */}
-      <div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-          <Zap size={15} style={{ color: 'var(--gold)' }} />
-          <span style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>Quick Actions</span>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(110px, 1fr))', gap: '0.75rem' }}>
-          <QuickAction icon={Building}   label="Add Property"   color="var(--violet)"  to="/admin/properties" />
-          <QuickAction icon={MapPin}     label="New Region"     color="var(--cyan)"    to="/admin/cities" />
-          <QuickAction icon={Users}      label="View Leads"     color="var(--emerald)" to="/admin/leads" />
-          <QuickAction icon={Contact2}  label="CRM"            color="var(--rose)"    to="/admin/contacts" />
-          <QuickAction icon={Megaphone}  label="Promotions"     color="var(--gold)"    to="/admin/promotions" />
-          <QuickAction icon={Settings}   label="Settings"       color="var(--violet)"  to="/admin/settings" />
-        </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(450px, 100%), 1fr))', gap: '1.5rem' }}>
+        {/* ── Engagement Analytics Chart ── */}
+        <motion.div 
+          initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
+          className="glass-card" style={{ padding: '2rem' }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+            <div>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'white', marginBottom: '0.25rem' }}>Engagement Pulse</h3>
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Daily traffic & lead conversion metrics</p>
+            </div>
+            <div style={{ display: 'flex', gap: '1rem' }}>
+               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                 <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--violet)' }} />
+                 <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 600 }}>VIEWS</span>
+               </div>
+               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                 <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--emerald)' }} />
+                 <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 600 }}>LEADS</span>
+               </div>
+            </div>
+          </div>
+          <div style={{ height: '280px', width: '100%' }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={CHART_DATA}>
+                <defs>
+                  <linearGradient id="colorViews" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="var(--violet)" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="var(--violet)" stopOpacity={0}/>
+                  </linearGradient>
+                  <linearGradient id="colorLeads" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="var(--emerald)" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="var(--emerald)" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                <XAxis 
+                  dataKey="name" 
+                  stroke="rgba(255,255,255,0.3)" 
+                  fontSize={10} 
+                  tickLine={false} 
+                  axisLine={false}
+                  dy={10}
+                />
+                <YAxis hide />
+                <Tooltip 
+                  contentStyle={{ 
+                    background: 'rgba(8,8,18,0.95)', 
+                    border: '1px solid rgba(255,255,255,0.1)', 
+                    borderRadius: '12px',
+                    fontSize: '12px',
+                    backdropFilter: 'blur(10px)'
+                  }} 
+                  itemStyle={{ fontWeight: 700 }}
+                />
+                <Area type="monotone" dataKey="views" stroke="var(--violet)" strokeWidth={3} fillOpacity={1} fill="url(#colorViews)" />
+                <Area type="monotone" dataKey="leads" stroke="var(--emerald)" strokeWidth={3} fillOpacity={1} fill="url(#colorLeads)" />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </motion.div>
+
+        {/* ── Quick Actions ── */}
+        <motion.div 
+          initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
+          className="glass-card" style={{ padding: '2rem' }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
+            <Zap size={20} style={{ color: 'var(--gold)' }} fill="var(--gold)" />
+            <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'white', margin: 0 }}>Rapid Operations</h3>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '1rem' }}>
+            <QuickAction icon={Building}   label="New Property"    color="var(--violet)"  to="/admin/properties" />
+            <QuickAction icon={MapPin}     label="Geo Zone"        color="var(--cyan)"    to="/admin/cities" />
+            <QuickAction icon={Users}      label="Lead Board"      color="var(--emerald)" to="/admin/leads" />
+            <QuickAction icon={Contact2}  label="CRM"             color="var(--rose)"    to="/admin/contacts" />
+            <QuickAction icon={Megaphone}  label="Campaigns"       color="var(--gold)"    to="/admin/promotions" />
+            <QuickAction icon={Settings}   label="System Settings" color="var(--violet)"  to="/admin/settings" />
+          </div>
+          <div style={{ marginTop: '1.5rem', padding: '1rem', borderRadius: '12px', background: 'rgba(245,200,66,0.05)', border: '1px solid rgba(245,200,66,0.1)', display: 'flex', gap: '12px' }}>
+            <Activity size={20} style={{ color: 'var(--gold)' }} />
+            <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.7)', lineHeight: 1.5 }}>
+              <strong>Tip:</strong> You can bulk-verify all pending CRDA approved properties from the GEO-Zone manager.
+            </span>
+          </div>
+        </motion.div>
       </div>
 
       {/* ── Activity Panels ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.25rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(450px, 100%), 1fr))', gap: '1.5rem' }}>
 
-        {/* Recent Properties */}
-        <div style={{
-          background: 'var(--bg-glass)',
-          border: '1px solid var(--border)',
-          borderRadius: '20px',
-          padding: '1.5rem',
-          backdropFilter: 'blur(12px)',
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <TrendingUp size={16} style={{ color: 'var(--violet)' }} />
-              <h3 style={{ margin: 0, fontSize: '0.95rem', fontFamily: 'var(--font-body)', fontWeight: 600 }}>Recent Properties</h3>
+        {/* Recent Assets */}
+        <motion.div 
+          initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.6 }}
+          className="glass-card" style={{ padding: '1.75rem' }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <TrendingUp size={20} style={{ color: 'var(--violet)' }} />
+              <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700 }}>Market Listings</h3>
             </div>
-            <Link to="/admin/properties" style={{ fontSize: '0.75rem', color: 'var(--violet)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-              View All <ArrowRight size={12} />
+            <Link to="/admin/properties" style={{ fontSize: '0.8rem', color: 'var(--violet)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
+              Manage Registry <ArrowRight size={14} />
             </Link>
           </div>
           {(stats?.recentProperties || []).length > 0 ? stats.recentProperties.map((p: any, i: number) => (
@@ -297,38 +380,30 @@ const AdminDashboard = () => {
               icon={Building}
               color="var(--violet)"
               title={p.title}
-              sub={p.location || 'No location'}
-              time={p.price || 'N/A'}
+              sub={p.location || 'Andhra Region'}
+              time={p.price || 'Market Val'}
               badge={p.isVerified ? 'Verified' : 'Pending'}
             />
           )) : (
-            <div style={{ padding: '2rem 0', textAlign: 'center' }}>
-              <Layers size={28} style={{ color: 'var(--text-muted)', marginBottom: '0.5rem' }} />
-              <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>No properties yet.</p>
-              <Link to="/admin/properties">
-                <button className="btn btn-ghost btn-sm" style={{ marginTop: '0.75rem' }}>
-                  <Plus size={12} /> Add First Listing
-                </button>
-              </Link>
+            <div style={{ padding: '3rem 0', textAlign: 'center', opacity: 0.5 }}>
+              <Layers size={40} style={{ color: 'var(--text-muted)', marginBottom: '1rem' }} />
+              <p style={{ fontSize: '0.85rem' }}>No listings registered yet.</p>
             </div>
           )}
-        </div>
+        </motion.div>
 
-        {/* Recent Inquiries */}
-        <div style={{
-          background: 'var(--bg-glass)',
-          border: '1px solid var(--border)',
-          borderRadius: '20px',
-          padding: '1.5rem',
-          backdropFilter: 'blur(12px)',
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <Activity size={16} style={{ color: 'var(--rose)' }} />
-              <h3 style={{ margin: 0, fontSize: '0.95rem', fontFamily: 'var(--font-body)', fontWeight: 600 }}>Recent Inquiries</h3>
+        {/* Recent Signals */}
+        <motion.div 
+          initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.7 }}
+          className="glass-card" style={{ padding: '1.75rem' }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <Activity size={20} style={{ color: 'var(--rose)' }} />
+              <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700 }}>Signal Stream</h3>
             </div>
-            <Link to="/admin/leads" style={{ fontSize: '0.75rem', color: 'var(--rose)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-              View All <ArrowRight size={12} />
+            <Link to="/admin/leads" style={{ fontSize: '0.8rem', color: 'var(--rose)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
+              Signal Center <ArrowRight size={14} />
             </Link>
           </div>
           {(stats?.recentInquiries || []).length > 0 ? stats.recentInquiries.map((inq: any, i: number) => (
@@ -336,61 +411,21 @@ const AdminDashboard = () => {
               key={i}
               icon={MessageSquare}
               color="var(--rose)"
-              title={inq.clientName || 'Anonymous'}
-              sub={inq.question?.substring(0, 45) + '...'}
-              time="Just now"
-              badge={inq.status || 'Pending'}
+              title={inq.clientName || 'Market Signal'}
+              sub={inq.question?.substring(0, 50) + '...'}
+              time="Active Now"
+              badge={inq.status || 'Alert'}
             />
           )) : (
-            <div style={{ padding: '2rem 0', textAlign: 'center' }}>
-              <MessageSquare size={28} style={{ color: 'var(--text-muted)', marginBottom: '0.5rem' }} />
-              <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>No inquiries yet.</p>
+            <div style={{ padding: '3rem 0', textAlign: 'center', opacity: 0.5 }}>
+              <MessageSquare size={40} style={{ color: 'var(--text-muted)', marginBottom: '1rem' }} />
+              <p style={{ fontSize: '0.85rem' }}>No signals detected.</p>
             </div>
           )}
-        </div>
+        </motion.div>
 
       </div>
-
-      {/* ── Platform Health Bar ── */}
-      <div style={{
-        background: 'linear-gradient(135deg, rgba(155,89,245,0.08) 0%, rgba(34,217,224,0.05) 50%, rgba(245,200,66,0.05) 100%)',
-        border: '1px solid rgba(155,89,245,0.15)',
-        borderRadius: '20px',
-        padding: '1.5rem',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem' }}>
-          <BarChart3 size={15} style={{ color: 'var(--cyan)' }} />
-          <span style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>Platform Health</span>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '1rem' }}>
-          {[
-            { label: 'Active Listings', value: stats?.activeCount || 0, max: stats?.propertyCount || 1, color: 'var(--violet)' },
-            { label: 'Pending Inquiries', value: stats?.pendingInquiries || 0, max: stats?.inquiryCount || 1, color: 'var(--rose)' },
-            { label: 'Verified Rate', value: stats?.verifiedCount || 0, max: stats?.propertyCount || 1, color: 'var(--emerald)' },
-          ].map(item => {
-            const pct = item.max > 0 ? Math.round((item.value / item.max) * 100) : 0;
-            return (
-              <div key={item.label}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{item.label}</span>
-                  <span style={{ fontSize: '0.75rem', fontWeight: 700, color: item.color }}>{pct}%</span>
-                </div>
-                <div style={{ height: '4px', borderRadius: '99px', background: 'rgba(255,255,255,0.06)', overflow: 'hidden' }}>
-                  <div style={{
-                    height: '100%',
-                    width: `${pct}%`,
-                    borderRadius: '99px',
-                    background: item.color,
-                    boxShadow: `0 0 6px ${item.color}`,
-                    transition: 'width 1.2s cubic-bezier(0.4,0,0.2,1)',
-                  }} />
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </div>
+    </motion.div>
   );
 };
 

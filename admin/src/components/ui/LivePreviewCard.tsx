@@ -1,4 +1,9 @@
-import { ShieldCheck, Compass, MapPin, Expand, Flame, Building2, User } from 'lucide-react';
+import React, { useRef } from 'react';
+import { 
+  ShieldCheck, MapPin, Expand, Building2, User, 
+  Star, ArrowRight, Zap
+} from 'lucide-react';
+import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 
 interface LivePreviewCardProps {
   image?: string;
@@ -20,107 +25,186 @@ interface LivePreviewCardProps {
 
 export const LivePreviewCard: React.FC<LivePreviewCardProps> = ({
   image,
-  title = 'Your Property Title',
+  title = 'PREMIUM ROYAL ESTATE',
   price = '8500000',
-  location = 'Amaravati or Default City',
-  beds = 0,
-  baths = 0,
-  areaSize = 1000,
-  sqft,
+  location = 'AMARAVATI SECTOR, AP',
+  areaSize = 1250,
   type = 'Apartment',
-  condition = '1st Hand',
-  facing = 'Any',
-  approval = 'N/A',
+  facing = 'East',
+  approval = 'AP CRDA',
   measurementUnit = 'Sq.Ft',
-  isVerified = false,
-  listerType = 'Individual Owner',
+  isVerified = true,
+  listerType = 'Verified Builder',
 }) => {
-  const displayImage = image || 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80';
-  const displayPrice = price && price !== '' ? `₹ ${price}` : '₹ TBD';
+  const cardRef = useRef<HTMLDivElement>(null);
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+
+  const mouseXSpring = useSpring(x);
+  const mouseYSpring = useSpring(y);
+
+  const rotateX = useTransform(mouseYSpring, [-0.5, 0.5], ["10deg", "-10deg"]);
+  const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], ["-10deg", "10deg"]);
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!cardRef.current) return;
+    const rect = cardRef.current.getBoundingClientRect();
+    const width = rect.width;
+    const height = rect.height;
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+    const xPct = mouseX / width - 0.5;
+    const yPct = mouseY / height - 0.5;
+    x.set(xPct);
+    y.set(yPct);
+  };
+
+  const handleMouseLeave = () => {
+    x.set(0);
+    y.set(0);
+  };
+
+  const displayImage = image || 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80';
+  const displayPrice = price ? `₹ ${Number(price).toLocaleString('en-IN')}` : '₹ TBD';
 
   return (
-    <div style={{ 
-      background: 'var(--bg-secondary)', 
-      borderRadius: 'var(--radius-lg)', 
-      overflow: 'hidden', 
-      border: '1px solid var(--border-subtle)',
-      boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
-      width: '100%',
-      maxWidth: '350px',
-      margin: '0 auto'
-    }}>
-      <div style={{ position: 'relative', width: '100%', height: '220px', overflow: 'hidden' }}>
-        <img src={displayImage} alt={title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-        
-        <div style={{ position: 'absolute', bottom: '16px', left: '16px', background: 'rgba(0,0,0,0.8)', color: 'white', padding: '6px 12px', borderRadius: '4px', fontWeight: 600, fontSize: '1.1rem' }}>
-          {displayPrice}
-        </div>
-        
-        <div style={{ position: 'absolute', top: '16px', right: '16px', display: 'flex', flexDirection: 'column', gap: '8px', zIndex: 10, alignItems: 'flex-end' }}>
-          {approval && approval !== 'N/A' && approval !== 'Pending' && (
-            <div style={{ background: 'rgba(212, 175, 55, 0.95)', color: 'black', padding: '4px 10px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.7rem', fontWeight: 700, boxShadow: '0 4px 12px rgba(0,0,0,0.3)' }}>
-              <ShieldCheck size={12} /> {approval}
+    <motion.div
+      ref={cardRef}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      style={{
+        rotateX,
+        rotateY,
+        transformStyle: "preserve-3d",
+        perspective: 1000,
+      }}
+    >
+      <div 
+        style={{ 
+          background: 'rgba(14,14,26,0.8)', 
+          borderRadius: '24px', 
+          overflow: 'hidden', 
+          border: '1px solid rgba(255,255,255,0.08)',
+          boxShadow: '0 25px 60px rgba(0,0,0,0.6)',
+          width: '100%',
+          maxWidth: '360px',
+          margin: '0 auto',
+          backdropFilter: 'blur(20px)',
+          position: 'relative'
+        }}
+      >
+        {/* Media Container */}
+        <div style={{ position: 'relative', width: '100%', height: '240px', overflow: 'hidden' }}>
+          <img 
+            src={displayImage} 
+            alt={title} 
+            style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scale(1.05)', transition: 'transform 0.5s ease' }} 
+          />
+          
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 40%, rgba(3,3,8,0.9) 100%)' }} />
+
+          {/* Verification Badge */}
+          {isVerified && (
+            <div style={{ 
+              position: 'absolute', top: '16px', left: '16px', 
+              background: 'rgba(16,217,140,0.95)', color: 'black', 
+              padding: '6px 14px', borderRadius: '10px', 
+              display: 'flex', alignItems: 'center', gap: '6px', 
+              fontSize: '0.7rem', fontWeight: 800,
+              boxShadow: '0 4px 15px rgba(16,217,140,0.3)',
+              transform: 'translateZ(30px)'
+            }}>
+              <ShieldCheck size={14} strokeWidth={3} /> VERIFIED
             </div>
           )}
-          {facing && facing !== 'Any' && (
-            <div style={{ background: 'rgba(0, 0, 0, 0.75)', color: '#d4af37', padding: '4px 10px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.7rem', fontWeight: 600, border: '1px solid #d4af37' }}>
-              <Compass size={12} /> {facing}
-            </div>
-          )}
-        </div>
 
-        <div style={{ position: 'absolute', bottom: '16px', right: '16px', zIndex: 10 }}>
-            <div style={{ background: 'rgba(231, 76, 60, 0.9)', color: 'white', padding: '4px 10px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.7rem', fontWeight: 700 }}>
-              <Flame size={12} /> Hot Property
-            </div>
-        </div>
-
-        {isVerified && (
-          <div style={{ position: 'absolute', top: '16px', left: '16px', background: 'rgba(46, 204, 113, 0.9)', color: 'white', padding: '4px 12px', borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.7rem', fontWeight: 700 }}>
-            <ShieldCheck size={14} /> Verified
+          {/* Price Tag */}
+          <div style={{ 
+            position: 'absolute', bottom: '20px', left: '20px', 
+            color: 'white', fontWeight: 800, fontSize: '1.4rem',
+            fontFamily: 'var(--font-heading)',
+            textShadow: '0 2px 10px rgba(0,0,0,0.5)',
+            transform: 'translateZ(40px)'
+          }}>
+            {displayPrice}
           </div>
-        )}
-      </div>
-      
-      <div style={{ padding: '20px' }}>
-        <h3 style={{ margin: '0 0 8px 0', fontSize: '1.2rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{title || 'Property Title'}</h3>
-        <p style={{ color: 'gray', fontSize: '0.875rem', margin: '0 0 8px 0', display: 'flex', alignItems: 'center', gap: '4px' }}>
-          <MapPin size={14} /> {location || 'No Location specified'}
-        </p>
-        
-        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '16px', fontSize: '0.75rem', color: listerType === 'Verified Builder' ? '#d4af37' : 'var(--text-secondary)' }}>
-          {listerType === 'Verified Builder' ? <Building2 size={12} /> : <User size={12} />}
-          {listerType}
-        </div>
-        
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '16px' }}>
-          {type && <span style={{ background: 'rgba(255,255,255,0.1)', color: 'white', padding: '4px 8px', borderRadius: '4px', fontSize: '0.75rem' }}>{type}</span>}
-          {condition && condition !== 'N/A' && <span style={{ background: 'rgba(255,255,255,0.05)', color: 'white', padding: '4px 8px', borderRadius: '4px', fontSize: '0.75rem' }}>{condition}</span>}
-        </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '12px 0', borderTop: '1px solid var(--border-subtle)', borderBottom: '1px solid var(--border-subtle)' }}>
-          {type !== 'Agriculture' && (
-            <>
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <span style={{ fontWeight: 600 }}>{beds || 0}</span>
-                <span style={{ fontSize: '0.7rem', color: 'gray' }}>Beds</span>
+          <div style={{ position: 'absolute', top: '16px', right: '16px', display: 'flex', flexDirection: 'column', gap: '8px', zIndex: 10, alignItems: 'flex-end', transform: 'translateZ(25px)' }}>
+            {approval && approval !== 'N/A' && (
+              <div style={{ 
+                background: 'rgba(245,200,66,0.95)', color: 'black', 
+                padding: '5px 12px', borderRadius: '8px', 
+                display: 'flex', alignItems: 'center', gap: '5px', 
+                fontSize: '0.65rem', fontWeight: 900,
+                boxShadow: '0 8px 20px rgba(0,0,0,0.3)'
+              }}>
+                <Zap size={12} fill="black" /> {approval}
               </div>
-              <div style={{ width: '1px', height: '24px', background: 'var(--border-subtle)' }}></div>
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <span style={{ fontWeight: 600 }}>{baths || 0}</span>
-                <span style={{ fontSize: '0.7rem', color: 'gray' }}>Baths</span>
+            )}
+            <div style={{ 
+              background: 'rgba(0, 0, 0, 0.7)', color: 'var(--gold)', 
+              padding: '5px 12px', borderRadius: '8px', 
+              display: 'flex', alignItems: 'center', gap: '5px', 
+              fontSize: '0.65rem', fontWeight: 800, border: '1px solid var(--gold)'
+            }}>
+              <Star size={12} fill="var(--gold)" /> FEATURED
+            </div>
+          </div>
+        </div>
+        
+        {/* Content Section */}
+        <div style={{ padding: '24px', transform: 'translateZ(20px)' }}>
+          <div style={{ fontSize: '0.7rem', fontWeight: 800, letterSpacing: '0.12em', color: 'var(--gold)', marginBottom: '8px' }}>
+            {type.toUpperCase()} • {facing.toUpperCase()} FACING
+          </div>
+          
+          <h3 style={{ 
+            margin: '0 0 10px 0', fontSize: '1.25rem', fontWeight: 700, color: 'white',
+            fontFamily: 'var(--font-heading)', letterSpacing: '-0.02em',
+            lineClamp: 2, WebkitLineClamp: 2, display: '-webkit-box', WebkitBoxOrient: 'vertical', overflow: 'hidden'
+          }}>
+            {title}
+          </h3>
+          
+          <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.85rem', margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <MapPin size={15} style={{ color: 'var(--violet)' }} /> {location}
+          </p>
+          
+          {/* Amenities Row */}
+          <div style={{ 
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center', 
+            padding: '16px 0', borderTop: '1px solid rgba(255,255,255,0.06)',
+            marginBottom: '16px'
+          }}>
+            <div style={{ display: 'flex', gap: '20px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 700 }}>SPACE</span>
+                <div style={{ color: 'white', fontWeight: 700, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Expand size={14} style={{ color: 'var(--violet)' }} /> {areaSize} {measurementUnit}
+                </div>
               </div>
-              <div style={{ width: '1px', height: '24px', background: 'var(--border-subtle)' }}></div>
-            </>
-          )}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}>
-            <span style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <Expand size={12} /> {areaSize || sqft || 0}
-            </span>
-            <span style={{ fontSize: '0.7rem', color: 'gray' }}>{measurementUnit}</span>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-end' }}>
+              <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 700 }}>LISTER</span>
+              <div style={{ color: 'var(--gold)', fontWeight: 700, fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                {listerType === 'Verified Builder' ? <Building2 size={13} /> : <User size={13} />}
+                {listerType}
+              </div>
+            </div>
+          </div>
+
+          <div style={{
+            width: '100%', padding: '12px', borderRadius: '12px',
+            background: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 100%)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            color: 'white', fontWeight: 700, fontSize: '0.85rem',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+            cursor: 'default'
+          }}>
+            VIEW PERFORMANCE DATA <ArrowRight size={14} />
           </div>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 };

@@ -108,6 +108,31 @@ export const deletePromotion = async (id: string) => {
   return res.json();
 };
 
+/* ─────────────── Testimonials ─────────────── */
+export const fetchTestimonials = async () => {
+  const res = await fetch(`${API_URL}/testimonials`, { headers: getAuthHeaders() });
+  if (!res.ok) throw new Error('Failed to fetch testimonials');
+  return res.json();
+};
+
+export const createTestimonial = async (data: any) => {
+  const res = await fetch(`${API_URL}/testimonials`, { method: 'POST', headers: getAuthHeaders(), body: JSON.stringify(data) });
+  if (!res.ok) throw new Error('Failed to create testimonial');
+  return res.json();
+};
+
+export const updateTestimonial = async (id: string, data: any) => {
+  const res = await fetch(`${API_URL}/testimonials/${id}`, { method: 'PUT', headers: getAuthHeaders(), body: JSON.stringify(data) });
+  if (!res.ok) throw new Error('Failed to update testimonial');
+  return res.json();
+};
+
+export const deleteTestimonial = async (id: string) => {
+  const res = await fetch(`${API_URL}/testimonials/${id}`, { method: 'DELETE', headers: getAuthHeaders() });
+  if (!res.ok) throw new Error('Failed to delete testimonial');
+  return res.json();
+};
+
 /* ─────────────── Admin Profile ─────────────── */
 export const updateAdminProfile = async (name: string, avatar: string) => {
   const res = await fetch(`${API_URL}/admin/profile`, {

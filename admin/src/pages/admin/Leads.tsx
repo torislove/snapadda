@@ -1,102 +1,131 @@
 import { useState, useEffect, useMemo } from 'react';
-import { MessageSquare, Search, ChevronDown, ChevronUp, Target, Send, X, Trash2 } from 'lucide-react';
+import { 
+  MessageSquare, Search, ChevronDown, ChevronUp, Target, Send, 
+  MoreHorizontal, User, Calendar, Building
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
-const STATUS_CONFIG: Record<string, { color: string; bg: string; label: string }> = {
-  New:       { color: '#9b59f5', bg: 'rgba(155,89,245,0.1)',  label: 'New'       },
-  Contacted: { color: '#22d9e0', bg: 'rgba(34,217,224,0.1)',  label: 'Contacted' },
-  Qualified: { color: '#10d98c', bg: 'rgba(16,217,140,0.1)',  label: 'Qualified' },
-  Lost:      { color: '#f5397b', bg: 'rgba(245,57,123,0.1)',  label: 'Lost'      },
-  Pending:   { color: '#ff8c42', bg: 'rgba(255,140,66,0.1)',  label: 'Pending'   },
-  Answered:  { color: '#10d98c', bg: 'rgba(16,217,140,0.1)',  label: 'Answered'  },
+const STATUS_CONFIG: Record<string, { color: string; bg: string; label: string; border: string }> = {
+  New:       { color: '#9b59f5', bg: 'rgba(155,89,245,0.06)',  border: 'rgba(155,89,245,0.2)', label: 'New'       },
+  Contacted: { color: '#22d9e0', bg: 'rgba(34,217,224,0.06)',  border: 'rgba(34,217,224,0.2)', label: 'Contacted' },
+  Qualified: { color: '#10d98c', bg: 'rgba(16,217,140,0.06)',  border: 'rgba(16,217,140,0.2)', label: 'Qualified' },
+  Lost:      { color: '#f5397b', bg: 'rgba(245,57,123,0.06)',  border: 'rgba(245,57,123,0.2)', label: 'Lost'      },
+  Pending:   { color: '#ff8c42', bg: 'rgba(255,140,66,0.06)',  border: 'rgba(255,140,66,0.2)', label: 'Pending'   },
+  Answered:  { color: '#10d98c', bg: 'rgba(16,217,140,0.06)',  border: 'rgba(16,217,140,0.2)', label: 'Answered'  },
 };
 
 const StatusBadge = ({ status }: { status: string }) => {
   const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.Pending;
   return (
     <span style={{
-      fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase',
-      padding: '3px 10px', borderRadius: '99px',
-      background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.color}30`,
+      fontSize: '0.62rem', fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase',
+      padding: '3px 10px', borderRadius: '6px',
+      background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}`,
     }}>{cfg.label}</span>
   );
 };
 
-/* ── Expandable Lead Card (Contact Request) ── */
-const LeadCard = ({ lead, onDelete }: { lead: any; onDelete: (id: string) => Promise<void> }) => {
-  const [expanded, setExpanded] = useState(false);
-  const [deleting, setDeleting] = useState(false);
+/* ── Elite Kanban Lead Card ── */
+const LeadCard = ({ lead, onDelete, onStatusChange }: { lead: any; onDelete: (id: string) => Promise<void>; onStatusChange: (id: string, s: string) => Promise<void> }) => {
+  const [showActions, setShowActions] = useState(false);
+  const [updating, setUpdating] = useState(false);
 
-  const handleDelete = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!window.confirm('Are you sure you want to delete this lead?')) return;
-    setDeleting(true);
-    await onDelete(lead._id);
-    setDeleting(false);
+  const handleStatusChange = async (newStatus: string) => {
+    setUpdating(true);
+    await onStatusChange(lead._id, newStatus);
+    setUpdating(false);
+    setShowActions(false);
   };
 
   return (
-    <div style={{
-      border: '1px solid rgba(155,89,245,0.15)',
-      borderRadius: '14px', overflow: 'hidden',
-      background: 'rgba(255,255,255,0.02)',
-      transition: 'all 0.25s ease',
-    }}>
-      <div
-        onClick={() => setExpanded(e => !e)}
-        style={{ padding: '1rem 1.1rem', cursor: 'pointer', display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}
-      >
-        <div style={{
-          width: '36px', height: '36px', borderRadius: '10px', flexShrink: 0,
-          background: 'rgba(155,89,245,0.1)', color: '#9b59f5',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>
-          <Target size={15} />
-        </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.3rem' }}>
-            <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.88rem' }}>{lead.name}</div>
-            <StatusBadge status={lead.status || 'New'} />
-          </div>
-          <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '0.2rem' }}>
-            <span style={{ color: 'var(--text-muted)', marginRight: '0.75rem' }}>📞 {lead.phone}</span>
-            {lead.email && <span style={{ color: 'var(--text-muted)', marginRight: '0.75rem' }}>✉️ {lead.email}</span>}
-            {lead.propertyId?.title && <span>🏠 {lead.propertyId.title}</span>}
-          </div>
-        </div>
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+    <motion.div
+      layout
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.9 }}
+      className="glass-card"
+      style={{
+        padding: '1.25rem',
+        marginBottom: '1rem',
+        cursor: 'grab',
+        opacity: updating ? 0.6 : 1,
+        borderLeft: `3px solid ${STATUS_CONFIG[lead.status]?.color || 'var(--violet)'}`
+      }}
+    >
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
+        <div style={{ fontWeight: 700, color: 'white', fontSize: '0.9rem' }}>{lead.name}</div>
+        <div style={{ position: 'relative' }}>
           <button 
-            onClick={handleDelete}
-            disabled={deleting}
-            style={{ background: 'none', border: 'none', color: 'var(--rose)', cursor: 'pointer', padding: '4px' }}
+            onClick={() => setShowActions(!showActions)}
+            style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}
           >
-            <Trash2 size={14} />
+            <MoreHorizontal size={16} />
           </button>
-          <div style={{ color: 'var(--text-muted)' }}>
-            {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-          </div>
+          
+          <AnimatePresence>
+            {showActions && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: 10 }}
+                style={{
+                  position: 'absolute', top: '100%', right: 0, zIndex: 10,
+                  background: 'rgba(14,14,26,0.95)', backdropFilter: 'blur(10px)',
+                  border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px',
+                  padding: '0.5rem', width: '160px', boxShadow: '0 10px 30px rgba(0,0,0,0.5)'
+                }}
+              >
+                <div style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', padding: '0.5rem', borderBottom: '1px solid rgba(255,255,255,0.05)', marginBottom: '0.5rem' }}>Move Status</div>
+                {['New', 'Contacted', 'Qualified', 'Lost'].filter(s => s !== lead.status).map(s => (
+                  <button 
+                    key={s}
+                    onClick={() => handleStatusChange(s)}
+                    style={{ width: '100%', textAlign: 'left', padding: '0.5rem 0.75rem', borderRadius: '8px', border: 'none', background: 'none', color: 'var(--text-secondary)', fontSize: '0.8rem', cursor: 'pointer' }}
+                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+                  >
+                    {s}
+                  </button>
+                ))}
+                <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.5rem', paddingTop: '0.5rem' }}>
+                  <button 
+                    onClick={() => { if(window.confirm('Delete lead?')) onDelete(lead._id); }}
+                    style={{ width: '100%', textAlign: 'left', padding: '0.5rem 0.75rem', borderRadius: '8px', border: 'none', background: 'none', color: 'var(--rose)', fontSize: '0.8rem', cursor: 'pointer' }}
+                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(245,57,123,0.1)')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+                  >
+                    Delete Lead
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
 
-      {expanded && (
-        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', padding: '1rem 1.1rem', background: 'rgba(0,0,0,0.2)' }}>
-          <div style={{ marginBottom: '0.5rem' }}>
-            <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Message:</span>
-            <p style={{ fontSize: '0.85rem', color: 'var(--text-primary)', marginTop: '4px', lineHeight: 1.5 }}>
-              {lead.message || 'No message provided.'}
-            </p>
-          </div>
-          <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-            Received: {new Date(lead.createdAt).toLocaleString()}
-          </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+        <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <User size={14} style={{ opacity: 0.6 }} /> {lead.phone}
         </div>
-      )}
-    </div>
+        {lead.propertyId?.title && (
+          <div style={{ fontSize: '0.78rem', color: 'var(--violet)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Building size={14} /> {lead.propertyId.title}
+          </div>
+        )}
+        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', background: 'rgba(255,255,255,0.03)', padding: '0.5rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+          {lead.message || 'No specific inquiries.'}
+        </div>
+        <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
+          <Calendar size={12} /> {new Date(lead.createdAt).toLocaleDateString()}
+        </div>
+      </div>
+    </motion.div>
   );
 };
 
-/* ── Expandable Inquiry Card ── */
+/* ── Elite Inquiry Card ── */
 const InquiryCard = ({ inq, onAnswer }: { inq: any; onAnswer: (id: string, text: string) => Promise<void> }) => {
   const [expanded, setExpanded] = useState(false);
   const [answerText, setAnswerText] = useState('');
@@ -113,85 +142,92 @@ const InquiryCard = ({ inq, onAnswer }: { inq: any; onAnswer: (id: string, text:
   };
 
   return (
-    <div style={{
-      border: `1px solid ${isPending ? 'rgba(255,140,66,0.2)' : 'rgba(16,217,140,0.12)'}`,
-      borderRadius: '14px', overflow: 'hidden',
-      background: 'rgba(255,255,255,0.02)',
-      transition: 'all 0.25s ease',
-      boxShadow: isPending ? '0 0 0 0 rgba(255,140,66,0)' : 'none',
-    }}>
+    <motion.div
+      layout
+      className="glass-card"
+      style={{
+        overflow: 'hidden',
+        borderLeft: `4px solid ${isPending ? 'var(--orange)' : 'var(--emerald)'}`,
+        background: isPending ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.015)'
+      }}
+    >
       {/* Card header — always visible */}
       <div
         onClick={() => setExpanded(e => !e)}
-        style={{ padding: '1rem 1.1rem', cursor: 'pointer', display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}
+        style={{ padding: '1.25rem', cursor: 'pointer', display: 'flex', gap: '1rem', alignItems: 'flex-start' }}
       >
         <div style={{
-          width: '36px', height: '36px', borderRadius: '10px', flexShrink: 0,
+          width: '42px', height: '42px', borderRadius: '12px', flexShrink: 0,
           background: isPending ? 'rgba(255,140,66,0.1)' : 'rgba(16,217,140,0.1)',
           color: isPending ? '#ff8c42' : '#10d98c',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
+          boxShadow: `0 0 15px ${isPending ? 'rgba(255,140,66,0.1)' : 'rgba(16,217,140,0.1)'}`
         }}>
-          <MessageSquare size={15} />
+          <MessageSquare size={18} />
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.3rem' }}>
-            <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.88rem' }}>{inq.clientName || 'Anonymous'}</div>
+            <div style={{ fontWeight: 700, color: 'white', fontSize: '0.95rem' }}>{inq.clientName || 'Market Inquirer'}</div>
             <StatusBadge status={inq.status || 'Pending'} />
           </div>
-          <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '0.2rem' }}>
-            {inq.clientContact && <span style={{ color: 'var(--text-muted)', marginRight: '0.75rem' }}>📞 {inq.clientContact}</span>}
-            {inq.propertyId?.title && <span>🏠 {inq.propertyId.title}</span>}
+          <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem', display: 'flex', flexWrap: 'wrap', gap: '1rem' }}>
+            {inq.clientContact && <span>📞 {inq.clientContact}</span>}
+            {inq.propertyId?.title && <span style={{ color: 'var(--violet)' }}>🏠 {inq.propertyId.title}</span>}
           </div>
-          <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', fontStyle: 'italic', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', fontStyle: 'italic', background: 'rgba(255,255,255,0.03)', padding: '0.75rem', borderRadius: '8px' }}>
             "{inq.question}"
           </div>
         </div>
         <div style={{ color: 'var(--text-muted)', marginTop: '4px' }}>
-          {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          {expanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
         </div>
       </div>
 
       {/* Expanded body */}
-      {expanded && (
-        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', padding: '1rem 1.1rem', background: 'rgba(0,0,0,0.2)' }}>
-          <p style={{ fontSize: '0.83rem', color: 'var(--text-secondary)', marginBottom: '0.75rem', lineHeight: 1.6 }}>
-            <strong style={{ color: 'var(--text-primary)' }}>Q:</strong> {inq.question}
-          </p>
-          {inq.answer ? (
-            <div style={{
-              background: 'rgba(16,217,140,0.06)', border: '1px solid rgba(16,217,140,0.15)',
-              borderRadius: '10px', padding: '0.75rem',
-            }}>
-              <p style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--emerald)', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>✓ Answered</p>
-              <p style={{ fontSize: '0.83rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>{inq.answer}</p>
-            </div>
-          ) : (
-            <div>
-              <textarea
-                value={answerText}
-                onChange={e => setAnswerText(e.target.value)}
-                rows={3}
-                placeholder="Type your reply here..."
-                style={{
-                  width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)',
-                  color: 'var(--text-primary)', borderRadius: '10px', padding: '0.6rem 0.9rem',
-                  fontSize: '0.83rem', outline: 'none', resize: 'none', marginBottom: '0.75rem',
-                  fontFamily: 'var(--font-body)',
-                }}
-              />
-              <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                <button type="button" onClick={() => setExpanded(false)} className="btn btn-ghost btn-sm">
-                  <X size={12} /> Cancel
-                </button>
-                <button type="button" onClick={handleSave} disabled={saving || !answerText.trim()} className="btn btn-violet btn-sm">
-                  {saving ? 'Saving...' : <><Send size={12} /> Post Answer</>}
-                </button>
+      <AnimatePresence>
+        {expanded && (
+          <motion.div 
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            style={{ borderTop: '1px solid rgba(255,255,255,0.05)', padding: '1.25rem', background: 'rgba(0,0,0,0.2)' }}
+          >
+            {inq.answer ? (
+              <div style={{
+                background: 'rgba(16,217,140,0.06)', border: '1px solid rgba(16,217,140,0.15)',
+                borderRadius: '12px', padding: '1rem',
+              }}>
+                <p style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--emerald)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>✓ Official Response</p>
+                <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>{inq.answer}</p>
               </div>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
+            ) : (
+              <div>
+                <textarea
+                  value={answerText}
+                  onChange={e => setAnswerText(e.target.value)}
+                  rows={4}
+                  placeholder="Provide a formal response to this inquiry..."
+                  style={{
+                    width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)',
+                    color: 'var(--text-primary)', borderRadius: '12px', padding: '1rem',
+                    fontSize: '0.9rem', outline: 'none', resize: 'none', marginBottom: '1rem',
+                    fontFamily: 'var(--font-body)',
+                  }}
+                />
+                <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+                  <button type="button" onClick={() => setExpanded(false)} className="btn btn-ghost btn-sm">
+                    Cancel
+                  </button>
+                  <button type="button" onClick={handleSave} disabled={saving || !answerText.trim()} className="btn btn-violet btn-sm">
+                    {saving ? 'Transmitting...' : <><Send size={14} /> Send Official Answer</>}
+                  </button>
+                </div>
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
   );
 };
 
@@ -202,7 +238,6 @@ const AdminLeads = () => {
   const [activeTab, setActiveTab] = useState<'Inquiries' | 'Leads'>('Leads');
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('All');
 
   useEffect(() => { 
     fetchAllData();
@@ -237,11 +272,21 @@ const AdminLeads = () => {
     } catch (err) { console.error(err); }
   };
 
+  const updateLeadStatus = async (id: string, status: string) => {
+    try {
+      const res = await fetch(`${API_URL}/leads/${id}`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status })
+      });
+      if (res.ok) await fetchLeads();
+    } catch (err) { console.error(err); }
+  };
+
   const submitAnswer = async (id: string, text: string) => {
     try {
       const res = await fetch(`${API_URL}/inquiries/${id}`, {
         method: 'PUT', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ answer: text })
+        body: JSON.stringify({ answer: text, status: 'Answered' })
       });
       if (res.ok) await fetchInquiries();
     } catch (err) { console.error(err); }
@@ -251,120 +296,138 @@ const AdminLeads = () => {
     return inquiries.filter(inq => {
       const q = search.toLowerCase();
       const matchSearch = !q || (inq.clientName || '').toLowerCase().includes(q) || (inq.question || '').toLowerCase().includes(q);
-      const matchStatus = statusFilter === 'All' || inq.status === statusFilter;
-      return matchSearch && matchStatus;
+      return matchSearch;
     });
-  }, [inquiries, search, statusFilter]);
+  }, [inquiries, search]);
 
   const filteredLeads = useMemo(() => {
     return leads.filter(l => {
       const q = search.toLowerCase();
       const matchSearch = !q || (l.name || '').toLowerCase().includes(q) || (l.message || '').toLowerCase().includes(q) || (l.phone || '').includes(q);
-      const matchStatus = statusFilter === 'All' || l.status === statusFilter;
-      return matchSearch && matchStatus;
+      return matchSearch;
     });
-  }, [leads, search, statusFilter]);
+  }, [leads, search]);
 
   const pendingInqCount = inquiries.filter(i => !i.answer).length;
   const newLeadsCount = leads.filter(l => l.status === 'New').length;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
 
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1.5rem' }}>
         <div>
-          <div style={{ fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--emerald)', marginBottom: '0.25rem', fontFamily: 'var(--font-mono)' }}>✦ CRM Tracker</div>
-          <h1 style={{ fontSize: '1.8rem', background: 'linear-gradient(135deg,#10d98c,#22d9e0)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: '0.2rem' }}>Leads & Inquiries</h1>
-          <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Manage, answer, and track all property inquiries and contact leads.</p>
+          <div style={{ fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--emerald)', marginBottom: '0.5rem', fontFamily: 'var(--font-mono)' }}>✦ CRM INTELLIGENCE</div>
+          <h1 style={{ fontSize: '2.4rem', fontWeight: 800, background: 'linear-gradient(135deg,#10d98c,#22d9e0)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: '0.3rem', fontFamily: 'var(--font-heading)' }}>Leads & CRM</h1>
+          <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Real-time conversion pipeline and client communication matrix.</p>
         </div>
       </div>
 
-      {/* Tabs */}
-      <div style={{ display: 'flex', gap: '1rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem' }}>
-        <button 
-          onClick={() => setActiveTab('Leads')}
-          style={{
-            background: 'none', border: 'none', padding: '0.5rem 1rem', cursor: 'pointer',
-            color: activeTab === 'Leads' ? 'var(--emerald)' : 'var(--text-muted)',
-            borderBottom: activeTab === 'Leads' ? '2px solid var(--emerald)' : 'none',
-            fontWeight: 600, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px'
-          }}
-        >
-          <Target size={16} /> Property Leads {newLeadsCount > 0 && <span style={{ background: 'var(--rose)', color: 'white', borderRadius: '50%', width: '18px', height: '18px', fontSize: '0.65rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{newLeadsCount}</span>}
-        </button>
-        <button 
-          onClick={() => setActiveTab('Inquiries')}
-          style={{
-            background: 'none', border: 'none', padding: '0.5rem 1rem', cursor: 'pointer',
-            color: activeTab === 'Inquiries' ? 'var(--violet)' : 'var(--text-muted)',
-            borderBottom: activeTab === 'Inquiries' ? '2px solid var(--violet)' : 'none',
-            fontWeight: 600, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px'
-          }}
-        >
-          <MessageSquare size={16} /> Client Questions {pendingInqCount > 0 && <span style={{ background: 'var(--orange)', color: 'white', borderRadius: '50%', width: '18px', height: '18px', fontSize: '0.65rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{pendingInqCount}</span>}
-        </button>
-      </div>
+      {/* Tabs / Filters Panel */}
+      <div className="glass-card" style={{ padding: '1.25rem', border: '1px solid rgba(255,255,255,0.05)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1.5rem' }}>
+          <div style={{ display: 'flex', gap: '0.5rem', background: 'rgba(255,255,255,0.03)', padding: '0.4rem', borderRadius: '12px' }}>
+            {[
+              { id: 'Leads', icon: Target, label: 'Lead Board', color: 'var(--emerald)', count: newLeadsCount },
+              { id: 'Inquiries', icon: MessageSquare, label: 'Inquiries', color: 'var(--violet)', count: pendingInqCount }
+            ].map(tab => (
+              <button 
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as any)}
+                style={{
+                  background: activeTab === tab.id ? 'rgba(255,255,255,0.07)' : 'transparent',
+                  border: activeTab === tab.id ? '1px solid rgba(255,255,255,0.1)' : '1px solid transparent',
+                  padding: '0.6rem 1.25rem', borderRadius: '10px', cursor: 'pointer',
+                  color: activeTab === tab.id ? 'white' : 'var(--text-muted)',
+                  fontWeight: 700, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '10px',
+                  transition: 'all 0.2s'
+                }}
+              >
+                <tab.icon size={16} /> {tab.label}
+                {tab.count > 0 && <span style={{ background: tab.color, color: 'black', borderRadius: '6px', padding: '1px 6px', fontSize: '0.65rem' }}>{tab.count}</span>}
+              </button>
+            ))}
+          </div>
 
-      {/* Search + Status filter */}
-      <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-        <div className="search-input-wrap" style={{ flex: 1, minWidth: '200px' }}>
-          <Search size={15} />
-          <input
-            type="text"
-            placeholder={`Search ${activeTab.toLowerCase()}...`}
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
+          <div style={{ display: 'flex', gap: '1rem', flex: 1, justifyContent: 'flex-end' }}>
+             <div className="search-input-wrap" style={{ maxWidth: '300px' }}>
+                <Search size={16} />
+                <input
+                  type="text"
+                  placeholder={`Search ${activeTab.toLowerCase()}...`}
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  style={{ fontSize: '0.9rem' }}
+                />
+              </div>
+              <button onClick={fetchAllData} className="btn btn-ghost" style={{ padding: '0 1rem', borderRadius: '10px' }}>Refresh</button>
+          </div>
         </div>
-        <select
-          value={statusFilter}
-          onChange={e => setStatusFilter(e.target.value)}
-          className="admin-select"
-          style={{ minWidth: '140px' }}
-        >
-          <option value="All">All Statuses</option>
-          {activeTab === 'Leads' ? (
-            <>
-              <option value="New">New</option>
-              <option value="Contacted">Contacted</option>
-              <option value="Qualified">Qualified</option>
-              <option value="Lost">Lost</option>
-            </>
-          ) : (
-            <>
-              <option value="Pending">Pending</option>
-              <option value="Answered">Answered</option>
-            </>
-          )}
-        </select>
-        <button onClick={fetchAllData} className="btn btn-ghost" style={{ padding: '0 1rem' }}>Refresh</button>
       </div>
 
-      {/* Main content */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+      {/* Main Content Area */}
+      <div>
         {loading ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            {[1,2,3].map(i => <div key={i} style={{ height: '80px', borderRadius: '14px', background: 'var(--bg-glass)', border: '1px solid var(--border)', animation: 'pulse 1.5s infinite' }} />)}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.25rem' }}>
+            {[1,2,3,4].map(i => <div key={i} style={{ height: '300px', borderRadius: '18px', background: 'var(--bg-glass)', border: '1px solid var(--border)', animation: 'pulse 1.5s infinite' }} />)}
           </div>
         ) : (activeTab === 'Leads' ? (
-          filteredLeads.length === 0 ? (
-            <div style={{ padding: '3rem', textAlign: 'center', background: 'var(--bg-glass)', borderRadius: '14px', border: '1px dashed var(--border)' }}>
-              <Target size={40} style={{ opacity: 0.2, marginBottom: '1rem' }} />
-              <p>No property leads found matching your criteria.</p>
-            </div>
-          ) : (
-            filteredLeads.map(l => <LeadCard key={l._id} lead={l} onDelete={deleteLead} />)
-          )
+          /* Kanban Board View */
+          <div style={{ 
+            display: 'flex', 
+            gap: '1.5rem', 
+            overflowX: 'auto', 
+            paddingBottom: '1rem',
+            minHeight: '600px'
+          }}>
+            {['New', 'Contacted', 'Qualified', 'Lost'].map(status => {
+              const columnLeads = filteredLeads.filter(l => (l.status || 'New') === status);
+              return (
+                <div key={status} style={{ minWidth: '300px', flex: 1 }}>
+                  <div style={{ 
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center', 
+                    padding: '0.75rem 1rem', marginBottom: '1.25rem', 
+                    background: 'rgba(255,255,255,0.03)', borderRadius: '12px',
+                    border: '1px solid rgba(255,255,255,0.05)'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: STATUS_CONFIG[status].color }} />
+                      <span style={{ fontWeight: 800, fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{status}</span>
+                    </div>
+                    <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 600 }}>{columnLeads.length}</span>
+                  </div>
+                  
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <AnimatePresence>
+                      {columnLeads.length === 0 ? (
+                        <div style={{ padding: '2rem', textAlign: 'center', opacity: 0.3, border: '1px dashed rgba(255,255,255,0.1)', borderRadius: '14px' }}>
+                          <span style={{ fontSize: '0.75rem' }}>No {status} leads</span>
+                        </div>
+                      ) : (
+                        columnLeads.map(l => (
+                          <LeadCard key={l._id} lead={l} onDelete={deleteLead} onStatusChange={updateLeadStatus} />
+                        ))
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         ) : (
-          filteredInquiries.length === 0 ? (
-            <div style={{ padding: '3rem', textAlign: 'center', background: 'var(--bg-glass)', borderRadius: '14px', border: '1px dashed var(--border)' }}>
-              <MessageSquare size={40} style={{ opacity: 0.2, marginBottom: '1rem' }} />
-              <p>No inquiries found matching your criteria.</p>
-            </div>
-          ) : (
-            filteredInquiries.map(inq => <InquiryCard key={inq._id} inq={inq} onAnswer={submitAnswer} />)
-          )
+          /* Inquiries List View */
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            {filteredInquiries.length === 0 ? (
+              <div style={{ padding: '5rem', textAlign: 'center', background: 'var(--bg-glass)', borderRadius: '24px', border: '1px dashed var(--border)' }}>
+                <MessageSquare size={50} style={{ opacity: 0.1, marginBottom: '1.5rem', color: 'var(--violet)' }} />
+                <p style={{ color: 'var(--text-muted)' }}>No signals detected in this sector.</p>
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '1.25rem' }}>
+                {filteredInquiries.map(inq => <InquiryCard key={inq._id} inq={inq} onAnswer={submitAnswer} />)}
+              </div>
+            )}
+          </div>
         ))}
       </div>
     </div>
