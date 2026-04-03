@@ -60,6 +60,19 @@ export const updateQuestion = async (req, res) => {
   }
 };
 
+// Get inquiries by User (Client Dashboard)
+export const getUserQuestions = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const questions = await Question.find({ userId })
+      .populate('propertyId', 'title location type image images price')
+      .sort({ createdAt: -1 });
+    res.status(200).json({ status: 'success', data: questions });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 export const deleteQuestion = async (req, res) => {
   try {
     const question = await Question.findByIdAndDelete(req.params.id);

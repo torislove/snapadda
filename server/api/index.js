@@ -61,13 +61,27 @@ if (cloud_name && api_key && api_secret) {
   cloudinary.config({ cloud_name, api_key, api_secret });
 }
 
-// 2. MongoDB Connection
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/snapadda';
-mongoose.connect(MONGODB_URI, {
-  serverSelectionTimeoutMS: 5000,
-})
-  .then(() => console.log('MongoDB connected'))
-  .catch(err => console.error('CRITICAL: MongoDB connection error:', err.message));
+// 2. Optimized MongoDB Connection (Lazy)
+let isConnected = false;
+const connectDB = async () => {
+  if (isConnected) return;
+  const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/snapadda';
+  try {
+    await mongoose.connect(MONGODB_URI, {
+      serverSelectionTimeoutMS: 5000,
+    });
+    isConnected = true;
+    console.log('MongoDB connection established');
+  } catch (err) {
+    console.error('CRITICAL: MongoDB connection error:', err.message);
+  }
+};
+
+// Middleware to ensure DB connection
+app.use(async (req, res, next) => {
+  await connectDB();
+  next();
+});
 
 // 3. API Routes (Restored relative paths, no internal movements)
 import propertyRoutes from './routes/propertyRoutes.js';
@@ -106,7 +120,10 @@ app.use('/api/questions', questionRoutes);
 export const api = onRequest({ cors: true }, app);
 
 // Local Development Fallback
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`🚀 Server fully running locally on port ${PORT}`);
-});
+// Only run the server if started via 'npm start' or explicitly in local mode
+if (process.env.npm_lifecycle_event === 'start' || process.env.LOCAL_DEV === 'true') {
+  const PORT = process.env.PORT || 5000;
+  app.listen(PORT, () => {
+    console.log(`🚀 Server fully running locally on port ${PORT}`);
+  });
+}

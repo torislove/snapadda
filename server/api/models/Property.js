@@ -3,32 +3,33 @@ import mongoose from 'mongoose';
 const propertySchema = new mongoose.Schema({
   title: { type: String, required: true },
   description: String,
-  price: { type: Number, required: true },
-  priceDisplay: { type: String }, // "₹ 85,00,000" or "₹ 1.2 Crore"
-  pricePerUnit: { type: Number }, // For agriculture — price per acre/cent
-  location: { type: String, required: true },
+  price: { type: Number, default: 0 },
+  priceDisplay: { type: String, default: '' }, // "₹ 85,00,000" or "₹ 1.2 Crore"
+  pricePerUnit: { type: Number, default: 0 }, // For agriculture — price per acre/cent
+  pricePerAcre: { type: Number, default: 0 },
+  totalAcres: { type: Number, default: 0 },
+  location: { type: String, default: '' },
+  address: { type: String, default: '' },
   district: { type: String, default: '' }, // AP district
   cityId: { type: mongoose.Schema.Types.ObjectId, ref: 'City' },
+  googleMapsLink: { type: String, default: '' },
   
   type: { 
     type: String, 
-    enum: ['Apartment', 'Independent House', 'Villa', 'Residential Plot', 'Commercial Plot', 'Agricultural Land', 'Commercial Space', 'Farmhouse'], 
-    required: true 
+    default: 'Apartment'
   },
   purpose: {
     type: String,
-    enum: ['Sale', 'Rent', 'Lease'],
     default: 'Sale',
-    required: true
   },
   subType: { type: String, default: '' }, // e.g., "Gated Community", "Open Plot"
   condition: { type: String, enum: ['1st Hand', '2nd Hand', 'Ready to Move', 'Under Construction', 'N/A'], default: 'N/A' },
   
   // Andhra Specific
-  facing: { type: String, enum: ['East', 'West', 'North', 'South', 'North-East', 'North-West', 'South-East', 'South-West', 'Any'], default: 'Any' },
-  approvalAuthority: { type: String, enum: ['AP CRDA', 'AP RERA', 'VMRDA', 'DTCP', 'Panchayat', 'Municipal', 'Pending', 'N/A'], default: 'N/A' },
-  measurementUnit: { type: String, enum: ['SqFt', 'SqYards', 'Cents', 'Acres', 'Guntas'], required: true, default: 'SqFt' },
-  areaSize: { type: Number, required: true },
+  facing: { type: String, default: 'Any' },
+  approvalAuthority: { type: String, default: 'N/A' },
+  measurementUnit: { type: String, default: 'SqFt' },
+  areaSize: { type: Number, default: 0 },
   
   beds: { type: Number, default: 0 },
   baths: { type: Number, default: 0 },

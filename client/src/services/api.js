@@ -35,29 +35,6 @@ export const authGoogle = async (payload) => {
   }
 };
 
-export const authGuest = async () => {
-  try {
-    const res = await fetch(`${API_BASE}/users/guest`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-    });
-    if (!res.ok) throw new Error('Guest authentication failed');
-    return await res.json();
-  } catch (e) {
-    console.warn('Backend unavailable, using mock guest response:', e);
-    return {
-      status: 'success',
-      user: {
-        _id: 'guest_' + Date.now(),
-        name: 'Guest User',
-        email: 'guest@snapadda.local',
-        role: 'client',
-        onboardingCompleted: true,
-        preferences: {}
-      }
-    };
-  }
-};
 
 export const getFavorites = async (userId) => {
   try {
@@ -252,6 +229,20 @@ export const fetchPropertyFAQs = async (propertyId) => {
   try {
     const res = await fetch(`${API_BASE}/questions/faqs/${propertyId}`);
     if (!res.ok) throw new Error('Failed to fetch FAQs');
+    return (await res.json()).data || [];
+  } catch (e) {
+    console.error('API Error:', e);
+    return [];
+  }
+};
+
+export const fetchUserQuestions = async (userId) => {
+  try {
+    const token = JSON.parse(localStorage.getItem('snapadda_user'))?.token || 'mock_token';
+    const res = await fetch(`${API_BASE}/questions/user/${userId}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (!res.ok) throw new Error('Failed to fetch user questions');
     return (await res.json()).data || [];
   } catch (e) {
     console.error('API Error:', e);

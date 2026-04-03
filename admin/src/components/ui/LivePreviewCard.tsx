@@ -21,6 +21,8 @@ interface LivePreviewCardProps {
   measurementUnit?: string;
   isVerified?: boolean;
   listerType?: string;
+  address?: string;
+  pricePerAcre?: number;
 }
 
 export const LivePreviewCard: React.FC<LivePreviewCardProps> = ({
@@ -34,7 +36,9 @@ export const LivePreviewCard: React.FC<LivePreviewCardProps> = ({
   approval = 'AP CRDA',
   measurementUnit = 'Sq.Ft',
   isVerified = true,
-  listerType = 'Verified Builder',
+  listerType = 'Certified Builder',
+  address = '',
+  pricePerAcre = 0,
 }) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const x = useMotionValue(0);
@@ -127,6 +131,11 @@ export const LivePreviewCard: React.FC<LivePreviewCardProps> = ({
             transform: 'translateZ(40px)'
           }}>
             {displayPrice}
+            {pricePerAcre > 0 && type === 'Agricultural Land' && (
+              <div style={{ fontSize: '0.8rem', opacity: 0.8, marginTop: '4px', fontWeight: 600 }}>
+                ₹ {pricePerAcre.toLocaleString('en-IN')} / Acre
+              </div>
+            )}
           </div>
 
           <div style={{ position: 'absolute', top: '16px', right: '16px', display: 'flex', flexDirection: 'column', gap: '8px', zIndex: 10, alignItems: 'flex-end', transform: 'translateZ(25px)' }}>
@@ -169,6 +178,12 @@ export const LivePreviewCard: React.FC<LivePreviewCardProps> = ({
           <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.85rem', margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <MapPin size={15} style={{ color: 'var(--violet)' }} /> {location}
           </p>
+
+          {address && (
+            <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.75rem', margin: '-12px 0 16px 21px', lineHeight: 1.4 }}>
+              {address}
+            </p>
+          )}
           
           {/* Amenities Row */}
           <div style={{ 

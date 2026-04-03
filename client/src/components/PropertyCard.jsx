@@ -25,7 +25,7 @@ export default function PropertyCard({
   id, _id, image, images, title, price, location, beds, baths, sqft,
   type, purpose, measurementUnit = 'Sq.Yds', approval, approvalAuthority, facing,
   areaSize, isVerified = false, isFeatured = false, listerType = 'Individual Owner',
-  createdAt, onTriggerLead, likeCount: initialLikeCount = 0, initialLiked = false,
+  googleMapsLink = '', createdAt, onTriggerLead, likeCount: initialLikeCount = 0, initialLiked = false,
 }) {
   const { user } = useAuth();
   const { t } = useTranslation();
@@ -129,6 +129,19 @@ export default function PropertyCard({
               <button className="img-action-btn share-btn" onClick={handleShare} title="Share Property">
                 <Share2 size={16} />
               </button>
+              {googleMapsLink && (
+                <a 
+                  href={googleMapsLink} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="img-action-btn" 
+                  onClick={(e) => e.stopPropagation()}
+                  title="View on Google Maps" 
+                  style={{ background: 'rgba(232, 184, 75, 0.2)', border: '1px solid rgba(232, 184, 75, 0.4)', color: 'var(--gold)' }}
+                >
+                  <MapPin size={16} />
+                </a>
+              )}
             </div>
             <div className="property-image-overlay">
               <span className="view-details-btn"><Eye size={13} /> {t('card.details')}</span>
@@ -140,12 +153,12 @@ export default function PropertyCard({
           <Link to={propertyId ? `/property/${propertyId}` : '#'} className="property-title-link">
             <h3 className="property-title text-royal-gold">{title}</h3>
           </Link>
-          <div className="property-location text-muted"><MapPin size={12} /> {location}</div>
+          <div className="property-location text-muted"><MapPin size={12} /> {t(`geo.${location?.toLowerCase()}`, location)}</div>
           <div className="property-lister" style={{ color: listerType?.includes('Builder') ? 'var(--gold)' : 'var(--txt-muted)' }}>
             {listerType?.includes('Builder') ? <Building2 size={11} /> : <User size={11} />} {listerType}
           </div>
           <div className="property-badges">
-            {type && <span className="badge type-badge">{type}</span>}
+            {type && <span className="badge type-badge">{t(`types.${type?.toLowerCase()?.replace(/\s+/g, '')}`, type)}</span>}
             {authority && authority !== 'N/A' && authority !== 'Pending' && (
               <span className="badge badge-gold"><ShieldCheck size={10} /> {authority}</span>
             )}
@@ -154,9 +167,9 @@ export default function PropertyCard({
           <div className="property-features">
             {type !== 'Agriculture' && (
               <>
-                <div className="feature"><span className="feature-value">{beds}</span><span className="feature-label">Beds</span></div>
+                <div className="feature"><span className="feature-value">{beds}</span><span className="feature-label">{t('card.beds')}</span></div>
                 <div className="feature-divider" />
-                <div className="feature"><span className="feature-value">{baths}</span><span className="feature-label">Baths</span></div>
+                <div className="feature"><span className="feature-value">{baths}</span><span className="feature-label">{t('card.baths')}</span></div>
                 <div className="feature-divider" />
               </>
             )}
@@ -175,12 +188,22 @@ export default function PropertyCard({
           </div>
 
           <div className="property-actions" style={{ transform: 'translateZ(15px)' }}>
-            <Link to="/request-callback" className="btn-3d action-btn action-btn-call" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>
+            <a 
+              href={`tel:+919346793364`} 
+              className="btn-3d action-btn action-btn-call" 
+              style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}
+            >
               <Phone size={13} /> {t('card.call')}
-            </Link>
-            <Link to="/request-callback" className="btn-3d btn-3d-emerald action-btn action-btn-contact" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>
+            </a>
+            <a 
+              href={`https://wa.me/919346793364?text=${encodeURIComponent(`Hi SnapAdda, I am interested in "${title}" in ${location}. Is it available?`)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-3d btn-3d-emerald action-btn action-btn-contact" 
+              style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}
+            >
               <MessageSquare size={13} /> {t('card.contact')}
-            </Link>
+            </a>
           </div>
         </div>
       </motion.div>

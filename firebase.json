@@ -35,6 +35,7 @@
     {
       "source": "server",
       "codebase": "default",
+      "runtime": "nodejs22",
       "ignore": [
         "node_modules",
         ".git",

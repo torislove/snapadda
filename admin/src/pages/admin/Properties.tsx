@@ -27,6 +27,20 @@ const AdminProperties = () => {
   const [search, setSearch] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'cards'>('cards');
 
+  const addCustomFeature = () => {
+    setCustomFeatures([...customFeatures, { label: '', value: '' }]);
+  };
+
+  const removeCustomFeature = (index: number) => {
+    setCustomFeatures(customFeatures.filter((_, i) => i !== index));
+  };
+
+  const updateCustomFeature = (index: number, key: 'label' | 'value', val: string) => {
+    const updated = [...customFeatures];
+    updated[index][key] = val;
+    setCustomFeatures(updated);
+  };
+
   const handleCloseForm = () => {
     setIsAdding(false);
     setIsEditing(false);
@@ -92,7 +106,9 @@ const AdminProperties = () => {
       if (uploadedUrls.length > 0) propData.image = uploadedUrls[0];
       
       propData.price = Number(propData.price) || 0;
+      propData.pricePerAcre = Number(propData.pricePerAcre) || 0;
       propData.areaSize = Number(propData.areaSize) || 0;
+      propData.totalAcres = Number(propData.totalAcres) || 0;
       propData.bhk = Number(propData.bhk) || 0;
       propData.carpetArea = Number(propData.carpetArea) || 0;
       propData.superBuiltupArea = Number(propData.superBuiltupArea) || 0;
@@ -101,17 +117,27 @@ const AdminProperties = () => {
       propData.vastuCompliant = !!propData.vastuCompliant;
       propData.cornerProperty = !!propData.cornerProperty;
       propData.boundaryWall = !!propData.boundaryWall;
+      propData.googleMapsLink = propData.googleMapsLink || '';
+
+      const payload = {
+        ...propData,
+        customFeatures,
+        isVerified,
+        isFeatured,
+        images: uploadedUrls,
+        image: uploadedUrls.length > 0 ? uploadedUrls[0] : null
+      };
 
       if (isEditing && editingProperty) {
-        await updateProperty(editingProperty._id || editingProperty.id, propData);
+        await updateProperty(editingProperty._id || editingProperty.id, payload);
       } else {
-        await createProperty(propData);
+        await createProperty(payload);
       }
       loadProperties();
       handleCloseForm();
     } catch (err: any) {
-      console.error(err);
-      alert('Failed to save: ' + err.message);
+      const serverMsg = err.response?.data?.message || err.message;
+      alert('Failed to save property: ' + serverMsg);
     } finally {
       setIsUploading(false);
     }
@@ -171,9 +197,9 @@ const AdminProperties = () => {
         <div>
           <div style={{ fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.18em', color: 'var(--gold)', marginBottom: '0.6rem', fontFamily: 'var(--font-mono)' }}>✦ ASSET INTELLIGENCE</div>
           <h1 style={{ lineHeight: 1.2, fontWeight: 800, background: 'linear-gradient(135deg,#fff,#9b59f5)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', fontFamily: 'var(--font-heading)', letterSpacing: '-0.02em' }}>
-            Portfolio Command
+            Property Command
           </h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', maxWidth: '600px' }}>Precision management of high-value real estate assets across the SnapAdda regional network.</p>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', maxWidth: '600px' }}>Simple management of property assets across the SnapAdda regional network.</p>
         </div>
         {!isAdding && (
           <motion.button 
@@ -183,7 +209,7 @@ const AdminProperties = () => {
             className="btn btn-violet" 
             style={{ padding: '0.85rem 2rem', borderRadius: '14px', fontSize: '0.9rem', fontWeight: 800, boxShadow: '0 10px 20px rgba(155,89,245,0.2)' }}
           >
-            <Plus size={18} /> REGISTER NEW ASSET
+            <Plus size={18} /> ADD NEW PROPERTY
           </motion.button>
         )}
       </div>
@@ -201,38 +227,45 @@ const AdminProperties = () => {
             <div className="glass-card" style={{ padding: '3rem', borderRadius: '28px', border: '1px solid rgba(255,255,255,0.08)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem' }}>
                 <h2 style={{ fontSize: '1.75rem', fontWeight: 800, color: 'white', fontFamily: 'var(--font-heading)' }}>
-                  {isEditing ? 'Asset Modification' : 'Asset Deployment'}
+                  {isEditing ? 'Modify Property' : 'Add Property'}
                 </h2>
                 <button onClick={handleCloseForm} style={{ color: 'var(--text-muted)', background: 'rgba(255,255,255,0.05)', border: 'none', padding: '10px', borderRadius: '50%', cursor: 'pointer' }}><X size={20} /></button>
               </div>
 
               <form onChange={handleFormChange} onSubmit={handleAddSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
                 
-                {/* Basic Intel */}
                 <section>
                   <h3 style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--violet)', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '1.75rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <div style={{ width: '20px', height: '1px', background: 'var(--violet)' }} /> PRIMARY INTEL
+                    <div style={{ width: '20px', height: '1px', background: 'var(--violet)' }} /> STEP 1: PRIMARY DETAILS
                   </h3>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
                     <div style={{ gridColumn: '1 / -1' }}>
-                      <label className="admin-label">Portfolio Title</label>
-                      <input name="title" required defaultValue={editingProperty?.title || ''} className="admin-input" placeholder="Market-ready title for this asset..." />
+                      <label className="admin-label">Property Title</label>
+                      <input name="title" defaultValue={editingProperty?.title || ''} className="admin-input" placeholder="e.g. 3BHK Luxury Flat in Amaravati" />
                     </div>
                     <div>
-                      <label className="admin-label">Geo Location / City</label>
-                      <input name="location" required defaultValue={editingProperty?.location || ''} className="admin-input" placeholder="Location index" />
+                      <label className="admin-label">City / Area</label>
+                      <input name="location" defaultValue={editingProperty?.location || ''} className="admin-input" placeholder="e.g. Vijayawada" />
                     </div>
                     <div>
-                      <label className="admin-label">Valuation (INR)</label>
-                      <input name="price" type="number" required defaultValue={editingProperty?.price || ''} className="admin-input" placeholder="85,00,000" />
+                      <label className="admin-label">Price (INR)</label>
+                      <input name="price" type="number" defaultValue={editingProperty?.price || ''} className="admin-input" placeholder="e.g. 8500000" />
+                    </div>
+                    <div style={{ gridColumn: '1 / -1' }}>
+                      <label className="admin-label">Full Address</label>
+                      <textarea name="address" defaultValue={editingProperty?.address || ''} className="admin-input" rows={2} placeholder="Exact location details for our team..." />
+                    </div>
+                    <div style={{ gridColumn: '1 / -1' }}>
+                      <label className="admin-label">Google Maps Link (Optional)</label>
+                      <input name="googleMapsLink" defaultValue={editingProperty?.googleMapsLink || ''} className="admin-input" placeholder="e.g. https://goo.gl/maps/..." />
+                      <p style={{ color: 'var(--text-muted)', fontSize: '0.7rem', marginTop: '0.4rem' }}>Buyers can click this to view the exact location.</p>
                     </div>
                   </div>
                 </section>
 
-                {/* Technical Specs */}
                 <section>
                   <h3 style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--emerald)', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '1.75rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <div style={{ width: '20px', height: '1px', background: 'var(--emerald)' }} /> TECH SPECIFICATIONS
+                    <div style={{ width: '20px', height: '1px', background: 'var(--emerald)' }} /> STEP 2: PROPERTY SPECS
                   </h3>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1.5rem' }}>
                     <div>
@@ -284,17 +317,29 @@ const AdminProperties = () => {
                         <option value="AP RERA">AP RERA Registered</option>
                         <option value="VMRDA">VMRDA (Visakhapatnam)</option>
                         <option value="DTCP">DTCP Approved</option>
+                        <option value="TUDA">TUDA (Tirupati)</option>
                         <option value="Panchayat">Grama Panchayat</option>
                         <option value="Municipal">Municipal Approval</option>
                       </select>
                     </div>
+                    {liveData.type === 'Agricultural Land' && (
+                      <>
+                        <div>
+                          <label className="admin-label">Price Per Acre (Optional)</label>
+                          <input name="pricePerAcre" type="number" defaultValue={editingProperty?.pricePerAcre || ''} className="admin-input" placeholder="e.g. 5000000" />
+                        </div>
+                        <div>
+                          <label className="admin-label">Total Acres/Cents</label>
+                          <input name="totalAcres" type="number" step="0.01" defaultValue={editingProperty?.totalAcres || ''} className="admin-input" placeholder="e.g. 2.5" />
+                        </div>
+                      </>
+                    )}
                   </div>
                 </section>
 
-                {/* Spatial & Structural Data */}
                 <section>
                   <h3 style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--cyan)', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '1.75rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <div style={{ width: '20px', height: '1px', background: 'var(--cyan)' }} /> STRUCTURAL & AREA
+                    <div style={{ width: '20px', height: '1px', background: 'var(--cyan)' }} /> STEP 3: AREA DETAILS
                   </h3>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1.5rem' }}>
                     <div>
@@ -358,10 +403,9 @@ const AdminProperties = () => {
                   </div>
                 </section>
 
-                {/* Legal & Utilities */}
                 <section>
                   <h3 style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--rose)', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '1.75rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <div style={{ width: '20px', height: '1px', background: 'var(--rose)' }} /> LEGAL & UTILITIES
+                    <div style={{ width: '20px', height: '1px', background: 'var(--rose)' }} /> STEP 4: LEGAL & UTILITIES
                   </h3>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
                     <div>
@@ -408,9 +452,9 @@ const AdminProperties = () => {
                   </div>
                 </section>
 
-                <section>
+                 <section>
                    <h3 style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--gold)', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '1.75rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                     <div style={{ width: '20px', height: '1px', background: 'var(--gold)' }} /> SECURITY & CLEARANCE
+                     <div style={{ width: '20px', height: '1px', background: 'var(--gold)' }} /> STEP 5: TRUST & VISIBILITY
                    </h3>
                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
                      <div className="glass-card" style={{ padding: '1.25rem', display: 'flex', gap: '1rem', alignItems: 'center', border: isVerified ? '1px solid rgba(16,217,140,0.2)' : '1px solid rgba(255,255,255,0.05)', background: isVerified ? 'rgba(16,217,140,0.03)' : 'transparent' }}>
@@ -430,8 +474,49 @@ const AdminProperties = () => {
                    </div>
                 </section>
 
+                <section>
+                   <h3 style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--violet)', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '1.75rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                     <div style={{ width: '20px', height: '1px', background: 'var(--violet)' }} /> STEP 6: EXTRA CUSTOM FIELDS
+                   </h3>
+                   <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                      {customFeatures.map((feat, idx) => (
+                        <div key={idx} style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                          <input 
+                            placeholder="Feature Label (e.g. Distance to Highway)" 
+                            className="admin-input" 
+                            style={{ flex: 1 }}
+                            value={feat.label}
+                            onChange={(e) => updateCustomFeature(idx, 'label', e.target.value)}
+                          />
+                          <input 
+                            placeholder="Value (e.g. 500m)" 
+                            className="admin-input" 
+                            style={{ flex: 1 }}
+                            value={feat.value}
+                            onChange={(e) => updateCustomFeature(idx, 'value', e.target.value)}
+                          />
+                          <button 
+                            type="button" 
+                            onClick={() => removeCustomFeature(idx)}
+                            style={{ background: 'rgba(245,57,123,0.1)', border: 'none', padding: '10px', borderRadius: '8px', color: 'var(--rose)', cursor: 'pointer' }}
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      ))}
+                      <button 
+                        type="button" 
+                        onClick={addCustomFeature}
+                        className="btn-ghost"
+                        style={{ alignSelf: 'flex-start', display: 'flex', alignItems: 'center', gap: '8px' }}
+                      >
+                        <Plus size={16} /> ADD CUSTOM FIELD
+                      </button>
+                   </div>
+                </section>
+
                 <div style={{ gridColumn: '1 / -1' }}>
-                  <label className="admin-label">Visual Assets</label>
+                  <label className="admin-label">STEP 7: VISUAL ASSETS</label>
                   <input type="file" multiple accept="image/*" onChange={handleImageSelect} className="admin-input" style={{ padding: '12px' }} />
                   {imagePreviewUrls.length > 0 && (
                     <div style={{ display: 'flex', gap: '10px', marginTop: '1rem', overflowX: 'auto', paddingBottom: '10px' }}>
@@ -444,12 +529,12 @@ const AdminProperties = () => {
                   )}
                 </div>
 
-                <div style={{ display: 'flex', gap: '1.5rem' }}>
-                   <Button type="button" onClick={handleCloseForm} className="btn-ghost" style={{ flex: 1, padding: '1rem' }}>ABORT</Button>
-                   <Button type="submit" disabled={isUploading} className="btn-violet" style={{ flex: 2, padding: '1rem' }}>
-                    {isUploading ? 'SYNCHRONIZING...' : 'EMPLACE ASSET'}
-                   </Button>
-                </div>
+                 <div style={{ display: 'flex', gap: '1.5rem' }}>
+                    <Button type="button" onClick={handleCloseForm} className="btn-ghost" style={{ flex: 1, padding: '1rem' }}>CANCEL</Button>
+                    <Button type="submit" disabled={isUploading} className="btn-violet" style={{ flex: 2, padding: '1rem' }}>
+                     {isUploading ? 'SAVING...' : 'ADD PROPERTY'}
+                    </Button>
+                 </div>
 
               </form>
             </div>
@@ -467,10 +552,12 @@ const AdminProperties = () => {
                  facing={liveData.facing}
                  isVerified={isVerified}
                  listerType="Certified Builder"
-                 measurementUnit={liveData.measurementUnit}
-                 areaSize={liveData.areaSize}
-                 image={imagePreviewUrls[0]}
-               />
+                  measurementUnit={liveData.measurementUnit}
+                  areaSize={liveData.areaSize}
+                  image={imagePreviewUrls[0]}
+                  address={liveData.address}
+                  pricePerAcre={liveData.pricePerAcre}
+                />
                <div style={{ marginTop: '2.5rem', padding: '2rem', borderRadius: '24px', background: 'rgba(255,255,255,0.02)', border: '1px dashed rgba(255,255,255,0.1)' }}>
                  <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: 1.8 }}>
                    <Zap size={16} style={{ color: 'var(--gold)', verticalAlign: 'middle', marginRight: '8px' }} />

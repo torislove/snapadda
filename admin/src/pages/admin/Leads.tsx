@@ -118,7 +118,7 @@ const LeadCard = ({ lead, onDelete, onStatusChange }: { lead: any; onDelete: (id
           {lead.message || 'No specific inquiries.'}
         </div>
         <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
-          <Calendar size={12} /> {new Date(lead.createdAt).toLocaleDateString()}
+          <Calendar size={12} /> {new Date(lead.createdAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
         </div>
       </div>
     </motion.div>

@@ -33,7 +33,7 @@ export default function Header() {
   ];
 
   if (user) {
-    navLinks.push({ label: 'Dashboard', path: '/dashboard', icon: <LayoutDashboard size={18} /> });
+    navLinks.push({ label: t('nav.dashboard', 'Dashboard'), path: '/dashboard', icon: <LayoutDashboard size={18} /> });
   }
 
   return (
@@ -148,7 +148,7 @@ export default function Header() {
                   style={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
                   onClick={() => { logout(); setMobileMenuOpen(false); }}
                 >
-                  <LogOut size={18} style={{ marginRight: '8px' }} /> Sign Out
+                  <LogOut size={18} style={{ marginRight: '8px' }} /> {t('nav.signOut', 'Sign Out')}
                 </button>
               ) : (
                 <Link to="/login" className="mobile-auth-btn-glass login btn-3d" style={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center' }} onClick={() => setMobileMenuOpen(false)}>

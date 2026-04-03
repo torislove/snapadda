@@ -8,7 +8,7 @@ import {
   Zap, Shield, Clock, IndianRupee, Compass, Users, TrendingUp, CheckCircle2, Navigation2
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { fetchProperties, fetchCities, fetchTestimonials, fetchSetting, validateProperties } from '../services/api';
+import { fetchProperties, fetchCities, fetchTestimonials, fetchSetting } from '../services/api';
 import PropertyCard from '../components/PropertyCard';
 import ContactModal from '../components/ContactModal';
 import FilterSidebar from '../components/FilterSidebar';
@@ -19,38 +19,43 @@ import Logo from '../components/Logo';
 import { SkeletonCityCard, SkeletonPropertyCard } from '../components/SkeletonLoaders';
 import { parseSmartSearch, getFuzzySuggestions, loadAndhraData } from '../services/SearchParser';
 
-const TYPE_TABS = [
-  { label: 'All', value: 'all', icon: <Filter size={15} /> },
-  { label: 'Apartments', value: 'Apartment', icon: <Building2 size={15} /> },
-  { label: 'Villas', value: 'Villa', icon: <HomeIcon size={15} /> },
-  { label: 'Plots', value: 'Plot', icon: <Square size={15} /> },
-  { label: 'Agriculture', value: 'Agriculture', icon: <Leaf size={15} /> },
+const TYPE_TABS = (t) => [
+  { label: t('filter.all', 'All'), value: 'all', icon: <Filter size={15} /> },
+  { label: t('types.apartments', 'Apartments'), value: 'Apartment', icon: <Building2 size={15} /> },
+  { label: t('types.villas', 'Villas'), value: 'Villa', icon: <HomeIcon size={15} /> },
+  { label: t('types.plots', 'Plots'), value: 'Plot', icon: <Square size={15} /> },
+  { label: t('types.agriculture', 'Agriculture'), value: 'Agriculture', icon: <Leaf size={15} /> },
 ];
 
-const SMART_PILLS = [
-  { label: 'All', key: 'all' },
-  { label: '🔥 Under ₹50L', key: 'budget' },
-  { label: '✅ Ready to Move', key: 'ready' },
-  { label: '🧭 East Facing', key: 'east' },
-  { label: '🏛️ CRDA Approved', key: 'crda' },
-  { label: '✔️ Verified Only', key: 'verified' },
+const SMART_PILLS = (t) => [
+  { label: t('pills.all', 'All'), key: 'all' },
+  { label: `🔥 ${t('pills.under50l', 'Under ₹50L')}`, key: 'budget' },
+  { label: `✅ ${t('pills.ready', 'Ready to Move')}`, key: 'ready' },
+  { label: `🧭 ${t('pills.east', 'East Facing')}`, key: 'east' },
+  { label: `🏛️ ${t('pills.crda', 'CRDA Approved')}`, key: 'crda' },
+  { label: `✔️ ${t('pills.verified_only', 'Verified Only')}`, key: 'verified' },
 ];
 
-const SORT_OPTIONS = [
-  { label: 'Newest First', value: 'newest' },
-  { label: 'Price: Low → High', value: 'price_asc' },
-  { label: 'Price: High → Low', value: 'price_desc' },
-  { label: 'Featured First', value: 'featured' },
+const SORT_OPTIONS = (t) => [
+  { label: t('sort.newest', 'Newest First'), value: 'newest' },
+  { label: t('sort.price_low', 'Price: Low → High'), value: 'price_asc' },
+  { label: t('sort.price_high', 'Price: High → Low'), value: 'price_desc' },
+  { label: t('sort.featured', 'Featured First'), value: 'featured' },
 ];
 
-const INTENT_TABS = ['Buy', 'Rent', 'Plot'];
-const BUDGET_OPTIONS = [
-  { label: 'Any', value: '' },
-  { label: 'Under ₹25L', value: '2500000' },
-  { label: '₹25L–50L', value: '5000000' },
-  { label: '₹50L–1Cr', value: '10000000' },
-  { label: '₹1Cr–2Cr', value: '20000000' },
-  { label: '₹2Cr+', value: '999999999' },
+const INTENT_TABS = (t) => [
+  t('intent.buy', 'Buy'),
+  t('intent.rent', 'Rent'),
+  t('intent.plot', 'Plot')
+];
+
+const BUDGET_OPTIONS = (t) => [
+  { label: t('budget.any', 'Any'), value: '' },
+  { label: t('budget.under25', 'Under ₹25L'), value: '2500000' },
+  { label: t('budget.25to50', '₹25L–50L'), value: '5000000' },
+  { label: t('budget.50to1', '₹50L–1Cr'), value: '10000000' },
+  { label: t('budget.1to2', '₹1Cr–2Cr'), value: '20000000' },
+  { label: t('budget.over2', '₹2Cr+'), value: '999999999' },
 ];
 
 const WHY_CARDS = (t) => [
@@ -125,7 +130,6 @@ export default function Home() {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalType, setModalType] = useState('callback');
   const [filterOpen, setFilterOpen] = useState(false);
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   // Search / filter state
   const [keyword, setKeyword] = useState('');
@@ -141,15 +145,12 @@ export default function Home() {
 
   // 120Hz Smooth Geolocation & Data Sync
   useEffect(() => {
-    // Request location on mount
     if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           setUserCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-          console.log('Elite Location identified:', pos.coords.latitude, pos.coords.longitude);
         },
         (err) => {
-          console.warn('Geolocation access declined or unavailable:', err.message);
           setLocationDenied(true);
         },
         { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
@@ -193,10 +194,7 @@ export default function Home() {
 
   const loadProperties = useCallback(() => {
     setLoading(true);
-    
-    // Smart Parsing (Refined V3)
     const smart = parseSmartSearch(keyword);
-    
     fetchProperties({
       ...advFilters,
       search: smart?.city ? smart.keyword.replace(new RegExp(smart.city, 'gi'), '').trim() : keyword,
@@ -226,23 +224,19 @@ export default function Home() {
   const openLead = (type) => { setModalType(type); setModalOpen(true); };
   const resetFilters = () => { setTypeFilter('all'); setCityFilter(null); setKeyword(''); setSmartPill('all'); setAdvFilters({ ...EMPTY_FILTERS }); setSortBy('newest'); setBudget(''); };
 
-  const isHome = true;
+  const supportPhone = (supportInfo?.phone || '+919346793364').replace(/\s+/g, '');
+  const supportWA = supportInfo?.whatsapp || '919346793364';
 
   return (
     <div className={`app-container ${appearance?.enable3D !== false ? 'scene-3d' : ''}`}>
-      {/* Background */}
       {appearance?.bgUrl
         ? <div className="site-bg-overlay" style={{ backgroundImage: `url(${appearance.bgUrl})`, opacity: 0.22, position: 'fixed', inset: 0, backgroundSize: 'cover', zIndex: 0 }} />
-        : (
-          <div className="animated-bg" style={{ position: 'fixed', inset: 0, zIndex: 0, background: 'radial-gradient(ellipse at 20% 50%, rgba(10,80,40,0.08) 0%, transparent 60%), radial-gradient(ellipse at 80% 20%, rgba(130,60,0,0.08) 0%, transparent 60%), var(--bg-deep)' }} />
-        )
+        : <div className="animated-bg" style={{ position: 'fixed', inset: 0, zIndex: 0, background: 'radial-gradient(ellipse at 20% 50%, rgba(10,80,40,0.08) 0%, transparent 60%), radial-gradient(ellipse at 80% 20%, rgba(130,60,0,0.08) 0%, transparent 60%), var(--bg-deep)' }} />
       }
 
       <main style={{ flex: 1, paddingTop: 'var(--nav-h)' }}>
-        {/* Marquee */}
         <Marquee />
 
-        {/* Promo Carousel */}
         <section className="promo-section-top">
           <div className="container">
             <div className="promo-header-label"><Zap size={13} /> Featured Promotions &amp; Offers</div>
@@ -250,7 +244,6 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Search Platform — NOW AT TOP BELOW HEADER */}
         <section id="search" className="search-section" style={{ paddingTop: '1rem' }}>
           <div className="container">
             <motion.div
@@ -266,7 +259,10 @@ export default function Home() {
               onMouseLeave={() => { mx.set(0); my.set(0); }}
             >
               <div className="search-tabs">
-                {INTENT_TABS.map(t => <button key={t} className={`search-tab${intent === t ? ' active' : ''}`} onClick={() => setIntent(t)}>{t}</button>)}
+                {INTENT_TABS(t).map((tab, idx) => {
+                  const val = ['Buy', 'Rent', 'Plot'][idx];
+                  return <button key={val} className={`search-tab${intent === val ? ' active' : ''}`} onClick={() => setIntent(val)}>{tab}</button>
+                })}
               </div>
               <div className="search-main-row">
                 <div className="search-bar-wrap">
@@ -274,7 +270,7 @@ export default function Home() {
                   <input
                     type="text" className="search-bar-input" placeholder="Location, project, keyword..."
                     value={keyword} onChange={e => setKeyword(e.target.value)}
-                    onFocus={(e) => { loadAndhraData(); setShowAutocomplete(true); }}
+                    onFocus={() => { loadAndhraData(); setShowAutocomplete(true); }}
                     onBlur={() => setTimeout(() => setShowAutocomplete(false), 200)}
                     onKeyDown={e => e.key === 'Enter' && loadProperties()}
                   />
@@ -304,26 +300,26 @@ export default function Home() {
                   <div className="search-select-wrap">
                     <Building2 size={15} className="sel-icon" />
                     <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)} className="search-select">
-                      <option value="all">All Types</option>
-                      {TYPE_TABS.filter(t => t.value !== 'all').map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                      <option value="all">{t('types.all')}</option>
+                      {TYPE_TABS(t).filter(t => t.value !== 'all').map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
                     </select>
                   </div>
                   <div className="search-select-wrap">
                     <IndianRupee size={15} className="sel-icon" />
                     <select value={budget} onChange={e => setBudget(e.target.value)} className="search-select">
-                      {BUDGET_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                      {BUDGET_OPTIONS(t).map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                     </select>
                   </div>
                   <div className="search-select-wrap">
                     <MapPin size={15} className="sel-icon" />
                     <select value={cityFilter || ''} onChange={e => setCityFilter(e.target.value || null)} className="search-select">
-                      <option value="">All Locations</option>
+                      <option value="">{t('search.allLocs', 'All Locations')}</option>
                       {cities.map(c => <option key={c._id || c.id} value={c.name}>{c.name}</option>)}
                     </select>
                   </div>
                 </div>
                 <div className="search-action-row">
-                  <button className="search-go-btn" onClick={loadProperties}><Search size={18} /> Search</button>
+                  <button className="search-go-btn" onClick={loadProperties}><Search size={18} /> {t('search.searchBtn', 'Search')}</button>
                   <button className="search-filter-btn" onClick={() => setFilterOpen(true)}>
                     <SlidersHorizontal size={16} />
                     {filterCount > 0 && <span className="filter-badge">{filterCount}</span>}
@@ -345,7 +341,6 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Hero */}
         <section className="hero-section" style={{ paddingBottom: '2.5rem' }}>
           <div className="container">
             <motion.div className="hero-eyebrow" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
@@ -363,7 +358,7 @@ export default function Home() {
             </motion.p>
             <motion.div className="hero-ctas" initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.65, delay: 0.3 }}>
               <a href="#cities" className="hero-btn hero-btn-primary"><Navigation2 size={18} /> {t('hero.browseBtn')}</a>
-              <button className="hero-btn hero-btn-glass" onClick={() => openLead('callback')}><Phone size={18} /> {t('hero.callBtn')}</button>
+              <a href={`tel:${supportPhone}`} className="hero-btn hero-btn-glass"><Phone size={18} /> CALL AGENT NOW</a>
             </motion.div>
             <motion.div className="hero-stats-row" initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ delay: 0.5 }}>
               {[
@@ -384,7 +379,6 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Cities */}
         <section id="cities" className="section-wrap" style={{ paddingBottom: '1rem' }}>
           <div className="container">
             <div className="section-head">
@@ -403,16 +397,9 @@ export default function Home() {
                 ))
               )}
             </div>
-            {cityFilter && (
-              <motion.div className="active-city-tag" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}>
-                <MapPin size={13} /> {t('cities.filtering')} <strong>{cityFilter}</strong>
-                <button onClick={() => setCityFilter(null)}><X size={13} /></button>
-              </motion.div>
-            )}
           </div>
         </section>
 
-        {/* Nearby Regional Assets — AnimatePresence for zero empty-space */}
         <AnimatePresence>
           {(userCoords || locationDenied) && (
             <motion.section
@@ -426,37 +413,16 @@ export default function Home() {
             >
               <div className="container">
                 <div className="section-head">
-                  <div className="section-eyebrow" style={{ color: 'var(--gold)' }}>
-                    <Navigation2 size={14} /> REGIONAL HOTSPOTS {userCoords ? '(200KM RADIUS)' : 'TOP PICKS'}
-                  </div>
-                  <h2 className="section-title" style={{ color: '#ffffff' }}>Regional Growth Hotspots</h2>
+                  <div className="section-eyebrow" style={{ color: 'var(--gold)' }}><Navigation2 size={14} /> {t('geo.hotspotsTitle', 'REGIONAL HOTSPOTS')}</div>
+                  <h2 className="section-title" style={{ color: '#ffffff' }}>{t('geo.hotspotsHeadline', 'Regional Growth Hotspots')}</h2>
                   <p className="section-subtitle" style={{ color: 'var(--txt-secondary)' }}>
                     {userCoords ? 'Verified assets and developments near your current location.' : 'Allow location access for personalised nearby listings.'}
                   </p>
                 </div>
-
-                {locationDenied && (
-                  <motion.div
-                    className="location-permission-banner"
-                    initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: '0.75rem',
-                      background: 'rgba(212,175,55,0.07)', border: '1px solid rgba(212,175,55,0.2)',
-                      borderRadius: '14px', padding: '0.85rem 1.25rem', marginBottom: '1.5rem',
-                      flexWrap: 'wrap'
-                    }}
-                  >
-                    <Navigation2 size={18} style={{ color: 'var(--gold)', flexShrink: 0 }} />
-                    <span style={{ fontSize: '0.85rem', color: 'var(--txt-secondary)', flex: 1 }}>
-                      <strong style={{ color: 'var(--txt-primary)' }}>Location access denied.</strong> Showing top picks from across Andhra Pradesh instead.
-                    </span>
-                  </motion.div>
-                )}
-
                 <div className="properties-grid">
                   {sortedProperties.slice(0, 6).map((p, i) => (
                     <motion.div key={`nearby-${p._id}`} initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ delay: i * 0.05 }}>
-                      <PropertyCard {...p} onTriggerLead={() => navigate('/request-callback')} />
+                      <PropertyCard {...p} />
                     </motion.div>
                   ))}
                 </div>
@@ -465,19 +431,18 @@ export default function Home() {
           )}
         </AnimatePresence>
 
-        {/* Type Tabs + Smart Pills */}
         <section style={{ padding: '0 0 1.5rem' }}>
           <div className="container">
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
               <div className="type-tabs-bar">
-                {TYPE_TABS.map(t => (
+                {TYPE_TABS(t).map(t => (
                   <button key={t.value} className={`type-tab${typeFilter === t.value ? ' active' : ''}`} onClick={() => setTypeFilter(t.value)}>
                     {t.icon} {t.label}
                   </button>
                 ))}
               </div>
               <div className="smart-filter-pills">
-                {SMART_PILLS.map(p => (
+                {SMART_PILLS(t).map(p => (
                   <button key={p.key} className={`smart-pill${smartPill === p.key ? ' active' : ''}`} onClick={() => setSmartPill(p.key)}>{p.label}</button>
                 ))}
               </div>
@@ -485,7 +450,6 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Properties Grid */}
         <section id="properties" className="section-wrap" style={{ paddingTop: '0.5rem' }}>
           <div className="container">
             <div className="section-title-row">
@@ -498,7 +462,7 @@ export default function Home() {
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                 <span className="result-count">{sortedProperties.length} {t('properties.found')}</span>
                 <select className="sort-select" value={sortBy} onChange={e => setSortBy(e.target.value)}>
-                  {SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  {SORT_OPTIONS(t).map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </select>
                 {(filterCount > 0 || cityFilter || budget || typeFilter !== 'all') && (
                   <button className="btn btn-glass btn-sm" onClick={resetFilters}><X size={12} /> {t('search.clear')}</button>
@@ -507,27 +471,23 @@ export default function Home() {
             </div>
 
             <div className="properties-grid">
-              {loading ? (
-                Array(3).fill(0).map((_, i) => <SkeletonPropertyCard key={i} />)
-              ) : sortedProperties.length > 0 ? (
+              {loading ? Array(3).fill(0).map((_, i) => <SkeletonPropertyCard key={i} />) : sortedProperties.length > 0 ? (
                 sortedProperties.map((p, i) => (
                   <motion.div key={p._id || p.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}>
-                    <PropertyCard {...p} approval={p.approvalAuthority || p.approval} onTriggerLead={openLead} />
+                    <PropertyCard {...p} />
                   </motion.div>
                 ))
               ) : (
                 <div className="empty-state">
                   <Search size={48} />
                   <h3>{t('properties.none')}</h3>
-                  <p>{t('properties.adjust')}</p>
-                  <button className="hero-btn hero-btn-primary" style={{ marginTop: '0.5rem' }} onClick={resetFilters}>{t('search.clear')}</button>
+                  <button className="hero-btn hero-btn-primary" onClick={resetFilters}>{t('search.clear')}</button>
                 </div>
               )}
             </div>
           </div>
         </section>
 
-        {/* Stats Band */}
         <section className="stats-band">
           <div className="container">
             <div className="stats-grid">
@@ -547,144 +507,67 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Why SnapAdda */}
-        <section className="section-wrap why-section">
-          <div className="container">
-            <div className="section-head" style={{ textAlign: 'center' }}>
-              <div className="section-eyebrow" style={{ justifyContent: 'center' }}>{t('why.eyebrow')}</div>
-              <h2 className="section-title" style={{ color: '#ffffff' }}>{t('why.title')}</h2>
-              <p className="section-subtitle" style={{ color: 'var(--txt-secondary)' }}>Everything you need to find, verify, and close a property deal</p>
-            </div>
-            <div className="why-grid">
-              {WHY_CARDS(t).map((c, i) => (
-                <motion.div key={i} className="why-card glass-heavy tilt-3d" initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}>
-                  <div className="why-icon-wrap" style={{ color: c.color, background: `${c.color}18`, border: `1px solid ${c.color}30` }}>{c.icon}</div>
-                  <h3 className="why-title">{c.title}</h3>
-                  <p className="why-desc">{c.desc}</p>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Testimonials */}
-        {testimonials.length > 0 && (
-          <section className="section-wrap" style={{ overflow: 'hidden' }}>
-            <div className="container">
-            <div className="section-head" style={{ textAlign: 'center' }}>
-              <div className="section-eyebrow" style={{ justifyContent: 'center' }}>{t('testimonials.eyebrow')}</div>
-              <h2 className="section-title" style={{ color: '#ffffff' }}>{t('testimonials.title')}</h2>
-              <p className="section-subtitle" style={{ color: 'var(--txt-secondary)' }}>Thousands of families have found their home with SnapAdda</p>
-            </div>
-            </div>
-            <div className="testimonial-marquee-container">
-              <div className="testimonial-marquee-track">
-                {[...testimonials, ...testimonials].map((t, i) => (
-                  <motion.div key={`t-${t._id || i}-${i}`} className="testimonial-card glass-heavy">
-                    <div className="test-quote">"</div>
-                    <p className="test-text">{t.text}</p>
-                    <div className="test-footer">
-                      <div className="test-avatar" style={{ background: t.color || 'var(--gold)' }}>{t.name?.charAt(0) || 'U'}</div>
-                      <div className="test-info">
-                        <div className="test-name">{t.name}</div>
-                        <div className="test-loc">{t.location}</div>
-                      </div>
-                      <div className="test-rating">
-                        {[1,2,3,4,5].map(n => <Star key={n} size={12} fill={n <= (t.rating || 5) ? 'var(--gold)' : 'none'} color="var(--gold)" />)}
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            </div>
-          </section>
-        )}
-
-        {/* CTA */}
         <section id="contact" className="cta-section">
           <div className="container">
-            <motion.div className="cta-card glass-heavy" initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.35 }} transition={{ duration: 0.75 }}
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '2rem', flexWrap: 'wrap' }}>
-              <div className="cta-content" style={{ flex: 1, minWidth: '300px' }}>
-                <h2 style={{ fontSize: '2.2rem', marginBottom: '1rem' }}>Ready to Start Your Journey?</h2>
-                <p style={{ fontSize: '1.05rem', color: 'var(--txt-secondary)', marginBottom: '2rem', lineHeight: 1.6 }}>
-                  Connect with our verified property experts today and get a free consultation on the <strong>{cityFilter || 'Andhra'}</strong> real estate market.
-                </p>
-                <div className="cta-buttons" style={{ display: 'flex', gap: '1.25rem', flexWrap: 'wrap' }}>
-                  <button type="button" className="hero-btn hero-btn-primary pulse-primary btn-3d" onClick={() => navigate('/request-callback')}>
-                    <Phone size={18} style={{ marginRight: '6px' }} /> {t('contact.send')}
-                  </button>
-                  <a href={`https://wa.me/${supportInfo?.whatsapp || '919999999911'}?text=Hello, I am interested in property in Andhra.`} className="hero-btn hero-btn-whatsapp pulse-green btn-3d-emerald" style={{ textDecoration: 'none' }}>
-                    <MessageSquare size={18} style={{ marginRight: '6px' }} /> WhatsApp Us
+            <motion.div className="cta-card glass-heavy" initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.35 }}
+              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '2rem', padding: '3rem 2rem' }}>
+              <div style={{ maxWidth: '800px' }}>
+                <h2 style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>{t('cta.title')}</h2>
+                <p style={{ fontSize: '1.15rem', color: 'var(--txt-secondary)', marginBottom: '2.5rem' }}>{t('cta.subtitle')}</p>
+                <div className="cta-buttons" style={{ display: 'flex', gap: '1.25rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+                  <a href={`tel:${supportPhone}`} className="hero-btn hero-btn-primary pulse-primary btn-3d" style={{ textDecoration: 'none', padding: '1.1rem 2.5rem', minWidth: '220px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Phone size={20} style={{ marginRight: '10px' }} /> CALL AGENT NOW
+                  </a>
+                  <a href={`https://wa.me/${supportWA}?text=Hello, I am interested in property in Andhra.`} className="hero-btn hero-btn-whatsapp pulse-green btn-3d-emerald" style={{ textDecoration: 'none', padding: '1.1rem 2.5rem', minWidth: '220px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <MessageSquare size={20} style={{ marginRight: '10px' }} /> {t('cta.whatsapp')}
                   </a>
                 </div>
-              </div>
-              <div className="cta-visual" style={{ flex: 0.4, minWidth: '240px', position: 'relative', height: '180px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <div className="cta-orb gold-orb" style={{ width: '200px', height: '200px', opacity: 0.15 }} />
-                <Building2 size={80} style={{ color: 'var(--gold)', opacity: 0.3, position: 'absolute', filter: 'blur(1px)' }} />
               </div>
             </motion.div>
           </div>
         </section>
 
-        {/* Footer */}
-        <footer className="app-footer glass-3d-heavy">
+        <footer className="app-footer">
           <div className="container">
             <div className="footer-grid">
-              <div className="footer-col">
-                <Logo size={28} showText />
-                <p style={{ marginTop: '1rem', fontSize: '0.85rem', color: 'var(--txt-muted)', lineHeight: 1.6 }}>
-                  Andhra Pradesh's most trusted 3D interactive property portal. We simplify search, verify authenticity, and deliver dreams.
-                </p>
-              </div>
-              <div className="footer-col">
-                <h4>{t('footer.quick')}</h4>
-                <a href="#properties">{t('nav.properties')}</a>
-                <a href="#cities">{t('nav.locations')}</a>
-                <a href="#contact">{t('nav.contact')}</a>
-              </div>
-              <div className="footer-col" id="about">
-                <h4>About SnapAdda</h4>
-                <p style={{ fontSize: '0.8rem', color: 'var(--txt-muted)', lineHeight: 1.6, marginTop: '0.2rem' }}>
-                  SnapAdda is AP's fastest-growing premium property portal. We ensure 100% verified, CRDA approved properties to eliminate fraud and provide a seamless real estate experience.
-                </p>
-              </div>
-              <div className="footer-col">
-                <h4>Support</h4>
-                <a href={`mailto:${supportInfo?.email || 'info@snapadda.com'}`}>{supportInfo?.email || 'info@snapadda.com'}</a>
-                <a href={`tel:${(supportInfo?.phone || '+919999999999').replace(/\s+/g, '')}`}>{supportInfo?.phone || '+91 99999 99999'}</a>
-                <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-                  <h4 style={{ marginBottom: '0.5rem', color: 'var(--gold)' }}>Developer</h4>
-                  <p style={{ fontSize: '0.78rem', color: 'var(--txt-muted)' }}>Built with ❤️ by <strong>SnapAdda Tech</strong></p>
-                </div>
-              </div>
+              <div className="footer-col"><Logo size={28} showText /><p style={{ marginTop: '1rem', fontSize: '0.85rem', color: 'var(--txt-muted)' }}>{t('footer.aboutText')}</p></div>
+              <div className="footer-col"><h4>{t('footer.quick')}</h4><a href="#properties">Properties</a><a href="#cities">Locations</a><a href="#contact">Contact</a></div>
+              <div className="footer-col"><h4>{t('footer.support')}</h4><a href={`mailto:${supportInfo?.email || 'info@snapadda.com'}`}>{supportInfo?.email || 'info@snapadda.com'}</a><a href={`tel:${supportPhone}`}>{supportInfo?.phone || '+91 93467 93364'}</a></div>
             </div>
-            <div className="footer-bottom">
-              <span>© 2026 SnapAdda. All rights reserved.</span>
-              <div className="footer-badges">
-                <span className="badge-crda">AP CRDA Approved</span>
-                <span className="badge-rera">AP RERA Registered</span>
-              </div>
-            </div>
+            <div className="footer-bottom"><span>© 2026 SnapAdda. {t('footer.rights')}</span></div>
           </div>
         </footer>
       </main>
 
-      {/* Sticky Mobile Quick Contact */}
-      <div className="mobile-sticky-quick-contact">
-        <button className="hero-btn hero-btn-primary pulse-primary btn-3d" onClick={() => openLead('callback')} style={{ flex: 1 }}>
-          <Phone size={16} style={{ marginRight: '4px' }} /> Callback
-        </button>
-        <a href={`https://wa.me/${supportInfo?.whatsapp || '919999999911'}?text=Hello,%20I'm%20looking%20for%20assistance.`} className="hero-btn hero-btn-whatsapp pulse-green btn-3d-emerald" style={{ flex: 1, textDecoration: 'none', background: '#25D366' }}>
-          <MessageSquare size={16} style={{ marginRight: '4px' }} /> WhatsApp
+      <div className="mobile-sticky-quick-contact" style={{ 
+        display: 'none', 
+        gap: '0.75rem', 
+        padding: '1rem', 
+        background: 'rgba(7,7,15,0.95)', 
+        backdropFilter: 'blur(20px)', 
+        borderTop: '1px solid rgba(255,255,255,0.1)',
+        position: 'fixed',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        zIndex: 1000,
+        pointerEvents: 'none'
+      }}>
+        <a href={`tel:${supportPhone}`} className="hero-btn hero-btn-primary pulse-primary btn-3d" style={{ flex: 1, padding: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', pointerEvents: 'auto' }}>
+          <Phone size={18} style={{ marginRight: '8px' }} /> CALL NOW
+        </a>
+        <a href={`https://wa.me/${supportWA}?text=Hello,%20I'm%20looking%20for%20assistance.`} className="hero-btn hero-btn-whatsapp pulse-green btn-3d-emerald" style={{ flex: 1, textDecoration: 'none', background: '#25D366', padding: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', pointerEvents: 'auto' }}>
+          <MessageSquare size={18} style={{ marginRight: '8px' }} /> WHATSAPP
         </a>
       </div>
 
-      {/* FABs */}
-      <button className="fab-callback" onClick={() => openLead('callback')}><Phone size={28} /></button>
-      <button className="fab-filters" onClick={() => setFilterOpen(true)}><SlidersHorizontal size={24} /></button>
+      <style>{`
+        @media (max-width: 768px) {
+          .mobile-sticky-quick-contact { display: flex !important; }
+          .section-wrap { padding-bottom: 100px !important; }
+        }
+      `}</style>
 
-      {/* Modals */}
       <FilterSidebar isOpen={filterOpen} onClose={() => setFilterOpen(false)} filters={advFilters} setFilters={setAdvFilters} onApply={() => setFilterOpen(false)} />
       <ContactModal isOpen={modalOpen} onClose={() => setModalOpen(false)} type={modalType} />
     </div>

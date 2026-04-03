@@ -10,7 +10,8 @@ const resources = {
         "about": "About Us",
         "contact": "Contact",
         "signIn": "SIGN IN",
-        "signOut": "SIGN OUT"
+        "signOut": "SIGN OUT",
+        "dashboard": "Client Panel"
       },
       "hero": {
         "eyebrow": "Andhra Pradesh's #1 Property Platform",
@@ -52,7 +53,10 @@ const resources = {
         "underConst": "Under Construction",
         "ready": "Ready to Move",
         "premium": "Premium Spots",
-        "east": "East Facing"
+        "east": "East Facing",
+        "all": "All",
+        "under50l": "Under ₹50L",
+        "verified_only": "Verified Only"
       },
       "properties": {
         "propsIn": "Properties in",
@@ -66,7 +70,33 @@ const resources = {
       },
       "why": {
         "eyebrow": "Why Choose Us",
-        "title": "The Premium Real Estate Edge"
+        "title": "The SnapAdda Advantage",
+        "c1title": "Verified Listings",
+        "c1desc": "Every property is manually verified by our team before listing.",
+        "c2title": "CRDA / RERA Compliant",
+        "c2desc": "All listings hold valid approval certifications for full legal safety.",
+        "c3title": "24/7 Expert Support",
+        "c3desc": "Our real estate advisors are available round the clock to assist you.",
+        "c4title": "Best Price Guarantee",
+        "c4desc": "We negotiate directly with builders to get you the best deal possible.",
+        "c5title": "Vastu-Guided Properties",
+        "c5desc": "Find east-facing and Vastu-compliant homes for prosperous living.",
+        "c6title": "Transparent Pricing",
+        "c6desc": "Zero hidden charges. Complete cost breakdowns including registration."
+      },
+      "sort": {
+        "newest": "Newest First",
+        "price_low": "Price: Low → High",
+        "price_high": "Price: High → Low",
+        "featured": "Featured First"
+      },
+      "budget": {
+        "any": "Any",
+        "under25": "Under ₹25L",
+        "25to50": "₹25L–50L",
+        "50to1": "₹50L–1Cr",
+        "1to2": "₹1Cr–2Cr",
+        "over2": "₹2Cr+"
       },
       "testimonials": {
         "eyebrow": "Client Voices",
@@ -89,27 +119,96 @@ const resources = {
         "details": "View Details",
         "contact": "Contact Agent",
         "call": "Call Now",
+        "callback": "Callback",
+        "whatsapp": "WhatsApp",
         "facing": "Facing",
-        "sqyds": "sq.yds"
-      },
-      "why": {
-        "eyebrow": "Why Choose Us",
-        "title": "The SnapAdda Advantage",
-        "c1title": "Verified Listings",
-        "c1desc": "Every property is manually verified by our team before listing.",
-        "c2title": "CRDA / RERA Compliant",
-        "c2desc": "All listings hold valid approval certifications for full legal safety.",
-        "c3title": "24/7 Expert Support",
-        "c3desc": "Our real estate advisors are available round the clock to assist you.",
-        "c4title": "Best Price Guarantee",
-        "c4desc": "We negotiate directly with builders to get you the best deal possible.",
-        "c5title": "Vastu-Guided Properties",
-        "c5desc": "Find east-facing and Vastu-compliant homes for prosperous living.",
-        "c6title": "Transparent Pricing",
-        "c6desc": "Zero hidden charges. Complete cost breakdowns including registration."
+        "sqyds": "sq.yds",
+        "beds": "Beds",
+        "baths": "Baths"
       },
       "footer": {
-        "quick": "Quick Links"
+        "quick": "Quick Links",
+        "aboutTitle": "About SnapAdda",
+        "aboutText": "Andhra Pradesh's most trusted 3D interactive property portal. We simplify search, verify authenticity, and deliver dreams.",
+        "support": "Support",
+        "developer": "Built with ❤️ by SnapAdda Tech",
+        "rights": "All rights reserved."
+      },
+      "cta": {
+        "title": "Ready to Start Your Journey?",
+        "subtitle": "Connect with our verified property experts today and get a free consultation on the real estate market.",
+        "whatsapp": "WhatsApp Us"
+      },
+      "dashboard": {
+        "welcome": "Welcome back",
+        "overview": "Overview",
+        "saved": "Saved",
+        "inquiries": "Inquiries",
+        "profile": "Profile",
+        "backToSite": "Back to Site",
+        "memberSince": "Member Since",
+        "noSaved": "No saved properties yet",
+        "noInquiries": "No inquiries found"
+      },
+      "geo": {
+        "amaravati": "Amaravati",
+        "vijayawada": "Vijayawada",
+        "guntur": "Guntur",
+        "visakhapatnam": "Visakhapatnam",
+        "tirupati": "Tirupati",
+        "nellore": "Nellore",
+        "kurnool": "Kurnool",
+        "kakinada": "Kakinada",
+        "rajahmundry": "Rajahmundry",
+        "mangalagiri": "Mangalagiri",
+        "tenali": "Tenali",
+        "hotspotsTitle": "REGIONAL HOTSPOTS",
+        "hotspotsHeadline": "Regional Growth Hotspots"
+      },
+      "types": {
+        "all": "All Categories",
+        "apartment": "Apartment",
+        "apartments": "Apartments",
+        "villa": "Villa",
+        "villas": "Villas",
+        "plot": "Residential Plot",
+        "plots": "Residential Plots",
+        "agriculture": "Agricultural Land",
+        "commercial": "Commercial Space",
+        "house": "Independent House"
+      },
+      "auth": {
+        "welcome": "Welcome to SnapAdda",
+        "subtitle": "Enter your details to access your personalized real estate dashboard.",
+        "google": "Continue with Google",
+        "guest": "Continue as Guest",
+        "terms": "By continuing, you agree to our",
+        "privacy": "Privacy Policy",
+        "tos": "Terms of Service"
+      },
+      "onboarding": {
+        "welcomeTitle": "Tailored Experience",
+        "welcomeText": "Welcome, {{name}}. To provide you with the most relevant investment opportunities in Andhra Pradesh, we need to understand your requirements.",
+        "getStarted": "Get Started",
+        "selectPref": "Select your preference below.",
+        "placeholder": "Type your answer here...",
+        "finishTitle": "Strategy Optimized",
+        "finishText": "Welcome to the Inner Circle. Your investment strategy has been secured. You can now explore properties and growth hotspots tailored to your profile."
+      },
+      "filter": {
+        "all": "All",
+        "title": "Filters",
+        "back": "BACK",
+        "keywords": "KEYWORDS",
+        "category": "CATEGORY",
+        "budgetMax": "BUDGET MAX (₹)",
+        "facing": "FACING",
+        "approval": "APPROVAL",
+        "vastu": "VASTU VERIFIED",
+        "elite": "ELITE ASSETS",
+        "apply": "APPLY FILTERS",
+        "any": "Any",
+        "items": "All Items"
       }
     }
   },
@@ -121,7 +220,8 @@ const resources = {
         "about": "మా గురించి",
         "contact": "సంప్రదించండి",
         "signIn": "లాగిన్",
-        "signOut": "లాగ్అవుట్"
+        "signOut": "లాగ్అవుట్",
+        "dashboard": "క్లయింట్ ప్యానెల్"
       },
       "hero": {
         "eyebrow": "ఆంధ్రప్రదేశ్ నెం.1 ప్రాపర్టీ ప్లాట్‌ఫారమ్",
@@ -163,7 +263,10 @@ const resources = {
         "underConst": "నిర్మాణంలో ఉన్నవి",
         "ready": "వెంటనే మారడానికి",
         "premium": "ప్రీమియం స్పాట్స్",
-        "east": "తూర్పు ముఖచిత్రం"
+        "east": "తూర్పు ముఖచిత్రం",
+        "all": "అన్నీ",
+        "under50l": "₹50L లోపు",
+        "verified_only": "ధృవీకరించబడినవి మాత్రమే"
       },
       "properties": {
         "propsIn": "ముఖ్య ఆస్తులు:",
@@ -177,7 +280,33 @@ const resources = {
       },
       "why": {
         "eyebrow": "మమ్మల్ని ఎందుకు ఎంచుకోవాలి",
-        "title": "ప్రీమియం రియల్ ఎస్టేట్ ఎడ్జ్"
+        "title": "స్నాప్అడ్డా ప్రయోజనం",
+        "c1title": "ధృవీకరించిన జాబితాలు",
+        "c1desc": "మా టీమ్ ద్వారా ప్రతి ఆస్తిని జాబితా చేయడానికి ముందు మాన్యువల్‌గా ధృవీకరిస్తారు.",
+        "c2title": "CRDA / RERA అనుమతి పొందినవి",
+        "c2desc": "అన్ని జాబితాలు చట్టపరమైన భద్రత కోసం చెల్లుబాటు అయ్యే అనుమతి సర్టిఫికేట్‌లను కలిగి ఉంటాయి.",
+        "c3title": "24/7 నిపుణుల సహాయం",
+        "c3desc": "మా రియల్ ఎస్టేట్ సలహాదారులు మీకు సహాయపడటానికి రాత్రింబగళ్ళు అందుబాటులో ఉంటారు.",
+        "c4title": "అత్యుత్తమ ధర హామీ",
+        "c4desc": "మీకు అత్యుత్తమ డీల్ అందించడానికి బిల్డర్లతో నేరుగా సంప్రదిస్తాం.",
+        "c5title": "వాస్తు-మార్గదర్శక ఆస్తులు",
+        "c5desc": "సమృద్ధికరమైన జీవితం కోసం తూర్పు ముఖం మరియు వాస్తు-అనుగుణమైన ఇళ్ళను కనుగొనండి.",
+        "c6title": "పారదర్శకమైన ధర నిర్ణయం",
+        "c6desc": "దాచిన ఛార్జీలు లేవు. నమోదుతో సహా పూర్తి ఖర్చుల వివరాలు."
+      },
+      "sort": {
+        "newest": "కొత్తవి మొదట",
+        "price_low": "ధర: తక్కువ → ఎక్కువ",
+        "price_high": "ధర: ఎక్కువ → తక్కువ",
+        "featured": "ఫీచర్ చేసినవి ముం దే"
+      },
+      "budget": {
+        "any": "ఏదైనా",
+        "under25": "₹25L లోపు",
+        "25to50": "₹25L–50L",
+        "50to1": "₹50L–1Cr",
+        "1to2": "₹1Cr–2Cr",
+        "over2": "₹2Cr పైన"
       },
       "testimonials": {
         "eyebrow": "క్లయింట్ వాయిస్‌లు",
@@ -200,27 +329,96 @@ const resources = {
         "details": "వివరాలు చూడండి",
         "contact": "ఏజెంట్‌ను సంప్రదించండి",
         "call": "కాల్ చేయండి",
+        "callback": "కాల్ బ్యాక్",
+        "whatsapp": "వాట్సాప్",
         "facing": "ఫేసింగ్",
-        "sqyds": "గజాలు"
-      },
-      "why": {
-        "eyebrow": "మమ్మల్ని ఎందుకు ఎంచుకోవాలి",
-        "title": "స్నాప్అడ్డా ప్రయోజనం",
-        "c1title": "ధృవీకరించిన జాబితాలు",
-        "c1desc": "మా టీమ్ ద్వారా ప్రతి ఆస్తిని జాబితా చేయడానికి ముందు మాన్యువల్‌గా ధృవీకరిస్తారు.",
-        "c2title": "CRDA / RERA అనుమతి పొందినవి",
-        "c2desc": "అన్ని జాబితాలు చట్టపరమైన భద్రత కోసం చెల్లుబాటు అయ్యే అనుమతి సర్టిఫికేట్‌లను కలిగి ఉంటాయి.",
-        "c3title": "24/7 నిపుణుల సహాయం",
-        "c3desc": "మా రియల్ ఎస్టేట్ సలహాదారులు మీకు సహాయపడటానికి రాత్రింబగళ్ళు అందుబాటులో ఉంటారు.",
-        "c4title": "అత్యుత్తమ ధర హామీ",
-        "c4desc": "మీకు అత్యుత్తమ డీల్ అందించడానికి బిల్డర్లతో నేరుగా సంప్రదిస్తాం.",
-        "c5title": "వాస్తు-మార్గదర్శక ఆస్తులు",
-        "c5desc": "సమృద్ధికరమైన జీవితం కోసం తూర్పు ముఖం మరియు వాస్తు-అనుగుణమైన ఇళ్ళను కనుగొనండి.",
-        "c6title": "పారదర్శకమైన ధర నిర్ణయం",
-        "c6desc": "దాచిన ఛార్జీలు లేవు. నమోదుతో సహా పూర్తి ఖర్చుల వివరాలు."
+        "sqyds": "గజాలు",
+        "beds": "బెడ్స్",
+        "baths": "బాత్స్"
       },
       "footer": {
-        "quick": "త్వరిత లింకులు"
+        "quick": "త్వరిత లింకులు",
+        "aboutTitle": "స్నాప్అడ్డా గురించి",
+        "aboutText": "ఆంధ్రప్రదేశ్ ಅತ್ಯಂತ విశ్వసనీయ 3D ఇంటరాక్టివ్ ప్రాపర్టీ పోర్టల్. మేము వెతకడాన్ని సరళతరం చేస్తాము, ప్రామాణికతను ధృవీకరిస్తాము మరియు కలలను నిజం చేస్తాము.",
+        "support": "మద్దతు",
+        "developer": "స్నాప్అడ్డా టెక్ ద్వారా ❤️ తో నిర్మించబడింది",
+        "rights": "అన్ని హక్కులు ప్రత్యేకించబడ్డాయి."
+      },
+      "cta": {
+        "title": "మీ ప్రయాణాన్ని ప్రారంభించడానికి సిద్ధంగా ఉన్నారా?",
+        "subtitle": "మా ధృవీకరించబడిన ప్రాపర్టీ నిపుణులతో ఈరోజే కనెక్ట్ అవ్వండి మరియు రియల్ ఎస్టేట్ మార్కెట్‌పై ఉచిత సంప్రదింపులను పొందండి.",
+        "whatsapp": "వాట్సాప్ చేయండి"
+      },
+      "dashboard": {
+        "welcome": "తిరిగి స్వాగతం",
+        "overview": "అవలోకనం",
+        "saved": "సేవ్ చేసినవి",
+        "inquiries": "విచారణలు",
+        "profile": "ప్రొఫైల్",
+        "backToSite": "సైట్‌కు తిరిగి వెళ్ళు",
+        "memberSince": "సభ్యత్వం ప్రారంభమైన తేదీ",
+        "noSaved": "ఇంకా సేవ్ చేసిన ఆస్తులు లేవు",
+        "noInquiries": "విచారణలు ఏవీ లేవు"
+      },
+      "geo": {
+        "amaravati": "అమరావతి",
+        "vijayawada": "విజయవాడ",
+        "guntur": "గుంటూరు",
+        "visakhapatnam": "విశాఖపట్నం",
+        "tirupati": "తిరుపతి",
+        "nellore": "నెల్లూరు",
+        "kurnool": "కర్నూలు",
+        "kakinada": "కాకినాడ",
+        "rajahmundry": "రాజమండ్రి",
+        "mangalagiri": "మంగళగిరి",
+        "tenali": "తెనాలి",
+        "hotspotsTitle": "ప్రాంతీయ హాట్‌స్పాట్‌లు",
+        "hotspotsHeadline": "ప్రాంతీయ వృద్ధి హాట్‌స్పాట్‌లు"
+      },
+      "types": {
+        "all": "అన్ని వర్గాలు",
+        "apartment": "అపార్ట్మెంట్",
+        "apartments": "అపార్ట్ మెంట్లు",
+        "villa": "విల్లా",
+        "villas": "విల్లాలు",
+        "plot": "రెసిడెన్షియల్ ప్లాట్",
+        "plots": "రెసిడెన్షియల్ ప్లాట్లు",
+        "agriculture": "వ్యవసాయ భూమి",
+        "commercial": "కమర్షియల్ స్పేస్",
+        "house": "ఇండిపెండెంట్ హౌస్"
+      },
+      "auth": {
+        "welcome": "స్నాప్అడ్డాకు స్వాగతం",
+        "subtitle": "మీ వ్యక్తిగతీకరించిన రియల్ ఎస్టేట్ డాష్‌బోర్డ్‌ను యాక్సెస్ చేయడానికి మీ వివరాలను నమోదు చేయండి.",
+        "google": "గూగుల్ తో కొనసాగించండి",
+        "guest": "అతిథిగా కొనసాగించండి",
+        "terms": "కొనసాగించడం ద్వారా, మీరు మాని అంగీకరిస్తున్నారు",
+        "privacy": "గోప్యతా విధానం",
+        "tos": "సేవా నిబంధనలు"
+      },
+      "onboarding": {
+        "welcomeTitle": "వ్యక్తిగతీకరించిన అనుభవం",
+        "welcomeText": "స్వాగతం, {{name}}. ఆంధ్రప్రదేశ్‌లో మీకు అత్యంత సంబంధిత పెట్టుబడి అవకాశాలను అందించడానికి, మేము మీ అవసరాలను అర్థం చేసుకోవాలి.",
+        "getStarted": "ప్రారంభించండి",
+        "selectPref": "దిగువన మీ ప్రాధాన్యతను ఎంచుకోండి.",
+        "placeholder": "మీ సమాధానాన్ని ఇక్కడ టైప్ చేయండి...",
+        "finishTitle": "వ్యూహం ఆప్టిమైజ్ చేయబడింది",
+        "finishText": "ఇన్నర్ సర్కిల్‌లోకి స్వాగతం. మీ పెట్టుబడి వ్యూహం సురక్షితం చేయబడింది. మీరు ఇప్పుడు మీ ప్రొఫైల్‌కు అనుగుణంగా రూపొందించబడిన ఆస్తులు మరియు వృద్ధి హాట్‌స్పాట్‌లను అన్వేషించవచ్చు."
+      },
+      "filter": {
+        "all": "అన్నీ",
+        "title": "ఫిల్టర్లు",
+        "back": "వెనుకకు",
+        "keywords": "కీవర్డ్లు",
+        "category": "వర్గం",
+        "budgetMax": "గరిష్ట బడ్జెట్ (₹)",
+        "facing": "ఫేసింగ్",
+        "approval": "అనుమతి",
+        "vastu": "వాస్తు ధృవీకరించబడింది",
+        "elite": "ఎలైట్ ఆస్తులు",
+        "apply": "ఫిల్టర్లను వర్తింపజేయండి",
+        "any": "ఏదైనా",
+        "items": "అన్ని రకాలు"
       }
     }
   }

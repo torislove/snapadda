@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, IndianRupee, MapPin, Target, ChevronRight, ChevronLeft, CheckCircle2, LogOut, Sparkles } from 'lucide-react';
+import { Home, IndianRupee, MapPin, Target, ChevronRight, ChevronLeft, CheckCircle2, LogOut, Sparkles, MessageSquare, HelpCircle } from 'lucide-react';
+import { fetchSetting } from '../services/api';
+import { useTranslation } from 'react-i18next';
 import Logo from '../components/Logo';
 
 const STEPS = [
@@ -20,18 +22,41 @@ const BUDGETS = ['Below 50L', '50L - 1Cr', '1Cr - 3Cr', '3Cr - 5Cr', 'Above 5Cr'
 const DISTRICTS = ['Amaravati', 'Vijayawada', 'Guntur', 'Mangalagiri', 'Tenali', 'Visakhapatnam', 'Tirupati', 'Nellore'];
 
 export default function Onboarding() {
+  const { t } = useTranslation();
   const { user, completeOnboarding, logout } = useAuth();
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
-  const [formData, setFormData] = useState({
-    purpose: '',
-    propertyType: '',
-    budget: '',
-    locations: [],
-    additionalNotes: ''
-  });
+  const [loading, setLoading] = useState(true);
+  const [questions, setQuestions] = useState([]);
+  
+  const [formData, setFormData] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isFinished, setIsFinished] = useState(false);
+
+  // Fetch dynamic questions
+  useEffect(() => {
+    const loadQuestions = async () => {
+      try {
+        const res = await fetchSetting('onboarding_questions');
+        // Filter out disabled ones
+        const active = (res || []).filter(q => q.enabled);
+        
+        // Build initial form data
+        const initial = {};
+        active.forEach(q => {
+          initial[q.key] = q.type === 'options' ? '' : '';
+        });
+        
+        setQuestions(active);
+        setFormData(initial);
+      } catch (err) {
+        console.error('Failed to load onboarding questions:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadQuestions();
+  }, []);
 
   useEffect(() => { 
     if (user?.onboardingCompleted && !isFinished) navigate('/'); 
@@ -54,7 +79,7 @@ export default function Onboarding() {
     try {
       await completeOnboarding(formData);
       setIsFinished(true);
-      setStep(STEPS.length - 1);
+      setStep(questions.length + 1); // Move to final step
     } catch (e) {
       console.error(e);
       alert('Failed to save preferences. Please try again.');
@@ -63,12 +88,28 @@ export default function Onboarding() {
     }
   };
 
-  const handleFinalSignOut = () => {
-    logout();
-    navigate('/login');
+  const handleContinue = () => {
+    navigate('/');
   };
 
-  const activeStep = STEPS[step];
+  const getIcon = (key) => {
+    switch(key) {
+      case 'propertyType': return <Home size={32} />;
+      case 'budget': return <IndianRupee size={32} />;
+      case 'purpose': return <Target size={32} />;
+      case 'locations': return <MapPin size={32} />;
+      default: return <HelpCircle size={32} />;
+    }
+  };
+
+  if (loading) return (
+    <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--midnight)' }}>
+      <div className="loader" />
+    </div>
+  );
+
+  const totalSteps = questions.length + 2; // Welcome + Questions + Finish
+  const isFinalStep = step === questions.length + 1;
 
   return (
     <div style={{ 
@@ -89,15 +130,28 @@ export default function Onboarding() {
         background: 'radial-gradient(circle, var(--royal-gold) 0%, transparent 70%)', opacity: 0.1, filter: 'blur(100px)' 
       }} />
 
-      {/* Header */}
-      <div style={{ padding: '2rem', display: 'flex', justifyContent: 'center' }}>
-        <Logo size={42} showText />
+      <div style={{ padding: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative', zIndex: 10 }}>
+        <Link to="/" style={{ textDecoration: 'none' }}>
+          <Logo size={42} showText />
+        </Link>
+        <button 
+          onClick={() => navigate('/')}
+          className="glass-heavy btn-3d"
+          style={{ 
+            border: '1px solid rgba(212,175,55,0.4)', 
+            color: 'var(--gold)', padding: '0.6rem 1.4rem', borderRadius: '12px', cursor: 'pointer',
+            fontSize: '0.85rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px',
+            textTransform: 'uppercase', letterSpacing: '0.05em'
+          }}
+        >
+          <ChevronLeft size={16} /> {t('dashboard.backToSite')}
+        </button>
       </div>
 
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem 2rem 4rem' }}>
         <motion.div 
           className="glass-heavy onboarding-card"
-          style={{ width: '100%', maxWidth: '640px', borderRadius: '32px', position: 'relative' }}
+          style={{ width: '100%', maxWidth: '520px', borderRadius: '28px', position: 'relative', overflow: 'hidden' }}
           layout
         >
           {/* Progress Bar */}
@@ -106,7 +160,7 @@ export default function Onboarding() {
               <motion.div 
                 style={{ height: '100%', background: 'linear-gradient(90deg, var(--royal-emerald), var(--royal-gold))' }}
                 initial={{ width: 0 }}
-                animate={{ width: `${(step / (STEPS.length - 2)) * 100}%` }}
+                animate={{ width: `${(step / (questions.length + 1)) * 100}%` }}
               />
             </div>
           )}
@@ -125,130 +179,77 @@ export default function Onboarding() {
                   <div style={{ display: 'inline-flex', padding: '1rem', background: 'var(--gold-dim)', borderRadius: '20px', color: 'var(--royal-gold)', marginBottom: '2rem' }}>
                     <Sparkles size={32} />
                   </div>
-                  <h2 style={{ fontSize: '2.5rem', fontWeight: 900, marginBottom: '1rem', fontFamily: 'var(--font-serif)' }}>Tailored Experience</h2>
+                  <h2 style={{ fontSize: '2.5rem', fontWeight: 900, marginBottom: '1rem', fontFamily: 'var(--font-serif)' }}>{t('onboarding.welcomeTitle', 'Tailored Experience')}</h2>
                   <p style={{ color: 'var(--txt-secondary)', lineHeight: 1.8, marginBottom: '2.5rem' }}>
-                    Welcome, <b>{user?.name?.split(' ')[0]}</b>. To provide you with the most relevant investment opportunities in Andhra Pradesh, we need to understand your requirements.
+                    {t('onboarding.welcomeText', { name: user?.name?.split(' ')[0] || 'Explorer' })}
                   </p>
-                  <button className="btn-3d" onClick={handleNext} style={{ width: '100%', padding: '1.2rem' }}>
-                    Get Started <ChevronRight size={18} style={{ marginLeft: '8px' }} />
-                  </button>
-                </div>
-              )}
-
-              {/* --- STEP 1: PURPOSE --- */}
-              {step === 1 && (
-                <div>
-                  <h3 style={{ fontSize: '1.8rem', fontWeight: 800, marginBottom: '0.5rem' }}>Your Strategy</h3>
-                  <p style={{ color: 'var(--txt-muted)', marginBottom: '2rem' }}>What is the primary intent behind this property search?</p>
-                  <div style={{ display: 'grid', gap: '1rem' }}>
-                    {PURPOSES.map(p => (
-                      <button 
-                        key={p}
-                        onClick={() => setFormData({...formData, purpose: p})}
-                        style={{ 
-                          padding: '1.2rem', borderRadius: '18px', border: '1px solid',
-                          borderColor: formData.purpose === p ? 'var(--royal-gold)' : 'var(--border-light)',
-                          background: formData.purpose === p ? 'var(--gold-dim)' : '#ffffff05',
-                          color: formData.purpose === p ? 'var(--royal-gold)' : 'var(--txt-primary)',
-                          textAlign: 'left', cursor: 'pointer', transition: 'all 0.2s', fontWeight: 600
-                        }}
-                      >
-                        {p}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* --- STEP 2: TYPE --- */}
-              {step === 2 && (
-                <div>
-                  <h3 style={{ fontSize: '1.8rem', fontWeight: 800, marginBottom: '0.5rem' }}>Property Category</h3>
-                  <p style={{ color: 'var(--txt-muted)', marginBottom: '2rem' }}>Which asset types are you most interested in?</p>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                    {PROPERTY_TYPES.map(t => (
-                      <button 
-                        key={t}
-                        onClick={() => setFormData({...formData, propertyType: t})}
-                        style={{ 
-                          padding: '1rem', borderRadius: '16px', border: '1px solid',
-                          borderColor: formData.propertyType === t ? 'var(--royal-gold)' : 'var(--border-light)',
-                          background: formData.propertyType === t ? 'var(--gold-dim)' : '#ffffff05',
-                          color: formData.propertyType === t ? 'var(--royal-gold)' : 'var(--txt-primary)',
-                          cursor: 'pointer', transition: 'all 0.2s', fontSize: '0.9rem', fontWeight: 600
-                        }}
-                      >
-                        {t}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* --- STEP 3: BUDGET --- */}
-              {step === 3 && (
-                <div>
-                  <h3 style={{ fontSize: '1.8rem', fontWeight: 800, marginBottom: '0.5rem' }}>Budget Profile</h3>
-                  <p style={{ color: 'var(--txt-muted)', marginBottom: '2rem' }}>What is your planned investment range?</p>
-                  <div style={{ display: 'grid', gap: '0.75rem' }}>
-                    {BUDGETS.map(b => (
-                      <button 
-                        key={b}
-                        onClick={() => setFormData({...formData, budget: b})}
-                        style={{ 
-                          padding: '1rem', borderRadius: '16px', border: '1px solid',
-                          borderColor: formData.budget === b ? 'var(--royal-gold)' : 'var(--border-light)',
-                          background: formData.budget === b ? 'var(--gold-dim)' : '#ffffff05',
-                          color: formData.budget === b ? 'var(--royal-gold)' : 'var(--txt-primary)',
-                          cursor: 'pointer', transition: 'all 0.2s', fontWeight: 600
-                        }}
-                      >
-                        {b}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* --- STEP 4: LOCATION --- */}
-              {step === 4 && (
-                <div style={{ maxHeight: '450px', overflowY: 'auto', paddingRight: '0.5rem' }}>
-                  <h3 style={{ fontSize: '1.8rem', fontWeight: 800, marginBottom: '0.5rem' }}>Preferred Areas</h3>
-                  <p style={{ color: 'var(--txt-muted)', marginBottom: '1.5rem' }}>Select the districts or cities you're targeting.</p>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                    {DISTRICTS.map(d => (
-                      <button 
-                        key={d}
-                        onClick={() => toggleLocation(d)}
-                        style={{ 
-                          padding: '0.8rem', borderRadius: '12px', border: '1px solid',
-                          borderColor: formData.locations.includes(d) ? 'var(--royal-gold)' : 'var(--border-light)',
-                          background: formData.locations.includes(d) ? 'var(--gold-dim)' : '#ffffff05',
-                          color: formData.locations.includes(d) ? 'var(--royal-gold)' : 'var(--txt-primary)',
-                          cursor: 'pointer', transition: 'all 0.2s', fontSize: '0.85rem'
-                        }}
-                      >
-                        {d}
-                      </button>
-                    ))}
-                  </div>
-                  <div style={{ marginTop: '1.5rem' }}>
-                    <label style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--txt-muted)', display: 'block', marginBottom: '0.5rem' }}>Additional Preferences</label>
-                    <textarea 
-                      placeholder="e.g. Near main road, North-facing, etc."
-                      value={formData.additionalNotes}
-                      onChange={(e) => setFormData({...formData, additionalNotes: e.target.value})}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    <button className="btn-3d" onClick={handleNext} style={{ width: '100%', padding: '1.2rem' }}>
+                      {t('onboarding.getStarted', 'Get Started')} <ChevronRight size={18} style={{ marginLeft: '8px' }} />
+                    </button>
+                    <button 
+                      onClick={() => navigate('/')}
                       style={{ 
-                        width: '100%', background: '#ffffff05', border: '1px solid var(--border-light)', 
-                        borderRadius: '12px', padding: '1rem', color: '#fff', outline: 'none', resize: 'none', height: '80px'
+                        background: 'transparent', border: 'none', color: 'var(--txt-muted)', 
+                        fontSize: '0.9rem', cursor: 'pointer', textDecoration: 'underline' 
                       }}
-                    />
+                    >
+                      {t('dashboard.backToSite')}
+                    </button>
                   </div>
                 </div>
               )}
 
-              {/* --- STEP 5: FINISH --- */}
-              {step === 5 && (
+              {/* --- DYNAMIC QUESTIONS --- */}
+              {step > 0 && step <= questions.length && (
+                <div>
+                  <div style={{ display: 'inline-flex', padding: '1rem', background: 'var(--gold-dim)', borderRadius: '20px', color: 'var(--royal-gold)', marginBottom: '1.5rem' }}>
+                    {getIcon(questions[step-1].key)}
+                  </div>
+                  <h3 style={{ fontSize: '1.8rem', fontWeight: 800, marginBottom: '0.5rem' }}>{t(`onboarding.q.${questions[step-1].key}`, questions[step-1].title)}</h3>
+                  <p style={{ color: 'var(--txt-muted)', marginBottom: '2rem' }}>{t('onboarding.selectPref', 'Select your preference below.')}</p>
+                  
+                  {questions[step-1].type === 'options' ? (
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '0.85rem' }}>
+                      {questions[step-1].options.map(opt => {
+                        const isSelected = formData[questions[step-1].key] === opt;
+                        return (
+                          <button 
+                            key={opt}
+                            onClick={() => setFormData({...formData, [questions[step-1].key]: opt})}
+                            style={{ 
+                              padding: '1.1rem 1.4rem', borderRadius: '16px', border: '1.5px solid',
+                              borderColor: isSelected ? 'var(--royal-gold)' : 'rgba(255,255,255,0.08)',
+                              background: isSelected ? 'rgba(212,175,55,0.08)' : 'rgba(255,255,255,0.03)',
+                              color: isSelected ? 'var(--royal-gold)' : 'var(--txt-primary)',
+                              textAlign: 'left', cursor: 'pointer', transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)', fontWeight: 600,
+                              fontSize: '0.95rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+                            }}
+                          >
+                            <span>{t(`onboarding.opt.${opt.replace(/\s+/g, '')}`, opt)}</span>
+                            {isSelected && <CheckCircle2 size={18} />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div style={{ marginTop: '1rem' }}>
+                      <textarea 
+                        placeholder={t('onboarding.placeholder', 'Type your answer here...')}
+                        value={formData[questions[step-1].key] || ''}
+                        onChange={(e) => setFormData({...formData, [questions[step-1].key]: e.target.value})}
+                        style={{ 
+                          width: '100%', background: '#ffffff05', border: '1px solid var(--border-light)', 
+                          borderRadius: '12px', padding: '1rem', color: '#fff', outline: 'none', resize: 'none', height: '140px'
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* --- STEP FINISH --- */}
+              {step === questions.length + 1 && (
                 <div style={{ textAlign: 'center' }}>
                   <div style={{ position: 'relative', width: '80px', height: '80px', margin: '0 auto 2rem' }}>
                     <motion.div 
@@ -261,12 +262,12 @@ export default function Onboarding() {
                       <CheckCircle2 size={42} />
                     </motion.div>
                   </div>
-                  <h2 style={{ fontSize: '2.2rem', fontWeight: 900, marginBottom: '1rem', color: 'var(--emerald)' }}>Data Secured</h2>
+                  <h2 style={{ fontSize: '2.2rem', fontWeight: 900, marginBottom: '1rem', color: 'var(--emerald)' }}>{t('dashboard.overview')} {t('onboarding.finishTitle', 'Strategy Optimized')}</h2>
                   <p style={{ color: 'var(--txt-secondary)', lineHeight: 1.8, marginBottom: '2.5rem' }}>
-                    Preferences saved. Our advisors will now review your strategy. For security, please sign in again to activate your customized dashboard.
+                    {t('onboarding.finishText', 'Welcome to the Inner Circle. Your investment strategy has been secured. You can now explore properties and growth hotspots tailored to your profile.')}
                   </p>
-                  <button className="btn-3d" onClick={handleFinalSignOut} style={{ width: '100%', padding: '1.2rem', background: '#fff', color: 'var(--midnight)' }}>
-                    Complete & Sign Out <LogOut size={18} style={{ marginLeft: '8px' }} />
+                  <button className="btn-3d" onClick={handleContinue} style={{ width: '100%', padding: '1.2rem', background: 'var(--royal-emerald)', color: '#fff' }}>
+                    {t('dashboard.backToSite')} <ChevronRight size={18} style={{ marginLeft: '8px' }} />
                   </button>
                 </div>
               )}
@@ -274,7 +275,7 @@ export default function Onboarding() {
           </AnimatePresence>
 
           {/* Controls */}
-          {step > 0 && step < STEPS.length - 1 && (
+          {step > 0 && step < questions.length + 1 && (
             <div style={{ marginTop: '3rem', display: 'flex', gap: '1rem' }}>
               <button 
                 onClick={handleBack} 
@@ -286,12 +287,12 @@ export default function Onboarding() {
                 <ChevronLeft size={20} />
               </button>
               
-              {step < STEPS.length - 2 ? (
+              {step < questions.length ? (
                 <button 
                   className="btn-3d" 
                   onClick={handleNext}
-                  disabled={!formData[activeStep.id] || (Array.isArray(formData[activeStep.id]) && formData[activeStep.id].length === 0)}
-                  style={{ flex: 3, opacity: (!formData[activeStep.id] || (Array.isArray(formData[activeStep.id]) && formData[activeStep.id].length === 0)) ? 0.5 : 1 }}
+                  disabled={!formData[questions[step-1].key]}
+                  style={{ flex: 3, opacity: !formData[questions[step-1].key] ? 0.5 : 1 }}
                 >
                   Continue <ChevronRight size={18} style={{ marginLeft: '8px' }} />
                 </button>
@@ -299,14 +300,15 @@ export default function Onboarding() {
                 <button 
                   className="btn-3d btn-3d-emerald" 
                   onClick={handleFinish}
-                  disabled={isSubmitting}
-                  style={{ flex: 3 }}
+                  disabled={isSubmitting || !formData[questions[step-1].key]}
+                  style={{ flex: 3, opacity: (!formData[questions[step-1].key]) ? 0.5 : 1 }}
                 >
                   {isSubmitting ? 'Syncing...' : 'Save Strategy'} <ChevronRight size={18} style={{ marginLeft: '8px' }} />
                 </button>
               )}
             </div>
           )}
+
         </motion.div>
       </div>
     </div>

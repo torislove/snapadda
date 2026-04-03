@@ -38,7 +38,7 @@ function ProtectedRoute({ children }) {
   if (isLoading) return <EliteLoader />;
   if (!user) return <Navigate to="/login" replace state={{ from: location }} />;
   if (user.role !== 'client') return <Navigate to="/" replace />;
-  if (!user.onboardingCompleted && location.pathname !== '/onboarding') return <Navigate to="/onboarding" replace />;
+  if (!user.onboardingCompleted && location.pathname !== '/onboarding' && location.pathname !== '/') return <Navigate to="/onboarding" replace />;
   return children;
 }
 
@@ -52,8 +52,8 @@ function AppContent() {
       <Suspense fallback={<EliteLoader />}>
         <Routes>
           <Route path="/login" element={<Login />} />
-          <Route path="/" element={<Home />} />
-          <Route path="/property/:id" element={<ProtectedRoute><PropertyDetails /></ProtectedRoute>} />
+          <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+          <Route path="/property/:id" element={<PropertyDetails />} />
           <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
           <Route path="/dashboard/*" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/request-callback" element={<RequestPage />} />

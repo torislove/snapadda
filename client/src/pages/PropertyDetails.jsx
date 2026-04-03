@@ -1,3 +1,8 @@
+import { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { ArrowLeft, ShieldCheck, MapPin, Building2, User, Phone, MessageSquare, Image, Video, BedDouble, Bath, Square, Compass, Award, Send, Star, ChevronRight } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 import Logo from '../components/Logo';
 import { fetchProperty, fetchSetting, submitLead, askQuestion, fetchPropertyFAQs } from '../services/api';
 
@@ -5,6 +10,7 @@ import { fetchProperty, fetchSetting, submitLead, askQuestion, fetchPropertyFAQs
 export default function PropertyDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [property, setProperty] = useState(null);
   const [loading, setLoading] = useState(true);
   const [mediaTab, setMediaTab] = useState('photos');
@@ -77,10 +83,21 @@ export default function PropertyDetails() {
 
   const handleAsk = async (e) => {
     e.preventDefault();
-    if (!qText || !qName || !qContact || !id) return;
+    if (!user) {
+      navigate('/login', { state: { from: window.location.pathname } });
+      return;
+    }
+    if (!qText || !id) return;
     setQStatus('Sending...');
     try {
-      const res = await askQuestion({ propertyId: id, clientName: qName, clientContact: qContact, question: qText });
+      const res = await askQuestion({ 
+        propertyId: id, 
+        userId: user._id || user.id,
+        authType: user.isGuest ? 'Guest' : (user.token ? 'Google' : 'Email'),
+        clientName: user.name || qName, 
+        clientContact: user.email || user.phone || qContact, 
+        question: qText 
+      });
       if (res.status === 'success') { 
         setQStatus('Question submitted! Agent will respond soon.'); 
         setQText(''); setQName(''); setQContact(''); 
@@ -183,7 +200,36 @@ export default function PropertyDetails() {
                 )}
               </div>
               <h1 className="pd-title">{property.title}</h1>
-              <p className="pd-location"><MapPin size={16} /> {property.location}</p>
+              <p className="pd-location">
+                <MapPin size={16} /> {property.location}
+                {property.googleMapsLink && (
+                  <a 
+                    href={property.googleMapsLink} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    style={{ 
+                      marginLeft: '12px', 
+                      fontSize: '0.75rem', 
+                      color: 'var(--gold)', 
+                      textDecoration: 'none', 
+                      display: 'inline-flex', 
+                      alignItems: 'center', 
+                      gap: '4px',
+                      background: 'rgba(232, 184, 75, 0.1)',
+                      padding: '4px 10px',
+                      borderRadius: '20px',
+                      border: '1px solid rgba(232, 184, 75, 0.2)'
+                    }}
+                  >
+                    View on Maps
+                  </a>
+                )}
+              </p>
+              {property.address && (
+                <p className="pd-address" style={{ fontSize: '0.9rem', color: 'var(--txt-muted)', marginTop: '0.4rem', fontStyle: 'italic' }}>
+                  {property.address}
+                </p>
+              )}
             </div>
             <div className="pd-price-block">
               <div className="pd-price">{property.price}</div>
@@ -215,7 +261,10 @@ export default function PropertyDetails() {
                   <div className="pd-ov-card"><Bath size={22} className="text-gold" /><div><span className="pd-ov-val">{property.baths}</span><span className="pd-ov-label">Bathrooms</span></div></div>
                 </>
               )}
-              <div className="pd-ov-card"><Square size={22} className="text-gold" /><div><span className="pd-ov-val">{property.areaSize || property.sqft}</span><span className="pd-ov-label">{property.measurementUnit || 'Sq.Yds'}</span></div></div>
+              <div className="pd-ov-card"><Square size={22} className="text-gold" /><div><span className="pd-ov-val">{property.areaSize || property.sqft}</span><span className="pd-ov-label">{property.measurementUnit || 'Sq.Yds'} {property.totalAcres ? `(${property.totalAcres} Acres)` : ''}</span></div></div>
+              {property.pricePerAcre > 0 && property.type === 'Agricultural Land' && (
+                <div className="pd-ov-card"><Building2 size={22} className="text-emerald" /><div><span className="pd-ov-val">₹ {Number(property.pricePerAcre).toLocaleString('en-IN')}</span><span className="pd-ov-label">Per Acre</span></div></div>
+              )}
               {property.facing && property.facing !== 'Any' && <div className="pd-ov-card"><Compass size={22} className="text-gold" /><div><span className="pd-ov-val">{property.facing}</span><span className="pd-ov-label">Facing</span></div></div>}
               {authority && authority !== 'N/A' && <div className="pd-ov-card"><ShieldCheck size={22} style={{ color: 'var(--success)' }} /><div><span className="pd-ov-val">{authority}</span><span className="pd-ov-label">Approval</span></div></div>}
             </div>
@@ -297,17 +346,30 @@ export default function PropertyDetails() {
             </div>
             <div className="pd-ask-form glass-heavy tilt-3d" style={{ padding: '2rem', borderRadius: '16px' }}>
               <h3>Ask the Agent</h3>
-              <form onSubmit={handleAsk}>
-                <div className="pd-ask-row">
-                  <input type="text" placeholder="Your Name" value={qName} onChange={e => setQName(e.target.value)} required />
-                  <input type="text" placeholder="Phone or Email" value={qContact} onChange={e => setQContact(e.target.value)} required />
+              {!user ? (
+                <div style={{ textAlign: 'center', padding: '1rem' }}>
+                  <p style={{ color: 'var(--txt-muted)', marginBottom: '1.5rem' }}>Login to your elite account to ask questions and track responses.</p>
+                  <button 
+                    onClick={() => navigate('/login', { state: { from: window.location.pathname } })} 
+                    className="btn btn-primary btn-3d"
+                    style={{ width: 'auto', padding: '0.8rem 2rem' }}
+                  >
+                    Login to Ask Question
+                  </button>
                 </div>
-                <textarea placeholder="What do you want to know?" value={qText} onChange={e => setQText(e.target.value)} rows={3} required />
-                <div className="pd-ask-footer">
-                  <span style={{ color: qStatus.includes('submitted') ? 'var(--success)' : 'var(--text-muted)', fontSize: '0.85rem' }}>{qStatus}</span>
-                  <button type="submit" className="btn btn-primary btn-3d"><Send size={14} /> Submit</button>
-                </div>
-              </form>
+              ) : (
+                <form onSubmit={handleAsk}>
+                  <div className="pd-ask-row">
+                    <input type="text" placeholder="Your Name" value={user.name || qName} disabled />
+                    <input type="text" placeholder="Phone or Email" value={user.email || user.phone || qContact} disabled />
+                  </div>
+                  <textarea placeholder="What do you want to know?" value={qText} onChange={e => setQText(e.target.value)} rows={3} required />
+                  <div className="pd-ask-footer">
+                    <span style={{ color: qStatus.includes('submitted') ? 'var(--gold)' : 'var(--text-muted)', fontSize: '0.85rem' }}>{qStatus}</span>
+                    <button type="submit" className="btn btn-primary btn-3d"><Send size={14} /> Submit</button>
+                  </div>
+                </form>
+              )}
             </div>
           </section>
         </div>
@@ -318,7 +380,7 @@ export default function PropertyDetails() {
             <h3>Interested?</h3>
             <p className="text-muted">Connect directly with the owner or agent.</p>
             <div className="pd-contact-actions">
-              <button className="btn btn-primary btn-lg btn-full btn-3d" onClick={() => navigate('/request-callback')}>Request Callback</button>
+              <a href={`tel:${(supportInfo?.phone || '+919346793364').replace(/\s+/g, '')}`} className="btn btn-primary btn-lg btn-full btn-3d" style={{ textDecoration: 'none' }}>Call Agent Now</a>
               <div className="pd-divider">or</div>
               <button className="btn btn-lg btn-full btn-3d-emerald" style={{ backgroundColor: '#25D366', color: 'white', border: 'none' }} onClick={handleWhatsApp}>
                 <MessageSquare size={18} /> WhatsApp
@@ -347,17 +409,17 @@ export default function PropertyDetails() {
         gap: '1rem',
         boxShadow: '0 -10px 40px rgba(0,0,0,0.5)'
       }}>
-        <button 
+        <a 
+          href={`tel:${(supportInfo?.phone || '+919346793364').replace(/\s+/g, '')}`}
           className="hero-btn hero-btn-primary pulse-primary btn-3d" 
-          onClick={() => navigate('/request-callback')} 
-          style={{ flex: 1, padding: '1rem', fontSize: '0.9rem', fontWeight: 800, letterSpacing: '0.5px' }}
+          style={{ flex: 1, padding: '1rem', fontSize: '0.9rem', fontWeight: 800, letterSpacing: '0.5px', textDecoration: 'none' }}
         >
-          <Phone size={18} /> REQUEST CALLBACK
-        </button>
+          <Phone size={18} /> CALL AGENT NOW
+        </a>
         <button 
           className="hero-btn hero-btn-whatsapp" 
           onClick={handleWhatsApp} 
-          style={{ width: '60px', height: '56px', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#25D366' }}
+          style={{ width: '60px', height: '56px', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#25D366', border: 'none' }}
         >
           <MessageSquare size={22} color="white" />
         </button>

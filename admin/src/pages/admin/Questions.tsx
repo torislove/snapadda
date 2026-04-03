@@ -104,8 +104,14 @@ export default function AdminQuestions() {
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
                 <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
+                    <span style={{ 
+                      fontSize: '0.65rem', padding: '2px 8px', borderRadius: '4px', background: 'rgba(34, 217, 224, 0.1)', color: 'var(--cyan)', fontWeight: 800, border: '1px solid rgba(34, 217, 224, 0.2)'
+                    }}>LEAD</span>
                     <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{q.clientName}</span>
+                    {q.authType && (
+                      <span style={{ fontSize: '0.7rem', color: 'var(--gold)', fontWeight: 600 }}>via {q.authType}</span>
+                    )}
                     <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Phone: {q.clientContact}</span>
                     <span style={{ 
                       fontSize: '0.7rem', padding: '2px 8px', borderRadius: '99px', textTransform: 'uppercase', fontWeight: 700,

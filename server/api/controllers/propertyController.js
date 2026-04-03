@@ -51,8 +51,8 @@ export const createProperty = async (req, res) => {
     if (!propertyData.description || propertyData.description.trim() === '') {
       const { type, purpose, bhk, furnishing, facing, totalFloors, parking, location, district, constructionStatus } = propertyData;
       
-      let generatedDesc = `A premium ${type} located in the prime area of ${location}${district ? ', ' + district : ''}. `;
-      if (bhk > 0) generatedDesc += `This ${bhk} BHK property is highly sought-after and available for ${purpose}. `;
+      let generatedDesc = `A premium ${type || 'property'} located in the prime area of ${location || 'Andhra Pradesh'}${district ? ', ' + district : ''}. `;
+      if (bhk > 0) generatedDesc += `This ${bhk} BHK property is highly sought-after and available for ${purpose || 'Sale'}. `;
       if (furnishing && furnishing !== 'N/A') generatedDesc += `It comes ${furnishing} and is in ${constructionStatus || 'excellent'} condition. `;
       if (facing && facing !== 'Any') generatedDesc += `As a ${facing}-facing property, it ensures natural light and great ventilation. `;
       if (parking && parking !== 'None' && parking !== 'N/A') generatedDesc += `It includes ${parking} parking space for convenience. `;
@@ -66,7 +66,7 @@ export const createProperty = async (req, res) => {
     await newProperty.save();
     res.status(201).json({ status: 'success', data: newProperty });
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    res.status(400).json({ status: 'error', message: error.message });
   }
 };
 
