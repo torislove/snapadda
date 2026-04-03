@@ -27,12 +27,26 @@ const storage = new CloudinaryStorage({
 
 const upload = multer({ storage: storage });
 
+// Health Check for Cloudinary Config
+router.get('/health', (req, res) => {
+  const config = {
+    cloud_name: !!process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: !!process.env.CLOUDINARY_API_KEY,
+    api_secret: !!process.env.CLOUDINARY_API_SECRET
+  };
+  res.json({ status: 'success', cloudinary_configured: config });
+});
+
 // POST /api/media/upload
 router.post('/upload', upload.array('files', 10), (req, res) => {
   try {
+    console.log('UPLOAD_REQUEST_RECEIVED:', req.files?.length || 0, 'files');
+    
     if (!req.files || req.files.length === 0) {
+      console.warn('UPLOAD_WARNING: No files present in request');
       return res.status(400).json({ status: 'error', message: 'No files uploaded' });
     }
+    
     const urls = req.files.map(file => file.path || file.secure_url || file.url);
     console.log('MEDIA_UPLOAD_SUCCESS:', urls.length, 'files');
     res.json({
@@ -40,7 +54,11 @@ router.post('/upload', upload.array('files', 10), (req, res) => {
       data: urls
     });
   } catch (error) {
-    console.error('MEDIA_UPLOAD_ERROR:', error);
+    console.error('MEDIA_UPLOAD_ERROR_DETAILS:', {
+      message: error.message,
+      code: error.http_code,
+      details: error.name
+    });
     res.status(500).json({ status: 'error', message: error.message || 'Upload process failed' });
   }
 });

@@ -10,19 +10,33 @@ import { onRequest } from "firebase-functions/v2/https";
 
 dotenv.config();
 
+// Critical Environment Check
+console.log('--- PRODUCTION_ENV_DIAGNOSTICS ---');
+console.log('NODE_ENV:', process.env.NODE_ENV);
+console.log('MONGODB_URI_PROVIDED:', !!process.env.MONGODB_URI);
+console.log('CLOUDINARY_NAME_PROVIDED:', !!process.env.CLOUDINARY_CLOUD_NAME);
+console.log('CLOUDINARY_KEY_PROVIDED:', !!process.env.CLOUDINARY_API_KEY);
+console.log('----------------------------------');
+
 const app = express();
+
 
 // Security & Optimization Middleware
 app.use(helmet({
-  contentSecurityPolicy: false, // Disable CSP for easier integration with external assets if needed, or configure specifically
+  contentSecurityPolicy: false,
 }));
-app.use(compression()); // Compress all responses
+app.use(compression());
+
+// Handle CORS early and consistently
 app.use(cors({
-  origin: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : '*',
+  origin: '*', // For Firebase functions, its often easier to start with * or env-based origin
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   credentials: true
 }));
-app.use(express.json({ limit: '10mb' })); // Limit body size for security
+
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' })); // Support for FormData if needed
 
 // Rate Limiting
 const limiter = rateLimit({
@@ -44,11 +58,33 @@ app.use((err, req, res, next) => {
 });
 
 // 1. Basic Health Check (Must be at the TOP (to respond even if DB is still connecting))
+// Base health check
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'success', message: 'Root health check reached' });
+});
+
 app.get('/api/health', (req, res) => {
   res.status(200).json({ 
     status: 'success', 
-    message: 'SnapAdda Master API is now consolidated (Vercel Hobby Fix)',
+    message: 'SnapAdda Master API is now consolidated',
     time: new Date().toISOString()
+  });
+});
+
+// Alternative media health check
+app.get('/media-health', (req, res) => {
+  res.json({ status: 'success', message: 'Media health check (no prefix) reached' });
+});
+
+// Direct diagnostic route for media
+app.get('/api/media-health', (req, res) => {
+  res.status(200).json({ 
+    status: 'success', 
+    message: 'Direct media health check reached',
+    cloudinary_keys: {
+      name: !!process.env.CLOUDINARY_CLOUD_NAME,
+      key: !!process.env.CLOUDINARY_API_KEY
+    }
   });
 });
 
@@ -115,6 +151,16 @@ app.use('/api/media', mediaRoutes);
 app.use('/api/promotions', promotionRoutes);
 app.use('/api/testimonials', testimonialRoutes);
 app.use('/api/questions', questionRoutes);
+
+// Catch-all 404 Diagnostic (Must be LAST)
+app.use((req, res) => {
+  console.log('404_NOT_FOUND_PATH:', req.originalUrl);
+  res.status(404).json({
+    status: 'error',
+    message: `Cannot ${req.method} ${req.originalUrl}`,
+    suggestion: 'Try checking /api/health to verify base URL'
+  });
+});
 
 // Export for Firebase Functions
 export const api = onRequest({ cors: true }, app);
