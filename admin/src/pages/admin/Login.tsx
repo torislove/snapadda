@@ -1,123 +1,155 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAdminAuth } from '../../contexts/AdminAuthContext';
-import { KeyRound, Mail, Loader2, Eye, EyeOff } from 'lucide-react';
-import { motion } from 'framer-motion';
 import { Logo } from '../../components/ui/Logo';
-import './Login.css';
+import { GoogleLogin } from '@react-oauth/google';
+import { jwtDecode } from 'jwt-decode';
+import { ShieldCheck, ArrowLeft, Loader2 } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const AdminLogin = () => {
   const navigate = useNavigate();
   const { adminLogin } = useAdminAuth();
-
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleGoogleSuccess = async (credentialResponse: any) => {
     setIsLoading(true);
     setError('');
-
     try {
-      const res = await fetch(`${API_URL}/admin/login`, {
+      const decoded: any = jwtDecode(credentialResponse.credential);
+      const res = await fetch(`${API_URL}/admin/auth/google`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(decoded),
       });
 
       const data = await res.json();
-
       if (res.ok && data.token) {
         adminLogin(data.user, data.token);
         navigate('/admin');
       } else {
-        setError(data.message || 'Authentication Failed');
+        setError(data.message || 'Access Denied: Admin authorization required.');
       }
     } catch (err) {
       console.error(err);
-      setError('Network Error. Ensure backend is running.');
+      setError('Connection failure. Ensure backend services are active.');
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="admin-login-page">
+    <div className="admin-login-page-premium" style={{ 
+      minHeight: '100vh', 
+      display: 'flex', 
+      alignItems: 'center', 
+      justifyContent: 'center', 
+      background: '#020205', 
+      padding: '1.5rem',
+      position: 'relative',
+      overflow: 'hidden'
+    }}>
+      {/* Royal Admin Accent */}
+      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '4px', background: 'linear-gradient(90deg, #9e822a, #f1d592, #9e822a)' }} />
+      
       <motion.div 
-        className="admin-login-box"
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.4 }}
+        className="admin-login-box-premium glass-heavy"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        style={{ 
+          maxWidth: '460px', 
+          width: '100%', 
+          borderRadius: '32px', 
+          padding: '4rem 3rem',
+          border: '1px solid rgba(232, 184, 75, 0.15)',
+          boxShadow: '0 50px 120px rgba(0,0,0,0.9)',
+          textAlign: 'center',
+          position: 'relative',
+          zIndex: 10
+        }}
       >
-        <div className="flex flex-col items-center mb-8">
-          <div className="flex items-center gap-2 mb-2">
-            <Logo size={28} />
-            <h1 className="text-2xl font-bold text-white">Snap<span className="text-gold-500">Adda</span></h1>
+        <div className="flex flex-col items-center mb-10">
+          <div style={{ background: 'rgba(232, 184, 75, 0.1)', padding: '1rem', borderRadius: '24px', marginBottom: '1.5rem', border: '1px solid rgba(232, 184, 75, 0.2)' }}>
+            <Logo size={48} />
           </div>
-          <h2 className="text-gray-400 font-medium">Admin Sign In</h2>
+          <h1 style={{ fontSize: '2rem', fontWeight: 900, color: '#fff', letterSpacing: '-0.03em' }}>
+            Snap<span className="text-royal-gold">Adda</span> Console
+          </h1>
+          <p style={{ color: 'var(--txt-muted)', marginTop: '0.75rem', fontSize: '0.95rem' }}>
+            Authorized Personnel Only
+          </p>
         </div>
 
         {error && (
-          <div className="mb-6 p-3 bg-red-900/30 border border-red-500/50 rounded-lg text-red-200 text-sm text-center font-medium">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            style={{ marginBottom: '2rem', padding: '1rem', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.4)', borderRadius: '16px', color: '#fca5a5', fontSize: '0.85rem', fontWeight: 600 }}
+          >
             {error}
-          </div>
+          </motion.div>
         )}
 
-        <form onSubmit={handleLogin} className="space-y-5">
-          <div className="input-group">
-            <label className="input-label">Email address</label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
-              <input 
-                type="email" 
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@snapadda.com"
-                className="admin-input-field pl-10"
-                required
+        <div className="admin-auth-container" style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+          <div style={{ position: 'relative', padding: '4px', background: 'rgba(232, 184, 75, 0.05)', borderRadius: '20px', border: '1px solid rgba(232, 184, 75, 0.2)' }}>
+            {isLoading ? (
+              <div style={{ padding: '0.85rem', color: 'var(--gold)', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+                <Loader2 className="animate-spin" size={20} />
+                Verifying Credentials...
+              </div>
+            ) : (
+              <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={() => setError('Google Sign-In Failed')}
+                theme="filled_black"
+                shape="pill"
+                size="large"
+                width="100%"
               />
-            </div>
+            )}
           </div>
 
-          <div className="input-group">
-            <label className="input-label">Password</label>
-            <div className="relative">
-              <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
-              <input 
-                type={showPassword ? "text" : "password"} 
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="admin-input-field pl-10 pr-10"
-                required
-              />
-              <button 
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
-                aria-label="Toggle password visibility"
-              >
-                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
-            </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', opacity: 0.3 }}>
+            <div style={{ flex: 1, height: '1px', background: 'var(--border-light)' }}></div>
+            <ShieldCheck size={18} />
+            <div style={{ flex: 1, height: '1px', background: 'var(--border-light)' }}></div>
           </div>
 
+          <div style={{ textAlign: 'left', background: 'rgba(255,255,255,0.03)', padding: '1.25rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}>
+            <h4 style={{ color: '#fff', fontSize: '0.9rem', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <ShieldCheck size={14} className="text-royal-gold" /> Security Protocol
+            </h4>
+            <p style={{ color: 'var(--txt-muted)', fontSize: '0.8rem', lineHeight: 1.5 }}>
+              Access is strictly logged. Authentication requires an active @snapadda.com or authorized estate partner account.
+            </p>
+          </div>
+        </div>
+
+        <div style={{ marginTop: '3.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <button 
-            type="submit" 
-            disabled={isLoading}
-            className="admin-signin-btn"
+            onClick={() => window.location.href = '/'}
+            className="flex items-center justify-center gap-2 text-gray-500 hover:text-white transition-colors text-sm"
           >
-            {isLoading ? <Loader2 className="animate-spin" size={20} /> : 'Sign In'}
+            <ArrowLeft size={14} /> Back to Portal
           </button>
-        </form>
+          <p style={{ fontSize: '0.75rem', color: '#333' }}>© 2026 SNAPADDA INFRASTRUCTURE. ALL RIGHTS RESERVED.</p>
+        </div>
       </motion.div>
+
+      <style>{`
+        .admin-login-box-premium::after {
+          content: "";
+          position: absolute;
+          inset: 0;
+          background: radial-gradient(circle at 100% 0%, rgba(232, 184, 75, 0.05) 0%, transparent 50%);
+          border-radius: 32px;
+          pointer-events: none;
+        }
+      `}</style>
     </div>
   );
 };

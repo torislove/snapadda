@@ -1,12 +1,12 @@
 import express from 'express';
-import multer from 'multer';
 import { v2 as cloudinary } from 'cloudinary';
-import { CloudinaryStorage } from 'multer-storage-cloudinary';
+import { Readable } from 'stream';
 import dotenv from 'dotenv';
+import { parseMultipart } from '../utils/multipartParser.js';
 
 dotenv.config();
 
-// Ensure Cloudinary is configured specifically for this route set
+// Ensure Cloudinary is configured
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
@@ -15,23 +15,24 @@ cloudinary.config({
 
 const router = express.Router();
 
-// Cloudinary Storage Config for Multer
-const storage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: {
-    folder: 'snapadda/properties',
-    allowed_formats: ['jpg', 'png', 'jpeg', 'webp', 'mp4', 'mov', 'heic', 'heif', 'bmp'],
-    resource_type: 'auto'
-  }
-});
-
-const upload = multer({ 
-  storage: storage,
-  limits: {
-    fileSize: 30 * 1024 * 1024, // 30MB limit for high-res mobile photos
-    files: 20
-  }
-});
+/**
+ * Helper to upload a buffer to Cloudinary using its SDK stream
+ */
+const uploadToCloudinary = (fileBuffer) => {
+  return new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      {
+        folder: 'snapadda/properties',
+        resource_type: 'auto'
+      },
+      (error, result) => {
+        if (error) return reject(error);
+        resolve(result.secure_url);
+      }
+    );
+    Readable.from(fileBuffer).pipe(stream);
+  });
+};
 
 // Health Check for Cloudinary Config
 router.get('/health', (req, res) => {
@@ -43,48 +44,41 @@ router.get('/health', (req, res) => {
   res.json({ status: 'success', cloudinary_configured: config });
 });
 
-// POST /api/media/upload
-router.post('/upload', (req, res) => {
-  upload.array('files', 20)(req, res, (err) => {
-    if (err instanceof multer.MulterError) {
-      console.error('MULTER_SPECIFIC_ERROR:', err.code, err.message);
-      let message = 'File upload failed: ' + err.message;
-      if (err.code === 'LIMIT_FILE_SIZE') message = 'File too large (Max 30MB)';
-      if (err.code === 'LIMIT_FILE_COUNT') message = 'Too many files (Max 20)';
-      return res.status(400).json({ status: 'error', message });
-    } else if (err) {
-      console.error('GENERIC_UPLOAD_ERROR:', err);
-      return res.status(500).json({ status: 'error', message: 'Cloudinary server error: ' + (err.message || 'Unknown failure') });
+// POST /api/media/upload - Hybrid Parser Version
+router.post('/upload', async (req, res) => {
+  try {
+    console.log('--- HYBRID MEDIA UPLOAD START ---');
+    
+    // Use the robust parser instead of Multer
+    const { files } = await parseMultipart(req);
+    
+    if (!files || files.length === 0) {
+      console.error('UPLOAD_ERROR: No files in request boat');
+      return res.status(400).json({ status: 'error', message: 'No files provided.' });
     }
 
-    try {
-      console.log('--- MEDIA UPLOAD START ---');
-      console.log('FILES_FOUND:', req.files?.length || 0);
+    console.log(`Processing ${files.length} assets...`);
+    
+    // Upload all files in parallel to Cloudinary
+    const uploadPromises = files.map(file => {
+      console.log(`Uploading: ${file.originalname} (${(file.size / 1024 / 1024).toFixed(2)} MB)`);
+      return uploadToCloudinary(file.buffer);
+    });
 
-      if (!req.files || req.files.length === 0) {
-        console.error('UPLOAD_ERROR: No files in request body');
-        return res.status(400).json({ status: 'error', message: 'No files were uploaded. Please select images.' });
-      }
+    const urls = await Promise.all(uploadPromises);
 
-      const urls = req.files.map(file => {
-        // Prioritize secure_url from Cloudinary
-        const url = file.secure_url || file.path || file.url;
-        console.log('FILE_PROCESSED:', file.originalname, '->', url);
-        return url;
-      });
-
-      console.log('UPLOAD_SUCCESS:', urls.length, 'total assets');
-      console.log('--- MEDIA UPLOAD END ---');
-
-      res.json({
-        status: 'success',
-        data: urls
-      });
-    } catch (criticalErr) {
-      console.error('CRITICAL_POST_UPLOAD_ERROR:', criticalErr);
-      res.status(500).json({ status: 'error', message: 'System error processing uploaded media' });
-    }
-  });
+    console.log('--- HYBRID MEDIA UPLOAD SUCCESS ---');
+    res.json({
+      status: 'success',
+      data: urls
+    });
+  } catch (err) {
+    console.error('UPLOAD_FAILURE:', err);
+    res.status(500).json({ 
+      status: 'error', 
+      message: 'Media server error: ' + (err.message || 'Unknown stream failure') 
+    });
+  }
 });
 
 export default router;

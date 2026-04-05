@@ -11,7 +11,15 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const stored = localStorage.getItem('snapadda_user');
     if (stored) {
-      try { setUser(JSON.parse(stored)); } catch { console.error('Failed to parse user from localStorage'); }
+      try { 
+        const parsed = JSON.parse(stored);
+        if (parsed && typeof parsed === 'object') {
+          setUser(parsed); 
+        }
+      } catch (e) { 
+        console.error('SnapAdda: Auth storage corruption detected, resetting...', e);
+        localStorage.removeItem('snapadda_user');
+      }
     }
     setIsLoading(false);
     console.log('AuthProvider loaded user from localStorage.');
@@ -26,18 +34,6 @@ export const AuthProvider = ({ children }) => {
     const userWithToken = { ...userData.user, token: userData.token || 'mock_token' };
     setUser(userWithToken);
     localStorage.setItem('snapadda_user', JSON.stringify(userWithToken));
-  };
-
-  const loginGuest = () => {
-    const guestUser = { 
-      _id: 'guest_' + Date.now(),
-      name: 'Guest User', 
-      role: 'client', 
-      isGuest: true, 
-      onboardingCompleted: true 
-    };
-    setUser(guestUser);
-    localStorage.setItem('snapadda_user', JSON.stringify(guestUser));
   };
 
   const logout = () => {
@@ -64,7 +60,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, loginGoogle, loginGuest, logout, completeOnboarding, isLoading }}>
+    <AuthContext.Provider value={{ user, login, loginGoogle, logout, completeOnboarding, isLoading }}>
       {children}
     </AuthContext.Provider>
   );

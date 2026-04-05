@@ -19,7 +19,7 @@ export default function PropertyCard({
   const { t } = useTranslation();
   const propertyId = id || _id;
   const [liked, setLiked] = useState(initialLiked);
-  const [likeCount, setLikeCount] = useState(initialLikeCount);
+  const [likeCount, setLikeCount] = useState(initialLikeCount || 0);
 
   const allImages = Array.isArray(images) && images.length > 0 
     ? images 
@@ -148,11 +148,11 @@ export default function PropertyCard({
 
         <section className="property-content" style={{ transform: 'translateZ(10px)' }}>
           <Link to={propertyId ? `/property/${propertyId}` : '#'} className="property-title-link">
-            <h2 className="property-title text-royal-gold" style={{ fontSize: '1.25rem', margin: '0' }}>{title}</h2>
+            <h2 className="property-title text-royal-gold" style={{ fontSize: '1.25rem', margin: '0' }}>{title || 'Premium Property'}</h2>
           </Link>
-          <div className="property-location text-muted"><MapPin size={12} /> {t(`geo.${location?.toLowerCase()}`, location)}</div>
+          <div className="property-location text-muted"><MapPin size={12} /> {location ? t(`geo.${location.toLowerCase()}`, location) : 'Andhra Pradesh'}</div>
           <div className="property-lister" style={{ color: listerType?.includes('Builder') ? 'var(--gold)' : 'var(--txt-muted)' }}>
-            {listerType?.includes('Builder') ? <Building2 size={11} /> : <User size={11} />} {listerType}
+            {listerType?.includes('Builder') ? <Building2 size={11} /> : <User size={11} />} {listerType || 'SnapAdda Verified'}
           </div>
           <div className="property-badges">
             {type && <span className="badge type-badge">{t(`types.${type?.toLowerCase()?.replace(/\s+/g, '')}`, type)}</span>}

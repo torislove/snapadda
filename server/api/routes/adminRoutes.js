@@ -1,9 +1,10 @@
 import express from 'express';
-import { adminLogin, updateAdminProfile, changeAdminPassword } from '../controllers/adminController.js';
+import { adminLogin, adminGoogleAuth, updateAdminProfile, changeAdminPassword } from '../controllers/adminController.js';
 
 const router = express.Router();
 
 router.post('/login', adminLogin);
+router.post('/auth/google', adminGoogleAuth);
 router.put('/profile', updateAdminProfile);
 router.put('/change-password', changeAdminPassword);
 

@@ -5,14 +5,20 @@ const API_BASE = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000') 
  * Handles flaky 4G/3G connections commonly found in tier-2/3 cities.
  */
 const safeFetch = async (url, options = {}, retries = 2, backoff = 300) => {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 8000); // 8s timeout guard
+
   try {
-    const response = await fetch(url, options);
+    const response = await fetch(url, { ...options, signal: controller.signal });
+    clearTimeout(timeoutId);
+    
     if (!response.ok && response.status >= 500 && retries > 0) {
       throw new Error('Server Error, retrying...');
     }
     return response;
   } catch (err) {
-    if (retries > 0) {
+    clearTimeout(timeoutId);
+    if (retries > 0 && err.name !== 'AbortError') {
       await new Promise(res => setTimeout(res, backoff));
       return safeFetch(url, options, retries - 1, backoff * 2);
     }
@@ -113,13 +119,14 @@ export const fetchSetting = async (key) => {
 
   try {
     const res = await fetch(`${API_BASE}/settings/${key}`);
-    if (!res.ok) throw new Error(`Failed to fetch setting: ${key}`);
-    const data = (await res.json()).data || null;
-    // Merge backend data over defaults so admin overrides take effect
-    return data ? { ...DEFAULTS[key], ...data } : DEFAULTS[key] || null;
+    const resData = await res.json();
+    const data = resData.data || null;
+    
+    // Safety check: Ensure even if API is 200 but returns null, we merge with defaults
+    return data ? { ...DEFAULTS[key], ...data } : (DEFAULTS[key] || {});
   } catch (e) {
     console.warn(`[fetchSetting] Using default for '${key}':`, e.message);
-    return DEFAULTS[key] || null;
+    return DEFAULTS[key] || {};
   }
 };
 

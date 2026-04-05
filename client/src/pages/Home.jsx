@@ -173,13 +173,13 @@ export default function Home() {
       );
     }
     
-    fetchCities().then(d => { setCities(d); setCitiesLoading(false); }).catch(console.error);
-    fetchTestimonials().then(setTestimonials).catch(console.error);
+    fetchCities().then(d => { setCities(Array.isArray(d) ? d : []); setCitiesLoading(false); }).catch(console.error);
+    fetchTestimonials().then(d => setTestimonials(Array.isArray(d) ? d : [])).catch(console.error);
     fetchSetting('appearance').then(d => setAppearance(d || {})).catch(console.error);
     fetchSetting('support_info').then(d => setSupportInfo(d || {})).catch(console.error);
-    fetchSetting('hero_content').then(setHeroContent).catch(console.error);
-    fetchSetting('site_stats').then(setSiteStats).catch(console.error);
-    fetchSetting('seo').then(setSeoData).catch(console.error);
+    fetchSetting('hero_content').then(d => setHeroContent(d || {})).catch(console.error);
+    fetchSetting('site_stats').then(d => setSiteStats(d || [])).catch(console.error);
+    fetchSetting('seo').then(d => setSeoData(d || {})).catch(console.error);
   }, []);
 
   useEffect(() => {
@@ -291,6 +291,20 @@ export default function Home() {
                   </button>
                 ))}
               </div>
+
+              {/* Integrated Property Type Cards */}
+              <div className="hero-type-grid">
+                {TYPE_TABS(t).map((tab) => (
+                  <div 
+                    key={tab.value}
+                    className={`hero-type-card ${typeFilter === tab.value ? 'active' : ''}`}
+                    onClick={() => setTypeFilter(tab.value)}
+                  >
+                    <div className="type-icon">{tab.icon}</div>
+                    <span>{tab.label}</span>
+                  </div>
+                ))}
+              </div>
               <div className="search-main-row">
                 <div className="search-bar-wrap">
                   <Search size={18} className="s-icon" />
@@ -301,6 +315,34 @@ export default function Home() {
                     onBlur={() => setTimeout(() => setShowAutocomplete(false), 200)}
                     onKeyDown={e => e.key === 'Enter' && loadProperties()}
                   />
+                  {!keyword && userCoords && (
+                    <button 
+                      className="search-locate-btn" 
+                      onClick={() => {
+                        // Intelligent District Detection for AP
+                        const regions = [
+                          { name: 'NTR (Vijayawada)', lat: 16.5, lng: 80.6, dist: 0.8 },
+                          { name: 'Guntur', lat: 16.3, lng: 80.4, dist: 0.8 },
+                          { name: 'Visakhapatnam', lat: 17.6, lng: 83.2, dist: 1.2 },
+                          { name: 'Amaravati', lat: 16.5, lng: 80.5, dist: 0.5 }
+                        ];
+                        const matched = regions.find(r => 
+                          Math.abs(r.lat - userCoords.lat) < r.dist && 
+                          Math.abs(r.lng - userCoords.lng) < r.dist
+                        );
+                        if (matched) {
+                          setKeyword(matched.name);
+                          setCityFilter(matched.name);
+                        } else {
+                          alert('Location detected! Searching nearby properties...');
+                          loadProperties();
+                        }
+                      }}
+                      title="Locate Me (Andhra Pradesh)"
+                    >
+                      <Navigation2 size={16} />
+                    </button>
+                  )}
                   {showAutocomplete && keyword.length >= 2 && (
                     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="search-autocomplete-dropdown">
                       {getFuzzySuggestions(keyword).length > 0 ? (
@@ -323,26 +365,7 @@ export default function Home() {
                   )}
                   {keyword && <button className="search-clear" onMouseDown={e => { e.preventDefault(); setKeyword(''); }}><X size={14} /></button>}
                 </div>
-                <div className="search-selects-row" style={{ flexDirection: 'column', gap: '1.25rem', width: '100%', alignItems: 'stretch', paddingTop: '0.5rem' }}>
-                  {/* City Cards Selection */}
-                  <div className="city-select-card">
-                    <div style={{ fontSize: '0.85rem', color: 'var(--txt-primary)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <MapPin size={14} style={{ color: 'var(--gold)' }}/> Explore Regions
-                    </div>
-                    <div className="hero-city-cards-scroller" style={{ display: 'flex', gap: '0.75rem', overflowX: 'auto', paddingBottom: '0.5rem', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
-                      <div className={`city-image-pill ${!cityFilter ? 'active' : ''}`} onClick={() => setCityFilter(null)}>
-                        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, var(--midnight) 0%, rgba(212,175,55,0.4) 100%)', zIndex: 0 }}></div>
-                        <span>All AP</span>
-                      </div>
-                      {cities.map(c => (
-                        <div key={c._id || c.id} className={`city-image-pill ${cityFilter === c.name ? 'active' : ''}`} onClick={() => setCityFilter(c.name)}>
-                          {c.image && <img src={c.image} alt={c.name} />}
-                          <span>{c.name}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  
+                <div className="search-selects-row">
                   {/* Budget Slider */}
                   <div className="budget-card">
                     <div style={{ fontSize: '0.85rem', color: 'var(--txt-primary)', fontWeight: 700, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
@@ -358,19 +381,22 @@ export default function Home() {
                       step="1000000" 
                       value={budget && budget !== '999999999' ? budget : 50000000} 
                       onChange={e => setBudget(e.target.value === '50000000' ? '999999999' : e.target.value)} 
-                      style={{ width: '100%', accentColor: 'var(--gold)', cursor: 'pointer', height: '4px' }} 
+                      style={{ width: '100%', accentColor: 'var(--gold)', cursor: 'pointer', height: '4px', marginTop: '1rem' }} 
                     />
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', color: 'var(--txt-muted)', fontWeight: 600 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', color: 'var(--txt-muted)', fontWeight: 600, marginTop: '0.5rem' }}>
                       <span>₹10L</span>
                       <span>₹5Cr+</span>
                     </div>
                   </div>
                 </div>
-                <div className="search-action-row" style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '-0.5rem' }}>
-                  <button className="search-filter-btn" onClick={() => setFilterOpen(true)} style={{ width: 'auto', padding: '0.8rem 1.5rem', background: 'var(--gold)', color: 'var(--midnight)', fontWeight: 800 }}>
+                <div className="search-action-row" style={{ display: 'flex', width: '100%', gap: '1rem', marginTop: '1rem' }}>
+                  <button className="search-filter-btn" onClick={() => setFilterOpen(true)} style={{ flex: 1, padding: '1rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontWeight: 700, borderRadius: '12px' }}>
                     <SlidersHorizontal size={18} style={{ marginRight: '8px' }} />
-                    Advanced Filters
-                    {filterCount > 0 && <span className="filter-badge" style={{ position: 'relative', top: 0, right: 0, marginLeft: '8px', border: '1px solid currentColor' }}>{filterCount}</span>}
+                    Filters {filterCount > 0 && `(${filterCount})`}
+                  </button>
+                  <button className="search-go-btn" onClick={loadProperties} style={{ flex: 2, padding: '1rem', background: 'var(--gold)', color: 'var(--midnight)', fontWeight: 800, borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                    <Search size={18} />
+                    SEARCH PROPERTIES
                   </button>
                 </div>
               </div>
@@ -395,11 +421,11 @@ export default function Home() {
               <MapPin size={12} /> {heroContent?.eyebrow || t('hero.eyebrow')}
             </motion.div>
             <motion.h1 className="hero-title" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, delay: 0.1 }}>
-              {heroContent?.title.split('|')[0] || t('hero.title1')}
+              {heroContent?.title?.split('|')[0] || t('hero.title1')}
               <span className="gold-line text-royal-gold" style={{ display: 'block' }}>
                 {typedWord}<span style={{ color: 'var(--gold)', opacity: 0.7 }}>|</span>
               </span>
-              {heroContent?.title.split('|')[1] || t('hero.title2')}
+              {heroContent?.title?.split('|')[1] || t('hero.title2')}
             </motion.h1>
             <motion.p className="hero-subtitle" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2 }}>
               {heroContent?.subtitle || t('hero.subtitle')}
@@ -415,7 +441,7 @@ export default function Home() {
               </a>
             </motion.div>
             <motion.div className="hero-stats-row" initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ delay: 0.5 }}>
-              {siteStats.length > 0 ? (
+              {Array.isArray(siteStats) && siteStats.length > 0 ? (
                 siteStats.map((s, i) => (
                   <div key={i} className="hero-stat-chip">
                     <div className="stat-v">{s.value}</div>
@@ -439,23 +465,63 @@ export default function Home() {
           </div>
         </section>
 
-        <section id="cities" className="section-wrap" style={{ paddingBottom: '1rem' }}>
+
+
+        {/* Elite Website Narrative / About Us */}
+        <section className="about-narrative-section">
           <div className="container">
-            <div className="section-head">
-              <div className="section-eyebrow">{t('cities.eyebrow')}</div>
-              <h2 className="section-title" style={{ color: '#ffffff' }}>{t('cities.title')}</h2>
-              <p className="section-subtitle" style={{ color: 'var(--txt-secondary)' }}>{t('cities.subtitle')}</p>
-            </div>
-            <div className="city-cards-grid">
-              {citiesLoading ? (
-                Array(6).fill(0).map((_, i) => <SkeletonCityCard key={i} />)
-              ) : (
-                cities.map((c, i) => (
-                  <motion.div key={c._id || c.id} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.07 }}>
-                    <CityCard city={c} count={c.propertyCount || 0} cityPhoto={c.image} isActive={cityFilter === c.name} onClick={() => setCityFilter(cityFilter === c.name ? null : c.name)} index={i} />
-                  </motion.div>
-                ))
-              )}
+            <div className="about-narrative-grid">
+              <div className="about-text-content">
+                <motion.h2 
+                  initial={{ opacity: 0, x: -30 }} 
+                  whileInView={{ opacity: 1, x: 0 }} 
+                  viewport={{ once: true }}
+                >
+                  Elite Real Estate <span className="text-royal-gold">Intelligence</span>
+                </motion.h2>
+                <motion.p
+                  initial={{ opacity: 0, y: 20 }} 
+                  whileInView={{ opacity: 1, y: 0 }} 
+                  viewport={{ once: true }}
+                  transition={{ delay: 0.2 }}
+                >
+                  SnapAdda is the premier digital gateway to high-growth real estate in Andhra Pradesh. We bridge the gap between discerning investors and verified property owners, providing deep regional insights, CRDA-approved data, and direct direct direct logisitics for seamless transactions.
+                </motion.p>
+                <div className="about-features-list">
+                  <div className="about-feature-item">
+                    <span className="feature-tag">VERIFIED</span>
+                    <h4>Direct Owner Listings</h4>
+                  </div>
+                  <div className="about-feature-item">
+                    <span className="feature-tag">REGIONAL</span>
+                    <h4>Andhra Market Depth</h4>
+                  </div>
+                  <div className="about-feature-item">
+                    <span className="feature-tag">SECURE</span>
+                    <h4>Legal & Vastu Compliant</h4>
+                  </div>
+                  <div className="about-feature-item">
+                    <span className="feature-tag">ELITE</span>
+                    <h4>Premium Asset Control</h4>
+                  </div>
+                </div>
+              </div>
+              <motion.div 
+                className="about-visual-card glass-heavy"
+                initial={{ opacity: 0, scale: 0.9 }} 
+                whileInView={{ opacity: 1, scale: 1 }} 
+                viewport={{ once: true }}
+                style={{ padding: '3rem', borderRadius: '32px', textAlign: 'center', border: '1px solid var(--border-gold)' }}
+              >
+                <Logo size={48} showText />
+                <h3 style={{ marginTop: '2rem', fontSize: '1.25rem', color: '#fff' }}>Powering Dreams in AP</h3>
+                <p style={{ marginTop: '1rem', color: 'var(--txt-muted)' }}>Transparent. Verified. Premium.</p>
+                <div style={{ marginTop: '2.5rem', display: 'flex', justifyContent: 'center', gap: '1rem' }}>
+                  <TrendingUp size={32} color="var(--gold)" />
+                  <Navigation2 size={32} color="var(--gold)" />
+                  <ShieldCheck size={32} color="var(--gold)" />
+                </div>
+              </motion.div>
             </div>
           </div>
         </section>
@@ -466,19 +532,12 @@ export default function Home() {
               key="nearby-section"
               className="section-wrap"
               style={{ background: 'rgba(212,175,55,0.02)', borderTop: '1px solid rgba(212,175,55,0.05)', borderBottom: '1px solid rgba(212,175,55,0.05)' }}
-              initial={{ opacity: 0, height: 0, overflow: 'hidden' }}
-              animate={{ opacity: 1, height: 'auto', overflow: 'visible' }}
-              exit={{ opacity: 0, height: 0, overflow: 'hidden' }}
-              transition={{ duration: 0.5, ease: 'easeOut' }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
             >
               <div className="container">
-                <div className="section-head">
-                  <div className="section-eyebrow" style={{ color: 'var(--gold)' }}><Navigation2 size={14} /> {t('geo.hotspotsTitle', 'REGIONAL HOTSPOTS')}</div>
-                  <h2 className="section-title" style={{ color: '#ffffff' }}>{t('geo.hotspotsHeadline', 'Regional Growth Hotspots')}</h2>
-                  <p className="section-subtitle" style={{ color: 'var(--txt-secondary)' }}>
-                    {userCoords ? 'Verified assets and developments near your current location.' : 'Allow location access for personalised nearby listings.'}
-                  </p>
-                </div>
                 <div className="properties-grid">
                   {sortedProperties.slice(0, 6).map((p, i) => (
                     <motion.div key={`nearby-${p._id}`} initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ delay: i * 0.05 }}>
@@ -491,31 +550,7 @@ export default function Home() {
           )}
         </AnimatePresence>
 
-        <section style={{ padding: '0 0 1.5rem' }}>
-          <div className="container">
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-              <div className="section-head" style={{ marginBottom: '0.5rem' }}>
-                <h3 style={{ color: '#fff', fontSize: '1.25rem', marginBottom: '0.25rem' }}>Asset Classification</h3>
-                <p style={{ color: 'var(--txt-muted)', fontSize: '0.85rem' }}>Filter properties uniquely structured for your needs.</p>
-              </div>
-              <div className="type-cards-grid">
-                {TYPE_TABS(t).map(tOpt => (
-                  <button key={tOpt.value} className={`type-card${typeFilter === tOpt.value ? ' active' : ''}`} onClick={() => setTypeFilter(tOpt.value)}>
-                    {tOpt.icon} 
-                    <span>{tOpt.label}</span>
-                  </button>
-                ))}
-              </div>
-              <div className="smart-filter-pills">
-                {SMART_PILLS(t).map(p => (
-                  <button key={p.key} className={`smart-pill${smartPill === p.key ? ' active' : ''}`} onClick={() => setSmartPill(p.key)}>{p.label}</button>
-                ))}
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section id="properties" className="section-wrap" style={{ paddingTop: '0.5rem' }}>
+        <section id="properties" className="section-wrap" style={{ paddingTop: '2.5rem' }}>
           <div className="container">
             <div className="section-title-row">
               <div>

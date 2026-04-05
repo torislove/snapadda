@@ -67,6 +67,68 @@ export const adminLogin = async (req, res) => {
   }
 };
 
+export const adminGoogleAuth = async (req, res) => {
+  try {
+    const payload = req.body; // jwt-decode payload from frontend
+    if (!payload || !payload.email) {
+      return res.status(400).json({ message: 'Invalid Google Identity Payload' });
+    }
+
+    const { email, name, picture, sub: googleId } = payload;
+
+    // Find user in DB
+    let user = await User.findOne({ email });
+
+    // For Admin portal, we MUST ensure the user already exists AND has an admin role
+    // OR if it's the predefined admin email, we allow it.
+    if (!user) {
+      if (email === PREDEFINED_ADMIN_EMAIL) {
+        // Seed the admin if it doesn't exist but the email is authorized
+        user = new User({
+          googleId,
+          email,
+          name: name || 'SnapAdda Admin',
+          avatar: picture,
+          role: 'admin',
+          onboardingCompleted: true
+        });
+        await user.save();
+      } else {
+        return res.status(403).json({ message: 'Unauthorized: No Admin profile found for this account.' });
+      }
+    }
+
+    if (user.role !== 'admin') {
+      return res.status(403).json({ message: 'Access Denied: Account does not have Administrative privileges.' });
+    }
+
+    // Update googleId if it was local before
+    if (user.googleId === 'admin_local_account') {
+      user.googleId = googleId;
+      if (picture) user.avatar = picture;
+      await user.save();
+    }
+
+    // Sign JWT (Admin specific)
+    const token = jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, { expiresIn: '1d' });
+
+    res.status(200).json({
+      status: 'success',
+      token,
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        avatar: user.avatar
+      }
+    });
+  } catch (error) {
+    console.error("Admin Google Auth Error:", error);
+    res.status(500).json({ status: 'error', message: 'Authentication Service Failure' });
+  }
+};
+
 // Middleware helper
 const verifyAdmin = (req) => {
   const authHeader = req.headers['authorization'];

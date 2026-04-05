@@ -47,16 +47,25 @@ export default function PropertyDetails() {
     fetchProperty(id)
       .then(res => {
         const data = res.data || res;
+        if (!data || typeof data !== 'object') throw new Error('Invalid property data');
+        
         setProperty(data);
         setLikeCount(data.likeCount || 0);
         setLiked(data.isLiked || false);
         
-        // Add to Recently Viewed in localStorage
-        const recent = JSON.parse(localStorage.getItem('snapadda_recent_viewed') || '[]');
-        const updated = [data, ...recent.filter(r => r._id !== data._id)].slice(0, 4);
-        localStorage.setItem('snapadda_recent_viewed', JSON.stringify(updated));
+        // Add to Recently Viewed in localStorage safely
+        try {
+          const recent = JSON.parse(localStorage.getItem('snapadda_recent_viewed') || '[]');
+          const updated = [data, ...Array.isArray(recent) ? recent.filter(r => r._id !== data._id) : []].slice(0, 4);
+          localStorage.setItem('snapadda_recent_viewed', JSON.stringify(updated));
+        } catch (storageErr) {
+          console.warn('SnapAdda: Failed to update recent_viewed storage', storageErr);
+        }
       })
-      .catch(() => setProperty(null))
+      .catch((e) => {
+        console.error('Fetch property error:', e);
+        setProperty(null);
+      })
       .finally(() => setLoading(false));
 
     fetchPropertyFAQs(id).then(setQna).catch(console.error);
@@ -81,15 +90,21 @@ export default function PropertyDetails() {
 
   const calcEMI = () => {
     if (!property?.price) return 0;
-    let raw = parseInt((property.price + '').replace(/[^0-9]/g, ''), 10);
-    const ps = (property.price + '').toLowerCase();
-    if (ps.includes('crore')) raw = parseFloat(ps.replace(/[^0-9.]/g, '')) * 1e7;
-    if (ps.includes('lakh')) raw = parseFloat(ps.replace(/[^0-9.]/g, '')) * 1e5;
-    if (isNaN(raw)) return 0;
-    const principal = raw * loanPct / 100;
-    const mr = rate / 12 / 100;
-    const n = tenure * 12;
-    return Math.round(principal * mr * Math.pow(1 + mr, n) / (Math.pow(1 + mr, n) - 1));
+    try {
+      let raw = parseInt((property.price + '').replace(/[^0-9]/g, ''), 10);
+      const ps = (property.price + '').toLowerCase();
+      if (ps.includes('crore')) raw = parseFloat(ps.replace(/[^0-9.]/g, '')) * 1e7;
+      if (ps.includes('lakh')) raw = parseFloat(ps.replace(/[^0-9.]/g, '')) * 1e5;
+      
+      if (isNaN(raw) || raw <= 0) return 0;
+      
+      const principal = raw * (loanPct || 80) / 100;
+      const mr = (rate || 8.5) / 12 / 100;
+      const n = (tenure || 20) * 12;
+      
+      const emi = principal * mr * Math.pow(1 + mr, n) / (Math.pow(1 + mr, n) - 1);
+      return isNaN(emi) ? 0 : Math.round(emi);
+    } catch { return 0; }
   };
 
   const handleLike = async () => {
