@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { Logo } from '../../components/ui/Logo';
 import { useAdminAuth } from '../../contexts/AdminAuthContext';
+import { useTheme } from '../../contexts/ThemeContext';
 import './Layout.css';
 
 /* ── 2-click Logout Button ── */
@@ -65,6 +66,7 @@ const AdminLayout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
   const { adminLogout, adminUser } = useAdminAuth();
+  const { theme, setTheme } = useTheme();
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -216,6 +218,25 @@ const AdminLayout = () => {
               <span className="topbar-status-dot" />
               <span className="topbar-status-text">Server Online</span>
             </div>
+            
+            <div className="topbar-divider" />
+            
+            <select 
+              value={theme}
+              onChange={(e) => setTheme(e.target.value as any)}
+              className="theme-switcher-select"
+              title="Change Theme"
+              style={{
+                background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)',
+                color: 'var(--text-primary)', borderRadius: '8px', padding: '0.3rem 0.5rem',
+                fontSize: '0.75rem', cursor: 'pointer', outline: 'none'
+              }}
+            >
+              <option value="void">🌌 Void</option>
+              <option value="luxury">✨ Luxury</option>
+              <option value="holographic">🧊 Holographic</option>
+            </select>
+
             <div className="topbar-divider" />
             <img
               src={adminUser?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(adminUser?.name || 'Admin')}&background=9b59f5&color=fff&bold=true`}

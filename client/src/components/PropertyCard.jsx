@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Heart, Share2, Eye, Phone, MessageSquare, ShieldCheck, Flame, MapPin, Building2, User } from 'lucide-react';
+import { Heart, Share2, Eye, Phone, MessageSquare, ShieldCheck, Flame, MapPin, Building2, User, Bookmark } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { likeProperty, shareProperty } from '../services/api';
 import { useTranslation } from 'react-i18next';
@@ -20,6 +20,14 @@ export default function PropertyCard({
   const propertyId = id || _id;
   const [liked, setLiked] = useState(initialLiked);
   const [likeCount, setLikeCount] = useState(initialLikeCount || 0);
+  
+  // Local storage save logic for now
+  const [saved, setSaved] = useState(() => {
+    try {
+      const savedProps = JSON.parse(localStorage.getItem('snapadda_saved') || '[]');
+      return savedProps.includes(propertyId);
+    } catch { return false; }
+  });
 
   const allImages = Array.isArray(images) && images.length > 0 
     ? images 
@@ -54,6 +62,21 @@ export default function PropertyCard({
         if (propertyId) await shareProperty(propertyId, 'clipboard', user?._id);
       }
     } catch (err) { console.error('Share failed', err); }
+  };
+
+  const handleSave = (e) => {
+    e.preventDefault(); e.stopPropagation();
+    try {
+      const savedProps = JSON.parse(localStorage.getItem('snapadda_saved') || '[]');
+      let newSaved;
+      if (saved) {
+        newSaved = savedProps.filter(id => id !== propertyId);
+      } else {
+        newSaved = [...savedProps, propertyId];
+      }
+      localStorage.setItem('snapadda_saved', JSON.stringify(newSaved));
+      setSaved(!saved);
+    } catch (err) { console.error('Save failed', err); }
   };
 
   const isVastuPreferred = facing && ['east', 'north', 'north-east'].includes(facing.toLowerCase());
@@ -119,26 +142,31 @@ export default function PropertyCard({
               {isHot && <div className="badge badge-hot"><Flame size={11} /> {t('card.hot', 'Hot')}</div>}
             </div>
             <div className="property-image-actions" style={{ transform: 'translateZ(50px)' }}>
-              <button className={`img-action-btn like-btn ${liked ? 'active' : ''}`} onClick={handleLike} title={liked ? 'Unlike' : 'Like'}>
+              <button 
+                className={`img-action-btn like-btn ${liked ? 'active' : ''}`} 
+                onClick={handleLike} 
+                title={liked ? 'Unlike' : 'Like'}
+                style={{ backdropFilter: 'blur(10px)', background: liked ? 'rgba(240, 93, 94, 0.2)' : 'rgba(0,0,0,0.4)', color: liked ? 'var(--rose)' : 'white', border: liked ? '1px solid var(--rose)' : '1px solid rgba(255,255,255,0.2)' }}
+              >
                 <Heart size={16} fill={liked ? 'currentColor' : 'none'} />
                 {likeCount > 0 && <span className="action-count">{likeCount}</span>}
               </button>
-              <button className="img-action-btn share-btn" onClick={handleShare} title="Share Property">
+              <button 
+                className={`img-action-btn save-btn ${saved ? 'active' : ''}`} 
+                onClick={handleSave} 
+                title={saved ? 'Remove saved property' : 'Save property'}
+                style={{ backdropFilter: 'blur(10px)', background: saved ? 'rgba(39, 201, 125, 0.2)' : 'rgba(0,0,0,0.4)', color: saved ? 'var(--emerald)' : 'white', border: saved ? '1px solid var(--emerald)' : '1px solid rgba(255,255,255,0.2)' }}
+              >
+                <Bookmark size={16} fill={saved ? 'currentColor' : 'none'} />
+              </button>
+              <button 
+                className="img-action-btn share-btn" 
+                onClick={handleShare} 
+                title="Share Property"
+                style={{ backdropFilter: 'blur(10px)', background: 'rgba(0,0,0,0.4)', color: 'white', border: '1px solid rgba(255,255,255,0.2)' }}
+              >
                 <Share2 size={16} />
               </button>
-              {googleMapsLink && (
-                <a 
-                  href={googleMapsLink} 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
-                  className="img-action-btn" 
-                  onClick={(e) => e.stopPropagation()}
-                  title="View on Google Maps" 
-                  style={{ background: 'rgba(232, 184, 75, 0.2)', border: '1px solid rgba(232, 184, 75, 0.4)', color: 'var(--gold)' }}
-                >
-                  <MapPin size={16} />
-                </a>
-              )}
             </div>
             <div className="property-image-overlay">
               <span className="view-details-btn"><Eye size={13} /> {t('card.details')}</span>
@@ -162,21 +190,46 @@ export default function PropertyCard({
             <span className="viewers-chip" style={{ marginLeft: 'auto' }}><Eye size={10} /> {viewers}</span>
           </div>
           <div className="property-features">
-            {type !== 'Agriculture' && (
+            {type === 'Agricultural Land' ? (
+              <>
+                <div className="feature">
+                  <span className="feature-value text-emerald">{areaSize || sqft || '—'}</span>
+                  <span className="feature-label">{measurementUnit}</span>
+                </div>
+                <div className="feature-divider" />
+                <div className="feature">
+                  <span className="feature-value">Soil</span>
+                  <span className="feature-label text-gold">Fertile</span>
+                </div>
+              </>
+            ) : type?.includes('Plot') ? (
+              <>
+                <div className="feature">
+                  <span className="feature-value">{areaSize || sqft || '—'}</span>
+                  <span className="feature-label">{measurementUnit}</span>
+                </div>
+                <div className="feature-divider" />
+                <div className="feature">
+                  <span className="feature-value text-emerald">Zone</span>
+                  <span className="feature-label">{purpose === 'Rent' ? 'Lease' : 'Development'}</span>
+                </div>
+              </>
+            ) : (
               <>
                 <div className="feature"><span className="feature-value">{beds}</span><span className="feature-label">{t('card.beds')}</span></div>
                 <div className="feature-divider" />
                 <div className="feature"><span className="feature-value">{baths}</span><span className="feature-label">{t('card.baths')}</span></div>
                 <div className="feature-divider" />
+                <div className="feature"><span className="feature-value">{areaSize || sqft || '—'}</span><span className="feature-label">{measurementUnit}</span></div>
               </>
             )}
-            <div className="feature"><span className="feature-value">{areaSize || sqft || '—'}</span><span className="feature-label">{measurementUnit}</span></div>
-            {facing && (
+            
+            {facing && facing !== 'Any' && (
               <>
                 <div className="feature-divider" />
                 <div className="feature" style={{ color: isVastuPreferred ? 'var(--gold)' : 'inherit', position: 'relative' }}>
-                  <span className="feature-value" style={{ color: isVastuPreferred ? 'var(--gold)' : 'inherit', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    {facing} {isVastuPreferred && <span title="Vastu Preferred" style={{ fontSize: '10px' }}>🧭</span>}
+                  <span className="feature-value" style={{ color: isVastuPreferred ? 'var(--gold)' : 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                    {facing.substring(0, 4)} {isVastuPreferred && <span title="Vastu Preferred" style={{ fontSize: '10px' }}>🧭</span>}
                   </span>
                   <span className="feature-label" style={{ fontWeight: isVastuPreferred ? '800' : 'normal' }}>{t('card.facing', 'Facing')}</span>
                 </div>

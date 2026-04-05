@@ -1,6 +1,8 @@
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAdminAuth } from './contexts/AdminAuthContext';
+import { ThemeProvider } from './contexts/ThemeContext';
+import CommandPalette from './components/CommandPalette';
 
 // Lazy loading all admin modules
 const AdminLayout = lazy(() => import('./pages/admin/Layout'));
@@ -47,7 +49,12 @@ const AdminProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     return <Navigate to="/admin/login" replace state={{ from: location }} />;
   }
 
-  return children;
+  return (
+    <>
+      <CommandPalette />
+      {children}
+    </>
+  );
 };
 
 const AntiAuthRoute = ({ children }: { children: React.ReactNode }) => {
@@ -60,9 +67,10 @@ const AntiAuthRoute = ({ children }: { children: React.ReactNode }) => {
 
 function App() {
   return (
-    <BrowserRouter>
-      <Suspense fallback={<AdminLoader />}>
-        <Routes>
+    <ThemeProvider>
+      <BrowserRouter>
+        <Suspense fallback={<AdminLoader />}>
+          <Routes>
           <Route path="/" element={<Navigate to="/admin" replace />} />
           
           <Route path="/admin/login" element={
@@ -89,11 +97,12 @@ function App() {
             <Route path="questions" element={<AdminQuestions />} />
             <Route path="engagement" element={<AdminEngagement />} />
             <Route path="marquee" element={<AdminMarquee />} />
-            <Route path="guide" element={<SystemGuide />} />
+            <Route path="/admin/guide" element={<SystemGuide />} />
           </Route>
         </Routes>
       </Suspense>
     </BrowserRouter>
+  </ThemeProvider>
   );
 }
 

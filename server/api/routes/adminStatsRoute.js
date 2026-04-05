@@ -8,31 +8,33 @@ const router = express.Router();
 // GET /api/admin/stats
 router.get('/stats', async (req, res) => {
   try {
-    const [propertyCount, leadCount, inquiryCount, recentProperties, recentInquiries] = await Promise.all([
+    const [propertyCount, recentProperties] = await Promise.all([
       Property.countDocuments(),
-      Lead.countDocuments(),
-      Inquiry.countDocuments(),
       Property.find().sort({ createdAt: -1 }).limit(5).select('title price location status createdAt'),
-      Inquiry.find().sort({ createdAt: -1 }).limit(5).populate('propertyId', 'title'),
     ]);
 
     const verifiedCount = await Property.countDocuments({ isVerified: true });
     const activeCount = await Property.countDocuments({ status: 'Active' });
-    const pendingInquiries = await Inquiry.countDocuments({ status: 'Pending' });
 
-    // Aggregate engagement stats
-    const engagementStats = await Property.aggregate([
-      {
-        $group: {
-          _id: null,
-          totalLikes: { $sum: "$likeCount" },
-          totalShares: { $sum: "$shareCount" }
-        }
-      }
-    ]);
+    // Enforce Zero counts for extraneous metrics as per "only keep property" directive
+    const leadCount = 0;
+    const inquiryCount = 0;
+    const pendingInquiries = 0;
+    const totalLikes = 0;
+    const totalShares = 0;
+    const recentInquiries = [];
 
-    const totalLikes = engagementStats.length > 0 ? engagementStats[0].totalLikes : 0;
-    const totalShares = engagementStats.length > 0 ? engagementStats[0].totalShares : 0;
+    // Format the Trend Data into a 7-day flatline map
+    const chartDataMap = {};
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const key = d.toISOString().split('T')[0];
+      const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
+      chartDataMap[key] = { name: dayName, leads: 0, inquiries: 0 };
+    }
+
+    const chartData = Object.values(chartDataMap);
 
     res.status(200).json({
       status: 'success',
@@ -47,6 +49,7 @@ router.get('/stats', async (req, res) => {
         totalShares,
         recentProperties,
         recentInquiries,
+        chartData
       }
     });
   } catch (error) {

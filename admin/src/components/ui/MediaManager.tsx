@@ -16,12 +16,12 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
   const [newFiles, setNewFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
   const [isCompressing, setIsCompressing] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [currentUrls, setCurrentUrls] = useState<string[]>(existingUrls);
 
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
+  const processFiles = async (files: File[]) => {
     if (files.length === 0) return;
 
     // File Size Validation
@@ -64,6 +64,24 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
     }
   };
 
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      processFiles(Array.from(e.dataTransfer.files));
+    }
+  };
+
   const removeExisting = (url: string) => {
     const updated = currentUrls.filter(u => u !== url);
     setCurrentUrls(updated);
@@ -83,7 +101,18 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+    <div 
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+      style={{ 
+        display: 'flex', flexDirection: 'column', gap: '1rem',
+        padding: '1.5rem', borderRadius: '16px',
+        border: isDragging ? '2px dashed var(--gold)' : '2px dashed transparent',
+        background: isDragging ? 'rgba(212, 175, 55, 0.05)' : 'transparent',
+        transition: 'all 0.3s'
+      }}
+    >
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: '12px' }}>
         {/* Existing Images */}
         {currentUrls.map((url, idx) => (
@@ -158,7 +187,7 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
         type="file" 
         multiple 
         accept="image/*,video/*"
-        onChange={handleFileSelect}
+        onChange={(e) => processFiles(Array.from(e.target.files || []))}
         style={{ display: 'none' }}
       />
       

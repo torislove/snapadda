@@ -1,4 +1,16 @@
 import Property from '../models/Property.js';
+import NodeCache from 'node-cache';
+
+// Initialize the Cache Pipeline (TTL: 60s)
+const propertyCache = new NodeCache({ stdTTL: 60, checkperiod: 120 });
+
+// Helper to invalidate standard property queries
+const flushPropertyCache = () => {
+  const keys = propertyCache.keys();
+  keys.forEach(k => {
+    if (k.startsWith('propQuery_')) propertyCache.del(k);
+  });
+};
 
 // Get all properties (with optional filters)
 export const getProperties = async (req, res) => {
@@ -36,8 +48,21 @@ export const getProperties = async (req, res) => {
       ];
     }
 
-    const properties = await Property.find(filter).sort({ createdAt: -1 }).populate('cityId');
-    res.status(200).json({ status: 'success', data: properties });
+    // Cache Pipeline Generation
+    const queryKey = 'propQuery_' + JSON.stringify(req.query);
+    const cachedResponse = propertyCache.get(queryKey);
+    if (cachedResponse) {
+      return res.status(200).json({ status: 'success', data: cachedResponse, source: 'cache' });
+    }
+
+    // Default cursor pagination / limit protection
+    const limit = Number(req.query.limit) || 100;
+    const properties = await Property.find(filter).sort({ createdAt: -1 }).limit(limit).populate('cityId');
+    
+    // Set in-memory cache
+    propertyCache.set(queryKey, properties);
+
+    res.status(200).json({ status: 'success', data: properties, source: 'db' });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -65,6 +90,10 @@ export const createProperty = async (req, res) => {
 
     const newProperty = new Property(propertyData);
     await newProperty.save();
+    
+    // Invalidate Cache
+    flushPropertyCache();
+
     res.status(201).json({ status: 'success', data: newProperty });
   } catch (error) {
     res.status(400).json({ status: 'error', message: error.message });
@@ -87,6 +116,10 @@ export const updateProperty = async (req, res) => {
   try {
     const property = await Property.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
     if (!property) return res.status(404).json({ message: 'Property not found' });
+    
+    // Invalidate Cache
+    flushPropertyCache();
+
     res.status(200).json({ status: 'success', data: property });
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -98,6 +131,10 @@ export const deleteProperty = async (req, res) => {
   try {
     const property = await Property.findByIdAndDelete(req.params.id);
     if (!property) return res.status(404).json({ message: 'Property not found' });
+    
+    // Invalidate Cache
+    flushPropertyCache();
+
     res.status(200).json({ status: 'success', message: 'Property deleted successfully' });
   } catch (error) {
     res.status(500).json({ message: error.message });

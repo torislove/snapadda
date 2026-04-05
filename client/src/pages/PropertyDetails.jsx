@@ -4,10 +4,11 @@ import { motion } from 'framer-motion';
 import { 
   ArrowLeft, MapPin, Share2, Heart, ShieldCheck, Clock, 
   Calendar, Layers, Phone, MessageSquare, ChevronRight, Eye,
-  LayoutDashboard, Download, Info, CheckCircle2, Navigation, Building2, User, BedDouble, Bath, Square, Compass, Award, Send, Star, Image, Video
+  LayoutDashboard, Download, Info, CheckCircle2, Navigation, Building2, User, BedDouble, Bath, Square, Compass, Award, Send, Star, Image, Video, Bookmark
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import Logo from '../components/Logo';
+import MagneticButton from '../components/ui/MagneticButton';
 import { fetchProperty, fetchSetting, submitLead, askQuestion, fetchPropertyFAQs, likeProperty, shareProperty } from '../services/api';
 import { formatSnapAddaPrice } from '../utils/priceUtils';
 
@@ -27,6 +28,13 @@ export default function PropertyDetails() {
   const [modalType, setModalType] = useState('callback');
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
+  const [saved, setSaved] = useState(() => {
+    try {
+      const savedProps = JSON.parse(localStorage.getItem('snapadda_saved') || '[]');
+      // Check will happen once data loads
+      return false;
+    } catch { return false; }
+  });
 
   // Q&A form
   const [qName, setQName] = useState('');
@@ -52,6 +60,11 @@ export default function PropertyDetails() {
         setProperty(data);
         setLikeCount(data.likeCount || 0);
         setLiked(data.isLiked || false);
+        
+        try {
+          const savedProps = JSON.parse(localStorage.getItem('snapadda_saved') || '[]');
+          if (savedProps.includes(data._id || data.id)) setSaved(true);
+        } catch {}
         
         // Add to Recently Viewed in localStorage safely
         try {
@@ -137,6 +150,21 @@ export default function PropertyDetails() {
     const waPhone = supportInfo?.whatsapp || '919346793364';
     const text = encodeURIComponent(`Hi SnapAdda, I am interested in "${property?.title || 'this property'}" located in ${property?.location || 'Andhra Pradesh'}. (ID: ${id})`);
     window.open(`https://wa.me/${waPhone}?text=${text}`, '_blank');
+  };
+
+  const handleSave = () => {
+    try {
+      const savedProps = JSON.parse(localStorage.getItem('snapadda_saved') || '[]');
+      const propertyId = id || property?._id;
+      let newSaved;
+      if (saved) {
+        newSaved = savedProps.filter(pId => pId !== propertyId);
+      } else {
+        newSaved = [...savedProps, propertyId];
+      }
+      localStorage.setItem('snapadda_saved', JSON.stringify(newSaved));
+      setSaved(!saved);
+    } catch (err) { console.error('Save failed', err); }
   };
 
 
@@ -228,9 +256,13 @@ export default function PropertyDetails() {
   return (
     <motion.div className="property-details-page" style={{ paddingTop: 'var(--nav-h)' }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }}>
       <div className="container" style={{ padding: '1.2rem 0' }}>
-        <button className="back-button" onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--txt-secondary)', fontWeight: 700, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '1px' }}>
-          <ArrowLeft size={18} /> Back to Search
-        </button>
+        <nav className="breadcrumb">
+          <Link to="/">Home</Link>
+          <span className="breadcrumb-sep">/</span>
+          <Link to="/#cities">{property?.location || 'Andhra Pradesh'}</Link>
+          <span className="breadcrumb-sep">/</span>
+          <span style={{ color: 'var(--gold)' }}>{property?.type || 'Property'}</span>
+        </nav>
       </div>
 
       {/* Premium Horizontal Gallery */}
@@ -339,26 +371,53 @@ export default function PropertyDetails() {
               )}
             </div>
             <div className="pd-price-block">
-              <div style={{ display: 'flex', gap: '10px', marginBottom: '1rem', justifyContent: 'flex-end' }}>
+              <div style={{ display: 'flex', gap: '8px', marginBottom: '1.2rem', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
                 <button 
                   onClick={handleLike}
                   style={{ 
-                    background: liked ? 'rgba(240, 93, 94, 0.15)' : 'rgba(255,255,255,0.05)', 
-                    border: liked ? '1px solid var(--rose)' : '1px solid rgba(255,255,255,0.1)', 
-                    color: liked ? 'var(--rose)' : 'white',
-                    padding: '8px 16px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', transition: 'all 0.2s', fontWeight: 700 
+                    background: liked ? 'rgba(240, 93, 94, 0.15)' : 'rgba(255,255,255,0.03)', 
+                    border: liked ? '1px solid rgba(240, 93, 94, 0.4)' : '1px solid rgba(255,255,255,0.1)', 
+                    color: liked ? 'var(--rose)' : 'var(--txt-secondary)',
+                    padding: '8px 16px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)', fontWeight: 700, fontSize: '0.85rem'
                   }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = liked ? 'rgba(240, 93, 94, 0.25)' : 'rgba(255,255,255,0.08)'; e.currentTarget.style.transform = 'translateY(-2px)' }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = liked ? 'rgba(240, 93, 94, 0.15)' : 'rgba(255,255,255,0.03)'; e.currentTarget.style.transform = 'translateY(0)' }}
                 >
-                  <Heart size={18} fill={liked ? 'var(--rose)' : 'none'} /> {likeCount}
+                  <Heart size={16} fill={liked ? 'var(--rose)' : 'none'} /> {likeCount}
+                </button>
+                <button 
+                  onClick={handleSave}
+                  style={{ 
+                    background: saved ? 'rgba(39, 201, 125, 0.15)' : 'rgba(255,255,255,0.03)', 
+                    border: saved ? '1px solid rgba(39, 201, 125, 0.4)' : '1px solid rgba(255,255,255,0.1)', 
+                    color: saved ? 'var(--emerald)' : 'var(--txt-secondary)',
+                    padding: '8px 16px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)', fontWeight: 700, fontSize: '0.85rem'
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = saved ? 'rgba(39, 201, 125, 0.25)' : 'rgba(255,255,255,0.08)'; e.currentTarget.style.transform = 'translateY(-2px)' }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = saved ? 'rgba(39, 201, 125, 0.15)' : 'rgba(255,255,255,0.03)'; e.currentTarget.style.transform = 'translateY(0)' }}
+                >
+                  <Bookmark size={16} fill={saved ? 'var(--emerald)' : 'none'} /> {saved ? 'Saved' : 'Save'}
                 </button>
                 <button 
                   onClick={handleShare}
-                  style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', padding: '8px 16px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 700 }}
+                  style={{ 
+                    background: 'rgba(255,255,255,0.03)', 
+                    border: '1px solid rgba(255,255,255,0.1)', 
+                    color: 'var(--txt-secondary)', 
+                    padding: '8px 16px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)', fontWeight: 700, fontSize: '0.85rem' 
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.transform = 'translateY(-2px)' }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.transform = 'translateY(0)' }}
                 >
-                  <Share2 size={18} /> Share
+                  <Share2 size={16} /> Share
                 </button>
               </div>
-              <div className="pd-price">{formatSnapAddaPrice(property.price)}</div>
+              <div className="pd-price" style={{ fontSize: '2.5rem', fontWeight: 900, background: 'linear-gradient(135deg, #fff, var(--gold))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', textAlign: 'right', letterSpacing: '-0.02em', dropShadow: '0 5px 15px rgba(232,184,75,0.2)' }}>{formatSnapAddaPrice(property.price)}</div>
+              {property.type === 'Agricultural Land' && property.pricePerAcre > 0 && (
+                <div style={{ textAlign: 'right', color: 'var(--txt-muted)', fontSize: '0.9rem', marginTop: '0.5rem' }}>
+                  ≈ ₹ {(property.pricePerAcre / 100000).toLocaleString('en-IN')} Lakh / Acre
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -513,12 +572,16 @@ export default function PropertyDetails() {
           <div className="pd-contact-card glass-heavy tilt-3d" style={{ padding: '2rem', borderRadius: '16px' }}>
             <h3>Interested?</h3>
             <p className="text-muted">Connect directly with the owner or agent.</p>
-            <div className="pd-contact-actions">
-              <a href={`tel:${(supportInfo?.phone || '+919346793364').replace(/\s+/g, '')}`} className="btn btn-primary btn-lg btn-full btn-3d" style={{ textDecoration: 'none' }}>Call Agent Now</a>
-              <div className="pd-divider">or</div>
-              <button className="btn btn-lg btn-full btn-3d-emerald" style={{ backgroundColor: '#25D366', color: 'white', border: 'none' }} onClick={handleWhatsApp}>
-                <MessageSquare size={18} /> WhatsApp
-              </button>
+            <div className="pd-contact-actions" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <MagneticButton style={{ width: '100%' }}>
+                <a href={`tel:${(supportInfo?.phone || '+919346793364').replace(/\s+/g, '')}`} className="btn btn-primary btn-lg btn-full btn-3d" style={{ textDecoration: 'none', width: '100%' }}>Call Agent Now</a>
+              </MagneticButton>
+              <div className="pd-divider" style={{ textAlign: 'center', opacity: 0.5, fontSize: '0.7rem' }}>OR</div>
+              <MagneticButton style={{ width: '100%' }}>
+                <button className="btn btn-lg btn-full btn-3d-emerald" style={{ backgroundColor: '#25D366', color: 'white', border: 'none', width: '100%' }} onClick={handleWhatsApp}>
+                  <MessageSquare size={18} /> WhatsApp
+                </button>
+              </MagneticButton>
             </div>
             <div className="pd-trust-badges">
               <div className="pd-trust"><ShieldCheck size={15} className="text-gold" /> <span>Verified Listing</span></div>

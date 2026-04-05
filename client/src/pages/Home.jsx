@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import {
   Search, SlidersHorizontal, MapPin, Phone, MessageSquare, ShieldCheck, Star,
@@ -16,6 +16,8 @@ import PromoCarousel from '../components/PromoCarousel';
 import Marquee from '../components/Marquee';
 import CityCard from '../components/CityCard';
 import Logo from '../components/Logo';
+import MagneticButton from '../components/ui/MagneticButton';
+import InteractiveMap from '../components/InteractiveMap';
 import { SkeletonCityCard, SkeletonPropertyCard } from '../components/SkeletonLoaders';
 import { parseSmartSearch, getFuzzySuggestions, loadAndhraData } from '../services/SearchParser';
 import { useSEO } from '../utils/useSEO';
@@ -139,17 +141,41 @@ export default function Home() {
   // SEO Injection
   useSEO(seoData);
 
-  // Search / filter state
-  const [keyword, setKeyword] = useState('');
-  const [intent, setIntent] = useState('Buy');
-  const [budget, setBudget] = useState('');
-  const [cityFilter, setCityFilter] = useState(null);
-  const [typeFilter, setTypeFilter] = useState('all');
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Search / filter state (now synced primarily with URL params initially)
+  const [keyword, setKeyword] = useState(searchParams.get('s') || '');
+  const [intent, setIntent] = useState(searchParams.get('intent') || 'Buy');
+  const [budget, setBudget] = useState(searchParams.get('budget') || '');
+  const [cityFilter, setCityFilter] = useState(searchParams.get('city') || null);
+  const [typeFilter, setTypeFilter] = useState(searchParams.get('type') || 'all');
   const [smartPill, setSmartPill] = useState('all');
-  const [advFilters, setAdvFilters] = useState({ ...EMPTY_FILTERS });
-  const [sortBy, setSortBy] = useState('newest');
+  const [advFilters, setAdvFilters] = useState({ 
+    ...EMPTY_FILTERS, 
+    bhk: searchParams.get('bhk') || '',
+    minPrice: searchParams.get('minPrice') || '',
+    maxPrice: searchParams.get('maxPrice') || '',
+    propertyType: searchParams.get('type') || 'All'
+  });
+  const [sortBy, setSortBy] = useState(searchParams.get('sort') || 'newest');
   const [showAutocomplete, setShowAutocomplete] = useState(false);
   const [filterCount, setFilterCount] = useState(0);
+
+  // Sync state to URL whenever filters explicitly change
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (keyword) params.set('s', keyword);
+    if (intent && intent !== 'Buy') params.set('intent', intent);
+    if (budget) params.set('budget', budget);
+    if (cityFilter) params.set('city', cityFilter);
+    if (typeFilter && typeFilter !== 'all') params.set('type', typeFilter);
+    if (advFilters.bhk) params.set('bhk', advFilters.bhk);
+    if (advFilters.minPrice) params.set('minPrice', advFilters.minPrice);
+    if (advFilters.maxPrice) params.set('maxPrice', advFilters.maxPrice);
+    if (sortBy && sortBy !== 'newest') params.set('sort', sortBy);
+    
+    setSearchParams(params, { replace: true });
+  }, [keyword, intent, budget, cityFilter, typeFilter, advFilters.bhk, advFilters.minPrice, advFilters.maxPrice, sortBy, setSearchParams]);
 
   const [debouncedKeyword, setDebouncedKeyword] = useState(keyword);
   useEffect(() => {
@@ -255,8 +281,8 @@ export default function Home() {
       }}
     >
       {appearance?.bgUrl
-        ? <div className="site-bg-overlay" style={{ backgroundImage: `url(${appearance.bgUrl})`, opacity: 0.22, position: 'fixed', inset: 0, backgroundSize: 'cover', zIndex: 0 }} />
-        : <div className="animated-bg" style={{ position: 'fixed', inset: 0, zIndex: 0, background: 'radial-gradient(ellipse at 20% 50%, rgba(10,80,40,0.08) 0%, transparent 60%), radial-gradient(ellipse at 80% 20%, rgba(130,60,0,0.08) 0%, transparent 60%), var(--bg-deep)' }} />
+        ? <motion.div initial={{ filter: 'blur(20px)', opacity: 0 }} animate={{ filter: 'blur(0px)', opacity: 0.22 }} transition={{ duration: 1.5, ease: 'easeOut' }} className="site-bg-overlay" style={{ backgroundImage: `url(${appearance.bgUrl})`, position: 'fixed', inset: 0, backgroundSize: 'cover', zIndex: 0 }} />
+        : <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 1 }} className="animated-bg" style={{ position: 'fixed', inset: 0, zIndex: 0, background: 'radial-gradient(ellipse at 20% 50%, rgba(10,80,40,0.08) 0%, transparent 60%), radial-gradient(ellipse at 80% 20%, rgba(130,60,0,0.08) 0%, transparent 60%), var(--bg-deep)' }} />
       }
 
       <main style={{ flex: 1, paddingTop: 'var(--nav-h)' }}>
@@ -431,14 +457,18 @@ export default function Home() {
               {heroContent?.subtitle || t('hero.subtitle')}
             </motion.p>
             <motion.div className="hero-ctas" initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.65, delay: 0.3 }}>
-              <a href={heroContent?.cta1Url || "#cities"} className="hero-btn hero-btn-primary">
-                <Navigation2 size={18} /> {heroContent?.cta1Text || t('hero.browseBtn')}
-              </a>
-              <a href={heroContent?.cta2Url === 'callback' ? '#' : (heroContent?.cta2Url || `tel:${supportPhone}`)} 
-                 onClick={(e) => { if (heroContent?.cta2Url === 'callback') { e.preventDefault(); openLead('callback'); } }}
-                 className="hero-btn hero-btn-glass">
-                 <Phone size={18} /> {heroContent?.cta2Text || 'CALL AGENT NOW'}
-              </a>
+              <MagneticButton>
+                <a href={heroContent?.cta1Url || "#cities"} className="hero-btn hero-btn-primary">
+                  <Navigation2 size={18} /> {heroContent?.cta1Text || t('hero.browseBtn')}
+                </a>
+              </MagneticButton>
+              <MagneticButton>
+                <a href={heroContent?.cta2Url === 'callback' ? '#' : (heroContent?.cta2Url || `tel:${supportPhone}`)} 
+                   onClick={(e) => { if (heroContent?.cta2Url === 'callback') { e.preventDefault(); openLead('callback'); } }}
+                   className="hero-btn hero-btn-glass">
+                   <Phone size={18} /> {heroContent?.cta2Text || 'CALL AGENT NOW'}
+                </a>
+              </MagneticButton>
             </motion.div>
             <motion.div className="hero-stats-row" initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ delay: 0.5 }}>
               {Array.isArray(siteStats) && siteStats.length > 0 ? (
@@ -569,6 +599,11 @@ export default function Home() {
                 )}
               </div>
             </div>
+            
+            {/* Phase 1: Spatial Map Integration */}
+            {!loading && sortedProperties.length > 0 && (
+              <InteractiveMap properties={sortedProperties} />
+            )}
 
             <div className="properties-grid">
               {loading ? Array(3).fill(0).map((_, i) => <SkeletonPropertyCard key={i} />) : sortedProperties.length > 0 ? (

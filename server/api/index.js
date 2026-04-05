@@ -24,6 +24,7 @@ import mediaRoutes from './routes/mediaRoutes.js';
 import promotionRoutes from './routes/promotionRoutes.js';
 import testimonialRoutes from './routes/testimonialRoutes.js';
 import questionRoutes from './routes/questionRoutes.js';
+import aiRoutes from './routes/aiRoutes.js';
 
 dotenv.config();
 
@@ -95,6 +96,7 @@ app.use('/api/districts', districtRoutes);
 app.use('/api/promotions', promotionRoutes);
 app.use('/api/testimonials', testimonialRoutes);
 app.use('/api/questions', questionRoutes);
+app.use('/api/ai', aiRoutes);
 
 // 8. Health & Diagnostic Routes
 app.get('/health', (req, res) => {

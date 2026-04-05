@@ -12,15 +12,15 @@ import {
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
-/* ─── Mock Chart Data ─── */
-const CHART_DATA = [
-  { name: 'Mon', leads: 4, views: 24 },
-  { name: 'Tue', leads: 7, views: 42 },
-  { name: 'Wed', leads: 5, views: 38 },
-  { name: 'Thu', leads: 12, views: 65 },
-  { name: 'Fri', leads: 9, views: 48 },
-  { name: 'Sat', leads: 15, views: 82 },
-  { name: 'Sun', leads: 11, views: 54 },
+/* ─── Mock Fallback Chart (if API fails) ─── */
+const MOCK_CHART = [
+  { name: 'Mon', leads: 4, inquiries: 2 },
+  { name: 'Tue', leads: 7, inquiries: 5 },
+  { name: 'Wed', leads: 5, inquiries: 3 },
+  { name: 'Thu', leads: 12, inquiries: 8 },
+  { name: 'Fri', leads: 9, inquiries: 6 },
+  { name: 'Sat', leads: 15, inquiries: 10 },
+  { name: 'Sun', leads: 11, inquiries: 7 },
 ];
 
 /* ─── Animated Counter ─── */
@@ -49,15 +49,28 @@ const MetricCard = ({ title, value, icon: Icon, color, sub, trend, link, index }
     transition={{ delay: index * 0.1, duration: 0.5, type: 'spring' }}
   >
     <Link to={link || '#'} style={{ textDecoration: 'none' }}>
-      <div className="glass-card" style={{
+      <div className="glass-card metric-card-hud" style={{
         padding: '1.75rem',
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
-        borderTop: `2px solid ${color}44`,
+        borderTop: `2px solid ${color}88`,
+        background: `linear-gradient(135deg, rgba(8,8,18,0.4) 0%, rgba(8,8,18,0.8) 100%)`,
+        boxShadow: `inset 0 0 20px ${color}11, 0 8px 32px rgba(0,0,0,0.4)`,
+        position: 'relative'
       }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.25rem' }}>
+        {/* Holographic scanner line overlay */}
+        <div style={{
+          position: 'absolute', top: 0, left: 0, right: 0, height: '100%',
+          background: `linear-gradient(180deg, transparent 0%, ${color}08 50%, transparent 100%)`,
+          backgroundSize: '100% 4px',
+          pointerEvents: 'none',
+          opacity: 0.5,
+          zIndex: 0
+        }} />
+
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.25rem', position: 'relative', zIndex: 1 }}>
           <div style={{
             width: '48px', height: '48px', borderRadius: '14px',
             background: `${color}12`,
@@ -172,6 +185,7 @@ const QuickAction = ({ icon: Icon, label, color, to }: any) => (
 /* ─── Dashboard Main ─── */
 const AdminDashboard = () => {
   const [stats, setStats] = useState<any>(null);
+  const [chartData, setChartData] = useState<any>(MOCK_CHART);
   const [loading, setLoading] = useState(true);
   const [greeting, setGreeting] = useState('');
 
@@ -187,7 +201,12 @@ const AdminDashboard = () => {
 
     fetch(`${API_URL}/admin/stats`, { headers })
       .then(r => r.json())
-      .then(d => { if (d.status === 'success') setStats(d.data); })
+      .then(d => { 
+        if (d.status === 'success') {
+          setStats(d.data); 
+          if (d.data.chartData) setChartData(d.data.chartData);
+        }
+      })
       .catch(() => {
         setStats({ propertyCount: 12, leadCount: 48, inquiryCount: 24, verifiedCount: 8, activeCount: 10, pendingInquiries: 5, totalLikes: 0, totalShares: 0, recentProperties: [], recentInquiries: [] });
       })
@@ -245,31 +264,37 @@ const AdminDashboard = () => {
       style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}
     >
 
-      {/* ── Header ── */}
-      <div className="flex-row-mobile-stack" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '1.5rem' }}>
-        <div>
+      {/* ── Header HUD ── */}
+      <div className="flex-row-mobile-stack" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '1.5rem', background: 'rgba(8,8,18,0.4)', padding: '1.5rem', borderRadius: '24px', border: '1px solid var(--border-light)', position: 'relative', overflow: 'hidden' }}>
+        <div style={{
+          position: 'absolute', right: '-10%', top: '-50%', width: '30%', height: '200%',
+          background: 'radial-gradient(ellipse at center, rgba(34,217,224,0.1) 0%, transparent 70%)',
+          animation: 'spin-slow 20s linear infinite',
+          pointerEvents: 'none'
+        }} />
+        <div style={{ position: 'relative', zIndex: 1 }}>
           <motion.div 
             initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}
-            style={{ fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--violet)', marginBottom: '0.5rem', fontFamily: 'var(--font-mono)' }}
+            style={{ fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--cyan)', marginBottom: '0.5rem', fontFamily: 'var(--font-mono)', display: 'flex', alignItems: 'center', gap: '8px' }}
           >
-            ✦ EXECUTIVE COMMAND
+            <Zap size={14} fill="var(--cyan)" /> ✦ EXECUTIVE COMMAND_HUD v2.0
           </motion.div>
           <motion.h1 
             initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-            style={{ lineHeight: 1.2, fontWeight: 800, background: 'linear-gradient(135deg, #fff 0%, #9b59f5 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: '0.5rem', fontFamily: 'var(--font-heading)', letterSpacing: '-0.02em' }}
+            style={{ lineHeight: 1.2, fontWeight: 800, background: 'linear-gradient(135deg, #fff 0%, #22d9e0 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: '0.5rem', fontFamily: 'var(--font-heading)', letterSpacing: '-0.02em', textShadow: '0 0 30px rgba(34,217,224,0.3)' }}
           >
-            {greeting}, Admin
+            {greeting}, Admin.
           </motion.h1>
-          <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', maxWidth: '400px' }}>
-            System pulse is optimal. Here's a summary of your estate operations.
+          <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', maxWidth: '400px' }}>
+            System nodes synchronized. Displaying real-time global telemetry.
           </p>
         </div>
-        <Link to="/admin/properties" style={{ width: 'auto' }}>
+        <Link to="/admin/properties" style={{ width: 'auto', zIndex: 1 }}>
           <motion.button 
-            whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-            className="btn btn-violet" style={{ gap: '10px', padding: '0.8rem 1.75rem', borderRadius: '14px', boxShadow: '0 10px 30px rgba(155,89,245,0.25)' }}
+            whileHover={{ scale: 1.05, boxShadow: '0 0 20px rgba(34,217,224,0.6)' }} whileTap={{ scale: 0.95 }}
+            className="btn btn-cyan" style={{ gap: '10px', padding: '0.8rem 1.75rem', borderRadius: '14px', boxShadow: '0 10px 30px rgba(34,217,224,0.25)', border: '1px solid rgba(255,255,255,0.2)' }}
           >
-            <Plus size={18} strokeWidth={3} /> Add Listing
+            <Plus size={18} strokeWidth={3} /> INITIALIZE LISTING
           </motion.button>
         </Link>
       </div>
@@ -292,29 +317,29 @@ const AdminDashboard = () => {
             </div>
             <div style={{ display: 'flex', gap: '1rem' }}>
                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                 <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--violet)' }} />
-                 <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 600 }}>VIEWS</span>
+                 <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--cyan)' }} />
+                 <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 600 }}>INQUIRIES</span>
                </div>
                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                 <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--emerald)' }} />
+                 <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--violet)' }} />
                  <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 600 }}>LEADS</span>
                </div>
             </div>
           </div>
           <div style={{ height: '280px', width: '100%' }}>
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={CHART_DATA}>
+              <AreaChart data={chartData}>
                 <defs>
-                  <linearGradient id="colorViews" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="var(--violet)" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="var(--violet)" stopOpacity={0}/>
+                  <linearGradient id="colorInquiries" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="var(--cyan)" stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor="var(--cyan)" stopOpacity={0}/>
                   </linearGradient>
                   <linearGradient id="colorLeads" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="var(--emerald)" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="var(--emerald)" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="var(--violet)" stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor="var(--violet)" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                <CartesianGrid strokeDasharray="1 4" stroke="var(--border-light)" vertical={true} horizontal={true} />
                 <XAxis 
                   dataKey="name" 
                   stroke="rgba(255,255,255,0.3)" 
@@ -334,8 +359,8 @@ const AdminDashboard = () => {
                   }} 
                   itemStyle={{ fontWeight: 700 }}
                 />
-                <Area type="monotone" dataKey="views" stroke="var(--violet)" strokeWidth={3} fillOpacity={1} fill="url(#colorViews)" />
-                <Area type="monotone" dataKey="leads" stroke="var(--emerald)" strokeWidth={3} fillOpacity={1} fill="url(#colorLeads)" />
+                <Area type="monotone" dataKey="inquiries" stroke="var(--cyan)" strokeWidth={3} fillOpacity={1} fill="url(#colorInquiries)" />
+                <Area type="monotone" dataKey="leads" stroke="var(--violet)" strokeWidth={3} fillOpacity={1} fill="url(#colorLeads)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>

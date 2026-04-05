@@ -2,7 +2,10 @@ import { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
 import Header from './components/Header';
+import { AnimatePresence, motion } from 'framer-motion';
+import { useState, useEffect } from 'react';
 import UnitConverter from './components/UnitConverter';
+import FloatingHub from './components/ui/FloatingHub';
 
 // Lazy loading all routes for maximum startup speed
 const Home = lazy(() => import('./pages/Home'));
@@ -45,22 +48,45 @@ function ProtectedRoute({ children }) {
 function AppContent() {
   const location = useLocation();
   const showHeader = location.pathname !== '/login';
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      setMousePos({ x: e.clientX - 300, y: e.clientY - 300 });
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, []);
 
   return (
     <>
+      <div className="cursor-glow" style={{ transform: `translate3d(${mousePos.x}px, ${mousePos.y}px, 0)` }} />
       {showHeader && <Header />}
       <Suspense fallback={<EliteLoader />}>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
-          <Route path="/property/:id" element={<PropertyDetails />} />
-          <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
-          <Route path="/dashboard/*" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-          <Route path="/request-callback" element={<RequestPage />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+        <AnimatePresence mode="wait">
+          <Routes location={location} key={location.pathname}>
+            <Route path="/login" element={
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.5 }}><Login /></motion.div>
+            } />
+            <Route path="/" element={
+              <ProtectedRoute>
+                <motion.div initial={{ opacity: 0, filter: 'blur(10px)' }} animate={{ opacity: 1, filter: 'blur(0px)' }} exit={{ opacity: 0, filter: 'blur(10px)' }} transition={{ duration: 0.4 }}><Home /></motion.div>
+              </ProtectedRoute>
+            } />
+            <Route path="/property/:id" element={
+              <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.5, ease: 'easeOut' }}><PropertyDetails /></motion.div>
+            } />
+            <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
+            <Route path="/dashboard/*" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/request-callback" element={
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}><RequestPage /></motion.div>
+            } />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </AnimatePresence>
         <UnitConverter />
       </Suspense>
+      <FloatingHub />
     </>
   );
 }

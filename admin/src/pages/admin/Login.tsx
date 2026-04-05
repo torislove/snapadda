@@ -2,9 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAdminAuth } from '../../contexts/AdminAuthContext';
 import { Logo } from '../../components/ui/Logo';
-import { GoogleLogin } from '@react-oauth/google';
-import { jwtDecode } from 'jwt-decode';
-import { ShieldCheck, ArrowLeft, Loader2 } from 'lucide-react';
+import { ShieldCheck, ArrowLeft, Loader2, Mail, Lock } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
@@ -15,15 +13,18 @@ const AdminLogin = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleGoogleSuccess = async (credentialResponse: any) => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+  const handleLogin = async (e: any) => {
+    e.preventDefault();
     setIsLoading(true);
     setError('');
     try {
-      const decoded: any = jwtDecode(credentialResponse.credential);
-      const res = await fetch(`${API_URL}/admin/auth/google`, {
+      const res = await fetch(`${API_URL}/admin/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(decoded),
+        body: JSON.stringify({ email, password }),
       });
 
       const data = await res.json();
@@ -102,14 +103,36 @@ const AdminLogin = () => {
                 Verifying Credentials...
               </div>
             ) : (
-              <GoogleLogin
-                onSuccess={handleGoogleSuccess}
-                onError={() => setError('Google Sign-In Failed')}
-                theme="filled_black"
-                shape="pill"
-                size="large"
-                width="100%"
-              />
+              <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', padding: '0.5rem' }}>
+                <div style={{ position: 'relative' }}>
+                  <Mail size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--txt-muted)' }} />
+                  <input
+                    type="email"
+                    placeholder="Admin Email Address"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    style={{ width: '100%', padding: '1rem 1rem 1rem 3rem', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: 'white', outline: 'none' }}
+                  />
+                </div>
+                <div style={{ position: 'relative' }}>
+                  <Lock size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--txt-muted)' }} />
+                  <input
+                    type="password"
+                    placeholder="Security Password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    style={{ width: '100%', padding: '1rem 1rem 1rem 3rem', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: 'white', outline: 'none' }}
+                  />
+                </div>
+                <button 
+                  type="submit" 
+                  style={{ width: '100%', padding: '1rem', background: 'linear-gradient(135deg, var(--gold), #9e822a)', color: '#020205', fontWeight: 800, borderRadius: '12px', border: 'none', cursor: 'pointer', marginTop: '0.5rem', textTransform: 'uppercase', letterSpacing: '1px' }}
+                >
+                  Authorize Access
+                </button>
+              </form>
             )}
           </div>
 

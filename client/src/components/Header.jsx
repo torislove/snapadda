@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, Home, MapPin, Phone, User, LogOut, LayoutDashboard, Search, Building2, Globe } from 'lucide-react';
+import { Menu, X, Home, MapPin, Phone, User, LogOut, LayoutDashboard, Search, Building2, Globe, Sun, Moon } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import Logo from './Logo';
@@ -19,6 +19,15 @@ export default function Header() {
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  const [theme, setTheme] = useState(() => localStorage.getItem('snapTheme') || 'dark');
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('snapTheme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => setTheme(prev => prev === 'dark' ? 'light' : 'dark');
 
   // Close mobile menu on route change
   useEffect(() => {
@@ -71,23 +80,32 @@ export default function Header() {
             ))}
           </nav>
 
-          <div className="nav-right">
-            <div className="desktop-only" style={{ display: 'flex', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <button 
+                onClick={toggleTheme} 
+                style={{ background: 'transparent', border: 'none', color: 'var(--txt-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                title="Toggle Theme"
+              >
+                {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+              </button>
+              
               <button 
                 onClick={toggleLang} 
-                style={{ background: 'transparent', border: '1px solid rgba(212,175,55,0.4)', color: 'var(--gold)', padding: '0.4rem 0.8rem', borderRadius: '4px', cursor: 'pointer', marginRight: '1rem', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem' }}
+                style={{ background: 'rgba(212,175,55,0.1)', border: '1px solid rgba(212,175,55,0.4)', color: 'var(--txt-primary)', padding: '0.4rem 0.6rem', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', fontWeight: 600 }}
               >
-                <Globe size={14} /> {i18n.language === 'en' ? 'తెలుగు' : 'English'}
+                <Globe size={16} className="text-gold" /> {i18n.language === 'en' ? 'తెలుగు' : 'EN'}
               </button>
-              {user ? (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                  <span style={{ fontSize: '0.85rem', color: 'var(--txt-muted)' }}>{user.name}</span>
-                  <button className="nav-signout-btn btn-3d" style={{ padding: '0.45rem 1.1rem', background: 'rgba(240, 93, 94, 0.1)', color: '#f05d5e', border: '1px solid rgba(240, 93, 94, 0.3)' }} onClick={logout}>{t('nav.signOut', 'Sign Out')}</button>
-                </div>
-              ) : (
-                <Link to="/login" className="nav-signin-btn btn-3d">{t('nav.signIn', 'Sign In')}</Link>
-              )}
-            </div>
+
+              <div className="desktop-only" style={{ display: 'flex', alignItems: 'center', marginLeft: '0.5rem' }}>
+                {user ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <span style={{ fontSize: '0.85rem', color: 'var(--txt-muted)', fontWeight: 600 }}>{user.name}</span>
+                    <button className="nav-signout-btn btn-3d" style={{ padding: '0.45rem 1.1rem', background: 'rgba(240, 93, 94, 0.1)', color: '#f05d5e', border: '1px solid rgba(240, 93, 94, 0.3)' }} onClick={logout}>{t('nav.signOut', 'Sign Out')}</button>
+                  </div>
+                ) : (
+                  <Link to="/login" className="nav-signin-btn btn-3d">{t('nav.signIn', 'Sign In')}</Link>
+                )}
+              </div>
 
             <button
               className="mobile-menu-btn"
@@ -121,14 +139,7 @@ export default function Header() {
                   {link.label}
                 </a>
               ))}
-              <button 
-                onClick={toggleLang} 
-                className="mobile-auth-btn-glass"
-                style={{ width: '100%', marginTop: '1rem', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', border: '1px solid var(--gold-dim)' }}
-              >
-                <Globe size={16} /> {i18n.language === 'en' ? 'SWITCH TO తెలుగు' : 'SWITCH TO ENGLISH'}
-              </button>
-              <hr style={{ borderColor: 'rgba(255,255,255,0.1)', margin: '1.5rem 0' }} />
+              <hr style={{ borderColor: 'var(--border-light)', margin: '1.5rem 0' }} />
               {user ? (
                 <button
                   className="mobile-auth-btn-glass logout btn-3d"

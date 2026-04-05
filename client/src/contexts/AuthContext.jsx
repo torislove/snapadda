@@ -22,7 +22,29 @@ export const AuthProvider = ({ children }) => {
       }
     }
     setIsLoading(false);
-    console.log('AuthProvider loaded user from localStorage.');
+
+    // Google One-Tap Initialization
+    const handleGoogleResponse = async (response) => {
+      try {
+        const { googleAuth } = await import('../services/api');
+        const res = await googleAuth(response.credential);
+        if (res.status === 'success') {
+          loginGoogle(res.data);
+        }
+      } catch (err) {
+        console.error('One-tap login failed', err);
+      }
+    };
+
+    if (window.google && !stored) {
+      window.google.accounts.id.initialize({
+        client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+        callback: handleGoogleResponse,
+        auto_select: true,
+        cancel_on_tap_outside: false
+      });
+      window.google.accounts.id.prompt();
+    }
   }, []);
 
   const login = (userData) => {
