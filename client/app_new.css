@@ -1,0 +1,434 @@
+
+  --gold-dim: rgba(212, 175, 55, 0.1);
+  --gold-border: rgba(212, 175, 55, 0.25);
+  
+  
+  
+  --bg-glass-thin: rgba(5, 5, 10, 0.4);
+  --bg-glass-mid: rgba(5, 5, 10, 0.7);
+  --bg-glass-heavy: rgba(5, 5, 10, 0.9);
+  --bg-card: rgba(10, 12, 20, 0.75);
+  
+  --border-light: rgba(255, 255, 255, 0.08);
+  --border-gold: rgba(212, 175, 55, 0.3);
+  
+  --shadow-3d: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 0 1px var(--border-light);
+  --shadow-gold: 0 0 30px rgba(212, 175, 55, 0.2);
+  
+  
+  
+
+/* --- Base --- */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+  background-image: 
+    radial-gradient(circle at 50% 0, rgba(6, 78, 64, 0.15) 0%, transparent 50%),
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+
+
+/* --- 3D Utilities --- */
+.scene-3d { perspective: var(--perspective); }
+.tilt-3d { transform-style: preserve-3d; transition: transform var(--anim-slow), box-shadow var(--anim-slow); }
+  backdrop-filter: blur(40px) saturate(200%);
+  background: rgba(5, 5, 10, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05), 0 25px 50px rgba(0, 0, 0, 0.7);
+
+/* --- Navigation --- */
+.app-nav {
+  z-index: 9999;
+  height: var(--nav-h);
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  background: rgba(7, 7, 15, 0.98) !important;
+  border-bottom: 1px solid var(--border-gold) !important;
+  display: flex !important;
+  align-items: center !important;
+
+.nav-dropdown {
+  backdrop-filter: blur(20px);
+  background: rgba(7, 7, 15, 0.95);
+  border: 1px solid var(--border-gold);
+  border-radius: var(--r-md);
+  opacity: 0;
+  visibility: hidden;
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%) translateY(10px);
+  transition: all 0.3s var(--ease-3d);
+  padding: 0.75rem;
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+
+.nav-dropdown-wrap:hover .nav-dropdown {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+
+/* --- Search Platform --- */
+.search-platform {
+  border-radius: var(--r-xl);
+  padding: 2rem;
+  margin-top: 1rem;
+
+.hero-city-cards-scroller::-webkit-scrollbar { display: none; }
+.hero-city-cards-scroller { -ms-overflow-style: none; scrollbar-width: none; }
+
+.smart-pill {
+  border-radius: var(--r-full);
+  border: 1px solid var(--border-light);
+  color: var(--txt-secondary);
+  background: rgba(255, 255, 255, 0.05);
+  transition: all 0.3s;
+  cursor: pointer;
+
+.smart-pill:hover, .smart-pill.active {
+  background: var(--gold-dim);
+  border-color: var(--gold);
+  color: var(--gold);
+  box-shadow: 0 0 15px rgba(232, 184, 75, 0.2);
+
+.smart-pill.active {
+  background: var(--gold);
+  color: var(--midnight);
+
+/* --- Search Controls --- */
+/* --- Card Based Hero Search --- */
+.intent-cards {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+
+.intent-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-light);
+  border-radius: var(--r-lg);
+  padding: 1.25rem 0.5rem;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: all 0.3s var(--ease-3d);
+  color: var(--txt-secondary);
+  font-weight: 600;
+  overflow: hidden;
+
+.intent-card::before {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(circle at 50% 0%, var(--gold-dim) 0%, transparent 60%);
+  opacity: 0; transition: opacity 0.3s;
+
+.intent-card:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+
+.intent-card.active {
+  background: var(--bg-card);
+  border-color: var(--gold);
+  color: var(--gold);
+  box-shadow: 0 8px 24px rgba(232, 184, 75, 0.15);
+
+.intent-card.active::before { opacity: 1; }
+
+.budget-card, .city-select-card {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: var(--r-lg);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.city-image-pill {
+  height: 64px;
+  min-width: 120px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--border-light);
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+.city-image-pill img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
+  transition: opacity 0.3s, transform 0.4s;
+
+.city-image-pill:hover img, .city-image-pill.active img {
+  opacity: 0.8;
+  transform: scale(1.05);
+
+.city-image-pill span {
+  position: relative;
+  z-index: 1;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.9);
+  font-size: 0.9rem;
+
+.city-image-pill.active {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 2px var(--gold);
+
+.type-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 1rem;
+  margin-top: 1.5rem;
+
+.type-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-light);
+  border-radius: var(--r-lg);
+  padding: 1.25rem 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  color: var(--txt-secondary);
+
+.type-card:hover {
+  background: rgba(255, 255, 255, 0.08);
+  transform: translateY(-3px);
+
+.type-card.active {
+  background: var(--gold-dim);
+  border-color: var(--gold);
+  color: var(--gold);
+  box-shadow: 0 8px 24px rgba(232, 184, 75, 0.15);
+
+.type-card svg {
+  width: 28px;
+  height: 28px;
+  stroke-width: 1.5;
+
+.type-card.active svg {
+  stroke-width: 2;
+  filter: drop-shadow(0 0 8px rgba(232, 184, 75, 0.5));
+
+.search-main-row {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+
+.search-bar-wrap {
+  align-items: center;
+
+.search-bar-input {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-light);
+  border-radius: var(--r-lg);
+  padding: 1rem 1rem 1rem 3rem;
+  font-size: 1rem;
+  outline: none;
+  transition: all 0.3s;
+
+.search-bar-wrap .s-icon {
+  left: 1rem;
+  color: var(--gold);
+
+.search-bar-input:focus {
+  border-color: var(--gold);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 20px rgba(232, 184, 75, 0.1);
+
+.search-action-row {
+  gap: 1rem;
+  margin-top: 0.5rem;
+
+.search-go-btn {
+  flex: 1;
+  background: var(--gold);
+  color: var(--midnight);
+  border: none;
+  border-radius: var(--r-lg);
+  padding: 0.8rem;
+  font-weight: 700;
+  justify-content: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: all 0.3s;
+
+.search-go-btn:hover {
+  background: var(--gold-light);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(232, 184, 75, 0.4);
+
+.search-filter-btn {
+  width: 50px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-light);
+  border-radius: var(--r-lg);
+  justify-content: center;
+  color: #fff;
+  transition: all 0.3s;
+
+.search-filter-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--gold);
+
+/* --- Property Cards --- */
+.property-card {
+  border-radius: var(--r-lg);
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  transition: all 0.4s var(--ease-3d);
+  overflow: hidden;
+  position: relative;
+
+.property-card:hover {
+  transform: translateY(-8px);
+  border-color: var(--gold-border);
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6);
+
+.property-image-actions {
+  position: absolute;
+  top: 14px; right: 14px;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 100;
+  opacity: 0;
+  transform: translateX(10px);
+  transition: all 0.3s;
+
+.property-card:hover .property-image-actions {
+  opacity: 1;
+  transform: translateX(0);
+
+.img-action-btn {
+  width: 38px; height: 38px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #fff;
+  transition: all 0.3s;
+
+.img-action-btn:hover {
+  background: var(--gold);
+  color: var(--midnight);
+  transform: scale(1.1);
+
+/* --- Mobile Fixes --- */
+@media (max-width: 768px) {
+  .container { padding: 0 1rem; }
+  .search-platform { padding: 1.5rem; }
+  .pd-gallery-scroller { gap: 4px; }
+  .mobile-only { display: flex !important; }
+  .desktop-only { display: none !important; }
+
+/* --- Buttons --- */
+.hero-btn {
+  border-radius: var(--r-full);
+  font-weight: 700;
+  text-decoration: none;
+  display: inline-flex;
+  justify-content: center;
+  transition: all 0.3s var(--ease-3d);
+  padding: 0.9rem 2.2rem;
+  gap: 0.5rem;
+
+.hero-btn-primary {
+  background: linear-gradient(135deg, #f5c842, #d4a017);
+  color: #07070f;
+  box-shadow: 0 4px 15px rgba(212, 160, 23, 0.4);
+
+.hero-btn-primary:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(212, 160, 23, 0.6);
+
+/* --- Animations --- */
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.animate-fade { animation: fadeIn 0.5s ease-out forwards; }
+
+/* --- Hero Section & Typography --- */
+.hero-section {
+  padding: 4rem 0;
+  text-align: center;
+
+.hero-title {
+  font-family: var(--font-serif);
+  font-size: clamp(2.5rem, 6vw, 4.5rem);
+  font-weight: 900;
+  line-height: 1.1;
+  margin-bottom: 1.5rem;
+  color: var(--txt-primary);
+
+.text-royal-gold {
+  background: linear-gradient(135deg, #f1d592, #d4af37, #9e822a);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+
+.hero-subtitle {
+  font-size: 1.2rem;
+  color: var(--txt-secondary);
+  max-width: 600px;
+  margin: 0 auto 2.5rem;
+
+/* --- City Cards Grid --- */
+.city-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin-top: 2rem;
+
+.city-card {
+  aspect-ratio: 16/9;
+  border-radius: var(--r-lg);
+  cursor: pointer;
+  border: 1px solid var(--border-light);
+  transition: all 0.4s var(--ease-3d);
+
+.city-card img {
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.6s var(--ease-3d);
+.city-card:hover img {
+  transform: scale(1.1);
+.city-card-content {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 60%);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 1.5rem;
+.city-card-name {
+  font-family: var(--font-serif);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #fff;
+/* --- Stats Band --- */
+.stats-band {
+  background: var(--bg-glass-mid);
+  padding: 4rem 0;
+  margin: 4rem 0;
+  border-top: 1px solid var(--border-gold);
+  border-bottom: 1px solid var(--border-gold);
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 2rem;
+  text-align: center;
+.stat-value {
+  font-family: var(--font-mono);
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--gold);
+  display: block;
+.stat-label {
+  color: var(--txt-muted);
+  letter-spacing: 0.1em;
+  font-size: 0.8rem;

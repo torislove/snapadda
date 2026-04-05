@@ -1,10 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, ShieldCheck, MapPin, Building2, User, Phone, MessageSquare, Image, Video, BedDouble, Bath, Square, Compass, Award, Send, Star, ChevronRight } from 'lucide-react';
+import { 
+  ArrowLeft, MapPin, Share2, Heart, ShieldCheck, Clock, 
+  Calendar, Layers, Phone, MessageSquare, ChevronRight, Eye,
+  LayoutDashboard, Download, Info, CheckCircle2, Navigation, Building2, User, BedDouble, Bath, Square, Compass, Award, Send, Star, Image, Video
+} from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import Logo from '../components/Logo';
-import { fetchProperty, fetchSetting, submitLead, askQuestion, fetchPropertyFAQs } from '../services/api';
+import { fetchProperty, fetchSetting, submitLead, askQuestion, fetchPropertyFAQs, likeProperty, shareProperty } from '../services/api';
+import { formatSnapAddaPrice } from '../utils/priceUtils';
 
 
 export default function PropertyDetails() {
@@ -20,6 +25,8 @@ export default function PropertyDetails() {
   const [supportInfo, setSupportInfo] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalType, setModalType] = useState('callback');
+  const [liked, setLiked] = useState(false);
+  const [likeCount, setLikeCount] = useState(0);
 
   // Q&A form
   const [qName, setQName] = useState('');
@@ -38,7 +45,17 @@ export default function PropertyDetails() {
     window.scrollTo(0, 0);
     
     fetchProperty(id)
-      .then(res => setProperty(res.data || res))
+      .then(res => {
+        const data = res.data || res;
+        setProperty(data);
+        setLikeCount(data.likeCount || 0);
+        setLiked(data.isLiked || false);
+        
+        // Add to Recently Viewed in localStorage
+        const recent = JSON.parse(localStorage.getItem('snapadda_recent_viewed') || '[]');
+        const updated = [data, ...recent.filter(r => r._id !== data._id)].slice(0, 4);
+        localStorage.setItem('snapadda_recent_viewed', JSON.stringify(updated));
+      })
       .catch(() => setProperty(null))
       .finally(() => setLoading(false));
 
@@ -51,6 +68,7 @@ export default function PropertyDetails() {
     try {
       const stored = localStorage.getItem('snapadda_recent_views');
       const arr = stored ? JSON.parse(stored) : [];
+      const propertyId = id || property?._id || property?.id;
       const filtered = arr.filter(p => p._id !== property._id);
       filtered.unshift({ _id: property._id, title: property.title, price: property.price, location: property.location, type: property.type, images: property.images?.slice(0, 1) || [], beds: property.beds, baths: property.baths, sqft: property.sqft });
       if (filtered.length > 6) filtered.length = 6;
@@ -74,12 +92,38 @@ export default function PropertyDetails() {
     return Math.round(principal * mr * Math.pow(1 + mr, n) / (Math.pow(1 + mr, n) - 1));
   };
 
-  const handleWhatsApp = () => {
-    if (!property) return;
-    const url = `${window.location.origin}/property/${property._id || id}`;
-    const msg = `Hi SnapAdda, I am interested in "${property.title}" listed for ${property.price}. Link: ${url} - Is it still available?`;
-    window.open(`https://wa.me/${supportInfo?.whatsapp || '919999999911'}?text=${encodeURIComponent(msg)}`, '_blank');
+  const handleLike = async () => {
+    if (!user || user.isGuest) { alert('Please sign in with Google to like properties'); return; }
+    try {
+      const res = await likeProperty(id, user._id || user.id);
+      if (res.status === 'success') {
+        setLiked(res.data.liked);
+        setLikeCount(res.data.likeCount);
+      }
+    } catch (err) { console.error('Like failed', err); }
   };
+
+  const handleShare = async () => {
+    const url = window.location.href;
+    const shareId = user?.isGuest ? null : user?._id;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: `SnapAdda: ${property?.title}`, text: `Check out this property in ${property?.location}`, url });
+        await shareProperty(id, 'native', shareId);
+      } else {
+        await navigator.clipboard.writeText(url);
+        alert('Link copied!');
+        await shareProperty(id, 'clipboard', shareId);
+      }
+    } catch (err) { console.error('Share failed', err); }
+  };
+
+  const handleWhatsApp = () => {
+    const waPhone = supportInfo?.whatsapp || '919346793364';
+    const text = encodeURIComponent(`Hi SnapAdda, I am interested in "${property?.title || 'this property'}" located in ${property?.location || 'Andhra Pradesh'}. (ID: ${id})`);
+    window.open(`https://wa.me/${waPhone}?text=${text}`, '_blank');
+  };
+
 
   const handleAsk = async (e) => {
     e.preventDefault();
@@ -123,12 +167,25 @@ export default function PropertyDetails() {
     } catch { return ''; }
   }
 
-  const generateDesc = (p) => {
-    if (!p) return '';
-    if (p.description) return p.description;
-    const face = p.facing && p.facing !== 'Any' ? `${p.facing} facing ` : '';
-    const appr = authority ? ` with ${authority} approval` : '';
-    return `This premium ${face}${p.type || 'property'} is located in ${p.location}${appr}. Spanning ${p.areaSize || p.sqft} ${p.measurementUnit || 'Sq.Yds'}, it offers ${p.beds ? `${p.beds} bedrooms, ${p.baths} bathrooms, and ` : ''}exceptional value for both living and investment.`;
+  const generateDesc = (prop) => {
+    if (prop.description && prop.description.length > 50) return prop.description;
+    
+    let desc = `This premium ${prop.type || 'property'} is located in the sought-after area of ${prop.location || 'Andhra Pradesh'}. `;
+    
+    if (prop.type === 'Agricultural Land') {
+      desc += `It spans a total of ${prop.areaSize || prop.totalAcres} ${prop.measurementUnit || 'Acres'} of fertile land, offering excellent potential for cultivation or long-term investment. `;
+      if (prop.roadWidth > 0) desc += `The property features a ${prop.roadWidth} ft wide road access, ensuring easy logistical connectivity. `;
+    } else if (prop.type?.includes('Plot')) {
+      desc += `Measuring ${prop.areaSize} ${prop.measurementUnit || 'Sq.Yards'}, this plot is ideal for ${prop.purpose === 'Sale' ? 'building your dream home' : 'commercial development'}. `;
+      if (prop.isGated) desc += `Situated within a secure gated community, it offers both privacy and premium infrastructure. `;
+    } else {
+      if (prop.bhk) desc += `A spacious ${prop.bhk} BHK configuration with modern layouts. `;
+      if (prop.furnishing && prop.furnishing !== 'N/A') desc += `The property comes ${prop.furnishing} and is ready for immediate occupancy. `;
+    }
+    
+    if (prop.facing && prop.facing !== 'Any') desc += `The ${prop.facing}-facing orientation ensures optimal natural light and adherence to Vastu principles. `;
+    
+    return desc + "Contact SnapAdda today for an exclusive site visit and detailed walkthrough.";
   };
 
   if (loading) return (
@@ -161,28 +218,63 @@ export default function PropertyDetails() {
         </button>
       </div>
 
-      {/* Gallery */}
-      <section className="pd-gallery">
-        <div className="pd-gallery-tabs">
-          <button className={`media-tab${mediaTab === 'photos' ? ' active' : ''}`} onClick={() => setMediaTab('photos')}><Image size={16} /> Photos</button>
-          <button className={`media-tab${mediaTab === 'video' ? ' active' : ''}`} onClick={() => setMediaTab('video')}><Video size={16} /> Virtual Tour</button>
+      {/* Premium Horizontal Gallery */}
+      <section className="pd-gallery-premium-wrapper">
+        <div className="pd-gallery-container-main">
+          <div className="pd-gallery-scroller" id="pd-gallery-scroller">
+            {/* Unified Media Stream */}
+            {[...images, ...(property.videoUrl ? [property.videoUrl] : [])].map((item, index) => (
+              <div key={index} className="pd-media-item-card">
+                {item.includes('youtube.com') || item.includes('youtu.be') ? (
+                  <div className="pd-video-item-wrapper">
+                    <iframe 
+                      src={getYouTubeEmbed(item)} 
+                      title="Virtual Tour" 
+                      frameBorder="0" 
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                      allowFullScreen 
+                    />
+                  </div>
+                ) : (
+                  <img src={item} alt={`${property.title} - View ${index + 1}`} loading="lazy" />
+                )}
+              </div>
+            ))}
+            {images.length === 0 && !property.videoUrl && (
+              <div className="pd-media-item-card empty">
+                <div className="property-no-image"><Building2 size={64} /><p>No media available</p></div>
+              </div>
+            )}
+          </div>
+
+          {/* Gallery Navigation Controls (Desktop) */}
+          <div className="pd-gallery-nav-overlay desktop-only">
+            <button 
+              className="pd-gallery-nav-btn prev" 
+              onClick={() => document.getElementById('pd-gallery-scroller')?.scrollBy({ left: -400, behavior: 'smooth' })}
+            >
+              <ArrowLeft size={24} />
+            </button>
+            <button 
+              className="pd-gallery-nav-btn next" 
+              onClick={() => document.getElementById('pd-gallery-scroller')?.scrollBy({ left: 400, behavior: 'smooth' })}
+            >
+              <ChevronRight size={24} />
+            </button>
+          </div>
+
+          {/* Media Indicators */}
+          <div className="pd-gallery-info-badge">
+            <div className="media-count-chip">
+              <Image size={14} /> {images.length} Photos
+            </div>
+            {property.videoUrl && (
+              <div className="media-count-chip video">
+                <Video size={14} /> 1 Video
+              </div>
+            )}
+          </div>
         </div>
-        {mediaTab === 'photos' ? (
-          <div className="pd-gallery-grid">
-            <div className="pd-main-image">
-              {images[0] ? <img src={images[0]} alt={property.title} /> : <div className="property-no-image"><Building2 size={48} /></div>}
-            </div>
-            <div className="pd-side-images">
-              {images.slice(1, 3).map((img, i) => <div key={i} className="pd-side-img"><img src={img} alt={`View ${i + 2}`} /></div>)}
-            </div>
-          </div>
-        ) : (
-          <div className="pd-video-frame">
-            {property.videoUrl
-              ? <iframe src={getYouTubeEmbed(property.videoUrl)} title="Virtual Tour" frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
-              : <div className="pd-video-empty"><Video size={48} /><p>Virtual Tour Coming Soon</p></div>}
-          </div>
-        )}
       </section>
 
       {/* Title Bar */}
@@ -232,7 +324,26 @@ export default function PropertyDetails() {
               )}
             </div>
             <div className="pd-price-block">
-              <div className="pd-price">{property.price}</div>
+              <div style={{ display: 'flex', gap: '10px', marginBottom: '1rem', justifyContent: 'flex-end' }}>
+                <button 
+                  onClick={handleLike}
+                  style={{ 
+                    background: liked ? 'rgba(240, 93, 94, 0.15)' : 'rgba(255,255,255,0.05)', 
+                    border: liked ? '1px solid var(--rose)' : '1px solid rgba(255,255,255,0.1)', 
+                    color: liked ? 'var(--rose)' : 'white',
+                    padding: '8px 16px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', transition: 'all 0.2s', fontWeight: 700 
+                  }}
+                >
+                  <Heart size={18} fill={liked ? 'var(--rose)' : 'none'} /> {likeCount}
+                </button>
+                <button 
+                  onClick={handleShare}
+                  style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', padding: '8px 16px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 700 }}
+                >
+                  <Share2 size={18} /> Share
+                </button>
+              </div>
+              <div className="pd-price">{formatSnapAddaPrice(property.price)}</div>
             </div>
           </div>
         </div>
@@ -272,16 +383,24 @@ export default function PropertyDetails() {
             {/* Extended Detail Grid */}
             <div style={{ marginTop: '2.5rem', borderTop: '1px solid var(--border-light)', paddingTop: '2.5rem' }}>
               <h3 style={{ fontSize: '1rem', fontWeight: 800, color: 'white', marginBottom: '1.25rem' }}>Technical Specifications</h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
-                 {property.carpetArea > 0 && <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1rem', borderRadius: '12px' }}><div style={{ color: 'var(--txt-muted)', fontSize: '0.72rem', textTransform: 'uppercase' }}>Carpet Area</div><div style={{ fontWeight: 700 }}>{property.carpetArea} Sq.Ft</div></div>}
-                 {property.superBuiltupArea > 0 && <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1rem', borderRadius: '12px' }}><div style={{ color: 'var(--txt-muted)', fontSize: '0.72rem', textTransform: 'uppercase' }}>Super Builtup</div><div style={{ fontWeight: 700 }}>{property.superBuiltupArea} Sq.Ft</div></div>}
-                 {property.transactionType && property.transactionType !== 'N/A' && <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1rem', borderRadius: '12px' }}><div style={{ color: 'var(--txt-muted)', fontSize: '0.72rem', textTransform: 'uppercase' }}>Transaction</div><div style={{ fontWeight: 700 }}>{property.transactionType}</div></div>}
-                 {property.propertyAge && property.propertyAge !== 'N/A' && <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1rem', borderRadius: '12px' }}><div style={{ color: 'var(--txt-muted)', fontSize: '0.72rem', textTransform: 'uppercase' }}>Age of Asset</div><div style={{ fontWeight: 700 }}>{property.propertyAge}</div></div>}
-                 {property.ownershipType && property.ownershipType !== 'N/A' && <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1rem', borderRadius: '12px' }}><div style={{ color: 'var(--txt-muted)', fontSize: '0.72rem', textTransform: 'uppercase' }}>Ownership</div><div style={{ fontWeight: 700 }}>{property.ownershipType}</div></div>}
-                 {property.floorNo > 0 && <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1rem', borderRadius: '12px' }}><div style={{ color: 'var(--txt-muted)', fontSize: '0.72rem', textTransform: 'uppercase' }}>Floor Level</div><div style={{ fontWeight: 700 }}>{property.floorNo} of {property.totalFloors}</div></div>}
-                 {property.parking && property.parking !== 'N/A' && <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1rem', borderRadius: '12px' }}><div style={{ color: 'var(--txt-muted)', fontSize: '0.72rem', textTransform: 'uppercase' }}>Parking</div><div style={{ fontWeight: 700 }}>{property.parking}</div></div>}
-                 {property.waterSupply && property.waterSupply !== 'N/A' && <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1rem', borderRadius: '12px' }}><div style={{ color: 'var(--txt-muted)', fontSize: '0.72rem', textTransform: 'uppercase' }}>Water Supply</div><div style={{ fontWeight: 700 }}>{property.waterSupply}</div></div>}
-                 {property.reraId && <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1rem', borderRadius: '12px' }}><div style={{ color: 'var(--txt-muted)', fontSize: '0.72rem', textTransform: 'uppercase' }}>RERA Registration</div><div style={{ fontWeight: 700 }}>{property.reraId}</div></div>}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.25rem' }}>
+                 {property.carpetArea > 0 && <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1.25rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}><div style={{ color: 'var(--txt-muted)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Carpet Area</div><div style={{ fontWeight: 700, fontSize: '1.1rem' }}>{property.carpetArea} Sq.Ft</div></div>}
+                 {property.superBuiltupArea > 0 && <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1.25rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}><div style={{ color: 'var(--txt-muted)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Super Builtup</div><div style={{ fontWeight: 700, fontSize: '1.1rem' }}>{property.superBuiltupArea} Sq.Ft</div></div>}
+                 {property.transactionType && property.transactionType !== 'N/A' && <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1.25rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}><div style={{ color: 'var(--txt-muted)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Transaction</div><div style={{ fontWeight: 700, fontSize: '1.1rem' }}>{property.transactionType}</div></div>}
+                 {property.propertyAge && property.propertyAge !== 'N/A' && <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1.25rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}><div style={{ color: 'var(--txt-muted)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Age of Asset</div><div style={{ fontWeight: 700, fontSize: '1.1rem' }}>{property.propertyAge}</div></div>}
+                 {property.ownershipType && property.ownershipType !== 'N/A' && <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1.25rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}><div style={{ color: 'var(--txt-muted)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Ownership</div><div style={{ fontWeight: 700, fontSize: '1.1rem' }}>{property.ownershipType}</div></div>}
+                 {property.floorNo > 0 && <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1.25rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}><div style={{ color: 'var(--txt-muted)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Floor Level</div><div style={{ fontWeight: 700, fontSize: '1.1rem' }}>{property.floorNo} of {property.totalFloors}</div></div>}
+                 {property.parking && property.parking !== 'N/A' && <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1.25rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}><div style={{ color: 'var(--txt-muted)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Parking</div><div style={{ fontWeight: 700, fontSize: '1.1rem' }}>{property.parking}</div></div>}
+                 
+                 {/* Land & Plot Specifics */}
+                 {(property.type === 'Agricultural Land' || property.type?.includes('Plot')) && (
+                   <>
+                     {property.roadWidth > 0 && <div style={{ background: 'rgba(6,217,140,0.05)', padding: '1.25rem', borderRadius: '16px', border: '1px solid rgba(6,217,140,0.1)' }}><div style={{ color: 'var(--emerald)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Road Width</div><div style={{ fontWeight: 700, fontSize: '1.1rem', color: '#fff' }}>{property.roadWidth} Ft</div></div>}
+                     {property.boundaryWall && <div style={{ background: 'rgba(6,217,140,0.05)', padding: '1.25rem', borderRadius: '16px', border: '1px solid rgba(6,217,140,0.1)' }}><div style={{ color: 'var(--emerald)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Boundary</div><div style={{ fontWeight: 700, fontSize: '1.1rem', color: '#fff' }}>Constructed</div></div>}
+                     {property.isGated && <div style={{ background: 'rgba(232,184,75,0.05)', padding: '1.25rem', borderRadius: '16px', border: '1px solid rgba(232,184,75,0.1)' }}><div style={{ color: 'var(--gold)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Community</div><div style={{ fontWeight: 700, fontSize: '1.1rem', color: '#fff' }}>Gated</div></div>}
+                   </>
+                 )}
+                 {property.reraId && <div style={{ background: 'rgba(232,184,75,0.05)', padding: '1.25rem', borderRadius: '16px', border: '1px solid rgba(232,184,75,0.1)' }}><div style={{ color: 'var(--gold)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>RERA ID</div><div style={{ fontWeight: 700, fontSize: '1.1rem' }}>{property.reraId}</div></div>}
               </div>
             </div>
           </section>

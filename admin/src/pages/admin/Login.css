@@ -3,48 +3,67 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #0a0a0a;
+  background-color: #020205;
   font-family: 'Inter', sans-serif;
   padding: 1.5rem;
+  background-image: radial-gradient(circle at 50% 0, rgba(212, 175, 55, 0.05) 0%, transparent 50%);
+  position: relative;
+  overflow: hidden;
+}
+
+.admin-login-page::before {
+  content: '';
+  position: absolute;
+  top: -10%; left: -10%; width: 40%; height: 40%;
+  background: var(--gold);
+  filter: blur(120px);
+  opacity: 0.03;
+  z-index: 0;
 }
 
 .admin-login-box {
-  background-color: #121212;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background-color: rgba(7, 7, 15, 0.85);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(212, 175, 55, 0.15);
   padding: 3.5rem 3rem;
-  border-radius: 16px;
-  max-width: 420px;
+  border-radius: 24px;
+  max-width: 440px;
   width: 100%;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  position: relative;
+  z-index: 1;
 }
 
 .input-group {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 .input-label {
   color: #a3a3a3;
-  font-size: 0.875rem;
-  font-weight: 500;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
 }
 
 .admin-input-field {
   width: 100%;
-  background-color: #1a1a1a;
-  border: 1px solid #262626;
-  color: #f5f5f5;
-  padding: 12px 16px;
-  border-radius: 8px;
-  transition: all 0.2s ease;
-  font-size: 0.95rem;
+  background-color: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #fcfaf7;
+  padding: 14px 16px;
+  border-radius: 12px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-size: 1rem;
 }
 
 .admin-input-field:focus {
   outline: none;
   border-color: #d4af37;
-  background-color: #1f1f1f;
+  background-color: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.1);
 }
 
 .admin-input-field::placeholder {
@@ -53,30 +72,34 @@
 
 .admin-signin-btn {
   width: 100%;
-  background-color: #d4af37;
-  color: #000;
-  font-weight: 600;
-  padding: 12px;
-  border-radius: 8px;
+  background: linear-gradient(135deg, #fcd58e 0%, #d4af37 100%);
+  color: #05050a;
+  font-weight: 800;
+  padding: 14px;
+  border-radius: 12px;
   border: none;
   cursor: pointer;
-  transition: background-color 0.2s ease, transform 0.1s ease;
-  margin-top: 1.5rem;
+  transition: all 0.3s ease;
+  margin-top: 2rem;
   font-size: 1rem;
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 4px 15px rgba(212, 175, 55, 0.25);
 }
 
 .admin-signin-btn:hover {
-  background-color: #e5c453;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(212, 175, 55, 0.4);
 }
 
 .admin-signin-btn:active {
-  transform: scale(0.98);
+  transform: translateY(0);
 }
 
 .admin-signin-btn:disabled {
-  background-color: #9ca3af;
+  background: #333;
+  color: #888;
+  box-shadow: none;
   cursor: not-allowed;
 }

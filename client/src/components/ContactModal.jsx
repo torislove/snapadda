@@ -10,10 +10,14 @@ export default function ContactModal({ isOpen, onClose, type }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    try { await submitLead({ name, phone, type }); }
-    catch { console.log('Mock lead', { name, phone, type }); }
-    setSuccess(true);
-    setTimeout(() => { setSuccess(false); setName(''); setPhone(''); onClose(); }, 2000);
+    try { 
+      await submitLead({ name, phone, message: `Source: Contact Modal | Type: ${type}` }); 
+      setSuccess(true);
+      setTimeout(() => { setSuccess(false); setName(''); setPhone(''); onClose(); }, 2000);
+    } catch (err) { 
+      console.error('Lead failed', err);
+      alert('Failed to send request. Please try again.'); 
+    }
   };
 
   return (

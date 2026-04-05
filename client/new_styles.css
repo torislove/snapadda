@@ -1,0 +1,2096 @@
+
++
++  --gold-dim: rgba(212, 175, 55, 0.1);
++  --gold-border: rgba(212, 175, 55, 0.25);
++  
++  
++  
++  --bg-glass-thin: rgba(5, 5, 10, 0.4);
++  --bg-glass-mid: rgba(5, 5, 10, 0.7);
++  --bg-glass-heavy: rgba(5, 5, 10, 0.9);
++  --bg-card: rgba(10, 12, 20, 0.75);
++  
++  --border-light: rgba(255, 255, 255, 0.08);
++  --border-gold: rgba(212, 175, 55, 0.3);
++  
++  --shadow-3d: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 0 1px var(--border-light);
++  --shadow-gold: 0 0 30px rgba(212, 175, 55, 0.2);
++  
++  
++  
++
++/* --- Base --- */
++* { box-sizing: border-box; margin: 0; padding: 0; }
++  background-image: 
++    radial-gradient(circle at 50% 0, rgba(6, 78, 64, 0.15) 0%, transparent 50%),
++    url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
++
++
++/* --- 3D Utilities --- */
++.scene-3d { perspective: var(--perspective); }
++.tilt-3d { transform-style: preserve-3d; transition: transform var(--anim-slow), box-shadow var(--anim-slow); }
++  backdrop-filter: blur(40px) saturate(200%);
++  background: rgba(5, 5, 10, 0.85);
++  border: 1px solid rgba(255, 255, 255, 0.1);
++  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05), 0 25px 50px rgba(0, 0, 0, 0.7);
++
++/* --- Navigation --- */
++.app-nav {
++  z-index: 9999;
++  height: var(--nav-h);
++  position: fixed;
++  top: 0; left: 0; right: 0;
++  background: rgba(7, 7, 15, 0.98) !important;
++  border-bottom: 1px solid var(--border-gold) !important;
++  display: flex !important;
++  align-items: center !important;
++
++.nav-dropdown {
++  backdrop-filter: blur(20px);
++  background: rgba(7, 7, 15, 0.95);
++  border: 1px solid var(--border-gold);
++  border-radius: var(--r-md);
++  opacity: 0;
++  visibility: hidden;
++  position: absolute;
++  top: calc(100% + 10px);
++  left: 50%;
++  transform: translateX(-50%) translateY(10px);
++  transition: all 0.3s var(--ease-3d);
++  padding: 0.75rem;
++  min-width: 200px;
++  display: flex;
++  flex-direction: column;
++  gap: 0.25rem;
++  box-shadow: 0 20px 40px rgba(0,0,0,0.5);
++
++.nav-dropdown-wrap:hover .nav-dropdown {
++  opacity: 1;
++  visibility: visible;
++  transform: translateX(-50%) translateY(0);
++
++/* --- Search Platform --- */
++.search-platform {
++  border-radius: var(--r-xl);
++  padding: 2rem;
++  margin-top: 1rem;
++
++.hero-city-cards-scroller::-webkit-scrollbar { display: none; }
++.hero-city-cards-scroller { -ms-overflow-style: none; scrollbar-width: none; }
++
++.smart-pill {
++  border-radius: var(--r-full);
++  border: 1px solid var(--border-light);
++  color: var(--txt-secondary);
++  background: rgba(255, 255, 255, 0.05);
++  transition: all 0.3s;
++  cursor: pointer;
++
++.smart-pill:hover, .smart-pill.active {
++  background: var(--gold-dim);
++  border-color: var(--gold);
++  color: var(--gold);
++  box-shadow: 0 0 15px rgba(232, 184, 75, 0.2);
++
++.smart-pill.active {
++  background: var(--gold);
++  color: var(--midnight);
++
++/* --- Search Controls --- */
++/* --- Card Based Hero Search --- */
++.intent-cards {
++  display: grid;
++  grid-template-columns: repeat(2, 1fr);
++  gap: 1rem;
++  margin-bottom: 1.5rem;
++
++.intent-card {
++  background: rgba(255, 255, 255, 0.03);
++  border: 1px solid var(--border-light);
++  border-radius: var(--r-lg);
++  padding: 1.25rem 0.5rem;
++  flex-direction: column;
++  justify-content: center;
++  gap: 0.5rem;
++  cursor: pointer;
++  transition: all 0.3s var(--ease-3d);
++  color: var(--txt-secondary);
++  font-weight: 600;
++  overflow: hidden;
++
++.intent-card::before {
++  content: ''; position: absolute; inset: 0;
++  background: radial-gradient(circle at 50% 0%, var(--gold-dim) 0%, transparent 60%);
++  opacity: 0; transition: opacity 0.3s;
++
++.intent-card:hover {
++  background: rgba(255, 255, 255, 0.06);
++  border-color: rgba(255, 255, 255, 0.2);
++  transform: translateY(-2px);
++
++.intent-card.active {
++  background: var(--bg-card);
++  border-color: var(--gold);
++  color: var(--gold);
++  box-shadow: 0 8px 24px rgba(232, 184, 75, 0.15);
++
++.intent-card.active::before { opacity: 1; }
++
++.budget-card, .city-select-card {
++  background: rgba(0, 0, 0, 0.2);
++  border-radius: var(--r-lg);
++  padding: 1.25rem;
++  display: flex;
++  flex-direction: column;
++  gap: 1rem;
++}
++
++.city-image-pill {
++  height: 64px;
++  min-width: 120px;
++  border-radius: var(--r-md);
++  border: 1px solid var(--border-light);
++  cursor: pointer;
++  transition: all 0.3s;
++  display: flex;
++  align-items: center;
++  justify-content: center;
++
++.city-image-pill img {
++  width: 100%;
++  height: 100%;
++  object-fit: cover;
++  z-index: 0;
++  transition: opacity 0.3s, transform 0.4s;
++
++.city-image-pill:hover img, .city-image-pill.active img {
++  opacity: 0.8;
++  transform: scale(1.05);
++
++.city-image-pill span {
++  position: relative;
++  z-index: 1;
++  font-weight: 700;
++  color: #fff;
++  text-shadow: 0 2px 8px rgba(0,0,0,0.9);
++  font-size: 0.9rem;
++
++.city-image-pill.active {
++  border-color: var(--gold);
++  box-shadow: 0 0 0 2px var(--gold);
++
++.type-cards-grid {
++  display: grid;
++  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
++  gap: 1rem;
++  margin-top: 1.5rem;
++
++.type-card {
++  background: rgba(255, 255, 255, 0.03);
++  border: 1px solid var(--border-light);
++  border-radius: var(--r-lg);
++  padding: 1.25rem 1rem;
++  display: flex;
++  flex-direction: column;
++  align-items: center;
++  gap: 0.75rem;
++  cursor: pointer;
++  transition: all 0.3s;
++  color: var(--txt-secondary);
++
++.type-card:hover {
++  background: rgba(255, 255, 255, 0.08);
++  transform: translateY(-3px);
++
++.type-card.active {
++  background: var(--gold-dim);
++  border-color: var(--gold);
++  color: var(--gold);
++  box-shadow: 0 8px 24px rgba(232, 184, 75, 0.15);
++
++.type-card svg {
++  width: 28px;
++  height: 28px;
++  stroke-width: 1.5;
++
++.type-card.active svg {
++  stroke-width: 2;
++  filter: drop-shadow(0 0 8px rgba(232, 184, 75, 0.5));
++
++.search-main-row {
++  display: flex;
++  flex-direction: column;
++  gap: 1.5rem;
++
++.search-bar-wrap {
++  align-items: center;
++
++.search-bar-input {
++  width: 100%;
++  background: rgba(255, 255, 255, 0.05);
++  border: 1px solid var(--border-light);
++  border-radius: var(--r-lg);
++  padding: 1rem 1rem 1rem 3rem;
++  font-size: 1rem;
++  outline: none;
++  transition: all 0.3s;
++
++.search-bar-wrap .s-icon {
++  left: 1rem;
++  color: var(--gold);
++
++.search-bar-input:focus {
++  border-color: var(--gold);
++  background: rgba(255, 255, 255, 0.08);
++  box-shadow: 0 0 20px rgba(232, 184, 75, 0.1);
++
++.search-action-row {
++  gap: 1rem;
++  margin-top: 0.5rem;
++
++.search-go-btn {
++  flex: 1;
++  background: var(--gold);
++  color: var(--midnight);
++  border: none;
++  border-radius: var(--r-lg);
++  padding: 0.8rem;
++  font-weight: 700;
++  justify-content: center;
++  gap: 0.5rem;
++  cursor: pointer;
++  transition: all 0.3s;
++
++.search-go-btn:hover {
++  background: var(--gold-light);
++  transform: translateY(-2px);
++  box-shadow: 0 8px 20px rgba(232, 184, 75, 0.4);
++
++.search-filter-btn {
++  width: 50px;
++  background: rgba(255, 255, 255, 0.05);
++  border: 1px solid var(--border-light);
++  border-radius: var(--r-lg);
++  justify-content: center;
++  color: #fff;
++  transition: all 0.3s;
++
++.search-filter-btn:hover {
++  background: rgba(255, 255, 255, 0.08);
++  border-color: var(--gold);
++
++/* --- Property Cards --- */
++.property-card {
++  border-radius: var(--r-lg);
++  background: var(--bg-card);
++  border: 1px solid var(--border-light);
++  transition: all 0.4s var(--ease-3d);
++  overflow: hidden;
++  position: relative;
++
++.property-card:hover {
++  transform: translateY(-8px);
++  border-color: var(--gold-border);
++  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6);
++
++.property-image-actions {
++  position: absolute;
++  top: 14px; right: 14px;
++  flex-direction: column;
++  gap: 10px;
++  z-index: 100;
++  opacity: 0;
++  transform: translateX(10px);
++  transition: all 0.3s;
++
++.property-card:hover .property-image-actions {
++  opacity: 1;
++  transform: translateX(0);
++
++.img-action-btn {
++  width: 38px; height: 38px;
++  border-radius: 12px;
++  background: rgba(0, 0, 0, 0.6);
++  backdrop-filter: blur(10px);
++  border: 1px solid rgba(255, 255, 255, 0.1);
++  color: #fff;
++  transition: all 0.3s;
++
++.img-action-btn:hover {
++  background: var(--gold);
++  color: var(--midnight);
++  transform: scale(1.1);
++
++/* --- Mobile Fixes --- */
++@media (max-width: 768px) {
++  .container { padding: 0 1rem; }
++  .search-platform { padding: 1.5rem; }
++  .pd-gallery-scroller { gap: 4px; }
++  .mobile-only { display: flex !important; }
++  .desktop-only { display: none !important; }
++
++/* --- Buttons --- */
++.hero-btn {
++  border-radius: var(--r-full);
++  font-weight: 700;
++  text-decoration: none;
++  display: inline-flex;
++  justify-content: center;
++  transition: all 0.3s var(--ease-3d);
++  padding: 0.9rem 2.2rem;
++  gap: 0.5rem;
++
++.hero-btn-primary {
++  background: linear-gradient(135deg, #f5c842, #d4a017);
++  color: #07070f;
++  box-shadow: 0 4px 15px rgba(212, 160, 23, 0.4);
++
++.hero-btn-primary:hover {
++  transform: translateY(-3px);
++  box-shadow: 0 8px 25px rgba(212, 160, 23, 0.6);
++
++/* --- Animations --- */
++@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
++.animate-fade { animation: fadeIn 0.5s ease-out forwards; }
++
++/* --- Hero Section & Typography --- */
++.hero-section {
++  padding: 4rem 0;
++  text-align: center;
++
++.hero-title {
++  font-family: var(--font-serif);
++  font-size: clamp(2.5rem, 6vw, 4.5rem);
++  font-weight: 900;
++  line-height: 1.1;
++  margin-bottom: 1.5rem;
++  color: var(--txt-primary);
++
++.text-royal-gold {
++  background: linear-gradient(135deg, #f1d592, #d4af37, #9e822a);
++  -webkit-background-clip: text;
++  background-clip: text;
++  -webkit-text-fill-color: transparent;
++
++.hero-subtitle {
++  font-size: 1.2rem;
++  color: var(--txt-secondary);
++  max-width: 600px;
++  margin: 0 auto 2.5rem;
++
++/* --- City Cards Grid --- */
++.city-cards-grid {
++  display: grid;
++  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
++  gap: 1.5rem;
++  margin-top: 2rem;
++
++.city-card {
++  aspect-ratio: 16/9;
++  border-radius: var(--r-lg);
++  cursor: pointer;
++  border: 1px solid var(--border-light);
++  transition: all 0.4s var(--ease-3d);
++
++.city-card img {
++  height: 100%;
++  object-fit: cover;
++  transition: transform 0.6s var(--ease-3d);
++.city-card:hover img {
++  transform: scale(1.1);
++.city-card-content {
++  position: absolute;
++  inset: 0;
++  background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 60%);
++  display: flex;
++  flex-direction: column;
++  justify-content: flex-end;
++  padding: 1.5rem;
++.city-card-name {
++  font-family: var(--font-serif);
++  font-size: 1.5rem;
++  font-weight: 700;
++  color: #fff;
++/* --- Stats Band --- */
++.stats-band {
++  background: var(--bg-glass-mid);
++  padding: 4rem 0;
++  margin: 4rem 0;
++  border-top: 1px solid var(--border-gold);
++  border-bottom: 1px solid var(--border-gold);
++.stats-grid {
++  display: grid;
++  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
++  gap: 2rem;
++  text-align: center;
++.stat-value {
++  font-family: var(--font-mono);
++  font-size: 2.5rem;
++  font-weight: 700;
++  color: var(--gold);
++  display: block;
++.stat-label {
++  color: var(--txt-muted);
++  letter-spacing: 0.1em;
++  font-size: 0.8rem;
++import { Suspense, lazy } from 'react';
++import UnitConverter from './components/UnitConverter';
++
++// Lazy loading all routes for maximum startup speed
++const Home = lazy(() => import('./pages/Home'));
++const PropertyDetails = lazy(() => import('./pages/PropertyDetails'));
++const Login = lazy(() => import('./pages/Login'));
++const Onboarding = lazy(() => import('./pages/Onboarding'));
++const Dashboard = lazy(() => import('./pages/Dashboard'));
++const RequestPage = lazy(() => import('./pages/RequestPage'));
++
++// Minimalist High-Performance Loader
++const EliteLoader = () => (
++  <div style={{ 
++    height: '100vh', 
++    display: 'flex', 
++    flexDirection: 'column',
++    alignItems: 'center', 
++    justifyContent: 'center', 
++    backgroundColor: '#07070f',
++    color: 'var(--gold)',
++    fontFamily: 'var(--font-mono)',
++    fontSize: '0.8rem',
++    letterSpacing: '0.2em'
++  }}>
++    <div className="shimmer" style={{ width: '40px', height: '2px', background: 'var(--gold)', marginBottom: '1rem' }} />
++    ELITE LOADING...
++  </div>
++);
++  if (isLoading) return <EliteLoader />;
++  if (!user.onboardingCompleted && location.pathname !== '/onboarding' && location.pathname !== '/') return <Navigate to="/onboarding" replace />;
++      <Suspense fallback={<EliteLoader />}>
++        <Routes>
++          <Route path="/login" element={<Login />} />
++          <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
++          <Route path="/property/:id" element={<PropertyDetails />} />
++          <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
++          <Route path="/dashboard/*" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
++          <Route path="/request-callback" element={<RequestPage />} />
++          <Route path="*" element={<Navigate to="/" replace />} />
++        </Routes>
++        <UnitConverter />
++      </Suspense>
++import { MapPin } from 'lucide-react';
++// Distinct gradient palettes for each city (cycles)
++const CITY_GRADIENTS = [
++  'linear-gradient(135deg, #1a3a2a 0%, #0d5735 40%, #c9a84c33 100%)',
++  'linear-gradient(135deg, #2a1a10 0%, #7c3a00 40%, #e8b84b33 100%)',
++  'linear-gradient(135deg, #0a1a3a 0%, #0d2f6e 40%, #4fa3e833 100%)',
++  'linear-gradient(135deg, #2a0a1a 0%, #6e0d3a 40%, #e84fa333 100%)',
++  'linear-gradient(135deg, #0a2a2a 0%, #0d6e6e 40%, #4fe8e833 100%)',
++  'linear-gradient(135deg, #1a2a0a 0%, #3a6e0d 40%, #a3e84f33 100%)',
++];
++
++export default function CityCard({ city, count, cityPhoto, isActive, onClick, index = 0 }) {
++  const fallbackGradient = city.color
++    ? `linear-gradient(135deg, ${city.color}55, ${city.color}22)`
++    : CITY_GRADIENTS[index % CITY_GRADIENTS.length];
++
++            ? `linear-gradient(to bottom, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.72) 100%), url(${cityPhoto})`
++            : fallbackGradient,
++      {/* Gradient overlay ensuring text contrast */}
++      <div style={{
++        position: 'absolute',
++        inset: 0,
++        background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.2) 60%, transparent 100%)',
++        zIndex: 1,
++        borderRadius: 'inherit',
++      }} />
++      <div className="city-card-content" style={{ position: 'relative', zIndex: 2 }}>
++        <div className="city-card-name" style={{ color: '#fff', fontWeight: 800, textShadow: '0 2px 8px rgba(0,0,0,0.9)' }}>
++          {city.name}
++        </div>
++        {count > 0 && (
++          <div className="city-card-count">
++            <MapPin size={10} style={{ marginRight: 2 }} />
++            {count} properties
++          </div>
++        )}
++        {!count && (
++          <div style={{ fontSize: '0.62rem', color: 'rgba(255,255,255,0.55)', marginTop: '2px' }}>
++            {city.district || 'Andhra Pradesh'}
++          </div>
++        )}
++    try { 
++      await submitLead({ name, phone, message: `Source: Contact Modal | Type: ${type}` }); 
++      setSuccess(true);
++      setTimeout(() => { setSuccess(false); setName(''); setPhone(''); onClose(); }, 2000);
++    } catch (err) { 
++      console.error('Lead failed', err);
++      alert('Failed to send request. Please try again.'); 
++    }
++          className="modal-overlay"
++          onClick={onClose}
++          initial={{ opacity: 0 }} 
++          animate={{ opacity: 1 }} 
++          exit={{ opacity: 0 }}
++            className="glass-heavy modal-container"
++            onClick={e => e.stopPropagation()}
++            initial={{ scale: 0.9, y: 20, opacity: 0 }} 
++            animate={{ scale: 1, y: 0, opacity: 1 }} 
++            exit={{ scale: 0.9, y: 20, opacity: 0 }}
++import { SlidersHorizontal, X, ArrowLeft } from 'lucide-react';
++import { motion, AnimatePresence } from 'framer-motion';
++import { useTranslation } from 'react-i18next';
++const DEFAULT_FILTERS = { bhk: '', minPrice: '', maxPrice: '', facing: 'Any', furnishing: 'N/A', constructionStatus: 'N/A', verified: false, approval: 'All', propertyType: 'All', keyword: '', vastu: false, listerType: 'All' };
++  const { t } = useTranslation();
++  const sidebarRef = useRef(null);
++  // Always scroll sidebar and content back to very top when opened
++  useEffect(() => {
++    if (isOpen) {
++      // Scroll after animation frame to ensure DOM is ready
++      requestAnimationFrame(() => {
++        if (sidebarRef.current) sidebarRef.current.scrollTop = 0;
++        if (contentRef.current) contentRef.current.scrollTop = 0;
++      });
++    }
++  }, [isOpen]);
++
++  // Lock body scroll when filter is open
++  useEffect(() => {
++    if (isOpen) {
++      document.body.style.overflow = 'hidden';
++    } else {
++      document.body.style.overflow = '';
++    }
++    return () => { document.body.style.overflow = ''; };
++  }, [isOpen]);
++  const set = (key, val) => setFilters(prev => ({ ...prev, [key]: val }));
++    <AnimatePresence>
++      {isOpen && (
++        <motion.div
++          className="filter-sidebar-overlay open"
++          onClick={onClose}
++          initial={{ opacity: 0 }}
++          animate={{ opacity: 1 }}
++          exit={{ opacity: 0 }}
++          transition={{ duration: 0.2 }}
++        >
++          <motion.div
++            ref={sidebarRef}
++            className="filter-sidebar"
++            onClick={e => e.stopPropagation()}
++            initial={{ scale: 0.92, opacity: 0, y: -20 }}
++            animate={{ scale: 1, opacity: 1, y: 0 }}
++            exit={{ scale: 0.92, opacity: 0, y: -20 }}
++            transition={{ type: 'spring', stiffness: 300, damping: 28 }}
++          >
++            {/* Header with 3D BACK Button */}
++            <div className="filter-header" style={{ padding: '16px 20px', borderBottom: '1px solid rgba(212,175,55,0.2)' }}>
++              <button 
++                onClick={onClose} 
++                className="btn-3d-elite" 
++                style={{ padding: '8px 16px', borderRadius: '12px', fontSize: '0.7rem' }}
++              >
++                <ArrowLeft size={16} /> {t('filter.back')}
++              </button>
++              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
++                <SlidersHorizontal size={16} className="text-gold" />
++                <h3 style={{ fontSize: '1rem', fontWeight: 800, color: '#fff' }}>{t('filter.title')}</h3>
++              </div>
++            </div>
++            {/* Compact content area */}
++            <div className="filter-content" style={{ padding: '16px 20px', gap: '16px', overflow: 'hidden' }}>
++              <div className="filter-group">
++                <label style={{ color: '#fff', fontSize: '0.65rem' }}>{t('filter.keywords')}</label>
++                <input 
++                  type="text" 
++                  className="dropdown-3d-glass"
++                  placeholder="e.g. Pool, Gated..." 
++                  value={filters.keyword || ''} 
++                  onChange={e => set('keyword', e.target.value)} 
++                  style={{ width: '100%' }}
++                />
++              </div>
++              
++              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
++                <div className="filter-group">
++                  <label style={{ color: '#fff', fontSize: '0.65rem' }}>{t('filter.category')}</label>
++                  <select 
++                    className="dropdown-3d-glass"
++                    value={filters.propertyType || 'All'} 
++                    onChange={e => set('propertyType', e.target.value)}
++                  >
++                    <option value="All">{t('filter.items')}</option>
++                    <option value="Apartment">Apartment</option>
++                    <option value="Independent House">House</option>
++                    <option value="Villa">{t('types.villa')}</option>
++                    <option value="Residential Plot">{t('types.plot')}</option>
++                    <option value="Commercial Plot">Comm. Plot</option>
++                    <option value="Agricultural Land">{t('types.agriculture')}</option>
++                  </select>
++                </div>
++                <div className="filter-group">
++                  <label style={{ color: '#fff', fontSize: '0.65rem' }}>{t('filter.budgetMax')}</label>
++                  <input 
++                    type="number" 
++                    className="dropdown-3d-glass"
++                    placeholder="Max" 
++                    value={filters.maxPrice} 
++                    onChange={e => set('maxPrice', e.target.value)} 
++                  />
++                </div>
++              </div>
++
++              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
++                <div className="filter-group">
++                  <label style={{ color: '#fff', fontSize: '0.65rem' }}>{t('filter.facing')}</label>
++                  <select 
++                    className="dropdown-3d-glass"
++                    value={filters.facing} 
++                    onChange={e => set('facing', e.target.value)}
++                  >
++                    <option value="Any">Any</option>
++                    <option value="East">East</option>
++                    <option value="North">North</option>
++                    <option value="West">West</option>
++                    <option value="South">South</option>
++                  </select>
++                </div>
++
++                <div className="filter-group">
++                  <label style={{ color: '#fff', fontSize: '0.65rem' }}>{t('filter.approval')}</label>
++                  <select 
++                    className="dropdown-3d-glass"
++                    value={filters.approval || 'All'} 
++                    onChange={e => set('approval', e.target.value)}
++                  >
++                    <option value="All">Any</option>
++                    <option value="AP CRDA">AP CRDA</option>
++                    <option value="AP RERA">AP RERA</option>
++                    <option value="DTCP">DTCP</option>
++                  </select>
++                </div>
++              </div>
++
++              <div className="filter-group">
++                <div style={{ display: 'flex', gap: '8px' }}>
++                  <button 
++                    className={`btn-3d-elite ${filters.vastu ? 'active' : ''}`} 
++                    onClick={() => set('vastu', !filters.vastu)}
++                    style={{ flex: 1, fontSize: '0.7rem', padding: '10px', background: filters.vastu ? 'var(--gold)' : '' }}
++                  >
++                    {t('filter.vastu')}
++                  </button>
++                  <button 
++                    className={`btn-3d-elite ${filters.verified ? 'active' : ''}`} 
++                    onClick={() => set('verified', !filters.verified)}
++                    style={{ flex: 1, fontSize: '0.7rem', padding: '10px', background: filters.verified ? 'var(--gold)' : '' }}
++                  >
++                    {t('filter.elite')}
++                  </button>
++                </div>
++              </div>
++            <div className="filter-footer" style={{ padding: '16px 20px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
++              <button 
++                className="btn-3d-elite" 
++                style={{ flex: 1, padding: '12px', background: 'var(--gold)', color: '#000' }} 
++                onClick={onApply}
++              >
++                {t('filter.apply')}
++              </button>
++            </div>
++          </motion.div>
++        </motion.div>
++      )}
++    </AnimatePresence>
++    navLinks.push({ label: t('nav.dashboard', 'Dashboard'), path: '/dashboard', icon: <LayoutDashboard size={18} /> });
++            <button 
++              onClick={toggleLang} 
++              className="mobile-only"
++              style={{ 
++                background: 'transparent', 
++                border: '1px solid rgba(212,175,55,0.4)', 
++                color: 'var(--gold)', 
++                padding: '0.35rem 0.7rem', 
++                borderRadius: '6px', 
++                cursor: 'pointer', 
++                marginRight: '0.85rem', 
++                alignItems: 'center', 
++                gap: '5px', 
++                fontSize: '0.78rem',
++                fontWeight: 600
++              }}
++            >
++              <Globe size={14} /> {i18n.language === 'en' ? 'తెలుగు' : 'English'}
++            </button>
++
++                  <LogOut size={18} style={{ marginRight: '8px' }} /> {t('nav.signOut', 'Sign Out')}
++import { formatSnapAddaPrice } from '../utils/priceUtils';
++// Use shared formatSnapAddaPrice instead of local formatPrice
++  type, purpose, measurementUnit = 'Sq.Yds', approval, approvalAuthority, facing,
++  googleMapsLink = '', createdAt, onTriggerLead, likeCount: initialLikeCount = 0, initialLiked = false,
++  const allImages = Array.isArray(images) && images.length > 0 
++    ? images 
++    : (image ? [image] : []);
++  const mainImage = allImages[0] || null;
++  const isNew = createdAt ? (Date.now() - new Date(createdAt).getTime() < 10080 * 60 * 1000) : false;
++  const isVastuPreferred = facing && ['east', 'north', 'north-east'].includes(facing.toLowerCase());
++    <motion.article 
++      <div className="property-card card-3d">
++        <div style={{ position: 'absolute', inset: 0, zIndex: 10, pointerEvents: 'none', background: 'radial-gradient(400px circle at 50% 50%, rgba(255,255,255,0.12), transparent 40%)' }} />
++              ? <motion.img 
++                  src={mainImage} 
++                  alt={`${type || 'Property'} for ${purpose} in ${location} - ${title}`} 
++                  className="property-image" 
++                  loading="lazy" 
++                  whileHover={{ scale: 1.08 }} 
++                  transition={{ duration: 0.6, ease: [0.23, 1, 0.32, 1] }} 
++                />
++              <span>{formatSnapAddaPrice(price)}</span>
++              {purpose && (
++                <div className="badge" style={{ 
++                  background: purpose === 'Rent' ? 'var(--cyan)' : 'var(--emerald)', 
++                  color: '#000', 
++                  fontWeight: 900,
++                  fontSize: '0.65rem'
++                }}>
++                  {purpose === 'Rent' ? 'FOR RENT' : 'FOR SALE'}
++                </div>
++              )}
++              {isVerified && <div className="badge badge-verified"><ShieldCheck size={11} /> {t('card.verified', 'Verified')}</div>}
++              {type === 'Agricultural Land' && isVerified && (
++                <div className="badge badge-lpm" style={{ backgroundColor: '#065f46', color: '#fff', border: 'none' }}>
++                  📄 LPM Copy
++                </div>
++              )}
++              {isHot && <div className="badge badge-hot"><Flame size={11} /> {t('card.hot', 'Hot')}</div>}
++              {googleMapsLink && (
++                <a 
++                  href={googleMapsLink} 
++                  target="_blank" 
++                  rel="noopener noreferrer" 
++                  className="img-action-btn" 
++                  onClick={(e) => e.stopPropagation()}
++                  title="View on Google Maps" 
++                  style={{ background: 'rgba(232, 184, 75, 0.2)', border: '1px solid rgba(232, 184, 75, 0.4)', color: 'var(--gold)' }}
++                >
++                  <MapPin size={16} />
++                </a>
++              )}
++        <section className="property-content" style={{ transform: 'translateZ(10px)' }}>
++            <h2 className="property-title text-royal-gold" style={{ fontSize: '1.25rem', margin: '0' }}>{title}</h2>
++          <div className="property-location text-muted"><MapPin size={12} /> {t(`geo.${location?.toLowerCase()}`, location)}</div>
++            {type && <span className="badge type-badge">{t(`types.${type?.toLowerCase()?.replace(/\s+/g, '')}`, type)}</span>}
++                <div className="feature"><span className="feature-value">{beds}</span><span className="feature-label">{t('card.beds')}</span></div>
++                <div className="feature"><span className="feature-value">{baths}</span><span className="feature-label">{t('card.baths')}</span></div>
++                <div className="feature" style={{ color: isVastuPreferred ? 'var(--gold)' : 'inherit', position: 'relative' }}>
++                  <span className="feature-value" style={{ color: isVastuPreferred ? 'var(--gold)' : 'inherit', display: 'flex', alignItems: 'center', gap: '4px' }}>
++                    {facing} {isVastuPreferred && <span title="Vastu Preferred" style={{ fontSize: '10px' }}>🧭</span>}
++                  </span>
++                  <span className="feature-label" style={{ fontWeight: isVastuPreferred ? '800' : 'normal' }}>{t('card.facing', 'Facing')}</span>
++            <a 
++              href={`tel:+919346793364`} 
++              className="btn-3d action-btn action-btn-call" 
++              style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}
++            >
++            </a>
++            <a 
++              href={`https://wa.me/919346793364?text=${encodeURIComponent(`Hi SnapAdda, I am interested in "${title}" in ${location}. Is it available?`)}`}
++              target="_blank"
++              rel="noopener noreferrer"
++              className="btn-3d btn-3d-emerald action-btn action-btn-contact" 
++              style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}
++            >
++            </a>
++        </section>
++      </div>
++    </motion.article>
++    <AuthContext.Provider value={{ user, login, loginGoogle, logout, completeOnboarding, isLoading }}>
++        "signOut": "SIGN OUT",
++        "dashboard": "Client Panel"
++        "east": "East Facing",
++        "all": "All",
++        "under50l": "Under ₹50L",
++        "verified_only": "Verified Only"
++        "title": "The SnapAdda Advantage",
++        "c1title": "Verified Listings",
++        "c1desc": "Every property is manually verified by our team before listing.",
++        "c2title": "CRDA / RERA Compliant",
++        "c2desc": "All listings hold valid approval certifications for full legal safety.",
++        "c3title": "24/7 Expert Support",
++        "c3desc": "Our real estate advisors are available round the clock to assist you.",
++        "c4title": "Best Price Guarantee",
++        "c4desc": "We negotiate directly with builders to get you the best deal possible.",
++        "c5title": "Vastu-Guided Properties",
++        "c5desc": "Find east-facing and Vastu-compliant homes for prosperous living.",
++        "c6title": "Transparent Pricing",
++        "c6desc": "Zero hidden charges. Complete cost breakdowns including registration."
++      },
++      "sort": {
++        "newest": "Newest First",
++        "price_low": "Price: Low → High",
++        "price_high": "Price: High → Low",
++        "featured": "Featured First"
++      },
++      "budget": {
++        "any": "Any",
++        "under25": "Under ₹25L",
++        "25to50": "₹25L–50L",
++        "50to1": "₹50L–1Cr",
++        "1to2": "₹1Cr–2Cr",
++        "over2": "₹2Cr+"
++        "callback": "Callback",
++        "whatsapp": "WhatsApp",
++        "sqyds": "sq.yds",
++        "beds": "Beds",
++        "baths": "Baths"
++        "quick": "Quick Links",
++        "aboutTitle": "About SnapAdda",
++        "aboutText": "Andhra Pradesh's most trusted 3D interactive property portal. We simplify search, verify authenticity, and deliver dreams.",
++        "support": "Support",
++        "developer": "Built with ❤️ by SnapAdda Tech",
++        "rights": "All rights reserved."
++      },
++      "cta": {
++        "title": "Ready to Start Your Journey?",
++        "subtitle": "Connect with our verified property experts today and get a free consultation on the real estate market.",
++        "whatsapp": "WhatsApp Us"
++      },
++      "dashboard": {
++        "welcome": "Welcome back",
++        "overview": "Overview",
++        "saved": "Saved",
++        "inquiries": "Inquiries",
++        "profile": "Profile",
++        "backToSite": "Back to Site",
++        "memberSince": "Member Since",
++        "noSaved": "No saved properties yet",
++        "noInquiries": "No inquiries found"
++      },
++      "geo": {
++        "amaravati": "Amaravati",
++        "vijayawada": "Vijayawada",
++        "guntur": "Guntur",
++        "visakhapatnam": "Visakhapatnam",
++        "tirupati": "Tirupati",
++        "nellore": "Nellore",
++        "kurnool": "Kurnool",
++        "kakinada": "Kakinada",
++        "rajahmundry": "Rajahmundry",
++        "mangalagiri": "Mangalagiri",
++        "tenali": "Tenali",
++        "hotspotsTitle": "REGIONAL HOTSPOTS",
++        "hotspotsHeadline": "Regional Growth Hotspots"
++      },
++      "types": {
++        "all": "All Categories",
++        "apartment": "Apartment",
++        "apartments": "Apartments",
++        "villa": "Villa",
++        "villas": "Villas",
++        "plot": "Residential Plot",
++        "plots": "Residential Plots",
++        "agriculture": "Agricultural Land",
++        "commercial": "Commercial Space",
++        "house": "Independent House"
++      },
++      "auth": {
++        "welcome": "Welcome to SnapAdda",
++        "subtitle": "Enter your details to access your personalized real estate dashboard.",
++        "google": "Continue with Google",
++        "guest": "Continue as Guest",
++        "terms": "By continuing, you agree to our",
++        "privacy": "Privacy Policy",
++        "tos": "Terms of Service"
++      },
++      "onboarding": {
++        "welcomeTitle": "Tailored Experience",
++        "welcomeText": "Welcome, {{name}}. To provide you with the most relevant investment opportunities in Andhra Pradesh, we need to understand your requirements.",
++        "getStarted": "Get Started",
++        "selectPref": "Select your preference below.",
++        "placeholder": "Type your answer here...",
++        "finishTitle": "Strategy Optimized",
++        "finishText": "Welcome to the Inner Circle. Your investment strategy has been secured. You can now explore properties and growth hotspots tailored to your profile."
++      },
++      "filter": {
++        "all": "All",
++        "title": "Filters",
++        "back": "BACK",
++        "keywords": "KEYWORDS",
++        "category": "CATEGORY",
++        "budgetMax": "BUDGET MAX (₹)",
++        "facing": "FACING",
++        "approval": "APPROVAL",
++        "vastu": "VASTU VERIFIED",
++        "elite": "ELITE ASSETS",
++        "apply": "APPLY FILTERS",
++        "any": "Any",
++        "items": "All Items"
++        "signOut": "లాగ్అవుట్",
++        "dashboard": "క్లయింట్ ప్యానెల్"
++        "east": "తూర్పు ముఖచిత్రం",
++        "all": "అన్నీ",
++        "under50l": "₹50L లోపు",
++        "verified_only": "ధృవీకరించబడినవి మాత్రమే"
++        "title": "స్నాప్అడ్డా ప్రయోజనం",
++        "c1title": "ధృవీకరించిన జాబితాలు",
++        "c1desc": "మా టీమ్ ద్వారా ప్రతి ఆస్తిని జాబితా చేయడానికి ముందు మాన్యువల్‌గా ధృవీకరిస్తారు.",
++        "c2title": "CRDA / RERA అనుమతి పొందినవి",
++        "c2desc": "అన్ని జాబితాలు చట్టపరమైన భద్రత కోసం చెల్లుబాటు అయ్యే అనుమతి సర్టిఫికేట్‌లను కలిగి ఉంటాయి.",
++        "c3title": "24/7 నిపుణుల సహాయం",
++        "c3desc": "మా రియల్ ఎస్టేట్ సలహాదారులు మీకు సహాయపడటానికి రాత్రింబగళ్ళు అందుబాటులో ఉంటారు.",
++        "c4title": "అత్యుత్తమ ధర హామీ",
++        "c4desc": "మీకు అత్యుత్తమ డీల్ అందించడానికి బిల్డర్లతో నేరుగా సంప్రదిస్తాం.",
++        "c5title": "వాస్తు-మార్గదర్శక ఆస్తులు",
++        "c5desc": "సమృద్ధికరమైన జీవితం కోసం తూర్పు ముఖం మరియు వాస్తు-అనుగుణమైన ఇళ్ళను కనుగొనండి.",
++        "c6title": "పారదర్శకమైన ధర నిర్ణయం",
++        "c6desc": "దాచిన ఛార్జీలు లేవు. నమోదుతో సహా పూర్తి ఖర్చుల వివరాలు."
++      },
++      "sort": {
++        "newest": "కొత్తవి మొదట",
++        "price_low": "ధర: తక్కువ → ఎక్కువ",
++        "price_high": "ధర: ఎక్కువ → తక్కువ",
++        "featured": "ఫీచర్ చేసినవి ముం దే"
++      },
++      "budget": {
++        "any": "ఏదైనా",
++        "under25": "₹25L లోపు",
++        "25to50": "₹25L–50L",
++        "50to1": "₹50L–1Cr",
++        "1to2": "₹1Cr–2Cr",
++        "over2": "₹2Cr పైన"
++        "callback": "కాల్ బ్యాక్",
++        "whatsapp": "వాట్సాప్",
++        "sqyds": "గజాలు",
++        "beds": "బెడ్స్",
++        "baths": "బాత్స్"
++        "quick": "త్వరిత లింకులు",
++        "aboutTitle": "స్నాప్అడ్డా గురించి",
++        "aboutText": "ఆంధ్రప్రదేశ్ ಅತ್ಯಂತ విశ్వసనీయ 3D ఇంటరాక్టివ్ ప్రాపర్టీ పోర్టల్. మేము వెతకడాన్ని సరళతరం చేస్తాము, ప్రామాణికతను ధృవీకరిస్తాము మరియు కలలను నిజం చేస్తాము.",
++        "support": "మద్దతు",
++        "developer": "స్నాప్అడ్డా టెక్ ద్వారా ❤️ తో నిర్మించబడింది",
++        "rights": "అన్ని హక్కులు ప్రత్యేకించబడ్డాయి."
++      },
++      "cta": {
++        "title": "మీ ప్రయాణాన్ని ప్రారంభించడానికి సిద్ధంగా ఉన్నారా?",
++        "subtitle": "మా ధృవీకరించబడిన ప్రాపర్టీ నిపుణులతో ఈరోజే కనెక్ట్ అవ్వండి మరియు రియల్ ఎస్టేట్ మార్కెట్‌పై ఉచిత సంప్రదింపులను పొందండి.",
++        "whatsapp": "వాట్సాప్ చేయండి"
++      },
++      "dashboard": {
++        "welcome": "తిరిగి స్వాగతం",
++        "overview": "అవలోకనం",
++        "saved": "సేవ్ చేసినవి",
++        "inquiries": "విచారణలు",
++        "profile": "ప్రొఫైల్",
++        "backToSite": "సైట్‌కు తిరిగి వెళ్ళు",
++        "memberSince": "సభ్యత్వం ప్రారంభమైన తేదీ",
++        "noSaved": "ఇంకా సేవ్ చేసిన ఆస్తులు లేవు",
++        "noInquiries": "విచారణలు ఏవీ లేవు"
++      },
++      "geo": {
++        "amaravati": "అమరావతి",
++        "vijayawada": "విజయవాడ",
++        "guntur": "గుంటూరు",
++        "visakhapatnam": "విశాఖపట్నం",
++        "tirupati": "తిరుపతి",
++        "nellore": "నెల్లూరు",
++        "kurnool": "కర్నూలు",
++        "kakinada": "కాకినాడ",
++        "rajahmundry": "రాజమండ్రి",
++        "mangalagiri": "మంగళగిరి",
++        "tenali": "తెనాలి",
++        "hotspotsTitle": "ప్రాంతీయ హాట్‌స్పాట్‌లు",
++        "hotspotsHeadline": "ప్రాంతీయ వృద్ధి హాట్‌స్పాట్‌లు"
++      },
++      "types": {
++        "all": "అన్ని వర్గాలు",
++        "apartment": "అపార్ట్మెంట్",
++        "apartments": "అపార్ట్ మెంట్లు",
++        "villa": "విల్లా",
++        "villas": "విల్లాలు",
++        "plot": "రెసిడెన్షియల్ ప్లాట్",
++        "plots": "రెసిడెన్షియల్ ప్లాట్లు",
++        "agriculture": "వ్యవసాయ భూమి",
++        "commercial": "కమర్షియల్ స్పేస్",
++        "house": "ఇండిపెండెంట్ హౌస్"
++      },
++      "auth": {
++        "welcome": "స్నాప్అడ్డాకు స్వాగతం",
++        "subtitle": "మీ వ్యక్తిగతీకరించిన రియల్ ఎస్టేట్ డాష్‌బోర్డ్‌ను యాక్సెస్ చేయడానికి మీ వివరాలను నమోదు చేయండి.",
++        "google": "గూగుల్ తో కొనసాగించండి",
++        "guest": "అతిథిగా కొనసాగించండి",
++        "terms": "కొనసాగించడం ద్వారా, మీరు మాని అంగీకరిస్తున్నారు",
++        "privacy": "గోప్యతా విధానం",
++        "tos": "సేవా నిబంధనలు"
++      },
++      "onboarding": {
++        "welcomeTitle": "వ్యక్తిగతీకరించిన అనుభవం",
++        "welcomeText": "స్వాగతం, {{name}}. ఆంధ్రప్రదేశ్‌లో మీకు అత్యంత సంబంధిత పెట్టుబడి అవకాశాలను అందించడానికి, మేము మీ అవసరాలను అర్థం చేసుకోవాలి.",
++        "getStarted": "ప్రారంభించండి",
++        "selectPref": "దిగువన మీ ప్రాధాన్యతను ఎంచుకోండి.",
++        "placeholder": "మీ సమాధానాన్ని ఇక్కడ టైప్ చేయండి...",
++        "finishTitle": "వ్యూహం ఆప్టిమైజ్ చేయబడింది",
++        "finishText": "ఇన్నర్ సర్కిల్‌లోకి స్వాగతం. మీ పెట్టుబడి వ్యూహం సురక్షితం చేయబడింది. మీరు ఇప్పుడు మీ ప్రొఫైల్‌కు అనుగుణంగా రూపొందించబడిన ఆస్తులు మరియు వృద్ధి హాట్‌స్పాట్‌లను అన్వేషించవచ్చు."
++      },
++      "filter": {
++        "all": "అన్నీ",
++        "title": "ఫిల్టర్లు",
++        "back": "వెనుకకు",
++        "keywords": "కీవర్డ్లు",
++        "category": "వర్గం",
++        "budgetMax": "గరిష్ట బడ్జెట్ (₹)",
++        "facing": "ఫేసింగ్",
++        "approval": "అనుమతి",
++        "vastu": "వాస్తు ధృవీకరించబడింది",
++        "elite": "ఎలైట్ ఆస్తులు",
++        "apply": "ఫిల్టర్లను వర్తింపజేయండి",
++        "any": "ఏదైనా",
++        "items": "అన్ని రకాలు"
++import ErrorBoundary from './components/ErrorBoundary';
++    <ErrorBoundary>
++      <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID || "placeholder_if_missing"}>
++        <AuthProvider>
++          <App />
++        </AuthProvider>
++      </GoogleOAuthProvider>
++    </ErrorBoundary>
++  </StrictMode>,
++import { Home, Heart, User, Settings, LogOut, Star, MapPin, ShieldCheck, Phone, RefreshCw, MessageSquare } from 'lucide-react';
++import { getFavorites, fetchUserQuestions } from '../services/api';
++import { useTranslation } from 'react-i18next';
++function DashboardHome({ user, stats, recent, setModalOpen }) {
++  const { t } = useTranslation();
++        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
++          <div>
++            <h2 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: '0.5rem', fontFamily: 'var(--font-heading)' }}>
++              {t('dashboard.welcome')}, {user?.name?.split(' ')[0] || 'Elite'}! ✦
++            </h2>
++            <p style={{ color: 'var(--txt-muted)', fontSize: '0.95rem' }}>Your digital real estate registry is up-to-date.</p>
++          </div>
++          <div className="glass-heavy" style={{ padding: '8px 16px', borderRadius: '12px', border: '1px solid rgba(212,175,55,0.2)', display: 'flex', alignItems: 'center', gap: '8px' }}>
++            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--gold)', boxShadow: '0 0 10px var(--gold)' }} />
++            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--gold)' }}>PREMIUM ACCOUNT</span>
++          </div>
++        </div>
++
++        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(240px,1fr))', gap: '1.25rem', marginBottom: '2.5rem' }}>
++            { label: 'Saved Assets', val: stats.favoritesCount, icon: <Heart size={20} />, color: 'var(--gold)' },
++            { label: 'Market Interest', val: stats.engagementCount || 0, icon: <Star size={20} />, color: '#10d98c' },
++            { label: 'Active Inquiries', val: stats.inquiriesCount, icon: <MessageSquare size={20} />, color: '#9b59f5' },
++            <div key={i} className="glass-heavy" style={{ padding: '1.75rem', borderRadius: '24px', border: `1px solid ${s.color}22`, background: `linear-gradient(135deg, rgba(255,255,255,0.02) 0%, ${s.color}08 100%)` }}>
++              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
++                <div style={{ color: s.color }}>{s.icon}</div>
++                <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--txt-muted)', letterSpacing: '0.1em' }}>KPI {i+1}</div>
++              <div style={{ fontSize: '2.2rem', fontWeight: 800, marginBottom: '0.2rem', fontFamily: 'var(--font-mono)' }}>{s.val}</div>
++              <div style={{ fontSize: '0.85rem', color: 'var(--txt-muted)', fontWeight: 600 }}>{s.label}</div>
++        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
++          {/* Main Chart */}
++          <div className="glass-heavy" style={{ padding: '2.5rem', borderRadius: '28px', border: '1px solid rgba(255,255,255,0.03)' }}>
++            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
++              <h3 style={{ fontSize: '1.2rem', fontWeight: 700, color: 'white' }}>Engagement Intelligence</h3>
++              <span style={{ fontSize: '0.65rem', color: 'var(--txt-muted)', fontWeight: 700, background: 'rgba(255,255,255,0.05)', padding: '4px 10px', borderRadius: '6px' }}>ROLLING 7 DAYS</span>
++            </div>
++            <div style={{ height: '220px', width: '100%' }}>
++              <ResponsiveContainer width="100%" height="100%">
++                <AreaChart data={[
++                  { name: 'Mon', views: 4 }, { name: 'Tue', views: 12 }, { name: 'Wed', views: 8 },
++                  { name: 'Thu', views: 18 }, { name: 'Fri', views: 14 }, { name: 'Sat', views: 25 }, { name: 'Sun', views: 20 }
++                ]}>
++                  <defs>
++                    <linearGradient id="colorViewsNew" x1="0" y1="0" x2="0" y2="1">
++                      <stop offset="5%" stopColor="var(--gold)" stopOpacity={0.3}/>
++                      <stop offset="95%" stopColor="var(--gold)" stopOpacity={0}/>
++                    </linearGradient>
++                  </defs>
++                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" vertical={false} />
++                  <XAxis dataKey="name" stroke="rgba(255,255,255,0.2)" fontSize={10} axisLine={false} tickLine={false} dy={10} />
++                  <YAxis hide />
++                  <Tooltip contentStyle={{ background: 'rgba(10,10,15,0.95)', border: '1px solid rgba(212,175,55,0.2)', borderRadius: '12px', fontSize: '12px' }} />
++                  <Area type="monotone" dataKey="views" stroke="var(--gold)" strokeWidth={3} fillOpacity={1} fill="url(#colorViewsNew)" />
++                </AreaChart>
++              </ResponsiveContainer>
++            </div>
++          </div>
++
++          {/* Recently Viewed */}
++          <div className="glass-heavy" style={{ padding: '2rem', borderRadius: '28px', border: '1px solid rgba(255,255,255,0.03)' }}>
++            <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
++              <RefreshCw size={18} style={{ color: 'var(--gold)' }} /> Recently Tracked
++            </h3>
++            {recent && recent.length > 0 ? (
++              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
++                {recent.map((p, i) => (
++                  <Link key={i} to={`/property/${p._id || p.id}`} style={{ textDecoration: 'none', display: 'flex', gap: '1rem', alignItems: 'center', padding: '0.75rem', borderRadius: '16px', background: 'rgba(255,255,255,0.02)', transition: 'transform 0.2s' }} 
++                    onMouseEnter={e => e.currentTarget.style.transform = 'translateX(5px)'} onMouseLeave={e => e.currentTarget.style.transform = 'translateX(0)'}>
++                    <img src={p.image || (p.images && p.images[0])} style={{ width: '50px', height: '50px', borderRadius: '10px', objectFit: 'cover' }} />
++                    <div style={{ flex: 1, minWidth: 0 }}>
++                      <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'white', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.title}</div>
++                      <div style={{ fontSize: '0.72rem', color: 'var(--txt-muted)' }}>{p.location}</div>
++                    </div>
++                    <div style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--gold)' }}>
++                      Rs.{p.price >= 10000000 ? (p.price / 10000000).toFixed(2) + ' Cr' : (p.price / 100000).toFixed(2) + ' L'}
++                    </div>
++                  </Link>
++                ))}
++              </div>
++            ) : (
++              <div style={{ padding: '2rem', textAlign: 'center', opacity: 0.5 }}>
++                <p style={{ fontSize: '0.85rem', marginBottom: '1rem' }}>No recent history detected.</p>
++                <Link to="/" style={{ color: 'var(--gold)', fontSize: '0.8rem', fontWeight: 700, textDecoration: 'none' }}>Start Exploring Assets</Link>
++              </div>
++            )}
++          </div>
++        <div style={{ marginTop: '3rem', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
++          <button className="hero-btn hero-btn-primary" onClick={() => navigate('/')} style={{ padding: '1rem 2.5rem' }}>
++            Market Explorer <Star size={18} />
++          </button>
++          <button className="hero-btn hero-btn-outline" onClick={() => setModalOpen(true)} style={{ padding: '1rem 2.5rem' }}>
++            Agent Assistance <Phone size={18} />
++          </button>
++        </div>
++  const { t } = useTranslation();
++      <h2 style={{ marginBottom: '1.5rem' }}>{t('dashboard.saved')}</h2>
++// Inquiries tab
++function Inquiries({ questions, loading }) {
++  const { t } = useTranslation();
++  if (loading) {
++    return <div style={{ padding: '2rem 0', textAlign: 'center' }}><RefreshCw className="animate-spin" /> Loading inquiries...</div>;
++  }
++
++  return (
++    <div style={{ padding: '2rem 0' }}>
++      <h2 style={{ marginBottom: '1.5rem' }}>{t('dashboard.inquiries')}</h2>
++      {questions.length > 0 ? (
++        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
++          {questions.map(q => (
++            <div key={q._id} className="glass-heavy" style={{ padding: '2rem', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.05)' }}>
++              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
++                <Link to={`/property/${q.propertyId?._id}`} style={{ display: 'flex', gap: '1rem', textDecoration: 'none' }}>
++                  <img src={q.propertyId?.image || q.propertyId?.images?.[0]} style={{ width: '60px', height: '60px', borderRadius: '10px', objectFit: 'cover' }} alt="Prop" />
++                  <div>
++                    <div style={{ fontWeight: 700, color: 'white' }}>{q.propertyId?.title || 'Unknown Asset'}</div>
++                    <div style={{ fontSize: '0.8rem', color: 'var(--txt-muted)' }}><MapPin size={10}/> {q.propertyId?.location}</div>
++                  </div>
++                </Link>
++                <div style={{ 
++                  padding: '6px 14px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 700, height: 'fit-content',
++                  background: q.status === 'Answered' ? 'rgba(16,217,140,0.1)' : 'rgba(244,208,63,0.1)',
++                  color: q.status === 'Answered' ? 'var(--accent-emerald)' : 'var(--gold)',
++                  border: `1px solid ${q.status === 'Answered' ? 'rgba(16,217,140,0.2)' : 'rgba(244,208,63,0.2)'}`
++                }}>
++                  {q.status.toUpperCase()}
++                </div>
++              </div>
++              <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1.25rem', borderRadius: '14px', marginBottom: '1rem' }}>
++                <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--txt-muted)', marginBottom: '0.4rem', fontWeight: 800 }}>Question</div>
++                <div style={{ fontSize: '0.95rem' }}>{q.question}</div>
++              </div>
++              {q.answer && (
++                <div style={{ background: 'rgba(155,89,245,0.05)', padding: '1.25rem', borderRadius: '14px', borderLeft: '3px solid var(--violet)' }}>
++                  <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--violet)', marginBottom: '0.4rem', fontWeight: 800 }}>Agent Response</div>
++                  <div style={{ fontSize: '0.95rem' }}>{q.answer}</div>
++                </div>
++              )}
++            </div>
++          ))}
++        </div>
++      ) : (
++        <div className="empty-state">
++          <MessageSquare size={48} />
++          <h3>No inquiries found</h3>
++          <p>Ask questions on any property page to see them here.</p>
++          <Link to="/" className="hero-btn hero-btn-primary" style={{ marginTop: '0.5rem' }}>Start Browsing</Link>
++        </div>
++      )}
++    </div>
++  );
++}
++
++  const { t } = useTranslation();
++      <h2 style={{ marginBottom: '1.5rem' }}>{t('dashboard.profile')}</h2>
++            <span style={{ color: 'var(--txt-muted)', fontSize: '0.85rem' }}>{f.label === 'Member Since' ? t('dashboard.memberSince') : f.label}</span>
++  const { t } = useTranslation();
++  const [recent, setRecent] = useState([]);
++  const [questions, setQuestions] = useState([]);
++  const [qLoading, setQLoading] = useState(true);
++  const [stats, setStats] = useState({ favoritesCount: 0, citiesCount: 3, inquiriesCount: 0, engagementCount: 0 });
++    // Load recent from localStorage
++    const storedRecent = JSON.parse(localStorage.getItem('snapadda_recent_viewed') || '[]');
++    setRecent(storedRecent);
++
++    setQLoading(true);
++
++
++    fetchUserQuestions(id)
++      .then(res => {
++        setQuestions(res || []);
++        setStats(prev => ({ ...prev, inquiriesCount: res.length, engagementCount: Math.floor(res.length * 2.5) + (user.verified ? 10 : 0) }));
++      })
++      .catch(console.error)
++      .finally(() => setQLoading(false));
++    { key: 'home', label: 'Overview', icon: <ShieldCheck size={18} /> },
++    { key: 'favorites', label: 'Saved Assets', icon: <Heart size={18} /> },
++    { key: 'inquiries', label: 'Intelligence', icon: <MessageSquare size={18} /> },
++    { key: 'profile', label: 'Executive Info', icon: <User size={18} /> },
++    <div style={{ minHeight: '100vh', background: 'var(--bg-deep)', paddingTop: 'var(--nav-h)', paddingBottom: '4rem' }}>
++        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.5rem 0', borderBottom: '1px solid rgba(255,255,255,0.05)', marginBottom: '0', flexWrap: 'wrap', gap: '1rem' }}>
++          <div style={{ display: 'flex', gap: '0.4rem', background: 'rgba(255,255,255,0.02)', padding: '6px', borderRadius: '18px', border: '1px solid rgba(255,255,255,0.05)' }}>
++            {TABS.map(t => (
++              <button key={t.key} onClick={() => setActiveTab(t.key)}
++                style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.75rem 1.5rem', borderRadius: '14px', border: 'none', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 700, transition: 'all 0.3s',
++                  background: activeTab === t.key ? 'rgba(244,208,63,0.1)' : 'transparent', color: activeTab === t.key ? 'var(--gold)' : 'var(--txt-muted)', boxShadow: activeTab === t.key ? '0 4px 15px rgba(0,0,0,0.1)' : 'none' }}>
++                {t.icon} {t.label}
++              </button>
++            ))}
++          </div>
++          
++          <button onClick={() => navigate('/')} className="hero-btn hero-btn-outline" style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.75rem 1.5rem', fontSize: '0.85rem', height: 'fit-content', borderRadius: '14px' }}>
++            <Home size={18} /> {t('dashboard.backToSite')}
++          </button>
++        <AnimatePresence mode="wait">
++          <motion.div key={activeTab} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} transition={{ duration: 0.2 }}>
++            {activeTab === 'home' && <DashboardHome user={user} stats={stats} recent={recent} setModalOpen={setModalOpen} />}
++            {activeTab === 'favorites' && <Favorites saved={saved} loading={loading} />}
++            {activeTab === 'inquiries' && <Inquiries questions={questions} loading={qLoading} />}
++            {activeTab === 'profile' && <Profile user={user} logout={logout} />}
++          </motion.div>
++        </AnimatePresence>
++      <button className="fab-callback" onClick={() => setModalOpen(true)} style={{ width: '64px', height: '64px', borderRadius: '22px', boxShadow: '0 15px 30px rgba(212,175,55,0.3)' }}><Phone size={28} /></button>
++import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from 'framer-motion';
++  Zap, Shield, Clock, IndianRupee, Compass, Users, TrendingUp, CheckCircle2, Navigation2
++import { fetchProperties, fetchCities, fetchTestimonials, fetchSetting } from '../services/api';
++import { SkeletonCityCard, SkeletonPropertyCard } from '../components/SkeletonLoaders';
++import { parseSmartSearch, getFuzzySuggestions, loadAndhraData } from '../services/SearchParser';
++
++const TYPE_TABS = (t) => [
++  { label: t('filter.all', 'All'), value: 'all', icon: <Filter size={15} /> },
++  { label: t('types.apartments', 'Apartments'), value: 'Apartment', icon: <Building2 size={15} /> },
++  { label: t('types.villas', 'Villas'), value: 'Villa', icon: <HomeIcon size={15} /> },
++  { label: t('types.plots', 'Plots'), value: 'Plot', icon: <Square size={15} /> },
++  { label: t('types.agriculture', 'Agriculture'), value: 'Agriculture', icon: <Leaf size={15} /> },
++];
++const SMART_PILLS = (t) => [
++  { label: t('pills.all', 'All'), key: 'all' },
++  { label: `🔥 ${t('pills.under50l', 'Under ₹50L')}`, key: 'budget' },
++  { label: `✅ ${t('pills.ready', 'Ready to Move')}`, key: 'ready' },
++  { label: `🧭 ${t('pills.east', 'East Facing')}`, key: 'east' },
++  { label: `🏛️ ${t('pills.crda', 'CRDA Approved')}`, key: 'crda' },
++  { label: `✔️ ${t('pills.verified_only', 'Verified Only')}`, key: 'verified' },
++const SORT_OPTIONS = (t) => [
++  { label: t('sort.newest', 'Newest First'), value: 'newest' },
++  { label: t('sort.price_low', 'Price: Low → High'), value: 'price_asc' },
++  { label: t('sort.price_high', 'Price: High → Low'), value: 'price_desc' },
++  { label: t('sort.featured', 'Featured First'), value: 'featured' },
++const INTENT_TABS = (t) => [
++  { label: t('intent.buy', 'Buy'), value: 'Buy', icon: <HomeIcon size={24} /> },
++  { label: t('intent.rent', 'Rent'), value: 'Rent', icon: <Building2 size={24} /> }
++const BUDGET_OPTIONS = (t) => [
++  { label: t('budget.any', 'Any'), value: '' },
++  { label: t('budget.under25', 'Under ₹25L'), value: '2500000' },
++  { label: t('budget.25to50', '₹25L–50L'), value: '5000000' },
++  { label: t('budget.50to1', '₹50L–1Cr'), value: '10000000' },
++  { label: t('budget.1to2', '₹1Cr–2Cr'), value: '20000000' },
++  { label: t('budget.over2', '₹2Cr+'), value: '999999999' },
++  const navigate = useNavigate();
++  const [citiesLoading, setCitiesLoading] = useState(true);
++  const [appearance, setAppearance] = useState({});
++  const [userCoords, setUserCoords] = useState(null);
++  const [locationDenied, setLocationDenied] = useState(false);
++  const [debouncedKeyword, setDebouncedKeyword] = useState(keyword);
++  useEffect(() => {
++    const handler = setTimeout(() => {
++      setDebouncedKeyword(keyword);
++    }, 400);
++    return () => clearTimeout(handler);
++  }, [keyword]);
++
++  // 120Hz Smooth Geolocation & Data Sync
++    if ("geolocation" in navigator) {
++      navigator.geolocation.getCurrentPosition(
++        (pos) => {
++          setUserCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
++        },
++        (err) => {
++          setLocationDenied(true);
++        },
++        { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
++      );
++    }
++    
++    fetchCities().then(d => { setCities(d); setCitiesLoading(false); }).catch(console.error);
++  }, []);
++
++  useEffect(() => {
++    const smart = parseSmartSearch(keyword);
++      search: smart?.city ? smart.keyword.replace(new RegExp(smart.city, 'gi'), '').trim() : debouncedKeyword,
++      type: smart?.type || (typeFilter === 'all' ? undefined : typeFilter),
++      city: smart?.city || cityFilter || undefined,
++      maxPrice: smart?.maxPrice || budget || advFilters.maxPrice || undefined,
++      minPrice: smart?.minPrice || advFilters.minPrice || undefined,
++      bhk: smart?.bhk || advFilters.bhk || undefined,
++  }, [advFilters, debouncedKeyword, typeFilter, cityFilter, intent, budget]);
++  const supportPhone = (supportInfo?.phone || '+919346793364').replace(/\s+/g, '');
++  const supportWA = supportInfo?.whatsapp || '919346793364';
++        : <div className="animated-bg" style={{ position: 'fixed', inset: 0, zIndex: 0, background: 'radial-gradient(ellipse at 20% 50%, rgba(10,80,40,0.08) 0%, transparent 60%), radial-gradient(ellipse at 80% 20%, rgba(130,60,0,0.08) 0%, transparent 60%), var(--bg-deep)' }} />
++        <section id="search" className="search-section" style={{ paddingTop: '1rem' }}>
++              <div className="intent-cards">
++                {INTENT_TABS(t).map(tab => (
++                  <button key={tab.value} className={`intent-card${intent === tab.value ? ' active' : ''}`} onClick={() => setIntent(tab.value)}>
++                    {tab.icon}
++                    <span>{tab.label}</span>
++                  </button>
++                ))}
++                    onFocus={() => { loadAndhraData(); setShowAutocomplete(true); }}
++                  {showAutocomplete && keyword.length >= 2 && (
++                      {getFuzzySuggestions(keyword).length > 0 ? (
++                          <div className="autocomplete-header">Suggested Locations (Andhra Pradesh)</div>
++                          {getFuzzySuggestions(keyword).map(c => (
++                            <button key={`${c.name}-${c.type}`} className="autocomplete-item" onClick={() => { setKeyword(c.name); setCityFilter(c.name); setShowAutocomplete(false); }}>
++                              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
++                                <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>{c.name}</span>
++                                <span className="ac-badge" style={{ fontSize: '0.65rem' }}>{c.type === 'District' ? 'District' : c.district || 'Andhra Pradesh'} • {c.type}</span>
++                              </div>
++                        <div className="autocomplete-header">Continue typing for all Mandals/Cities...</div>
++                <div className="search-selects-row" style={{ flexDirection: 'column', gap: '1.25rem', width: '100%', alignItems: 'stretch', paddingTop: '0.5rem' }}>
++                  {/* City Cards Selection */}
++                  <div className="city-select-card">
++                    <div style={{ fontSize: '0.85rem', color: 'var(--txt-primary)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
++                      <MapPin size={14} style={{ color: 'var(--gold)' }}/> Explore Regions
++                    </div>
++                    <div className="hero-city-cards-scroller" style={{ display: 'flex', gap: '0.75rem', overflowX: 'auto', paddingBottom: '0.5rem', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
++                      <div className={`city-image-pill ${!cityFilter ? 'active' : ''}`} onClick={() => setCityFilter(null)}>
++                        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, var(--midnight) 0%, rgba(212,175,55,0.4) 100%)', zIndex: 0 }}></div>
++                        <span>All AP</span>
++                      </div>
++                      {cities.map(c => (
++                        <div key={c._id || c.id} className={`city-image-pill ${cityFilter === c.name ? 'active' : ''}`} onClick={() => setCityFilter(c.name)}>
++                          {c.image && <img src={c.image} alt={c.name} />}
++                          <span>{c.name}</span>
++                        </div>
++                      ))}
++                    </div>
++                  
++                  {/* Budget Slider */}
++                  <div className="budget-card">
++                    <div style={{ fontSize: '0.85rem', color: 'var(--txt-primary)', fontWeight: 700, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
++                      <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><IndianRupee size={14} style={{ color: 'var(--gold)' }}/> Investment Range</span>
++                      <span style={{ color: 'var(--gold)', background: 'var(--gold-dim)', padding: '2px 8px', borderRadius: '4px', fontSize: '0.75rem' }}>
++                        {budget === '999999999' ? 'Any Budget' : budget ? `Up to ₹${(Number(budget)/100000).toLocaleString('en-IN')} Lakhs` : 'Any Budget'}
++                      </span>
++                    </div>
++                    <input 
++                      type="range" 
++                      min="1000000" 
++                      max="50000000" 
++                      step="1000000" 
++                      value={budget && budget !== '999999999' ? budget : 50000000} 
++                      onChange={e => setBudget(e.target.value === '50000000' ? '999999999' : e.target.value)} 
++                      style={{ width: '100%', accentColor: 'var(--gold)', cursor: 'pointer', height: '4px' }} 
++                    />
++                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', color: 'var(--txt-muted)', fontWeight: 600 }}>
++                      <span>₹10L</span>
++                      <span>₹50L+</span>
++                    </div>
++                <div className="search-action-row" style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '-0.5rem' }}>
++                  <button className="search-filter-btn" onClick={() => setFilterOpen(true)} style={{ width: 'auto', padding: '0.8rem 1.5rem', background: 'var(--gold)', color: 'var(--midnight)', fontWeight: 800 }}>
++                    <SlidersHorizontal size={18} style={{ marginRight: '8px' }} />
++                    Advanced Filters
++                    {filterCount > 0 && <span className="filter-badge" style={{ position: 'relative', top: 0, right: 0, marginLeft: '8px', border: '1px solid currentColor' }}>{filterCount}</span>}
++        <section className="hero-section" style={{ paddingBottom: '2.5rem' }}>
++          <div className="container">
++            <motion.div className="hero-eyebrow" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
++              <MapPin size={12} /> {t('hero.eyebrow')}
++            </motion.div>
++            <motion.h1 className="hero-title" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, delay: 0.1 }}>
++              {t('hero.title1')}
++              <span className="gold-line text-royal-gold" style={{ display: 'block' }}>
++                {typedWord}<span style={{ color: 'var(--gold)', opacity: 0.7 }}>|</span>
++              </span>
++              {t('hero.title2')}
++            </motion.h1>
++            <motion.p className="hero-subtitle" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2 }}>
++              {t('hero.subtitle')}
++            </motion.p>
++            <motion.div className="hero-ctas" initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.65, delay: 0.3 }}>
++              <a href="#cities" className="hero-btn hero-btn-primary"><Navigation2 size={18} /> {t('hero.browseBtn')}</a>
++              <a href={`tel:${supportPhone}`} className="hero-btn hero-btn-glass"><Phone size={18} /> CALL AGENT NOW</a>
++            </motion.div>
++            <motion.div className="hero-stats-row" initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ delay: 0.5 }}>
++              {[
++                { icon: <ShieldCheck size={15} />, val: `${properties.filter(p => p.isVerified).length || 0}+`, label: t('stats.verified') },
++                { icon: <MapPin size={15} />, val: `${cities.length}`, label: t('stats.cities') },
++                { icon: <Users size={15} />, val: '2,400+', label: t('stats.clients') },
++                { icon: <Star size={15} />, val: 'CRDA', label: t('stats.approved') },
++              ].map((s, i) => (
++                <div key={i} className="hero-stat-chip">
++                  {s.icon}
++                  <div>
++                    <div className="hero-stat-val">{s.val}</div>
++                    <div className="hero-stat-label">{s.label}</div>
++                  </div>
++                </div>
++              ))}
++            </motion.div>
++          </div>
++        </section>
++
++        <section id="cities" className="section-wrap" style={{ paddingBottom: '1rem' }}>
++              <h2 className="section-title" style={{ color: '#ffffff' }}>{t('cities.title')}</h2>
++              <p className="section-subtitle" style={{ color: 'var(--txt-secondary)' }}>{t('cities.subtitle')}</p>
++              {citiesLoading ? (
++                Array(6).fill(0).map((_, i) => <SkeletonCityCard key={i} />)
++              ) : (
++                cities.map((c, i) => (
++                  <motion.div key={c._id || c.id} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.07 }}>
++                    <CityCard city={c} count={c.propertyCount || 0} cityPhoto={c.image} isActive={cityFilter === c.name} onClick={() => setCityFilter(cityFilter === c.name ? null : c.name)} index={i} />
++                  </motion.div>
++                ))
++              )}
++        <AnimatePresence>
++          {(userCoords || locationDenied) && (
++            <motion.section
++              key="nearby-section"
++              className="section-wrap"
++              style={{ background: 'rgba(212,175,55,0.02)', borderTop: '1px solid rgba(212,175,55,0.05)', borderBottom: '1px solid rgba(212,175,55,0.05)' }}
++              initial={{ opacity: 0, height: 0, overflow: 'hidden' }}
++              animate={{ opacity: 1, height: 'auto', overflow: 'visible' }}
++              exit={{ opacity: 0, height: 0, overflow: 'hidden' }}
++              transition={{ duration: 0.5, ease: 'easeOut' }}
++            >
++              <div className="container">
++                <div className="section-head">
++                  <div className="section-eyebrow" style={{ color: 'var(--gold)' }}><Navigation2 size={14} /> {t('geo.hotspotsTitle', 'REGIONAL HOTSPOTS')}</div>
++                  <h2 className="section-title" style={{ color: '#ffffff' }}>{t('geo.hotspotsHeadline', 'Regional Growth Hotspots')}</h2>
++                  <p className="section-subtitle" style={{ color: 'var(--txt-secondary)' }}>
++                    {userCoords ? 'Verified assets and developments near your current location.' : 'Allow location access for personalised nearby listings.'}
++                  </p>
++                </div>
++                <div className="properties-grid">
++                  {sortedProperties.slice(0, 6).map((p, i) => (
++                    <motion.div key={`nearby-${p._id}`} initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ delay: i * 0.05 }}>
++                      <PropertyCard {...p} />
++                    </motion.div>
++                  ))}
++                </div>
++              </div>
++            </motion.section>
++          )}
++        </AnimatePresence>
++
++              <div className="section-head" style={{ marginBottom: '0.5rem' }}>
++                <h3 style={{ color: '#fff', fontSize: '1.25rem', marginBottom: '0.25rem' }}>Asset Classification</h3>
++                <p style={{ color: 'var(--txt-muted)', fontSize: '0.85rem' }}>Filter properties uniquely structured for your needs.</p>
++              </div>
++              <div className="type-cards-grid">
++                {TYPE_TABS(t).map(tOpt => (
++                  <button key={tOpt.value} className={`type-card${typeFilter === tOpt.value ? ' active' : ''}`} onClick={() => setTypeFilter(tOpt.value)}>
++                    {tOpt.icon} 
++                    <span>{tOpt.label}</span>
++                {SMART_PILLS(t).map(p => (
++                <h2 style={{ fontSize: '1.35rem', marginBottom: '2px', color: '#ffffff' }}>
++                  {SORT_OPTIONS(t).map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
++            <div className="properties-grid">
++              {loading ? Array(3).fill(0).map((_, i) => <SkeletonPropertyCard key={i} />) : sortedProperties.length > 0 ? (
++                sortedProperties.map((p, i) => (
++                    <PropertyCard {...p} />
++                ))
++              ) : (
++                <div className="empty-state">
++                  <Search size={48} />
++                  <h3>{t('properties.none')}</h3>
++                  <button className="hero-btn hero-btn-primary" onClick={resetFilters}>{t('search.clear')}</button>
++                </div>
++              )}
++            </div>
++            <motion.div className="cta-card glass-heavy" initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.35 }}
++              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '2rem', padding: '3rem 2rem' }}>
++              <div style={{ maxWidth: '800px' }}>
++                <h2 style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>{t('cta.title')}</h2>
++                <p style={{ fontSize: '1.15rem', color: 'var(--txt-secondary)', marginBottom: '2.5rem' }}>{t('cta.subtitle')}</p>
++                <div className="cta-buttons" style={{ display: 'flex', gap: '1.25rem', flexWrap: 'wrap', justifyContent: 'center' }}>
++                  <a href={`tel:${supportPhone}`} className="hero-btn hero-btn-primary pulse-primary btn-3d" style={{ textDecoration: 'none', padding: '1.1rem 2.5rem', minWidth: '220px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
++                    <Phone size={20} style={{ marginRight: '10px' }} /> CALL AGENT NOW
++                  </a>
++                  <a href={`https://wa.me/${supportWA}?text=Hello, I am interested in property in Andhra.`} className="hero-btn hero-btn-whatsapp pulse-green btn-3d-emerald" style={{ textDecoration: 'none', padding: '1.1rem 2.5rem', minWidth: '220px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
++                    <MessageSquare size={20} style={{ marginRight: '10px' }} /> {t('cta.whatsapp')}
++        <footer className="app-footer">
++              <div className="footer-col"><Logo size={28} showText /><p style={{ marginTop: '1rem', fontSize: '0.85rem', color: 'var(--txt-muted)' }}>{t('footer.aboutText')}</p></div>
++              <div className="footer-col"><h4>{t('footer.quick')}</h4><a href="#properties">Properties</a><a href="#cities">Locations</a><a href="#contact">Contact</a></div>
++              <div className="footer-col"><h4>{t('footer.support')}</h4><a href={`mailto:${supportInfo?.email || 'info@snapadda.com'}`}>{supportInfo?.email || 'info@snapadda.com'}</a><a href={`tel:${supportPhone}`}>{supportInfo?.phone || '+91 93467 93364'}</a></div>
++            <div className="footer-bottom"><span>© 2026 SnapAdda. {t('footer.rights')}</span></div>
++      <div className="mobile-sticky-quick-contact" style={{ 
++        display: 'none', 
++        gap: '0.75rem', 
++        padding: '1rem', 
++        background: 'rgba(7,7,15,0.95)', 
++        backdropFilter: 'blur(20px)', 
++        borderTop: '1px solid rgba(255,255,255,0.1)',
++        position: 'fixed',
++        bottom: 0,
++        left: 0,
++        right: 0,
++        zIndex: 1000,
++        pointerEvents: 'none'
++      }}>
++        <a href={`tel:${supportPhone}`} className="hero-btn hero-btn-primary pulse-primary btn-3d" style={{ flex: 1, padding: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', pointerEvents: 'auto' }}>
++          <Phone size={18} style={{ marginRight: '8px' }} /> CALL NOW
++        </a>
++        <a href={`https://wa.me/${supportWA}?text=Hello,%20I'm%20looking%20for%20assistance.`} className="hero-btn hero-btn-whatsapp pulse-green btn-3d-emerald" style={{ flex: 1, textDecoration: 'none', background: '#25D366', padding: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', pointerEvents: 'auto' }}>
++          <MessageSquare size={18} style={{ marginRight: '8px' }} /> WHATSAPP
++      <style>{`
++        @media (max-width: 768px) {
++          .mobile-sticky-quick-contact { display: flex !important; }
++          .section-wrap { padding-bottom: 100px !important; }
++        }
++      `}</style>
++import { useNavigate, useLocation } from 'react-router-dom';
++import { LogIn } from 'lucide-react';
++import { authGoogle } from '../services/api';
++import { useTranslation } from 'react-i18next';
++  const { t } = useTranslation();
++  const { loginGoogle } = useAuth();
++  const location = useLocation();
++  const from = location.state?.from?.pathname || location.state?.from || '/';
++        // Correct logic: if not completed, go to onboarding. 
++        if (!res.user.onboardingCompleted) {
++          navigate('/onboarding', { replace: true });
++        } else {
++          navigate(from, { replace: true });
++        }
++        className="glass-heavy login-card"
++        style={{ 
++          width: '100%', 
++          maxWidth: '420px', 
++          borderRadius: '32px', 
++          border: '1px solid rgba(255,255,255,0.08)', 
++          textAlign: 'center',
++          position: 'relative',
++          zIndex: 1
++        }}
++        <div style={{ marginBottom: '3rem', position: 'relative' }}>
++          <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '80px', height: '80px', background: 'var(--gold)', filter: 'blur(40px)', opacity: 0.1, zIndex: -1 }}></div>
++          <Logo size={64} showText={true} textSize="1.3rem" />
++          <h1 style={{ fontSize: '2rem', fontWeight: 900, marginTop: '2rem', color: '#fff', letterSpacing: '-0.03em' }}>{t('auth.welcome')}</h1>
++          <p style={{ color: 'var(--txt-muted)', marginTop: '0.75rem', fontSize: '0.95rem', fontWeight: 500 }}>
++            {t('auth.subtitle')}
++        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
++          <div style={{ 
++            width: '100%', 
++            padding: '4px', 
++            background: 'rgba(255, 255, 255, 0.03)', 
++            borderRadius: 'var(--r-full)', 
++            border: '1px solid rgba(255,255,255,0.08)',
++            position: 'relative',
++            overflow: 'hidden'
++          }}>
++            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '1px', background: 'linear-gradient(90deg, transparent, var(--gold), transparent)', opacity: 0.5 }}></div>
++            <div style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
++              <GoogleLogin
++                onSuccess={handleGoogleSuccess}
++                onError={() => setError('Google Login Failed')}
++                useOneTap
++                theme="filled_black"
++                shape="pill"
++                size="large"
++                logo_alignment="center"
++              />
++            </div>
++          
++          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', opacity: 0.5 }}>
++            <div style={{ flex: 1, height: '1px', background: 'var(--border-light)' }}></div>
++            <span style={{ fontSize: '0.75rem', color: 'var(--txt-secondary)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Secure Access</span>
++            <div style={{ flex: 1, height: '1px', background: 'var(--border-light)' }}></div>
++        <p style={{ textAlign: 'center', marginTop: '3rem', fontSize: '0.8rem', color: 'var(--txt-muted)', lineHeight: 1.6 }}>
++          {t('auth.terms')} <br />
++          <span style={{ color: 'var(--gold)', cursor: 'pointer' }}>{t('auth.tos')}</span> and <span style={{ color: 'var(--gold)', cursor: 'pointer' }}>{t('auth.privacy')}</span>.
++import { Link, useNavigate } from 'react-router-dom';
++import { Home, IndianRupee, MapPin, Target, ChevronRight, ChevronLeft, CheckCircle2, LogOut, Sparkles, MessageSquare, HelpCircle } from 'lucide-react';
++import { fetchSetting } from '../services/api';
++import { useTranslation } from 'react-i18next';
++  const { t } = useTranslation();
++  const [loading, setLoading] = useState(true);
++  const [questions, setQuestions] = useState([]);
++  
++  const [formData, setFormData] = useState({});
++  // Fetch dynamic questions
++  useEffect(() => {
++    const loadQuestions = async () => {
++      try {
++        const res = await fetchSetting('onboarding_questions');
++        // Filter out disabled ones
++        const active = (res || []).filter(q => q.enabled);
++        
++        // Build initial form data
++        const initial = {};
++        active.forEach(q => {
++          initial[q.key] = q.type === 'options' ? '' : '';
++        });
++        
++        setQuestions(active);
++        setFormData(initial);
++      } catch (err) {
++        console.error('Failed to load onboarding questions:', err);
++      } finally {
++        setLoading(false);
++      }
++    };
++    loadQuestions();
++  }, []);
++
++      setStep(questions.length + 1); // Move to final step
++  const handleContinue = () => {
++    navigate('/');
++  const getIcon = (key) => {
++    switch(key) {
++      case 'propertyType': return <Home size={32} />;
++      case 'budget': return <IndianRupee size={32} />;
++      case 'purpose': return <Target size={32} />;
++      case 'locations': return <MapPin size={32} />;
++      default: return <HelpCircle size={32} />;
++    }
++  };
++
++  if (loading) return (
++    <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--midnight)' }}>
++      <div className="loader" />
++    </div>
++  );
++
++  const totalSteps = questions.length + 2; // Welcome + Questions + Finish
++  const isFinalStep = step === questions.length + 1;
++      <div style={{ padding: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative', zIndex: 10 }}>
++        <Link to="/" style={{ textDecoration: 'none' }}>
++          <Logo size={42} showText />
++        </Link>
++        <button 
++          onClick={() => navigate('/')}
++          className="glass-heavy btn-3d"
++          style={{ 
++            border: '1px solid rgba(212,175,55,0.4)', 
++            color: 'var(--gold)', padding: '0.6rem 1.4rem', borderRadius: '12px', cursor: 'pointer',
++            fontSize: '0.85rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px',
++            textTransform: 'uppercase', letterSpacing: '0.05em'
++          }}
++        >
++          <ChevronLeft size={16} /> {t('dashboard.backToSite')}
++        </button>
++          className="glass-heavy onboarding-card"
++          style={{ width: '100%', maxWidth: '520px', borderRadius: '28px', position: 'relative', overflow: 'hidden' }}
++                animate={{ width: `${(step / (questions.length + 1)) * 100}%` }}
++                  <h2 style={{ fontSize: '2.5rem', fontWeight: 900, marginBottom: '1rem', fontFamily: 'var(--font-serif)' }}>{t('onboarding.welcomeTitle', 'Tailored Experience')}</h2>
++                    {t('onboarding.welcomeText', { name: user?.name?.split(' ')[0] || 'Explorer' })}
++                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
++                    <button className="btn-3d" onClick={handleNext} style={{ width: '100%', padding: '1.2rem' }}>
++                      {t('onboarding.getStarted', 'Get Started')} <ChevronRight size={18} style={{ marginLeft: '8px' }} />
++                    </button>
++                    <button 
++                      onClick={() => navigate('/')}
++                      style={{ 
++                        background: 'transparent', border: 'none', color: 'var(--txt-muted)', 
++                        fontSize: '0.9rem', cursor: 'pointer', textDecoration: 'underline' 
++                      }}
++                    >
++                      {t('dashboard.backToSite')}
++                    </button>
++              {/* --- DYNAMIC QUESTIONS --- */}
++              {step > 0 && step <= questions.length && (
++                  <div style={{ display: 'inline-flex', padding: '1rem', background: 'var(--gold-dim)', borderRadius: '20px', color: 'var(--royal-gold)', marginBottom: '1.5rem' }}>
++                    {getIcon(questions[step-1].key)}
++                  <h3 style={{ fontSize: '1.8rem', fontWeight: 800, marginBottom: '0.5rem' }}>{t(`onboarding.q.${questions[step-1].key}`, questions[step-1].title)}</h3>
++                  <p style={{ color: 'var(--txt-muted)', marginBottom: '2rem' }}>{t('onboarding.selectPref', 'Select your preference below.')}</p>
++                  
++                  {questions[step-1].type === 'options' ? (
++                    <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '0.85rem' }}>
++                      {questions[step-1].options.map(opt => {
++                        const isSelected = formData[questions[step-1].key] === opt;
++                        return (
++                          <button 
++                            key={opt}
++                            onClick={() => setFormData({...formData, [questions[step-1].key]: opt})}
++                            style={{ 
++                              padding: '1.1rem 1.4rem', borderRadius: '16px', border: '1.5px solid',
++                              borderColor: isSelected ? 'var(--royal-gold)' : 'rgba(255,255,255,0.08)',
++                              background: isSelected ? 'rgba(212,175,55,0.08)' : 'rgba(255,255,255,0.03)',
++                              color: isSelected ? 'var(--royal-gold)' : 'var(--txt-primary)',
++                              textAlign: 'left', cursor: 'pointer', transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)', fontWeight: 600,
++                              fontSize: '0.95rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between'
++                            }}
++                          >
++                            <span>{t(`onboarding.opt.${opt.replace(/\s+/g, '')}`, opt)}</span>
++                            {isSelected && <CheckCircle2 size={18} />}
++                          </button>
++                        );
++                      })}
++                    </div>
++                  ) : (
++                    <div style={{ marginTop: '1rem' }}>
++                      <textarea 
++                        placeholder={t('onboarding.placeholder', 'Type your answer here...')}
++                        value={formData[questions[step-1].key] || ''}
++                        onChange={(e) => setFormData({...formData, [questions[step-1].key]: e.target.value})}
++                          width: '100%', background: '#ffffff05', border: '1px solid var(--border-light)', 
++                          borderRadius: '12px', padding: '1rem', color: '#fff', outline: 'none', resize: 'none', height: '140px'
++                      />
++                    </div>
++                  )}
++              {/* --- STEP FINISH --- */}
++              {step === questions.length + 1 && (
++                  <h2 style={{ fontSize: '2.2rem', fontWeight: 900, marginBottom: '1rem', color: 'var(--emerald)' }}>{t('dashboard.overview')} {t('onboarding.finishTitle', 'Strategy Optimized')}</h2>
++                    {t('onboarding.finishText', 'Welcome to the Inner Circle. Your investment strategy has been secured. You can now explore properties and growth hotspots tailored to your profile.')}
++                  <button className="btn-3d" onClick={handleContinue} style={{ width: '100%', padding: '1.2rem', background: 'var(--royal-emerald)', color: '#fff' }}>
++                    {t('dashboard.backToSite')} <ChevronRight size={18} style={{ marginLeft: '8px' }} />
++          {step > 0 && step < questions.length + 1 && (
++              {step < questions.length ? (
++                  disabled={!formData[questions[step-1].key]}
++                  style={{ flex: 3, opacity: !formData[questions[step-1].key] ? 0.5 : 1 }}
++                  disabled={isSubmitting || !formData[questions[step-1].key]}
++                  style={{ flex: 3, opacity: (!formData[questions[step-1].key]) ? 0.5 : 1 }}
++
++import { 
++  ArrowLeft, MapPin, Share2, Heart, ShieldCheck, Clock, 
++  Calendar, Layers, Phone, MessageSquare, ChevronRight, Eye,
++  LayoutDashboard, Download, Info, CheckCircle2, Navigation, Building2, User, BedDouble, Bath, Square, Compass, Award, Send, Star, Image, Video
++} from 'lucide-react';
++import { useAuth } from '../contexts/AuthContext';
++import { fetchProperty, fetchSetting, submitLead, askQuestion, fetchPropertyFAQs, likeProperty, shareProperty } from '../services/api';
++import { formatSnapAddaPrice } from '../utils/priceUtils';
++  const { user } = useAuth();
++  const [liked, setLiked] = useState(false);
++  const [likeCount, setLikeCount] = useState(0);
++    
++      .then(res => {
++        const data = res.data || res;
++        setProperty(data);
++        setLikeCount(data.likeCount || 0);
++        setLiked(data.isLiked || false);
++        
++        // Add to Recently Viewed in localStorage
++        const recent = JSON.parse(localStorage.getItem('snapadda_recent_viewed') || '[]');
++        const updated = [data, ...recent.filter(r => r._id !== data._id)].slice(0, 4);
++        localStorage.setItem('snapadda_recent_viewed', JSON.stringify(updated));
++      })
++
++    fetchPropertyFAQs(id).then(setQna).catch(console.error);
++    fetchSetting('support_info').then(setSupportInfo).catch(console.error);
++      const propertyId = id || property?._id || property?.id;
++  const handleLike = async () => {
++    if (!user) { alert('Please sign in to like properties'); return; }
++    try {
++      const res = await likeProperty(id, user._id || user.id);
++      if (res.status === 'success') {
++        setLiked(res.data.liked);
++        setLikeCount(res.data.likeCount);
++      }
++    } catch (err) { console.error('Like failed', err); }
++  };
++
++  const handleShare = async () => {
++    const url = window.location.href;
++    try {
++      if (navigator.share) {
++        await navigator.share({ title: `SnapAdda: ${property?.title}`, text: `Check out this property in ${property?.location}`, url });
++        await shareProperty(id, 'native', user?._id);
++      } else {
++        await navigator.clipboard.writeText(url);
++        alert('Link copied!');
++        await shareProperty(id, 'clipboard', user?._id);
++      }
++    } catch (err) { console.error('Share failed', err); }
++  };
++
++    const waPhone = supportInfo?.whatsapp || '919346793364';
++    const text = encodeURIComponent(`Hi SnapAdda, I am interested in "${property?.title || 'this property'}" located in ${property?.location || 'Andhra Pradesh'}. (ID: ${id})`);
++    window.open(`https://wa.me/${waPhone}?text=${text}`, '_blank');
++
++    if (!user) {
++      navigate('/login', { state: { from: window.location.pathname } });
++      return;
++    }
++    if (!qText || !id) return;
++      const res = await askQuestion({ 
++        propertyId: id, 
++        userId: user._id || user.id,
++        authType: user.isGuest ? 'Guest' : (user.token ? 'Google' : 'Email'),
++        clientName: user.name || qName, 
++        clientContact: user.email || user.phone || qContact, 
++        question: qText 
++      });
++      if (res.status === 'success') { 
++        setQStatus('Question submitted! Agent will respond soon.'); 
++        setQText(''); setQName(''); setQContact(''); 
++        setTimeout(() => setQStatus(''), 5000); 
++      } else {
++        setQStatus('Failed to submit question.');
++      }
++  const generateDesc = (prop) => {
++    if (prop.description && prop.description.length > 50) return prop.description;
++    
++    let desc = `This premium ${prop.type || 'property'} is located in the sought-after area of ${prop.location || 'Andhra Pradesh'}. `;
++    
++    if (prop.type === 'Agricultural Land') {
++      desc += `It spans a total of ${prop.areaSize || prop.totalAcres} ${prop.measurementUnit || 'Acres'} of fertile land, offering excellent potential for cultivation or long-term investment. `;
++      if (prop.roadWidth > 0) desc += `The property features a ${prop.roadWidth} ft wide road access, ensuring easy logistical connectivity. `;
++    } else if (prop.type?.includes('Plot')) {
++      desc += `Measuring ${prop.areaSize} ${prop.measurementUnit || 'Sq.Yards'}, this plot is ideal for ${prop.purpose === 'Sale' ? 'building your dream home' : 'commercial development'}. `;
++      if (prop.isGated) desc += `Situated within a secure gated community, it offers both privacy and premium infrastructure. `;
++    } else {
++      if (prop.bhk) desc += `A spacious ${prop.bhk} BHK configuration with modern layouts. `;
++      if (prop.furnishing && prop.furnishing !== 'N/A') desc += `The property comes ${prop.furnishing} and is ready for immediate occupancy. `;
++    }
++    
++    if (prop.facing && prop.facing !== 'Any') desc += `The ${prop.facing}-facing orientation ensures optimal natural light and adherence to Vastu principles. `;
++    
++    return desc + "Contact SnapAdda today for an exclusive site visit and detailed walkthrough.";
++      <div className="container" style={{ padding: '1.2rem 0' }}>
++        <button className="back-button" onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--txt-secondary)', fontWeight: 700, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '1px' }}>
++          <ArrowLeft size={18} /> Back to Search
++      {/* Premium Horizontal Gallery */}
++      <section className="pd-gallery-premium-wrapper">
++        <div className="pd-gallery-container-main">
++          <div className="pd-gallery-scroller" id="pd-gallery-scroller">
++            {/* Unified Media Stream */}
++            {[...images, ...(property.videoUrl ? [property.videoUrl] : [])].map((item, index) => (
++              <div key={index} className="pd-media-item-card">
++                {item.includes('youtube.com') || item.includes('youtu.be') ? (
++                  <div className="pd-video-item-wrapper">
++                    <iframe 
++                      src={getYouTubeEmbed(item)} 
++                      title="Virtual Tour" 
++                      frameBorder="0" 
++                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
++                      allowFullScreen 
++                    />
++                  </div>
++                ) : (
++                  <img src={item} alt={`${property.title} - View ${index + 1}`} loading="lazy" />
++                )}
++              </div>
++            ))}
++            {images.length === 0 && !property.videoUrl && (
++              <div className="pd-media-item-card empty">
++                <div className="property-no-image"><Building2 size={64} /><p>No media available</p></div>
++              </div>
++            )}
++
++          {/* Gallery Navigation Controls (Desktop) */}
++          <div className="pd-gallery-nav-overlay desktop-only">
++            <button 
++              className="pd-gallery-nav-btn prev" 
++              onClick={() => document.getElementById('pd-gallery-scroller')?.scrollBy({ left: -400, behavior: 'smooth' })}
++            >
++              <ArrowLeft size={24} />
++            </button>
++            <button 
++              className="pd-gallery-nav-btn next" 
++              onClick={() => document.getElementById('pd-gallery-scroller')?.scrollBy({ left: 400, behavior: 'smooth' })}
++            >
++              <ChevronRight size={24} />
++            </button>
++          </div>
++
++          {/* Media Indicators */}
++          <div className="pd-gallery-info-badge">
++            <div className="media-count-chip">
++              <Image size={14} /> {images.length} Photos
++            </div>
++            {property.videoUrl && (
++              <div className="media-count-chip video">
++                <Video size={14} /> 1 Video
++              </div>
++            )}
++        </div>
++              <p className="pd-location">
++                <MapPin size={16} /> {property.location}
++                {property.googleMapsLink && (
++                  <a 
++                    href={property.googleMapsLink} 
++                    target="_blank" 
++                    rel="noopener noreferrer" 
++                    style={{ 
++                      marginLeft: '12px', 
++                      fontSize: '0.75rem', 
++                      color: 'var(--gold)', 
++                      textDecoration: 'none', 
++                      display: 'inline-flex', 
++                      alignItems: 'center', 
++                      gap: '4px',
++                      background: 'rgba(232, 184, 75, 0.1)',
++                      padding: '4px 10px',
++                      borderRadius: '20px',
++                      border: '1px solid rgba(232, 184, 75, 0.2)'
++                    }}
++                  >
++                    View on Maps
++                  </a>
++                )}
++              </p>
++              {property.address && (
++                <p className="pd-address" style={{ fontSize: '0.9rem', color: 'var(--txt-muted)', marginTop: '0.4rem', fontStyle: 'italic' }}>
++                  {property.address}
++                </p>
++              )}
++              <div style={{ display: 'flex', gap: '10px', marginBottom: '1rem', justifyContent: 'flex-end' }}>
++                <button 
++                  onClick={handleLike}
++                  style={{ 
++                    background: liked ? 'rgba(240, 93, 94, 0.15)' : 'rgba(255,255,255,0.05)', 
++                    border: liked ? '1px solid var(--rose)' : '1px solid rgba(255,255,255,0.1)', 
++                    color: liked ? 'var(--rose)' : 'white',
++                    padding: '8px 16px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', transition: 'all 0.2s', fontWeight: 700 
++                  }}
++                >
++                  <Heart size={18} fill={liked ? 'var(--rose)' : 'none'} /> {likeCount}
++                </button>
++                <button 
++                  onClick={handleShare}
++                  style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', padding: '8px 16px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 700 }}
++                >
++                  <Share2 size={18} /> Share
++                </button>
++              </div>
++              <div className="pd-price">{formatSnapAddaPrice(property.price)}</div>
++              <div className="pd-ov-card"><Square size={22} className="text-gold" /><div><span className="pd-ov-val">{property.areaSize || property.sqft}</span><span className="pd-ov-label">{property.measurementUnit || 'Sq.Yds'} {property.totalAcres ? `(${property.totalAcres} Acres)` : ''}</span></div></div>
++              {property.pricePerAcre > 0 && property.type === 'Agricultural Land' && (
++                <div className="pd-ov-card"><Building2 size={22} className="text-emerald" /><div><span className="pd-ov-val">₹ {Number(property.pricePerAcre).toLocaleString('en-IN')}</span><span className="pd-ov-label">Per Acre</span></div></div>
++              )}
++            
++            {/* Extended Detail Grid */}
++            <div style={{ marginTop: '2.5rem', borderTop: '1px solid var(--border-light)', paddingTop: '2.5rem' }}>
++              <h3 style={{ fontSize: '1rem', fontWeight: 800, color: 'white', marginBottom: '1.25rem' }}>Technical Specifications</h3>
++              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.25rem' }}>
++                 {property.carpetArea > 0 && <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1.25rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}><div style={{ color: 'var(--txt-muted)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Carpet Area</div><div style={{ fontWeight: 700, fontSize: '1.1rem' }}>{property.carpetArea} Sq.Ft</div></div>}
++                 {property.superBuiltupArea > 0 && <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1.25rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}><div style={{ color: 'var(--txt-muted)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Super Builtup</div><div style={{ fontWeight: 700, fontSize: '1.1rem' }}>{property.superBuiltupArea} Sq.Ft</div></div>}
++                 {property.transactionType && property.transactionType !== 'N/A' && <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1.25rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}><div style={{ color: 'var(--txt-muted)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Transaction</div><div style={{ fontWeight: 700, fontSize: '1.1rem' }}>{property.transactionType}</div></div>}
++                 {property.propertyAge && property.propertyAge !== 'N/A' && <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1.25rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}><div style={{ color: 'var(--txt-muted)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Age of Asset</div><div style={{ fontWeight: 700, fontSize: '1.1rem' }}>{property.propertyAge}</div></div>}
++                 {property.ownershipType && property.ownershipType !== 'N/A' && <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1.25rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}><div style={{ color: 'var(--txt-muted)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Ownership</div><div style={{ fontWeight: 700, fontSize: '1.1rem' }}>{property.ownershipType}</div></div>}
++                 {property.floorNo > 0 && <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1.25rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}><div style={{ color: 'var(--txt-muted)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Floor Level</div><div style={{ fontWeight: 700, fontSize: '1.1rem' }}>{property.floorNo} of {property.totalFloors}</div></div>}
++                 {property.parking && property.parking !== 'N/A' && <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1.25rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}><div style={{ color: 'var(--txt-muted)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Parking</div><div style={{ fontWeight: 700, fontSize: '1.1rem' }}>{property.parking}</div></div>}
++                 
++                 {/* Land & Plot Specifics */}
++                 {(property.type === 'Agricultural Land' || property.type?.includes('Plot')) && (
++                   <>
++                     {property.roadWidth > 0 && <div style={{ background: 'rgba(6,217,140,0.05)', padding: '1.25rem', borderRadius: '16px', border: '1px solid rgba(6,217,140,0.1)' }}><div style={{ color: 'var(--emerald)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Road Width</div><div style={{ fontWeight: 700, fontSize: '1.1rem', color: '#fff' }}>{property.roadWidth} Ft</div></div>}
++                     {property.boundaryWall && <div style={{ background: 'rgba(6,217,140,0.05)', padding: '1.25rem', borderRadius: '16px', border: '1px solid rgba(6,217,140,0.1)' }}><div style={{ color: 'var(--emerald)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Boundary</div><div style={{ fontWeight: 700, fontSize: '1.1rem', color: '#fff' }}>Constructed</div></div>}
++                     {property.isGated && <div style={{ background: 'rgba(232,184,75,0.05)', padding: '1.25rem', borderRadius: '16px', border: '1px solid rgba(232,184,75,0.1)' }}><div style={{ color: 'var(--gold)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Community</div><div style={{ fontWeight: 700, fontSize: '1.1rem', color: '#fff' }}>Gated</div></div>}
++                   </>
++                 )}
++                 {property.reraId && <div style={{ background: 'rgba(232,184,75,0.05)', padding: '1.25rem', borderRadius: '16px', border: '1px solid rgba(232,184,75,0.1)' }}><div style={{ color: 'var(--gold)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>RERA ID</div><div style={{ fontWeight: 700, fontSize: '1.1rem' }}>{property.reraId}</div></div>}
++              </div>
++            </div>
++              {!user ? (
++                <div style={{ textAlign: 'center', padding: '1rem' }}>
++                  <p style={{ color: 'var(--txt-muted)', marginBottom: '1.5rem' }}>Login to your elite account to ask questions and track responses.</p>
++                  <button 
++                    onClick={() => navigate('/login', { state: { from: window.location.pathname } })} 
++                    className="btn btn-primary btn-3d"
++                    style={{ width: 'auto', padding: '0.8rem 2rem' }}
++                  >
++                    Login to Ask Question
++                  </button>
++              ) : (
++                <form onSubmit={handleAsk}>
++                  <div className="pd-ask-row">
++                    <input type="text" placeholder="Your Name" value={user.name || qName} disabled />
++                    <input type="text" placeholder="Phone or Email" value={user.email || user.phone || qContact} disabled />
++                  </div>
++                  <textarea placeholder="What do you want to know?" value={qText} onChange={e => setQText(e.target.value)} rows={3} required />
++                  <div className="pd-ask-footer">
++                    <span style={{ color: qStatus.includes('submitted') ? 'var(--gold)' : 'var(--text-muted)', fontSize: '0.85rem' }}>{qStatus}</span>
++                    <button type="submit" className="btn btn-primary btn-3d"><Send size={14} /> Submit</button>
++                  </div>
++                </form>
++              )}
++              <a href={`tel:${(supportInfo?.phone || '+919346793364').replace(/\s+/g, '')}`} className="btn btn-primary btn-lg btn-full btn-3d" style={{ textDecoration: 'none' }}>Call Agent Now</a>
++      {/* Elite Mobile Sticky Action Bar */}
++      <div className="mobile-sticky-action-bar" style={{
++        position: 'fixed',
++        bottom: 0,
++        left: 0,
++        right: 0,
++        background: 'rgba(5,5,10,0.95)',
++        padding: '1.2rem 1.5rem',
++        zIndex: 1000,
++        backdropFilter: 'blur(30px)',
++        borderTop: '1px solid rgba(212,175,55,0.25)',
++        display: 'none', 
++        gap: '1rem',
++        boxShadow: '0 -10px 40px rgba(0,0,0,0.5)'
++      }}>
++        <a 
++          href={`tel:${(supportInfo?.phone || '+919346793364').replace(/\s+/g, '')}`}
++          className="hero-btn hero-btn-primary pulse-primary btn-3d" 
++          style={{ flex: 1, padding: '1rem', fontSize: '0.9rem', fontWeight: 800, letterSpacing: '0.5px', textDecoration: 'none' }}
++        >
++          <Phone size={18} /> CALL AGENT NOW
++        </a>
++        <button 
++          className="hero-btn hero-btn-whatsapp" 
++          onClick={handleWhatsApp} 
++          style={{ width: '60px', height: '56px', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#25D366', border: 'none' }}
++        >
++          <MessageSquare size={22} color="white" />
++        </button>
++      </div>
++
++      <style>{`
++        @media (max-width: 768px) {
++          .mobile-sticky-action-bar { display: flex !important; }
++          .pd-contact-card { display: none !important; }
++          .property-details-page { padding-bottom: 80px !important; }
++        }
++      `}</style>
++  // Hardcoded defaults — Admin can override via backend
++  const DEFAULTS = {
++    support_info: {
++      phone: '+919346793364',
++      whatsapp: '919346793364',
++      email: 'snapadda@snapadda.com',
++    },
++  };
++
++    const data = (await res.json()).data || null;
++    // Merge backend data over defaults so admin overrides take effect
++    return data ? { ...DEFAULTS[key], ...data } : DEFAULTS[key] || null;
++    console.warn(`[fetchSetting] Using default for '${key}':`, e.message);
++    return DEFAULTS[key] || null;
++
++/**
++ * Property Q&A Interaction
++ */
++export const askQuestion = async (payload) => {
++  try {
++    const res = await fetch(`${API_BASE}/questions/ask`, {
++      method: 'POST',
++      headers: { 'Content-Type': 'application/json' },
++      body: JSON.stringify(payload),
++    });
++    if (!res.ok) throw new Error('Failed to submit question');
++    return await res.json();
++  } catch (e) {
++    console.error('API Error:', e);
++    throw e;
++  }
++};
++
++export const fetchPropertyFAQs = async (propertyId) => {
++  try {
++    const res = await fetch(`${API_BASE}/questions/faqs/${propertyId}`);
++    if (!res.ok) throw new Error('Failed to fetch FAQs');
++    return (await res.json()).data || [];
++  } catch (e) {
++    console.error('API Error:', e);
++    return [];
++  }
++};
++
++export const fetchUserQuestions = async (userId) => {
++  try {
++    const token = JSON.parse(localStorage.getItem('snapadda_user'))?.token || 'mock_token';
++    const res = await fetch(`${API_BASE}/questions/user/${userId}`, {
++      headers: { 'Authorization': `Bearer ${token}` }
++    });
++    if (!res.ok) throw new Error('Failed to fetch user questions');
++    return (await res.json()).data || [];
++  } catch (e) {
++    console.error('API Error:', e);
++    return [];
++  }
++};
+

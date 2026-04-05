@@ -5,21 +5,9 @@ import { Heart, Share2, Eye, Phone, MessageSquare, ShieldCheck, Flame, MapPin, B
 import { useAuth } from '../contexts/AuthContext';
 import { likeProperty, shareProperty } from '../services/api';
 import { useTranslation } from 'react-i18next';
+import { formatSnapAddaPrice } from '../utils/priceUtils';
 
-function formatPrice(price) {
-  const s = typeof price === 'number' ? price.toString() : price;
-  if (!s) return s;
-  const n = s.replace(/,/g, '').replace(/₹/g, '').trim().toLowerCase();
-  const isCrore = /crore/.test(n);
-  const isLakh = /lakh/.test(n);
-  const val = parseFloat(n.replace(/[^0-9.]/g, ''));
-  if (isNaN(val)) return s;
-  if (isCrore) return `₹${val.toFixed(1)} Cr`;
-  if (isLakh) return `₹${val.toFixed(1)} L`;
-  if (val >= 1e7) return `₹${(val / 1e7).toFixed(1)} Cr`;
-  if (val >= 1e5) return `₹${(val / 1e5).toFixed(1)} L`;
-  return `₹${val.toLocaleString('en-IN')}`;
-}
+// Use shared formatSnapAddaPrice instead of local formatPrice
 
 export default function PropertyCard({
   id, _id, image, images, title, price, location, beds, baths, sqft,
@@ -33,12 +21,14 @@ export default function PropertyCard({
   const [liked, setLiked] = useState(initialLiked);
   const [likeCount, setLikeCount] = useState(initialLikeCount);
 
-  const allImages = images?.length ? images : image ? [image] : [];
-  const mainImage = allImages[0] ?? null;
+  const allImages = Array.isArray(images) && images.length > 0 
+    ? images 
+    : (image ? [image] : []);
+  const mainImage = allImages[0] || null;
   const authority = approval || approvalAuthority;
   const isHot = propertyId ? propertyId.charCodeAt(0) % 2 === 0 : false;
   const viewers = propertyId ? propertyId.charCodeAt(1 % propertyId.length) % 12 + 3 : 5;
-  const isNew = createdAt ? Date.now() - new Date(createdAt).getTime() < 10080 * 60 * 1000 : false;
+  const isNew = createdAt ? (Date.now() - new Date(createdAt).getTime() < 10080 * 60 * 1000) : false;
 
   const handleLike = async (e) => {
     e.preventDefault(); e.stopPropagation();
@@ -69,7 +59,7 @@ export default function PropertyCard({
   const isVastuPreferred = facing && ['east', 'north', 'north-east'].includes(facing.toLowerCase());
 
   return (
-    <motion.div 
+    <motion.article 
       className="scene-3d" 
       style={{ width: '100%', height: '100%', perspective: '1200px' }}
       initial={{ opacity: 0, y: 60, rotateX: 15, scale: 0.9 }}
@@ -77,18 +67,25 @@ export default function PropertyCard({
       viewport={{ once: true, margin: '-40px' }}
       transition={{ type: 'spring', stiffness: 90, damping: 15, mass: 1 }}
     >
-      <motion.div className="property-card card-3d">
-        <motion.div style={{ position: 'absolute', inset: 0, zIndex: 10, pointerEvents: 'none', background: 'radial-gradient(400px circle at 50% 50%, rgba(255,255,255,0.12), transparent 40%)' }} />
+      <div className="property-card card-3d">
+        <div style={{ position: 'absolute', inset: 0, zIndex: 10, pointerEvents: 'none', background: 'radial-gradient(400px circle at 50% 50%, rgba(255,255,255,0.12), transparent 40%)' }} />
 
         <Link to={propertyId ? `/property/${propertyId}` : '#'} className="property-card-link">
           <div className="property-image-container">
             {mainImage
-              ? <motion.img src={mainImage} alt={title} className="property-image" loading="lazy" whileHover={{ scale: 1.08 }} transition={{ duration: 0.6, ease: [0.23, 1, 0.32, 1] }} />
+              ? <motion.img 
+                  src={mainImage} 
+                  alt={`${type || 'Property'} for ${purpose} in ${location} - ${title}`} 
+                  className="property-image" 
+                  loading="lazy" 
+                  whileHover={{ scale: 1.08 }} 
+                  transition={{ duration: 0.6, ease: [0.23, 1, 0.32, 1] }} 
+                />
               : <div className="property-no-image"><Building2 size={36} /></div>
             }
             <div className="property-image-gradient" />
             <div className="property-price-tag" style={{ transform: 'translateZ(40px)' }}>
-              <span>{formatPrice(price)}</span>
+              <span>{formatSnapAddaPrice(price)}</span>
             </div>
             {allImages.length > 1 && (
               <div className="img-count-dots">
@@ -149,9 +146,9 @@ export default function PropertyCard({
           </div>
         </Link>
 
-        <div className="property-content" style={{ transform: 'translateZ(10px)' }}>
+        <section className="property-content" style={{ transform: 'translateZ(10px)' }}>
           <Link to={propertyId ? `/property/${propertyId}` : '#'} className="property-title-link">
-            <h3 className="property-title text-royal-gold">{title}</h3>
+            <h2 className="property-title text-royal-gold" style={{ fontSize: '1.25rem', margin: '0' }}>{title}</h2>
           </Link>
           <div className="property-location text-muted"><MapPin size={12} /> {t(`geo.${location?.toLowerCase()}`, location)}</div>
           <div className="property-lister" style={{ color: listerType?.includes('Builder') ? 'var(--gold)' : 'var(--txt-muted)' }}>
@@ -205,8 +202,8 @@ export default function PropertyCard({
               <MessageSquare size={13} /> {t('card.contact')}
             </a>
           </div>
-        </div>
-      </motion.div>
-    </motion.div>
+        </section>
+      </div>
+    </motion.article>
   );
 }

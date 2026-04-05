@@ -20,12 +20,18 @@ const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
     folder: 'snapadda/properties',
-    allowed_formats: ['jpg', 'png', 'jpeg', 'webp', 'mp4'],
+    allowed_formats: ['jpg', 'png', 'jpeg', 'webp', 'mp4', 'mov', 'heic', 'heif', 'bmp'],
     resource_type: 'auto'
   }
 });
 
-const upload = multer({ storage: storage });
+const upload = multer({ 
+  storage: storage,
+  limits: {
+    fileSize: 30 * 1024 * 1024, // 30MB limit for high-res mobile photos
+    files: 20
+  }
+});
 
 // Health Check for Cloudinary Config
 router.get('/health', (req, res) => {
@@ -38,29 +44,47 @@ router.get('/health', (req, res) => {
 });
 
 // POST /api/media/upload
-router.post('/upload', upload.array('files', 10), (req, res) => {
-  try {
-    console.log('UPLOAD_REQUEST_RECEIVED:', req.files?.length || 0, 'files');
-    
-    if (!req.files || req.files.length === 0) {
-      console.warn('UPLOAD_WARNING: No files present in request');
-      return res.status(400).json({ status: 'error', message: 'No files uploaded' });
+router.post('/upload', (req, res) => {
+  upload.array('files', 20)(req, res, (err) => {
+    if (err instanceof multer.MulterError) {
+      console.error('MULTER_SPECIFIC_ERROR:', err.code, err.message);
+      let message = 'File upload failed: ' + err.message;
+      if (err.code === 'LIMIT_FILE_SIZE') message = 'File too large (Max 30MB)';
+      if (err.code === 'LIMIT_FILE_COUNT') message = 'Too many files (Max 20)';
+      return res.status(400).json({ status: 'error', message });
+    } else if (err) {
+      console.error('GENERIC_UPLOAD_ERROR:', err);
+      return res.status(500).json({ status: 'error', message: 'Cloudinary server error: ' + (err.message || 'Unknown failure') });
     }
-    
-    const urls = req.files.map(file => file.path || file.secure_url || file.url);
-    console.log('MEDIA_UPLOAD_SUCCESS:', urls.length, 'files');
-    res.json({
-      status: 'success',
-      data: urls
-    });
-  } catch (error) {
-    console.error('MEDIA_UPLOAD_ERROR_DETAILS:', {
-      message: error.message,
-      code: error.http_code,
-      details: error.name
-    });
-    res.status(500).json({ status: 'error', message: error.message || 'Upload process failed' });
-  }
+
+    try {
+      console.log('--- MEDIA UPLOAD START ---');
+      console.log('FILES_FOUND:', req.files?.length || 0);
+
+      if (!req.files || req.files.length === 0) {
+        console.error('UPLOAD_ERROR: No files in request body');
+        return res.status(400).json({ status: 'error', message: 'No files were uploaded. Please select images.' });
+      }
+
+      const urls = req.files.map(file => {
+        // Prioritize secure_url from Cloudinary
+        const url = file.secure_url || file.path || file.url;
+        console.log('FILE_PROCESSED:', file.originalname, '->', url);
+        return url;
+      });
+
+      console.log('UPLOAD_SUCCESS:', urls.length, 'total assets');
+      console.log('--- MEDIA UPLOAD END ---');
+
+      res.json({
+        status: 'success',
+        data: urls
+      });
+    } catch (criticalErr) {
+      console.error('CRITICAL_POST_UPLOAD_ERROR:', criticalErr);
+      res.status(500).json({ status: 'error', message: 'System error processing uploaded media' });
+    }
+  });
 });
 
 export default router;

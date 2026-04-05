@@ -18,6 +18,7 @@ import CityCard from '../components/CityCard';
 import Logo from '../components/Logo';
 import { SkeletonCityCard, SkeletonPropertyCard } from '../components/SkeletonLoaders';
 import { parseSmartSearch, getFuzzySuggestions, loadAndhraData } from '../services/SearchParser';
+import { useSEO } from '../utils/useSEO';
 
 const TYPE_TABS = (t) => [
   { label: t('filter.all', 'All'), value: 'all', icon: <Filter size={15} /> },
@@ -44,9 +45,8 @@ const SORT_OPTIONS = (t) => [
 ];
 
 const INTENT_TABS = (t) => [
-  t('intent.buy', 'Buy'),
-  t('intent.rent', 'Rent'),
-  t('intent.plot', 'Plot')
+  { label: t('intent.buy', 'Buy'), value: 'Buy', icon: <HomeIcon size={24} /> },
+  { label: t('intent.rent', 'Rent'), value: 'Rent', icon: <Building2 size={24} /> }
 ];
 
 const BUDGET_OPTIONS = (t) => [
@@ -130,6 +130,14 @@ export default function Home() {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalType, setModalType] = useState('callback');
   const [filterOpen, setFilterOpen] = useState(false);
+  
+  // Dynamic Settings
+  const [heroContent, setHeroContent] = useState(null);
+  const [siteStats, setSiteStats] = useState([]);
+  const [seoData, setSeoData] = useState(null);
+
+  // SEO Injection
+  useSEO(seoData);
 
   // Search / filter state
   const [keyword, setKeyword] = useState('');
@@ -142,6 +150,14 @@ export default function Home() {
   const [sortBy, setSortBy] = useState('newest');
   const [showAutocomplete, setShowAutocomplete] = useState(false);
   const [filterCount, setFilterCount] = useState(0);
+
+  const [debouncedKeyword, setDebouncedKeyword] = useState(keyword);
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedKeyword(keyword);
+    }, 400);
+    return () => clearTimeout(handler);
+  }, [keyword]);
 
   // 120Hz Smooth Geolocation & Data Sync
   useEffect(() => {
@@ -161,6 +177,9 @@ export default function Home() {
     fetchTestimonials().then(setTestimonials).catch(console.error);
     fetchSetting('appearance').then(d => setAppearance(d || {})).catch(console.error);
     fetchSetting('support_info').then(d => setSupportInfo(d || {})).catch(console.error);
+    fetchSetting('hero_content').then(setHeroContent).catch(console.error);
+    fetchSetting('site_stats').then(setSiteStats).catch(console.error);
+    fetchSetting('seo').then(setSeoData).catch(console.error);
   }, []);
 
   useEffect(() => {
@@ -197,7 +216,7 @@ export default function Home() {
     const smart = parseSmartSearch(keyword);
     fetchProperties({
       ...advFilters,
-      search: smart?.city ? smart.keyword.replace(new RegExp(smart.city, 'gi'), '').trim() : keyword,
+      search: smart?.city ? smart.keyword.replace(new RegExp(smart.city, 'gi'), '').trim() : debouncedKeyword,
       type: smart?.type || (typeFilter === 'all' ? undefined : typeFilter),
       city: smart?.city || cityFilter || undefined,
       purpose: intent === 'Buy' ? 'Buy' : intent === 'Rent' ? 'Rent' : undefined,
@@ -209,7 +228,7 @@ export default function Home() {
       .then(res => setProperties(res?.data || (Array.isArray(res) ? res : [])))
       .catch(console.error)
       .finally(() => setLoading(false));
-  }, [advFilters, keyword, typeFilter, cityFilter, intent, budget]);
+  }, [advFilters, debouncedKeyword, typeFilter, cityFilter, intent, budget]);
 
   useEffect(() => { loadProperties(); }, [loadProperties]);
 
@@ -228,7 +247,13 @@ export default function Home() {
   const supportWA = supportInfo?.whatsapp || '919346793364';
 
   return (
-    <div className={`app-container ${appearance?.enable3D !== false ? 'scene-3d' : ''}`}>
+    <div 
+      className={`app-container ${appearance?.enable3D !== false ? 'scene-3d' : ''}`}
+      style={{ 
+        '--brand-primary': appearance?.primaryColor || '#e8b84b',
+        '--brand-glow': (appearance?.primaryColor || '#e8b84b') + '44'
+      }}
+    >
       {appearance?.bgUrl
         ? <div className="site-bg-overlay" style={{ backgroundImage: `url(${appearance.bgUrl})`, opacity: 0.22, position: 'fixed', inset: 0, backgroundSize: 'cover', zIndex: 0 }} />
         : <div className="animated-bg" style={{ position: 'fixed', inset: 0, zIndex: 0, background: 'radial-gradient(ellipse at 20% 50%, rgba(10,80,40,0.08) 0%, transparent 60%), radial-gradient(ellipse at 80% 20%, rgba(130,60,0,0.08) 0%, transparent 60%), var(--bg-deep)' }} />
@@ -258,11 +283,13 @@ export default function Home() {
               }}
               onMouseLeave={() => { mx.set(0); my.set(0); }}
             >
-              <div className="search-tabs">
-                {INTENT_TABS(t).map((tab, idx) => {
-                  const val = ['Buy', 'Rent', 'Plot'][idx];
-                  return <button key={val} className={`search-tab${intent === val ? ' active' : ''}`} onClick={() => setIntent(val)}>{tab}</button>
-                })}
+              <div className="intent-cards">
+                {INTENT_TABS(t).map(tab => (
+                  <button key={tab.value} className={`intent-card${intent === tab.value ? ' active' : ''}`} onClick={() => setIntent(tab.value)}>
+                    {tab.icon}
+                    <span>{tab.label}</span>
+                  </button>
+                ))}
               </div>
               <div className="search-main-row">
                 <div className="search-bar-wrap">
@@ -296,33 +323,54 @@ export default function Home() {
                   )}
                   {keyword && <button className="search-clear" onMouseDown={e => { e.preventDefault(); setKeyword(''); }}><X size={14} /></button>}
                 </div>
-                <div className="search-selects-row">
-                  <div className="search-select-wrap">
-                    <Building2 size={15} className="sel-icon" />
-                    <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)} className="search-select">
-                      <option value="all">{t('types.all')}</option>
-                      {TYPE_TABS(t).filter(t => t.value !== 'all').map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-                    </select>
+                <div className="search-selects-row" style={{ flexDirection: 'column', gap: '1.25rem', width: '100%', alignItems: 'stretch', paddingTop: '0.5rem' }}>
+                  {/* City Cards Selection */}
+                  <div className="city-select-card">
+                    <div style={{ fontSize: '0.85rem', color: 'var(--txt-primary)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <MapPin size={14} style={{ color: 'var(--gold)' }}/> Explore Regions
+                    </div>
+                    <div className="hero-city-cards-scroller" style={{ display: 'flex', gap: '0.75rem', overflowX: 'auto', paddingBottom: '0.5rem', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
+                      <div className={`city-image-pill ${!cityFilter ? 'active' : ''}`} onClick={() => setCityFilter(null)}>
+                        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, var(--midnight) 0%, rgba(212,175,55,0.4) 100%)', zIndex: 0 }}></div>
+                        <span>All AP</span>
+                      </div>
+                      {cities.map(c => (
+                        <div key={c._id || c.id} className={`city-image-pill ${cityFilter === c.name ? 'active' : ''}`} onClick={() => setCityFilter(c.name)}>
+                          {c.image && <img src={c.image} alt={c.name} />}
+                          <span>{c.name}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  <div className="search-select-wrap">
-                    <IndianRupee size={15} className="sel-icon" />
-                    <select value={budget} onChange={e => setBudget(e.target.value)} className="search-select">
-                      {BUDGET_OPTIONS(t).map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                    </select>
-                  </div>
-                  <div className="search-select-wrap">
-                    <MapPin size={15} className="sel-icon" />
-                    <select value={cityFilter || ''} onChange={e => setCityFilter(e.target.value || null)} className="search-select">
-                      <option value="">{t('search.allLocs', 'All Locations')}</option>
-                      {cities.map(c => <option key={c._id || c.id} value={c.name}>{c.name}</option>)}
-                    </select>
+                  
+                  {/* Budget Slider */}
+                  <div className="budget-card">
+                    <div style={{ fontSize: '0.85rem', color: 'var(--txt-primary)', fontWeight: 700, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><IndianRupee size={14} style={{ color: 'var(--gold)' }}/> Investment Range</span>
+                      <span style={{ color: 'var(--gold)', background: 'var(--gold-dim)', padding: '2px 8px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 800 }}>
+                        {(!budget || budget === '999999999') ? 'Any Budget' : `Up to ₹${Number(budget) >= 10000000 ? (Number(budget)/10000000) + ' Cr' : (Number(budget)/100000) + ' Lakhs'}`}
+                      </span>
+                    </div>
+                    <input 
+                      type="range" 
+                      min="1000000" 
+                      max="50000000" 
+                      step="1000000" 
+                      value={budget && budget !== '999999999' ? budget : 50000000} 
+                      onChange={e => setBudget(e.target.value === '50000000' ? '999999999' : e.target.value)} 
+                      style={{ width: '100%', accentColor: 'var(--gold)', cursor: 'pointer', height: '4px' }} 
+                    />
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', color: 'var(--txt-muted)', fontWeight: 600 }}>
+                      <span>₹10L</span>
+                      <span>₹5Cr+</span>
+                    </div>
                   </div>
                 </div>
-                <div className="search-action-row">
-                  <button className="search-go-btn" onClick={loadProperties}><Search size={18} /> {t('search.searchBtn', 'Search')}</button>
-                  <button className="search-filter-btn" onClick={() => setFilterOpen(true)}>
-                    <SlidersHorizontal size={16} />
-                    {filterCount > 0 && <span className="filter-badge">{filterCount}</span>}
+                <div className="search-action-row" style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '-0.5rem' }}>
+                  <button className="search-filter-btn" onClick={() => setFilterOpen(true)} style={{ width: 'auto', padding: '0.8rem 1.5rem', background: 'var(--gold)', color: 'var(--midnight)', fontWeight: 800 }}>
+                    <SlidersHorizontal size={18} style={{ marginRight: '8px' }} />
+                    Advanced Filters
+                    {filterCount > 0 && <span className="filter-badge" style={{ position: 'relative', top: 0, right: 0, marginLeft: '8px', border: '1px solid currentColor' }}>{filterCount}</span>}
                   </button>
                 </div>
               </div>
@@ -344,37 +392,49 @@ export default function Home() {
         <section className="hero-section" style={{ paddingBottom: '2.5rem' }}>
           <div className="container">
             <motion.div className="hero-eyebrow" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-              <MapPin size={12} /> {t('hero.eyebrow')}
+              <MapPin size={12} /> {heroContent?.eyebrow || t('hero.eyebrow')}
             </motion.div>
             <motion.h1 className="hero-title" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, delay: 0.1 }}>
-              {t('hero.title1')}
+              {heroContent?.title.split('|')[0] || t('hero.title1')}
               <span className="gold-line text-royal-gold" style={{ display: 'block' }}>
                 {typedWord}<span style={{ color: 'var(--gold)', opacity: 0.7 }}>|</span>
               </span>
-              {t('hero.title2')}
+              {heroContent?.title.split('|')[1] || t('hero.title2')}
             </motion.h1>
             <motion.p className="hero-subtitle" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2 }}>
-              {t('hero.subtitle')}
+              {heroContent?.subtitle || t('hero.subtitle')}
             </motion.p>
             <motion.div className="hero-ctas" initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.65, delay: 0.3 }}>
-              <a href="#cities" className="hero-btn hero-btn-primary"><Navigation2 size={18} /> {t('hero.browseBtn')}</a>
-              <a href={`tel:${supportPhone}`} className="hero-btn hero-btn-glass"><Phone size={18} /> CALL AGENT NOW</a>
+              <a href={heroContent?.cta1Url || "#cities"} className="hero-btn hero-btn-primary">
+                <Navigation2 size={18} /> {heroContent?.cta1Text || t('hero.browseBtn')}
+              </a>
+              <a href={heroContent?.cta2Url === 'callback' ? '#' : (heroContent?.cta2Url || `tel:${supportPhone}`)} 
+                 onClick={(e) => { if (heroContent?.cta2Url === 'callback') { e.preventDefault(); openLead('callback'); } }}
+                 className="hero-btn hero-btn-glass">
+                 <Phone size={18} /> {heroContent?.cta2Text || 'CALL AGENT NOW'}
+              </a>
             </motion.div>
             <motion.div className="hero-stats-row" initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ delay: 0.5 }}>
-              {[
-                { icon: <ShieldCheck size={15} />, val: `${properties.filter(p => p.isVerified).length || 0}+`, label: t('stats.verified') },
-                { icon: <MapPin size={15} />, val: `${cities.length}`, label: t('stats.cities') },
-                { icon: <Users size={15} />, val: '2,400+', label: t('stats.clients') },
-                { icon: <Star size={15} />, val: 'CRDA', label: t('stats.approved') },
-              ].map((s, i) => (
-                <div key={i} className="hero-stat-chip">
-                  {s.icon}
-                  <div>
-                    <div className="hero-stat-val">{s.val}</div>
-                    <div className="hero-stat-label">{s.label}</div>
+              {siteStats.length > 0 ? (
+                siteStats.map((s, i) => (
+                  <div key={i} className="hero-stat-chip">
+                    <div className="stat-v">{s.value}</div>
+                    <div className="stat-l">{s.label}</div>
                   </div>
-                </div>
-              ))}
+                ))
+              ) : (
+                [
+                  { icon: <ShieldCheck size={15} />, val: `${properties.filter(p => p.isVerified).length || 0}+`, label: t('stats.verified') },
+                  { icon: <MapPin size={15} />, val: `${cities.length}`, label: t('stats.cities') },
+                  { icon: <Users size={15} />, val: '2,400+', label: t('stats.clients') },
+                  { icon: <Star size={15} />, val: 'CRDA', label: t('stats.approved') },
+                ].map((s, i) => (
+                  <div key={i} className="hero-stat-chip">
+                    <div className="stat-v">{s.val}</div>
+                    <div className="stat-l">{s.label}</div>
+                  </div>
+                ))
+              )}
             </motion.div>
           </div>
         </section>
@@ -434,10 +494,15 @@ export default function Home() {
         <section style={{ padding: '0 0 1.5rem' }}>
           <div className="container">
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-              <div className="type-tabs-bar">
-                {TYPE_TABS(t).map(t => (
-                  <button key={t.value} className={`type-tab${typeFilter === t.value ? ' active' : ''}`} onClick={() => setTypeFilter(t.value)}>
-                    {t.icon} {t.label}
+              <div className="section-head" style={{ marginBottom: '0.5rem' }}>
+                <h3 style={{ color: '#fff', fontSize: '1.25rem', marginBottom: '0.25rem' }}>Asset Classification</h3>
+                <p style={{ color: 'var(--txt-muted)', fontSize: '0.85rem' }}>Filter properties uniquely structured for your needs.</p>
+              </div>
+              <div className="type-cards-grid">
+                {TYPE_TABS(t).map(tOpt => (
+                  <button key={tOpt.value} className={`type-card${typeFilter === tOpt.value ? ' active' : ''}`} onClick={() => setTypeFilter(tOpt.value)}>
+                    {tOpt.icon} 
+                    <span>{tOpt.label}</span>
                   </button>
                 ))}
               </div>

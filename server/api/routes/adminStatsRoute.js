@@ -20,6 +20,20 @@ router.get('/stats', async (req, res) => {
     const activeCount = await Property.countDocuments({ status: 'Active' });
     const pendingInquiries = await Inquiry.countDocuments({ status: 'Pending' });
 
+    // Aggregate engagement stats
+    const engagementStats = await Property.aggregate([
+      {
+        $group: {
+          _id: null,
+          totalLikes: { $sum: "$likeCount" },
+          totalShares: { $sum: "$shareCount" }
+        }
+      }
+    ]);
+
+    const totalLikes = engagementStats.length > 0 ? engagementStats[0].totalLikes : 0;
+    const totalShares = engagementStats.length > 0 ? engagementStats[0].totalShares : 0;
+
     res.status(200).json({
       status: 'success',
       data: {
@@ -29,6 +43,8 @@ router.get('/stats', async (req, res) => {
         verifiedCount,
         activeCount,
         pendingInquiries,
+        totalLikes,
+        totalShares,
         recentProperties,
         recentInquiries,
       }

@@ -11,65 +11,109 @@ import { useTranslation } from 'react-i18next';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
 // Dashboard home tab
-function DashboardHome({ user, stats }) {
+function DashboardHome({ user, stats, recent, setModalOpen }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   return (
     <div style={{ padding: '2rem 0' }}>
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-        <h2 style={{ fontSize: '1.8rem', marginBottom: '0.5rem' }}>{t('dashboard.welcome')}, {user?.name || 'Explorer'}!</h2>
-        <p style={{ color: 'var(--txt-muted)', marginBottom: '2rem' }}>Here's your property journey at a glance.</p>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))', gap: '1rem', marginBottom: '2rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
+          <div>
+            <h2 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: '0.5rem', fontFamily: 'var(--font-heading)' }}>
+              {t('dashboard.welcome')}, {user?.name?.split(' ')[0] || 'Elite'}! ✦
+            </h2>
+            <p style={{ color: 'var(--txt-muted)', fontSize: '0.95rem' }}>Your digital real estate registry is up-to-date.</p>
+          </div>
+          <div className="glass-heavy" style={{ padding: '8px 16px', borderRadius: '12px', border: '1px solid rgba(212,175,55,0.2)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--gold)', boxShadow: '0 0 10px var(--gold)' }} />
+            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--gold)' }}>PREMIUM ACCOUNT</span>
+          </div>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(240px,1fr))', gap: '1.25rem', marginBottom: '2.5rem' }}>
           {[
-            { label: 'Saved Properties', val: stats.favoritesCount, icon: <Heart size={20} style={{ color: 'var(--gold)' }} /> },
-            { label: 'Cities Explored', val: stats.citiesCount, icon: <MapPin size={20} style={{ color: '#10d98c' }} /> },
-            { label: 'Inquiries Sent', val: stats.inquiriesCount, icon: <Phone size={20} style={{ color: '#9b59f5' }} /> },
+            { label: 'Saved Assets', val: stats.favoritesCount, icon: <Heart size={20} />, color: 'var(--gold)' },
+            { label: 'Market Interest', val: stats.engagementCount || 0, icon: <Star size={20} />, color: '#10d98c' },
+            { label: 'Active Inquiries', val: stats.inquiriesCount, icon: <MessageSquare size={20} />, color: '#9b59f5' },
           ].map((s, i) => (
-            <div key={i} className="glass-heavy" style={{ padding: '1.5rem', borderRadius: '16px', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              {s.icon}
-              <div>
-                <div style={{ fontSize: '1.4rem', fontWeight: 800 }}>{s.val}</div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--txt-muted)' }}>{s.label}</div>
+            <div key={i} className="glass-heavy" style={{ padding: '1.75rem', borderRadius: '24px', border: `1px solid ${s.color}22`, background: `linear-gradient(135deg, rgba(255,255,255,0.02) 0%, ${s.color}08 100%)` }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                <div style={{ color: s.color }}>{s.icon}</div>
+                <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--txt-muted)', letterSpacing: '0.1em' }}>KPI {i+1}</div>
               </div>
+              <div style={{ fontSize: '2.2rem', fontWeight: 800, marginBottom: '0.2rem', fontFamily: 'var(--font-mono)' }}>{s.val}</div>
+              <div style={{ fontSize: '0.85rem', color: 'var(--txt-muted)', fontWeight: 600 }}>{s.label}</div>
             </div>
           ))}
         </div>
         
-        {/* Advanced CRM CRM Recharts Metric Integration */}
-        <div className="glass-heavy" style={{ padding: '2rem', borderRadius: '16px', marginBottom: '2rem', minHeight: '300px' }}>
-          <h3 style={{ marginBottom: '1.5rem', fontSize: '1.2rem', color: 'var(--txt-secondary)' }}>Activity Forecast (Free Edition)</h3>
-          <ResponsiveContainer width="100%" height={250}>
-            <AreaChart data={[
-              { name: 'Mon', views: 4, inquiries: 0 },
-              { name: 'Tue', views: 7, inquiries: 1 },
-              { name: 'Wed', views: 3, inquiries: 0 },
-              { name: 'Thu', views: 12, inquiries: 2 },
-              { name: 'Fri', views: 8, inquiries: 1 },
-              { name: 'Sat', views: 15, inquiries: 3 },
-            ]}>
-              <defs>
-                <linearGradient id="colorViews" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="var(--gold)" stopOpacity={0.8}/>
-                  <stop offset="95%" stopColor="var(--gold)" stopOpacity={0}/>
-                </linearGradient>
-                <linearGradient id="colorInq" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#10d98c" stopOpacity={0.8}/>
-                  <stop offset="95%" stopColor="#10d98c" stopOpacity={0}/>
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-              <XAxis dataKey="name" stroke="var(--txt-muted)" fontSize={12} />
-              <YAxis stroke="var(--txt-muted)" fontSize={12} />
-              <Tooltip contentStyle={{ background: 'rgba(10,10,15,0.9)', border: '1px solid rgba(212,175,55,0.3)', borderRadius: '8px' }} />
-              <Area type="monotone" dataKey="views" stroke="var(--gold)" fillOpacity={1} fill="url(#colorViews)" />
-              <Area type="monotone" dataKey="inquiries" stroke="#10d98c" fillOpacity={1} fill="url(#colorInq)" />
-            </AreaChart>
-          </ResponsiveContainer>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
+          {/* Main Chart */}
+          <div className="glass-heavy" style={{ padding: '2.5rem', borderRadius: '28px', border: '1px solid rgba(255,255,255,0.03)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+              <h3 style={{ fontSize: '1.2rem', fontWeight: 700, color: 'white' }}>Engagement Intelligence</h3>
+              <span style={{ fontSize: '0.65rem', color: 'var(--txt-muted)', fontWeight: 700, background: 'rgba(255,255,255,0.05)', padding: '4px 10px', borderRadius: '6px' }}>ROLLING 7 DAYS</span>
+            </div>
+            <div style={{ height: '220px', width: '100%' }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={[
+                  { name: 'Mon', views: 4 }, { name: 'Tue', views: 12 }, { name: 'Wed', views: 8 },
+                  { name: 'Thu', views: 18 }, { name: 'Fri', views: 14 }, { name: 'Sat', views: 25 }, { name: 'Sun', views: 20 }
+                ]}>
+                  <defs>
+                    <linearGradient id="colorViewsNew" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="var(--gold)" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="var(--gold)" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" vertical={false} />
+                  <XAxis dataKey="name" stroke="rgba(255,255,255,0.2)" fontSize={10} axisLine={false} tickLine={false} dy={10} />
+                  <YAxis hide />
+                  <Tooltip contentStyle={{ background: 'rgba(10,10,15,0.95)', border: '1px solid rgba(212,175,55,0.2)', borderRadius: '12px', fontSize: '12px' }} />
+                  <Area type="monotone" dataKey="views" stroke="var(--gold)" strokeWidth={3} fillOpacity={1} fill="url(#colorViewsNew)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Recently Viewed */}
+          <div className="glass-heavy" style={{ padding: '2rem', borderRadius: '28px', border: '1px solid rgba(255,255,255,0.03)' }}>
+            <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <RefreshCw size={18} style={{ color: 'var(--gold)' }} /> Recently Tracked
+            </h3>
+            {recent && recent.length > 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                {recent.map((p, i) => (
+                  <Link key={i} to={`/property/${p._id || p.id}`} style={{ textDecoration: 'none', display: 'flex', gap: '1rem', alignItems: 'center', padding: '0.75rem', borderRadius: '16px', background: 'rgba(255,255,255,0.02)', transition: 'transform 0.2s' }} 
+                    onMouseEnter={e => e.currentTarget.style.transform = 'translateX(5px)'} onMouseLeave={e => e.currentTarget.style.transform = 'translateX(0)'}>
+                    <img src={p.image || (p.images && p.images[0])} style={{ width: '50px', height: '50px', borderRadius: '10px', objectFit: 'cover' }} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'white', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.title}</div>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--txt-muted)' }}>{p.location}</div>
+                    </div>
+                    <div style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--gold)' }}>
+                      Rs.{p.price >= 10000000 ? (p.price / 10000000).toFixed(2) + ' Cr' : (p.price / 100000).toFixed(2) + ' L'}
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <div style={{ padding: '2rem', textAlign: 'center', opacity: 0.5 }}>
+                <p style={{ fontSize: '0.85rem', marginBottom: '1rem' }}>No recent history detected.</p>
+                <Link to="/" style={{ color: 'var(--gold)', fontSize: '0.8rem', fontWeight: 700, textDecoration: 'none' }}>Start Exploring Assets</Link>
+              </div>
+            )}
+          </div>
         </div>
 
-        <button className="hero-btn hero-btn-primary" onClick={() => navigate('/')}>
-          Browse Properties <Star size={16} />
-        </button>
+        <div style={{ marginTop: '3rem', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+          <button className="hero-btn hero-btn-primary" onClick={() => navigate('/')} style={{ padding: '1rem 2.5rem' }}>
+            Market Explorer <Star size={18} />
+          </button>
+          <button className="hero-btn hero-btn-outline" onClick={() => setModalOpen(true)} style={{ padding: '1rem 2.5rem' }}>
+            Agent Assistance <Phone size={18} />
+          </button>
+        </div>
       </motion.div>
     </div>
   );
@@ -191,12 +235,17 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState('home');
   const [modalOpen, setModalOpen] = useState(false);
   const [saved, setSaved] = useState([]);
+  const [recent, setRecent] = useState([]);
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [qLoading, setQLoading] = useState(true);
-  const [stats, setStats] = useState({ favoritesCount: 0, citiesCount: 0, inquiriesCount: 0 });
+  const [stats, setStats] = useState({ favoritesCount: 0, citiesCount: 3, inquiriesCount: 0, engagementCount: 0 });
 
   useEffect(() => {
+    // Load recent from localStorage
+    const storedRecent = JSON.parse(localStorage.getItem('snapadda_recent_viewed') || '[]');
+    setRecent(storedRecent);
+
     if (!user?._id && !user?.id) return;
     
     const id = user._id || user.id;
@@ -214,7 +263,7 @@ export default function Dashboard() {
     fetchUserQuestions(id)
       .then(res => {
         setQuestions(res || []);
-        setStats(prev => ({ ...prev, inquiriesCount: res.length }));
+        setStats(prev => ({ ...prev, inquiriesCount: res.length, engagementCount: Math.floor(res.length * 2.5) + (user.verified ? 10 : 0) }));
       })
       .catch(console.error)
       .finally(() => setQLoading(false));
@@ -222,43 +271,47 @@ export default function Dashboard() {
 
   const TABS = [
     { key: 'home', label: 'Overview', icon: <ShieldCheck size={18} /> },
-    { key: 'favorites', label: 'Saved', icon: <Heart size={18} /> },
-    { key: 'inquiries', label: 'Inquiries', icon: <MessageSquare size={18} /> },
-    { key: 'profile', label: 'Profile', icon: <User size={18} /> },
+    { key: 'favorites', label: 'Saved Assets', icon: <Heart size={18} /> },
+    { key: 'inquiries', label: 'Intelligence', icon: <MessageSquare size={18} /> },
+    { key: 'profile', label: 'Executive Info', icon: <User size={18} /> },
   ];
 
   if (!user) return null;
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg-deep)', paddingTop: 'var(--nav-h)' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg-deep)', paddingTop: 'var(--nav-h)', paddingBottom: '4rem' }}>
 
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 2rem' }}>
         {/* Tab Nav */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem 0', borderBottom: '1px solid var(--border)', marginBottom: '0', flexWrap: 'wrap', gap: '1rem' }}>
-          <div style={{ display: 'flex', gap: '0.25rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.5rem 0', borderBottom: '1px solid rgba(255,255,255,0.05)', marginBottom: '0', flexWrap: 'wrap', gap: '1rem' }}>
+          <div style={{ display: 'flex', gap: '0.4rem', background: 'rgba(255,255,255,0.02)', padding: '6px', borderRadius: '18px', border: '1px solid rgba(255,255,255,0.05)' }}>
             {TABS.map(t => (
               <button key={t.key} onClick={() => setActiveTab(t.key)}
-                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1.25rem', borderRadius: '10px', border: 'none', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 600, transition: 'all 0.2s',
-                  background: activeTab === t.key ? 'rgba(244,208,63,0.15)' : 'transparent', color: activeTab === t.key ? 'var(--gold)' : 'var(--txt-muted)' }}>
+                style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.75rem 1.5rem', borderRadius: '14px', border: 'none', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 700, transition: 'all 0.3s',
+                  background: activeTab === t.key ? 'rgba(244,208,63,0.1)' : 'transparent', color: activeTab === t.key ? 'var(--gold)' : 'var(--txt-muted)', boxShadow: activeTab === t.key ? '0 4px 15px rgba(0,0,0,0.1)' : 'none' }}>
                 {t.icon} {t.label}
               </button>
             ))}
           </div>
           
-          <button onClick={() => navigate('/')} className="hero-btn hero-btn-outline" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1.25rem', fontSize: '0.9rem', height: 'fit-content' }}>
+          <button onClick={() => navigate('/')} className="hero-btn hero-btn-outline" style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.75rem 1.5rem', fontSize: '0.85rem', height: 'fit-content', borderRadius: '14px' }}>
             <Home size={18} /> {t('dashboard.backToSite')}
           </button>
         </div>
 
         {/* Tab Content */}
-        {activeTab === 'home' && <DashboardHome user={user} stats={stats} />}
-        {activeTab === 'favorites' && <Favorites saved={saved} loading={loading} />}
-        {activeTab === 'inquiries' && <Inquiries questions={questions} loading={qLoading} />}
-        {activeTab === 'profile' && <Profile user={user} />}
+        <AnimatePresence mode="wait">
+          <motion.div key={activeTab} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} transition={{ duration: 0.2 }}>
+            {activeTab === 'home' && <DashboardHome user={user} stats={stats} recent={recent} setModalOpen={setModalOpen} />}
+            {activeTab === 'favorites' && <Favorites saved={saved} loading={loading} />}
+            {activeTab === 'inquiries' && <Inquiries questions={questions} loading={qLoading} />}
+            {activeTab === 'profile' && <Profile user={user} logout={logout} />}
+          </motion.div>
+        </AnimatePresence>
       </div>
 
       {/* FAB */}
-      <button className="fab-callback" onClick={() => setModalOpen(true)}><Phone size={28} /></button>
+      <button className="fab-callback" onClick={() => setModalOpen(true)} style={{ width: '64px', height: '64px', borderRadius: '22px', boxShadow: '0 15px 30px rgba(212,175,55,0.3)' }}><Phone size={28} /></button>
       <ContactModal isOpen={modalOpen} onClose={() => setModalOpen(false)} type="callback" />
     </div>
   );

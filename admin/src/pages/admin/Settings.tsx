@@ -3,16 +3,40 @@ import {
   MessageSquare, CheckCircle, AlertCircle, Phone,
   RefreshCw, Shield, Camera, Lock, Eye, EyeOff,
   User, KeyRound, Palette, Image as ImageIcon, Sparkles,
-  Trash2, UploadCloud, Mail, MapPin, Activity, Link
+  Trash2, UploadCloud, Mail, MapPin, Activity, Link, X
 } from 'lucide-react';
 import {
   fetchWhatsappSettings, saveWhatsappSettings,
   updateAdminProfile, changeAdminPassword, uploadMedia,
-  fetchSetting, saveSetting
+  fetchSetting, saveSetting 
 } from '../../services/api';
 import { useAdminAuth } from '../../contexts/AdminAuthContext';
+import { motion, AnimatePresence } from 'framer-motion';
 
 type SaveStatus = 'idle' | 'saving' | 'success' | 'error';
+
+const Toast = ({ message, type, onClose }: { message: string, type: 'success' | 'error', onClose: () => void }) => (
+  <motion.div 
+    initial={{ opacity: 0, y: 50, x: '-50%' }}
+    animate={{ opacity: 1, y: 0, x: '-50%' }}
+    exit={{ opacity: 0, y: 20, x: '-50%' }}
+    style={{ 
+      position: 'fixed', bottom: '30px', left: '50%', zIndex: 9999,
+      background: type === 'success' ? 'var(--emerald)' : 'var(--rose)',
+      color: type === 'success' ? '#000' : '#fff',
+      padding: '12px 24px', borderRadius: '14px', fontWeight: 800,
+      boxShadow: '0 10px 30px rgba(0,0,0,0.3)',
+      display: 'flex', alignItems: 'center', gap: '12px',
+      fontSize: '0.9rem', letterSpacing: '0.02em',
+      cursor: 'pointer'
+    }}
+    onClick={onClose}
+  >
+    {type === 'success' ? <CheckCircle size={18} /> : <AlertCircle size={18} />}
+    <span style={{ flex: 1 }}>{message}</span>
+    <X size={14} style={{ opacity: 0.5 }} />
+  </motion.div>
+);
 
 interface OnboardingQuestion {
   id: string;
@@ -54,6 +78,14 @@ const AdminSettings = () => {
   const [profileStatus, setProfileStatus] = useState<SaveStatus>('idle');
   const [avatarUploading, setAvatarUploading] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
+
+  const [toast, setToast] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
+  const [isDataLoading, setIsDataLoading] = useState(true);
+
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 4000);
+  };
 
   // Password state
   const [currentPw, setCurrentPw] = useState('');
@@ -119,87 +151,65 @@ const AdminSettings = () => {
 
   // Load data
   useEffect(() => {
-    if (adminUser) { setProfileName(adminUser.name || ''); setProfileAvatar(adminUser.avatar || ''); }
+    const loadAll = async () => {
+      setIsDataLoading(true);
+      try {
+        if (adminUser) { setProfileName(adminUser.name || ''); setProfileAvatar(adminUser.avatar || ''); }
+        
+        // Parallel fetching for performance
+        const results = await Promise.allSettled([
+          fetchWhatsappSettings(),
+          fetchSetting('appearance'),
+          fetchSetting('support_info'),
+          fetchSetting('hero_content'),
+          fetchSetting('site_stats'),
+          fetchSetting('seo'),
+          fetchSetting('onboarding_questions')
+        ]);
+
+        const [wa, app, sup, hero, stats, seo, quest] = results.map(r => r.status === 'fulfilled' ? r.value : null);
+
+        if (wa?.data) { setWaNumber(wa.data.number || ''); setWaMessage(wa.data.message || ''); }
+        if (app?.data) {
+          setBgUrl(app.data.bgUrl || '');
+          setThemeMode(app.data.themeMode || 'standard');
+          setPrimaryColor(app.data.primaryColor || '#e8b84b');
+          setEnable3D(app.data.enable3D ?? true);
+          setGlassIntensity(app.data.glassIntensity || 'medium');
+        }
+        if (sup?.data) {
+          setSupportPhone(sup.data.phone || '');
+          setSupportEmail(sup.data.email || '');
+          setSupportAddress(sup.data.address || '');
+          setSupportHours(sup.data.workingHours || '');
+        }
+        if (hero?.data) {
+          setHeroEyebrow(hero.data.eyebrow || '');
+          setHeroTitle(hero.data.title || '');
+          setHeroSubtitle(hero.data.subtitle || '');
+          setHeroCTA1Text(hero.data.cta1Text || '');
+          setHeroCTA1Url(hero.data.cta1Url || '');
+          setHeroCTA2Text(hero.data.cta2Text || '');
+          setHeroCTA2Url(hero.data.cta2Url || '');
+        }
+        if (stats?.data && Array.isArray(stats.data)) setSiteStats(stats.data);
+        if (seo?.data) {
+          setSeoTitle(seo.data.title || '');
+          setSeoDescription(seo.data.description || '');
+          setSeoKeywords(seo.data.keywords || '');
+          setSeoImageUrl(seo.data.image || '');
+          setSeoCanonicalUrl(seo.data.canonical || '');
+          setSeoRobots(seo.data.robots || 'index, follow');
+        }
+        if (quest?.data && Array.isArray(quest.data) && quest.data.length > 0) setOnboardingQuestions(quest.data);
+        
+      } finally {
+        setIsDataLoading(false);
+      }
+    };
+
+    loadAll();
   }, [adminUser]);
-
-  useEffect(() => {
-    // Load WhatsApp
-    fetchWhatsappSettings()
-      .then(d => { if (d?.data) { setWaNumber(d.data.number || ''); setWaMessage(d.data.message || ''); }})
-      .catch(console.error);
-
-    // Load Appearance
-    fetchSetting('appearance')
-      .then(d => {
-        if (d?.data) {
-          setBgUrl(d.data.bgUrl || '');
-          setThemeMode(d.data.themeMode || 'standard');
-          setPrimaryColor(d.data.primaryColor || '#e8b84b');
-          setEnable3D(d.data.enable3D ?? true);
-          setGlassIntensity(d.data.glassIntensity || 'medium');
-        }
-      })
-      .catch(console.error);
-
-    // Load Support Info
-    fetchSetting('support_info')
-      .then(d => {
-        if (d?.data) {
-          setSupportPhone(d.data.phone || '');
-          setSupportEmail(d.data.email || '');
-          setSupportAddress(d.data.address || '');
-          setSupportHours(d.data.workingHours || '');
-        }
-      })
-      .catch(console.error);
-
-    // Load Hero Content
-    fetchSetting('hero_content')
-      .then(d => {
-        if (d?.data) {
-          setHeroEyebrow(d.data.eyebrow || '');
-          setHeroTitle(d.data.title || '');
-          setHeroSubtitle(d.data.subtitle || '');
-          setHeroCTA1Text(d.data.cta1Text || '');
-          setHeroCTA1Url(d.data.cta1Url || '');
-          setHeroCTA2Text(d.data.cta2Text || '');
-          setHeroCTA2Url(d.data.cta2Url || '');
-        }
-      })
-      .catch(console.error);
-
-    // Load Site Stats
-    fetchSetting('site_stats')
-      .then(d => {
-        if (d?.data && Array.isArray(d.data)) {
-          setSiteStats(d.data);
-        }
-      })
-      .catch(console.error);
-
-    fetchSetting('seo')
-      .then(d => {
-        if (d?.data) {
-          setSeoTitle(d.data.title || 'SnapAdda — Plots, Apartments, Villas & Agriculture Land in Andhra Pradesh');
-          setSeoDescription(d.data.description || 'Buy verified plots, apartments, villas, houses and agriculture land across Amaravati, Vijayawada, Guntur, Mangalagiri, Tenali and all Andhra Pradesh districts.');
-          setSeoKeywords(d.data.keywords || 'SnapAdda, Andhra Pradesh real estate, AP plots, Vijayawada apartments, Amaravati land, Guntur villas, agriculture land, CRDA approved properties');
-          setSeoImageUrl(d.data.image || 'https://snapadda.com/favicon.svg');
-          setSeoCanonicalUrl(d.data.canonical || 'https://snapadda.com/');
-          setSeoRobots(d.data.robots || 'index, follow');
-        }
-      })
-      .catch(console.error);
-
-    fetchSetting('onboarding_questions')
-      .then(d => {
-        if (d?.data && Array.isArray(d.data) && d.data.length > 0) {
-          setOnboardingQuestions(d.data);
-        }
-      })
-      .catch(() => {
-        // keep defaults if there is no custom onboarding config yet
-      });
-  }, []);
 
   /* ── Handlers ── */
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -237,8 +247,13 @@ const AdminSettings = () => {
       const res = await updateAdminProfile(profileName, profileAvatar);
       updateAdminUser({ name: res.user.name, avatar: res.user.avatar });
       setProfileStatus('success');
+      showToast('Profile updated successfully!');
       setTimeout(() => setProfileStatus('idle'), 3000);
-    } catch { setProfileStatus('error'); setTimeout(() => setProfileStatus('idle'), 4000); }
+    } catch { 
+      setProfileStatus('error'); 
+      showToast('Profile update failed', 'error');
+      setTimeout(() => setProfileStatus('idle'), 4000); 
+    }
   };
 
   const handlePasswordChange = async (ev: React.FormEvent) => {
@@ -250,9 +265,15 @@ const AdminSettings = () => {
     try {
       await changeAdminPassword(currentPw, newPw);
       setPwStatus('success');
+      showToast('Password changed successfully!');
       setCurrentPw(''); setNewPw(''); setConfirmPw('');
       setTimeout(() => setPwStatus('idle'), 3000);
-    } catch (err: any) { setPwError(err.message || 'Failed'); setPwStatus('error'); setTimeout(() => setPwStatus('idle'), 4000); }
+    } catch (err: any) { 
+      setPwError(err.message || 'Failed'); 
+      setPwStatus('error'); 
+      showToast('Password change failed', 'error');
+      setTimeout(() => setPwStatus('idle'), 4000); 
+    }
   };
 
   const handleWaSave = async (ev: React.FormEvent) => {
@@ -261,8 +282,13 @@ const AdminSettings = () => {
     try {
       await saveWhatsappSettings(waNumber, waMessage);
       setWaStatus('success');
+      showToast('WhatsApp settings saved!');
       setTimeout(() => setWaStatus('idle'), 3000);
-    } catch { setWaStatus('error'); setTimeout(() => setWaStatus('idle'), 4000); }
+    } catch { 
+      setWaStatus('error'); 
+      showToast('Failed to save WhatsApp settings', 'error');
+      setTimeout(() => setWaStatus('idle'), 4000); 
+    }
   };
 
   const handleAppearanceSave = async (ev: React.FormEvent) => {
@@ -271,8 +297,13 @@ const AdminSettings = () => {
     try {
       await saveSetting('appearance', { bgUrl, themeMode, primaryColor, enable3D, glassIntensity });
       setAppearanceStatus('success');
+      showToast('Appearance settings live!');
       setTimeout(() => setAppearanceStatus('idle'), 3000);
-    } catch { setAppearanceStatus('error'); setTimeout(() => setAppearanceStatus('idle'), 4000); }
+    } catch { 
+      setAppearanceStatus('error'); 
+      showToast('Failed to save appearance', 'error');
+      setTimeout(() => setAppearanceStatus('idle'), 4000); 
+    }
   };
 
   const handleSupportSave = async (ev: React.FormEvent) => {
@@ -417,7 +448,17 @@ const AdminSettings = () => {
   };
 
   return (
-    <div style={{ display:'flex', flexDirection:'column', gap:'1.5rem', maxWidth:'720px', paddingBottom:'4rem' }}>
+    <div style={{ display:'flex', flexDirection:'column', gap:'1.5rem', maxWidth:'720px', paddingBottom:'4rem', position: 'relative' }}>
+      
+      <AnimatePresence>
+        {toast && (
+          <Toast 
+            message={toast.message} 
+            type={toast.type} 
+            onClose={() => setToast(null)} 
+          />
+        )}
+      </AnimatePresence>
 
       {/* Page header */}
       <div>
@@ -426,13 +467,20 @@ const AdminSettings = () => {
         <p style={{ fontSize:'0.82rem', color:'var(--text-muted)' }}>Manage your profile, security, and platform appearance.</p>
       </div>
 
-      <div className="scroll-x-mobile" style={{ 
-        display:'flex', 
-        gap:'0.75rem', 
-        marginTop:'1rem', 
-        marginBottom:'1.5rem',
-        paddingBottom: '0.5rem'
-      }}>
+      {isDataLoading ? (
+        <div style={{ padding: '4rem 0', textAlign: 'center', color: 'var(--text-muted)' }}>
+          <RefreshCw size={32} style={{ animation: 'spin 2s linear infinite', marginBottom: '1rem', opacity: 0.3 }} />
+          <div style={{ fontSize: '0.8rem', fontWeight: 700, letterSpacing: '0.1em' }}>SYNCHRONIZING CORE SETTINGS...</div>
+        </div>
+      ) : (
+        <>
+          <div className="scroll-x-mobile" style={{ 
+            display:'flex', 
+            gap:'0.75rem', 
+            marginTop:'1rem', 
+            marginBottom:'1.5rem',
+            paddingBottom: '0.5rem'
+          }}>
         {[
           { key: 'appearance', label: 'Appearance' },
           { key: 'hero', label: 'Hero & Home' },
@@ -879,6 +927,8 @@ const AdminSettings = () => {
       </div>
       )}
 
+        </>
+      )}
     </div>
   );
 };

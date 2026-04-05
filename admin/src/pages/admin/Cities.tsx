@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '../../components/ui/Button';
 import { fetchCities, createCity, updateCity, deleteCity, uploadMedia } from '../../services/api';
-import { Trash2, Edit3, Plus, X, Camera } from 'lucide-react';
+import { Trash2, Edit3, Plus, X } from 'lucide-react';
+import { MediaManager } from '../../components/ui/MediaManager';
 
 const AdminCities = () => {
   const [cities, setCities] = useState<any[]>([]);
@@ -10,8 +11,8 @@ const AdminCities = () => {
   const [editingCity, setEditingCity] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
-  const [imagePreview, setImagePreview] = useState<string>('');
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [currentImageUrl, setCurrentImageUrl] = useState<string>('');
+  const [newImageFile, setNewImageFile] = useState<File | null>(null);
 
   const loadCities = async () => {
     try {
@@ -32,7 +33,7 @@ const AdminCities = () => {
 
   const handleEdit = (city: any) => {
     setEditingCity(city);
-    setImagePreview(city.image || '');
+    setCurrentImageUrl(city.image || '');
     setIsEditing(true);
     setIsAdding(true);
   };
@@ -56,13 +57,13 @@ const AdminCities = () => {
 
     try {
       // Handle Image Upload
-      if (selectedFile) {
-        const uploadResult = await uploadMedia([selectedFile]);
+      if (newImageFile) {
+        const uploadResult = await uploadMedia([newImageFile]);
         if (uploadResult.status === 'success' && uploadResult.data.length > 0) {
           cityData.image = uploadResult.data[0];
         }
-      } else if (isEditing) {
-        cityData.image = imagePreview; // Keep existing if not changed
+      } else {
+        cityData.image = currentImageUrl; // Keep existing or empty if removed
       }
 
       if (isEditing && editingCity) {
@@ -75,8 +76,8 @@ const AdminCities = () => {
       setIsAdding(false);
       setIsEditing(false);
       setEditingCity(null);
-      setSelectedFile(null);
-      setImagePreview('');
+      setNewImageFile(null);
+      setCurrentImageUrl('');
       loadCities();
     } catch (err) {
       alert('Failed to save region');
@@ -85,12 +86,9 @@ const AdminCities = () => {
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setSelectedFile(file);
-      setImagePreview(URL.createObjectURL(file));
-    }
+  const handleMediaChange = (urls: string[], files: File[]) => {
+    setCurrentImageUrl(urls.length > 0 ? urls[0] : '');
+    setNewImageFile(files.length > 0 ? files[0] : null);
   };
 
   return (
@@ -102,8 +100,8 @@ const AdminCities = () => {
           if (isEditing) {
             setIsEditing(false);
             setEditingCity(null);
-            setImagePreview('');
-            setSelectedFile(null);
+            setCurrentImageUrl('');
+            setNewImageFile(null);
           }
         }}>
           {isAdding ? <X size={18} /> : <Plus size={18} />}
@@ -128,49 +126,20 @@ const AdminCities = () => {
             </div>
             <div style={{ gridColumn: '1 / -1' }}>
               <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Region Cover Image</label>
-              <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-                <div style={{ 
-                  width: '120px', 
-                  height: '80px', 
-                  borderRadius: '8px', 
-                  backgroundColor: 'var(--bg-primary)', 
-                  border: '1px solid var(--border-subtle)',
-                  overflow: 'hidden',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
-                  {imagePreview ? (
-                    <img src={imagePreview} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  ) : (
-                    <Camera size={24} color="var(--text-muted)" />
-                  )}
-                </div>
-                <div style={{ flex: 1 }}>
-                  <input 
-                    type="file" 
-                    accept="image/*" 
-                    onChange={handleFileChange}
-                    style={{ 
-                      width: '100%', 
-                      padding: '10px', 
-                      borderRadius: '4px', 
-                      backgroundColor: 'var(--bg-primary)', 
-                      border: '1px solid var(--border-subtle)', 
-                      color: 'white' 
-                    }} 
-                  />
-                  <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>Recommended: 800x600px landscape image.</p>
-                </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '8px' }}>
+                <MediaManager 
+                  existingUrls={currentImageUrl ? [currentImageUrl] : []}
+                  maxFiles={1}
+                  onImagesChange={(urls, files) => handleMediaChange(urls, files)}
+                />
               </div>
             </div>
             <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'flex-end', gap: 'var(--spacing-sm)' }}>
               <Button type="button" variant="ghost" onClick={() => {
-                setIsAdding(false);
                 setIsEditing(false);
                 setEditingCity(null);
-                setImagePreview('');
-                setSelectedFile(null);
+                setCurrentImageUrl('');
+                setNewImageFile(null);
               }}>Cancel</Button>
               <Button type="submit" disabled={isUploading}>{isUploading ? 'Uploading...' : (isEditing ? 'Update Region' : 'Save Region')}</Button>
             </div>

@@ -131,7 +131,7 @@ const AdminEngagement = () => {
       </div>
 
       {/* TABLE */}
-      <div style={{ background: 'var(--bg-glass)', borderRadius: '24px', border: '1px solid var(--border)', overflow: 'hidden' }}>
+      <div className="table-responsive" style={{ background: 'var(--bg-glass)', borderRadius: '24px', border: '1px solid var(--border)', overflow: 'hidden' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid var(--border)' }}>

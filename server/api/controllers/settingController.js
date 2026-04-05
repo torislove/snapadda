@@ -22,8 +22,22 @@ export const updateSetting = async (req, res) => {
   try {
     const { key } = req.params;
     const { value } = req.body;
+
+    if (value === undefined || value === null) {
+      return res.status(400).json({ status: 'error', message: 'Value is required' });
+    }
+
+    // Key-specific validation
+    if (key === 'whatsapp_settings') {
+      if (value.number && !/^\d+$/.test(value.number.replace(/\D/g, ''))) {
+        return res.status(400).json({ status: 'error', message: 'WhatsApp number must be numeric' });
+      }
+    }
+
+    if (key === 'hero_content') {
+      if (!value.title) return res.status(400).json({ status: 'error', message: 'Hero title is required' });
+    }
     
-    // Find setting and update it, or create it if it doesn't exist (upsert)
     const setting = await SiteSetting.findOneAndUpdate(
       { key },
       { value },

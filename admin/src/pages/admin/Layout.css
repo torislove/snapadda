@@ -415,6 +415,19 @@
   .mobile-only { display: block !important; }
 }
 
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: var(--radius-md);
+}
+
+.table-responsive table {
+  width: 100%;
+  min-width: 700px; /* Forces scrolling on small devices instead of squishing */
+}
+
+
 @media (max-width: 640px) {
   .topbar-time, .topbar-status-text, .topbar-divider { display: none; }
   .sidebar-badge { display: none; }

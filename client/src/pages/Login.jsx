@@ -11,10 +11,10 @@ import Logo from '../components/Logo';
 
 export default function Login() {
   const { t } = useTranslation();
-  const { loginGoogle } = useAuth();
+  const { loginGoogle, loginGuest } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const from = location.state?.from || '/';
+  const from = location.state?.from?.pathname || location.state?.from || '/';
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -60,10 +60,11 @@ export default function Login() {
         }}
         initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}
       >
-        <div style={{ marginBottom: '2.5rem' }}>
-          <Logo size={56} showText />
-          <h1 style={{ fontSize: '1.75rem', fontWeight: 800, marginTop: '1.5rem', color: 'white' }}>{t('auth.welcome')}</h1>
-          <p style={{ color: 'var(--txt-muted)', marginTop: '0.5rem', fontSize: '0.9rem' }}>
+        <div style={{ marginBottom: '3rem', position: 'relative' }}>
+          <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '80px', height: '80px', background: 'var(--gold)', filter: 'blur(40px)', opacity: 0.1, zIndex: -1 }}></div>
+          <Logo size={64} showText={true} textSize="1.3rem" />
+          <h1 style={{ fontSize: '2rem', fontWeight: 900, marginTop: '2rem', color: '#fff', letterSpacing: '-0.03em' }}>{t('auth.welcome')}</h1>
+          <p style={{ color: 'var(--txt-muted)', marginTop: '0.75rem', fontSize: '0.95rem', fontWeight: 500 }}>
             {t('auth.subtitle')}
           </p>
         </div>
@@ -74,21 +75,47 @@ export default function Login() {
           </div>
         )}
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <div style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
-            <GoogleLogin
-              onSuccess={handleGoogleSuccess}
-              onError={() => setError('Google Login Failed')}
-              useOneTap
-              theme="filled_black"
-              shape="pill"
-              text="continue_with"
-              width="100%"
-            />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          <div style={{ 
+            width: '100%', 
+            padding: '4px', 
+            background: 'rgba(255, 255, 255, 0.03)', 
+            borderRadius: 'var(--r-full)', 
+            border: '1px solid rgba(255,255,255,0.08)',
+            position: 'relative',
+            overflow: 'hidden'
+          }}>
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '1px', background: 'linear-gradient(90deg, transparent, var(--gold), transparent)', opacity: 0.5 }}></div>
+            <div style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
+              <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={() => setError('Google Login Failed')}
+                useOneTap
+                theme="filled_black"
+                shape="pill"
+                size="large"
+                logo_alignment="center"
+              />
+            </div>
           </div>
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', opacity: 0.5 }}>
+            <div style={{ flex: 1, height: '1px', background: 'var(--border-light)' }}></div>
+            <span style={{ fontSize: '0.75rem', color: 'var(--txt-secondary)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Secure Access</span>
+            <div style={{ flex: 1, height: '1px', background: 'var(--border-light)' }}></div>
+          </div>
+          
+          <button 
+            type="button"
+            onClick={() => { loginGuest(); navigate(from, { replace: true }); }}
+            className="hero-btn hero-btn-glass" 
+            style={{ width: '100%', padding: '0.85rem', display: 'flex', justifyContent: 'center', fontSize: '0.9rem' }}
+          >
+            Continue as Guest
+          </button>
         </div>
 
-        <p style={{ textAlign: 'center', marginTop: '2.5rem', fontSize: '0.75rem', color: 'var(--txt-muted)', lineHeight: 1.5 }}>
+        <p style={{ textAlign: 'center', marginTop: '3rem', fontSize: '0.8rem', color: 'var(--txt-muted)', lineHeight: 1.6 }}>
           {t('auth.terms')} <br />
           <span style={{ color: 'var(--gold)', cursor: 'pointer' }}>{t('auth.tos')}</span> and <span style={{ color: 'var(--gold)', cursor: 'pointer' }}>{t('auth.privacy')}</span>.
         </p>

@@ -4,10 +4,11 @@ import {
   deletePromotion, reorderPromotions, uploadMedia
 } from '../../services/api';
 import {
-  Plus, Trash2, Loader2, Image as ImageIcon,
+  Plus, Trash2, Loader2,
   Sparkles,
   Zap, GripVertical, Eye, EyeOff, X, CheckCircle, AlertCircle
 } from 'lucide-react';
+import { MediaManager } from '../../components/ui/MediaManager';
 
 /* ── Color map ── */
 const COLOR_PRESETS = [
@@ -214,7 +215,6 @@ export const Promotions = () => {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [uploadingImage, setUploadingImage] = useState(false);
   const [formData, setFormData] = useState<any>({ ...EMPTY_FORM });
   const [activeStep, setActiveStep] = useState(0);
   const [dragSrcIdx, setDragSrcIdx] = useState<number | null>(null);
@@ -238,14 +238,11 @@ export const Promotions = () => {
       .finally(() => setLoading(false));
   };
 
-  const handleImageUpload = async (files: FileList | null) => {
-    if (!files?.length) return;
-    setUploadingImage(true);
-    try {
-      const res = await uploadMedia(Array.from(files));
-      if (res.urls?.length) setFormData((p: any) => ({ ...p, image: res.urls[0] }));
-    } catch { showToast('Image upload failed', 'error'); }
-    finally { setUploadingImage(false); }
+  const [newImageFiles, setNewImageFiles] = useState<File[]>([]);
+
+  const handleMediaChange = (urls: string[], files: File[]) => {
+    setFormData((p: any) => ({ ...p, image: urls.length > 0 ? urls[0] : '' }));
+    setNewImageFiles(files);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -253,9 +250,17 @@ export const Promotions = () => {
     if (!formData.title) return;
     setIsSubmitting(true);
     try {
-      await createPromotion(formData);
+      let finalImageUrl = formData.image;
+      if (newImageFiles.length > 0) {
+        const res = await uploadMedia(newImageFiles);
+        if (res.status === 'success' && res.data?.length > 0) {
+          finalImageUrl = res.data[0];
+        }
+      }
+      await createPromotion({ ...formData, image: finalImageUrl });
       setIsModalOpen(false);
       setFormData({ ...EMPTY_FORM });
+      setNewImageFiles([]);
       setActiveStep(0);
       load();
       showToast('Campaign launched! 🚀');
@@ -392,35 +397,12 @@ export const Promotions = () => {
               </div>
             </div>
             <div>
-              <label style={labelStyle}>Background Image</label>
-              {formData.image ? (
-                <div style={{ position:'relative', borderRadius:'12px', overflow:'hidden' }}>
-                  <img src={formData.image} alt="preview" style={{ width:'100%', height:'140px', objectFit:'cover', display:'block' }} />
-                  <button type="button" onClick={() => setFormData((p: any) => ({...p, image: ''}))}
-                    style={{ position:'absolute', top:8, right:8, background:'rgba(245,57,123,0.9)', color:'#fff', border:'none', borderRadius:'50%', width:'26px', height:'26px', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
-                    <X size={13} />
-                  </button>
-                </div>
-              ) : (
-                <label style={{
-                  display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center',
-                  gap:'0.75rem', padding:'1.5rem',
-                  border:'1.5px dashed rgba(255,255,255,0.1)', borderRadius:'12px', cursor:'pointer',
-                  background:'rgba(255,255,255,0.02)', transition:'all 0.2s',
-                }}
-                  onDragOver={e => e.preventDefault()}
-                  onDrop={e => { e.preventDefault(); handleImageUpload(e.dataTransfer.files); }}
-                >
-                  {uploadingImage
-                    ? <Loader2 size={24} style={{ color:'var(--gold)', animation:'spin 1s linear infinite' }} />
-                    : <ImageIcon size={24} style={{ color:'var(--text-muted)' }} />}
-                  <div style={{ textAlign:'center' }}>
-                    <p style={{ fontSize:'0.83rem', color:'var(--text-secondary)', fontWeight:500 }}>{uploadingImage ? 'Uploading...' : 'Drop image here or click to upload'}</p>
-                    <p style={{ fontSize:'0.7rem', color:'var(--text-muted)', marginTop:'2px' }}>Auto-compressed via Cloudinary · JPG, PNG, WebP</p>
-                  </div>
-                  <input type="file" accept="image/*" style={{ display:'none' }} onChange={e => handleImageUpload(e.target.files)} />
-                </label>
-              )}
+              <label style={labelStyle}>Banner Image</label>
+              <MediaManager 
+                existingUrls={formData.image ? [formData.image] : []}
+                maxFiles={1}
+                onImagesChange={handleMediaChange}
+              />
             </div>
           </div>
         );
@@ -652,7 +634,7 @@ export const Promotions = () => {
                   {activeStep < steps.length - 1 ? (
                     <button type="button" onClick={() => setActiveStep(s => s + 1)} className="btn btn-gold btn-sm" disabled={!formData.title}>Next →</button>
                   ) : (
-                    <button type="submit" className="btn btn-gold" disabled={isSubmitting || uploadingImage || !formData.title}>
+                    <button type="submit" className="btn btn-gold" disabled={isSubmitting || !formData.title}>
                       {isSubmitting ? <><Loader2 size={14} style={{ animation:'spin 1s linear infinite' }} /> Launching...</> : <><Zap size={14} /> Launch Campaign</>}
                     </button>
                   )}

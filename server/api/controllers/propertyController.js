@@ -25,7 +25,8 @@ export const getProperties = async (req, res) => {
     if (search) {
       // Free Typo-Tolerant Fuzzy Engine
       const cleanSearch = search.replace(/\s+/g, '');
-      const fuzzyRegex = cleanSearch.split('').join('.*?'); 
+      const sanitizedSearch = cleanSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // Sanitize regex characters
+      const fuzzyRegex = sanitizedSearch.split('').join('.*?'); 
       
       filter.$or = [
         { title: { $regex: fuzzyRegex, $options: 'i' } },

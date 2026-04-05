@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import {
   Building, Users, MessageSquare, ShieldCheck, TrendingUp,
   Plus, ArrowRight, Activity,
-  Zap, Target, Layers, Contact2, Megaphone, Settings, MapPin
+  Zap, Target, Layers, Contact2, Megaphone, Settings, MapPin, Heart, Share2, Shield
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -189,7 +189,7 @@ const AdminDashboard = () => {
       .then(r => r.json())
       .then(d => { if (d.status === 'success') setStats(d.data); })
       .catch(() => {
-        setStats({ propertyCount: 12, leadCount: 48, inquiryCount: 24, verifiedCount: 8, activeCount: 10, pendingInquiries: 5, recentProperties: [], recentInquiries: [] });
+        setStats({ propertyCount: 12, leadCount: 48, inquiryCount: 24, verifiedCount: 8, activeCount: 10, pendingInquiries: 5, totalLikes: 0, totalShares: 0, recentProperties: [], recentInquiries: [] });
       })
       .finally(() => setLoading(false));
   }, []);
@@ -214,6 +214,16 @@ const AdminDashboard = () => {
       title: 'Verified', value: stats?.verifiedCount || 0,
       icon: ShieldCheck, color: '#10d98c',
       sub: 'Trust Badge Assets', trend: 5, link: '/admin/properties',
+    },
+    {
+      title: 'Total Likes', value: stats?.totalLikes || 0,
+      icon: Heart, color: '#f5397b',
+      sub: 'User Favorites', trend: 15, link: '/admin/properties',
+    },
+    {
+      title: 'Total Shares', value: stats?.totalShares || 0,
+      icon: Share2, color: '#22d9e0',
+      sub: 'Viral Reach', trend: 22, link: '/admin/properties',
     },
   ];
 
@@ -344,9 +354,11 @@ const AdminDashboard = () => {
             <QuickAction icon={Building}   label="New Property"    color="var(--violet)"  to="/admin/properties" />
             <QuickAction icon={MapPin}     label="Geo Zone"        color="var(--cyan)"    to="/admin/cities" />
             <QuickAction icon={Users}      label="Lead Board"      color="var(--emerald)" to="/admin/leads" />
-            <QuickAction icon={Contact2}  label="CRM"             color="var(--rose)"    to="/admin/contacts" />
+            <QuickAction icon={Contact2}   label="CRM"             color="var(--rose)"    to="/admin/contacts" />
             <QuickAction icon={Megaphone}  label="Campaigns"       color="var(--gold)"    to="/admin/promotions" />
-            <QuickAction icon={Settings}   label="System Settings" color="var(--violet)"  to="/admin/settings" />
+            <QuickAction icon={Activity}   label="Engagement"      color="var(--rose)"    to="/admin/engagement" />
+            <QuickAction icon={Shield}     label="Franchise"       color="var(--cyan)"    to="/admin/franchise" />
+            <QuickAction icon={Settings}   label="Settings"        color="var(--violet)"  to="/admin/settings" />
           </div>
           <div style={{ marginTop: '1.5rem', padding: '1rem', borderRadius: '12px', background: 'rgba(245,200,66,0.05)', border: '1px solid rgba(245,200,66,0.1)', display: 'flex', gap: '12px' }}>
             <Activity size={20} style={{ color: 'var(--gold)' }} />

@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import './App.css';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { AuthProvider } from './contexts/AuthContext';
+import ErrorBoundary from './components/ErrorBoundary';
 import App from './App';
 import './i18n';
 
@@ -20,12 +21,14 @@ console.log('Main.jsx entry point initialized...');
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
-      <AuthProvider>
-        <App />
-      </AuthProvider>
-    </GoogleOAuthProvider>
-  </StrictMode>
+    <ErrorBoundary>
+      <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID || "placeholder_if_missing"}>
+        <AuthProvider>
+          <App />
+        </AuthProvider>
+      </GoogleOAuthProvider>
+    </ErrorBoundary>
+  </StrictMode>,
 );
 
 console.log('Main.jsx: createRoot.render called.');

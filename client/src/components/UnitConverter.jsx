@@ -102,7 +102,7 @@ export default function UnitConverter() {
         animate={{ scale: 1, opacity: 1 }}
         whileHover={{ scale: 1.1 }}
         style={{ 
-          position: 'fixed', right: '20px', bottom: '20px', zIndex: 9999,
+          position: 'fixed', right: '20px', bottom: '80px', zIndex: 9999,
           width: '56px', height: '56px', borderRadius: '18px', background: 'var(--gold)',
           color: '#000', border: 'none', boxShadow: '0 8px 24px rgba(212,175,55,0.4)',
           cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'
@@ -114,14 +114,16 @@ export default function UnitConverter() {
       <AnimatePresence>
         {isOpen && (
           <motion.div 
-            initial={{ opacity: 0, scale: 0.9, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            initial={{ opacity: 0, scale: 0.9, y: 20, x: 0 }}
+            animate={{ opacity: 1, scale: 1, y: 0, x: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: 20, x: 0 }}
             className="glass-3d-heavy"
             style={{ 
-              position: 'fixed', top: '50%', left: '50%', x: '-50%', y: '-50%',
-              width: '90%', maxWidth: '360px', padding: '1.25rem',
-              zIndex: 10001, overflow: 'hidden', border: '1px solid rgba(212,175,55,0.3)'
+              position: 'fixed', bottom: '150px', right: '20px',
+              width: 'calc(100% - 40px)', maxWidth: '340px', padding: '1.25rem',
+              zIndex: 10001, overflow: 'hidden', border: '1px solid rgba(212,175,55,0.3)',
+              borderRadius: '24px', background: 'rgba(5, 5, 10, 0.95)',
+              boxShadow: '0 20px 50px rgba(0,0,0,0.8)'
             }}
           >
             {/* Header / Back Button */}
@@ -164,11 +166,13 @@ export default function UnitConverter() {
             {mode === 'converter' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 <div>
-                  <label style={{ fontSize: '0.65rem', color: 'var(--gold)', fontWeight: 800, display: 'block', marginBottom: '0.5rem' }}>VALUE</label>
+                  <label style={{ fontSize: '0.65rem', color: 'var(--txt-secondary)', fontWeight: 800, display: 'block', marginBottom: '0.5rem' }}>ENTER VALUE</label>
                   <div style={{ display: 'flex', gap: '8px' }}>
-                    <input type="number" value={value} onChange={(e) => setValue(e.target.value)} className="dropdown-3d-glass" style={{ flex: 1 }} />
-                    <select value={fromUnit} onChange={(e) => setFromUnit(e.target.value)} className="dropdown-3d-glass">
-                      {Object.keys(CONVERSIONS).map(u => <option key={u} value={u}>{u}</option>)}
+                    <input type="number" value={value} onChange={(e) => setValue(e.target.value)} 
+                      style={{ flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '12px', borderRadius: '12px', fontSize: '1rem', outline: 'none' }} />
+                    <select value={fromUnit} onChange={(e) => setFromUnit(e.target.value)} 
+                      style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--gold)', padding: '12px', borderRadius: '12px', fontSize: '0.9rem', outline: 'none', fontWeight: 600 }}>
+                      {Object.keys(CONVERSIONS).map(u => <option key={u} value={u} style={{ background: '#07070f' }}>{u}</option>)}
                     </select>
                   </div>
                 </div>

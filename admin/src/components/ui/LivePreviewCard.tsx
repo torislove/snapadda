@@ -69,7 +69,16 @@ export const LivePreviewCard: React.FC<LivePreviewCardProps> = ({
   };
 
   const displayImage = image || 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80';
-  const displayPrice = price ? `₹ ${Number(price).toLocaleString('en-IN')}` : '₹ TBD';
+  
+  const formatLivePrice = (p: number | string) => {
+    const n = Number(p);
+    if (!n) return '₹ Price TBD';
+    if (n >= 10000000) return `₹ ${(n / 10000000).toLocaleString('en-IN', { maximumFractionDigits: 2 })} Cr`;
+    if (n >= 100000) return `₹ ${(n / 100000).toLocaleString('en-IN', { maximumFractionDigits: 2 })} Lakhs`;
+    return `₹ ${n.toLocaleString('en-IN')}`;
+  };
+
+  const displayPrice = formatLivePrice(price);
 
   return (
     <motion.div

@@ -35,8 +35,8 @@ app.use(cors({
   credentials: true
 }));
 
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' })); // Support for FormData if needed
+app.use(express.json({ limit: '30mb' }));
+app.use(express.urlencoded({ extended: true, limit: '30mb' })); // Support for large form data payloads
 
 // Rate Limiting
 const limiter = rateLimit({

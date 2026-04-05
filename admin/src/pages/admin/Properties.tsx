@@ -6,11 +6,12 @@ import {
 } from '../../services/api';
 import { 
   ShieldCheck, Plus, Trash2, Star, X, 
-  Search, Zap, Edit3, LayoutGrid, List, MapPin
+  Search, Zap, Edit3, LayoutGrid, List, MapPin, Heart, Share2
 } from 'lucide-react';
 import { LivePreviewCard } from '../../components/ui/LivePreviewCard';
 import { motion, AnimatePresence } from 'framer-motion';
 import { parseSmartSearch, getFuzzySuggestions } from '../../services/SearchParser';
+import { MediaManager } from '../../components/ui/MediaManager';
 
 const AdminProperties = () => {
   const [properties, setProperties] = useState<any[]>([]);
@@ -22,10 +23,10 @@ const AdminProperties = () => {
   const [isFeatured, setIsFeatured] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [liveData, setLiveData] = useState<any>({});
-  const [images, setImages] = useState<File[]>([]);
-  const [imagePreviewUrls, setImagePreviewUrls] = useState<string[]>([]);
-  const [priceUnit, setPriceUnit] = useState<'Cr' | 'Lakhs' | 'Total'>('Total');
-  const [pricePerAcreUnit, setPricePerAcreUnit] = useState<'Cr' | 'Lakhs' | 'Total'>('Total');
+  const [currentImageUrls, setCurrentImageUrls] = useState<string[]>([]);
+  const [newImageFiles, setNewImageFiles] = useState<File[]>([]);
+  const [priceUnit, setPriceUnit] = useState<'Total' | 'Lakhs' | 'Cr'>('Total');
+  const [pricePerAcreUnit, setPricePerAcreUnit] = useState<'Total' | 'Lakhs' | 'Cr'>('Lakhs');
   const [search, setSearch] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'cards'>('cards');
 
@@ -50,9 +51,9 @@ const AdminProperties = () => {
     setCustomFeatures([]);
     setIsVerified(false);
     setIsFeatured(false);
-    setImages([]);
+    setNewImageFiles([]);
+    setCurrentImageUrls([]);
     setLiveData({});
-    setImagePreviewUrls([]);
     setPriceUnit('Total');
     setPricePerAcreUnit('Total');
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -77,7 +78,8 @@ const AdminProperties = () => {
     setCustomFeatures(prop.customFeatures || []);
     setIsVerified(prop.isVerified || false);
     setIsFeatured(prop.isFeatured || false);
-    setImagePreviewUrls(prop.images || (prop.image ? [prop.image] : []));
+    const existing = prop.images || (prop.image ? [prop.image] : []);
+    setCurrentImageUrls(existing);
     setLiveData(prop);
     
     // Auto-detect unit for price
@@ -92,6 +94,13 @@ const AdminProperties = () => {
     setIsEditing(true);
     setIsAdding(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const formatPriceAdminLocal = (price: number) => {
+    if (!price) return '₹ 0/-';
+    if (price >= 10000000) return `₹ ${(price / 10000000).toLocaleString('en-IN', { maximumFractionDigits: 2 })} Cr/-`;
+    if (price >= 100000) return `₹ ${(price / 100000).toLocaleString('en-IN', { maximumFractionDigits: 2 })} L/-`;
+    return `₹ ${price.toLocaleString('en-IN')}/-`;
   };
 
   const convertToValue = (val: number | string, unit: string) => {
@@ -112,55 +121,70 @@ const AdminProperties = () => {
     propData.isFeatured = isFeatured;
 
     try {
-      let uploadedUrls: string[] = [...imagePreviewUrls.filter(url => url.startsWith('http'))];
+      let uploadedUrls: string[] = [...currentImageUrls];
       
-      if (images.length > 0) {
-        const uploadResult = await uploadMedia(images);
-        if (uploadResult.status === 'success') {
-          uploadedUrls = [...uploadedUrls, ...uploadResult.data];
-        } else {
-          throw new Error('Upload failed');
+      // STAGE 1: Media Upload
+      if (newImageFiles.length > 0) {
+        setIsUploading(true); // Ensure loading state is on for upload
+        try {
+          const uploadResult = await uploadMedia(newImageFiles);
+          if (uploadResult.status === 'success') {
+            uploadedUrls = [...uploadedUrls, ...uploadResult.data];
+          } else {
+            throw new Error(uploadResult.message || 'Media server rejected the files');
+          }
+        } catch (mediaErr: any) {
+          console.error("Media Upload Failure:", mediaErr);
+          alert(`MEDIA UPLOAD FAILED: ${mediaErr.message || "Cloudinary connection issue"}\n\nTIP: Try with fewer images or check your internet connection.`);
+          setIsUploading(false);
+          return; // Stop here if upload fails
         }
       }
 
-      // Convert unit-based prices before submission
-      propData.price = convertToValue(propData.price, priceUnit);
-      propData.pricePerAcre = convertToValue(propData.pricePerAcre, pricePerAcreUnit);
+      // STAGE 2: Property Data Save
+      setIsUploading(true);
+      try {
+        // Convert unit-based prices before submission
+        propData.price = convertToValue(propData.price, priceUnit);
+        propData.pricePerAcre = convertToValue(propData.pricePerAcre, pricePerAcreUnit);
 
-      propData.images = uploadedUrls;
-      if (uploadedUrls.length > 0) propData.image = uploadedUrls[0];
-      
-      propData.areaSize = Number(propData.areaSize) || 0;
-      propData.totalAcres = Number(propData.totalAcres) || 0;
-      propData.bhk = Number(propData.bhk) || 0;
-      propData.carpetArea = Number(propData.carpetArea) || 0;
-      propData.superBuiltupArea = Number(propData.superBuiltupArea) || 0;
-      propData.totalFloors = Number(propData.totalFloors) || 0;
-      propData.floorNo = Number(propData.floorNo) || 0;
-      propData.vastuCompliant = !!propData.vastuCompliant;
-      propData.cornerProperty = !!propData.cornerProperty;
-      propData.boundaryWall = !!propData.boundaryWall;
-      propData.googleMapsLink = propData.googleMapsLink || '';
+        propData.images = uploadedUrls;
+        if (uploadedUrls.length > 0) propData.image = uploadedUrls[0];
+        
+        propData.areaSize = Number(propData.areaSize) || 0;
+        propData.totalAcres = Number(propData.totalAcres) || 0;
+        propData.bhk = Number(propData.bhk) || 0;
+        propData.carpetArea = Number(propData.carpetArea) || 0;
+        propData.superBuiltupArea = Number(propData.superBuiltupArea) || 0;
+        propData.totalFloors = Number(propData.totalFloors) || 0;
+        propData.floorNo = Number(propData.floorNo) || 0;
+        propData.vastuCompliant = !!propData.vastuCompliant;
+        propData.cornerProperty = !!propData.cornerProperty;
+        propData.boundaryWall = !!propData.boundaryWall;
+        propData.googleMapsLink = propData.googleMapsLink || '';
 
-      const payload = {
-        ...propData,
-        customFeatures,
-        isVerified,
-        isFeatured,
-        images: uploadedUrls,
-        image: uploadedUrls.length > 0 ? uploadedUrls[0] : null
-      };
+        const payload = {
+          ...propData,
+          customFeatures,
+          isVerified,
+          isFeatured,
+          images: uploadedUrls,
+          image: uploadedUrls.length > 0 ? uploadedUrls[0] : null
+        };
 
-      if (isEditing && editingProperty) {
-        await updateProperty(editingProperty._id || editingProperty.id, payload);
-      } else {
-        await createProperty(payload);
+        if (isEditing && editingProperty) {
+          await updateProperty(editingProperty._id || editingProperty.id, payload);
+        } else {
+          await createProperty(payload);
+        }
+        
+        loadProperties();
+        handleCloseForm();
+      } catch (saveErr: any) {
+        console.error("Database Save Failure:", saveErr);
+        const serverMsg = saveErr.response?.data?.message || saveErr.message;
+        alert(`PROPERTY SAVE FAILED: ${serverMsg}\n\nTIP: Ensure all required fields (Title, Price, Location) are filled correctly.`);
       }
-      loadProperties();
-      handleCloseForm();
-    } catch (err: any) {
-      const serverMsg = err.response?.data?.message || err.message;
-      alert('Failed to save property: ' + serverMsg);
     } finally {
       setIsUploading(false);
     }
@@ -170,26 +194,47 @@ const AdminProperties = () => {
     const formData = new FormData(e.currentTarget);
     const updatedData: any = Object.fromEntries(formData.entries());
     
-    // Virtual calculation for live preview
+    // Explicitly sync state-based values that FormData might miss or delay
     updatedData.price = convertToValue(updatedData.price, priceUnit);
     updatedData.pricePerAcre = convertToValue(updatedData.pricePerAcre, pricePerAcreUnit);
-    
     updatedData.isVerified = isVerified;
     updatedData.isFeatured = isFeatured;
-    if (imagePreviewUrls.length > 0) {
-      updatedData.image = imagePreviewUrls[0];
-    }
+    updatedData.images = currentImageUrls;
+    updatedData.image = currentImageUrls.length > 0 ? currentImageUrls[0] : (liveData.image || '');
+    
     setLiveData(updatedData);
   };
 
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    setImages(files);
-    const previewUrls = files.map(file => URL.createObjectURL(file));
-    setImagePreviewUrls(previewUrls);
+  // Re-sync preview when auxiliary states change
+  useEffect(() => {
+    let previewImage = currentImageUrls.length > 0 ? currentImageUrls[0] : '';
+    // If no existing image, and there's a new file, show it
+    if (!previewImage && newImageFiles.length > 0) {
+      previewImage = URL.createObjectURL(newImageFiles[0]);
+    }
+
     setLiveData((prev: any) => ({
       ...prev,
-      image: previewUrls.length > 0 ? previewUrls[0] : prev.image
+      isVerified,
+      isFeatured,
+      images: currentImageUrls,
+      image: previewImage || (prev.image || '')
+    }));
+  }, [isVerified, isFeatured, currentImageUrls, newImageFiles]);
+
+  const handleMediaChange = (urls: string[], files: File[]) => {
+    setCurrentImageUrls(urls);
+    setNewImageFiles(files);
+    
+    // If we have an existing URL, use it. Otherwise, if we have a new file, create a temporary preview.
+    let previewImage = urls.length > 0 ? urls[0] : '';
+    if (!previewImage && files.length > 0) {
+      previewImage = URL.createObjectURL(files[0]);
+    }
+
+    setLiveData((prev: any) => ({
+      ...prev,
+      image: previewImage || (prev.image || '')
     }));
   };
 
@@ -230,15 +275,33 @@ const AdminProperties = () => {
           <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', maxWidth: '600px' }}>Simple management of property assets across the SnapAdda regional network.</p>
         </div>
         {!isAdding && (
-          <motion.button 
-            whileHover={{ scale: 1.05, y: -2 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setIsAdding(true)}
-            className="btn btn-violet" 
-            style={{ padding: '0.85rem 2rem', borderRadius: '14px', fontSize: '0.9rem', fontWeight: 800, boxShadow: '0 10px 20px rgba(155,89,245,0.2)' }}
-          >
-            <Plus size={18} /> ADD NEW PROPERTY
-          </motion.button>
+          <div className="flex-row-mobile-stack" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+            <motion.button 
+              whileHover={{ scale: 1.05 }}
+              onClick={() => { setLiveData({ type: 'Apartment' }); setIsAdding(true); }}
+              className="btn btn-ghost" 
+              style={{ padding: '0.6rem 1.2rem', borderRadius: '12px', fontSize: '0.8rem', border: '1px solid var(--violet)', color: 'var(--violet)' }}
+            >
+              + ADD FLAT
+            </motion.button>
+            <motion.button 
+              whileHover={{ scale: 1.05 }}
+              onClick={() => { setLiveData({ type: 'Agricultural Land' }); setIsAdding(true); }}
+              className="btn btn-ghost" 
+              style={{ padding: '0.6rem 1.2rem', borderRadius: '12px', fontSize: '0.8rem', border: '1px solid var(--emerald)', color: 'var(--emerald)' }}
+            >
+              + ADD LAND
+            </motion.button>
+            <motion.button 
+              whileHover={{ scale: 1.05, y: -2 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setIsAdding(true)}
+              className="btn btn-violet" 
+              style={{ padding: '0.85rem 2rem', borderRadius: '14px', fontSize: '0.9rem', fontWeight: 800, boxShadow: '0 10px 20px rgba(155,89,245,0.2)' }}
+            >
+              <Plus size={18} /> ADD ANY PROPERTY
+            </motion.button>
+          </div>
         )}
       </div>
 
@@ -290,18 +353,6 @@ const AdminProperties = () => {
                       <label className="admin-label">City / Area</label>
                       <input name="location" defaultValue={editingProperty?.location || ''} className="admin-input" placeholder="e.g. Mangalagiri" />
                     </div>
-                    <div style={{ gridColumn: 'span 2' }}>
-                      <label className="admin-label">Property Title</label>
-                      <input name="title" defaultValue={editingProperty?.title || ''} className="admin-input" placeholder="e.g. 6 Acres of CRM Land in Mangalagiri" />
-                    </div>
-                    <div>
-                      <label className="admin-label">Purpose</label>
-                      <select name="purpose" defaultValue={editingProperty?.purpose || 'Sale'} className="admin-select">
-                        <option value="Sale">For Sale</option>
-                        <option value="Rent">For Rent</option>
-                        <option value="Lease">Lease</option>
-                      </select>
-                    </div>
                     <div>
                       <label className="admin-label">Price</label>
                       <div style={{ display: 'flex', gap: '8px' }}>
@@ -325,6 +376,18 @@ const AdminProperties = () => {
                           <option value="Cr">Cr</option>
                         </select>
                       </div>
+                    </div>
+                    <div>
+                      <label className="admin-label">Purpose</label>
+                      <select name="purpose" defaultValue={editingProperty?.purpose || 'Sale'} className="admin-select">
+                        <option value="Sale">For Sale</option>
+                        <option value="Rent">For Rent</option>
+                        <option value="Lease">Lease</option>
+                      </select>
+                    </div>
+                    <div style={{ gridColumn: 'span 2' }}>
+                      <label className="admin-label">Property Title</label>
+                      <input name="title" defaultValue={editingProperty?.title || ''} className="admin-input" placeholder="e.g. 6 Acres of CRM Land in Mangalagiri" />
                     </div>
                   </div>
                 </section>
@@ -362,6 +425,71 @@ const AdminProperties = () => {
                   </div>
                 </section>
 
+                {liveData.type === 'Agricultural Land' && (
+                  <section>
+                    <h3 style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--emerald)', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '1.75rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <div style={{ width: '20px', height: '1px', background: 'var(--emerald)' }} /> LAND SPECIFIC DETAILS
+                    </h3>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                      <div>
+                        <label className="admin-label">Price Per Acre</label>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <input 
+                            name="pricePerAcre" 
+                            type="number" 
+                            step="0.01"
+                            defaultValue={isEditing ? (editingProperty?.pricePerAcre >= 10000000 ? editingProperty.pricePerAcre / 10000000 : (editingProperty?.pricePerAcre >= 100000 ? editingProperty.pricePerAcre / 100000 : editingProperty?.pricePerAcre)) : ''} 
+                            className="admin-input" 
+                            placeholder="Amount"
+                            style={{ flex: 1 }}
+                          />
+                          <select 
+                            className="admin-select" 
+                            style={{ width: '80px' }}
+                            value={pricePerAcreUnit}
+                            onChange={(e) => setPricePerAcreUnit(e.target.value as any)}
+                          >
+                            <option value="Total">Rs</option>
+                            <option value="Lakhs">L</option>
+                            <option value="Cr">Cr</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="admin-label">Total Acres/Cents</label>
+                        <input name="totalAcres" type="number" step="0.01" defaultValue={editingProperty?.totalAcres || ''} className="admin-input" placeholder="e.g. 2.5" />
+                      </div>
+                    </div>
+                  </section>
+                )}
+                {['Residential Plot', 'Commercial Plot'].includes(liveData.type) && (
+                  <section>
+                    <h3 style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--cyan)', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '1.75rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <div style={{ width: '20px', height: '1px', background: 'var(--cyan)' }} /> PLOT SPECIFIC DETAILS
+                    </h3>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1.5rem' }}>
+                       <div>
+                        <label className="admin-label">Plot Dimensions</label>
+                        <input name="areaSize" type="number" defaultValue={editingProperty?.areaSize || ''} className="admin-input" placeholder="Total Area" />
+                      </div>
+                      <div>
+                        <label className="admin-label">Unit</label>
+                        <select name="measurementUnit" defaultValue={editingProperty?.measurementUnit || 'Sq.Yards'} className="admin-select">
+                          <option value="Sq.Yards">Sq. Yards</option>
+                          <option value="Cents">Cents</option>
+                          <option value="Acres">Acres</option>
+                          <option value="Guntas">Guntas</option>
+                        </select>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                         <input type="checkbox" name="isGated" defaultChecked={editingProperty?.isGated} />
+                         <label className="admin-label" style={{ marginBottom: 0 }}>Gated Community</label>
+                      </div>
+                    </div>
+                  </section>
+                )}
+
+                {['Apartment', 'Villa', 'Farmhouse', 'Independent House', 'Commercial Space'].includes(liveData.type) && (
                 <section>
                   <h3 style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--rose)', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '1.75rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <div style={{ width: '20px', height: '1px', background: 'var(--rose)' }} /> STEP 3: CONFIGURATION & SIZE
@@ -387,40 +515,9 @@ const AdminProperties = () => {
                         <option value="Guntas">Guntas</option>
                       </select>
                     </div>
-                    {liveData.type === 'Agricultural Land' && (
-                      <>
-                        <div>
-                          <label className="admin-label">Price Per Acre</label>
-                          <div style={{ display: 'flex', gap: '8px' }}>
-                            <input 
-                              name="pricePerAcre" 
-                              type="number" 
-                              step="0.01"
-                              defaultValue={isEditing ? (editingProperty?.pricePerAcre >= 10000000 ? editingProperty.pricePerAcre / 10000000 : (editingProperty?.pricePerAcre >= 100000 ? editingProperty.pricePerAcre / 100000 : editingProperty?.pricePerAcre)) : ''} 
-                              className="admin-input" 
-                              placeholder="Amount"
-                              style={{ flex: 1 }}
-                            />
-                            <select 
-                              className="admin-select" 
-                              style={{ width: '80px' }}
-                              value={pricePerAcreUnit}
-                              onChange={(e) => setPricePerAcreUnit(e.target.value as any)}
-                            >
-                              <option value="Total">Rs</option>
-                              <option value="Lakhs">L</option>
-                              <option value="Cr">Cr</option>
-                            </select>
-                          </div>
-                        </div>
-                        <div>
-                          <label className="admin-label">Total Acres/Cents</label>
-                          <input name="totalAcres" type="number" step="0.01" defaultValue={editingProperty?.totalAcres || ''} className="admin-input" placeholder="e.g. 2.5" />
-                        </div>
-                      </>
-                    )}
                   </div>
                 </section>
+                )}
 
                 <section>
                   <h3 style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--cyan)', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '1.75rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -567,17 +664,12 @@ const AdminProperties = () => {
                 </section>
 
                 <div style={{ gridColumn: '1 / -1' }}>
-                  <label className="admin-label">STEP 7: VISUAL ASSETS</label>
-                  <input type="file" multiple accept="image/*" onChange={handleImageSelect} className="admin-input" style={{ padding: '12px' }} />
-                  {imagePreviewUrls.length > 0 && (
-                    <div style={{ display: 'flex', gap: '10px', marginTop: '1rem', overflowX: 'auto', paddingBottom: '10px' }}>
-                      {imagePreviewUrls.map((url, idx) => (
-                        <div key={idx} style={{ flexShrink: 0, width: '80px', height: '60px', borderRadius: '8px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)' }}>
-                          <img src={url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                  <label className="admin-label">STEP 7: VISUAL ASSETS (MULTI-SELECT)</label>
+                  <MediaManager 
+                    existingUrls={currentImageUrls}
+                    onImagesChange={handleMediaChange}
+                    maxFiles={12}
+                  />
                 </div>
 
                  <div style={{ display: 'flex', gap: '1.5rem' }}>
@@ -603,11 +695,11 @@ const AdminProperties = () => {
                  facing={liveData.facing}
                  isVerified={isVerified}
                  listerType="Certified Builder"
-                  measurementUnit={liveData.measurementUnit}
-                  areaSize={liveData.areaSize}
-                  image={imagePreviewUrls[0]}
-                  address={liveData.address}
-                  pricePerAcre={liveData.pricePerAcre}
+                 measurementUnit={liveData.measurementUnit}
+                 areaSize={liveData.areaSize}
+                 image={currentImageUrls.length > 0 ? currentImageUrls[0] : undefined}
+                 address={liveData.address}
+                 pricePerAcre={liveData.pricePerAcre}
                 />
                <div style={{ marginTop: '2.5rem', padding: '2rem', borderRadius: '24px', background: 'rgba(255,255,255,0.02)', border: '1px dashed rgba(255,255,255,0.1)' }}>
                  <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: 1.8 }}>
@@ -733,9 +825,22 @@ const AdminProperties = () => {
                         </div>
 
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1.5rem', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '1.25rem' }}>
-                          <div>
-                            <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', fontWeight: 800, marginBottom: '2px' }}>MARKET VALUE</div>
-                            <div style={{ fontSize: '1.3rem', fontWeight: 900, color: 'white' }}>₹{(Number(prop.price)/100000).toFixed(1)}L</div>
+                          <div style={{ display: 'flex', gap: '2rem' }}>
+                            <div>
+                              <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', fontWeight: 800, marginBottom: '2px' }}>MARKET VALUE</div>
+                              <div style={{ fontSize: '1.1rem', fontWeight: 900, color: 'white' }}>{formatPriceAdminLocal(Number(prop.price))}</div>
+                            </div>
+                            <div>
+                              <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', fontWeight: 800, marginBottom: '2px' }}>ENGAGEMENT</div>
+                              <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginTop: '4px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--rose)', fontSize: '0.85rem', fontWeight: 700 }}>
+                                  <Heart size={14} fill="var(--rose)" /> {prop.likeCount || 0}
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--cyan)', fontSize: '0.85rem', fontWeight: 700 }}>
+                                  <Share2 size={14} /> {prop.shareCount || 0}
+                                </div>
+                              </div>
+                            </div>
                           </div>
                           <div style={{ display: 'flex', gap: '0.6rem' }}>
                             <motion.button whileHover={{ scale: 1.1, background: 'rgba(255,255,255,0.1)' }} onClick={() => handleEdit(prop)} style={{ background: 'rgba(255,255,255,0.05)', border: 'none', padding: '10px', borderRadius: '12px', color: 'white', cursor: 'pointer' }}><Edit3 size={16} /></motion.button>
