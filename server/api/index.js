@@ -155,6 +155,21 @@ app.use('/api/promotions', promotionRoutes);
 app.use('/api/testimonials', testimonialRoutes);
 app.use('/api/questions', questionRoutes);
 
+// Health and Diagnostics Route
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    env: {
+      NODE_ENV: process.env.NODE_ENV,
+      MONGODB_URI_SET: !!process.env.MONGODB_URI,
+      CLOUDINARY_SET: !!process.env.CLOUDINARY_CLOUD_NAME,
+      FIREBASE_URL_SET: !!process.env.DB_FIREBASE_URL
+    },
+    platform: process.platform
+  });
+});
+
 // Catch-all 404 Diagnostic (Must be LAST)
 app.use((req, res) => {
   console.log('404_NOT_FOUND_PATH:', req.originalUrl);

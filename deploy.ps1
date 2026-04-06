@@ -35,10 +35,18 @@ try {
     # 1. Prepare for Production Build
     Write-Host "[1/6] Injecting Production Multi-Env Config..." -ForegroundColor Yellow
     
-    foreach ($path in @("admin/.env", "client/.env")) {
+    foreach ($path in @("admin/.env", "client/.env", "server/.env")) {
         Set-EnvVar $path "VITE_API_URL" $PROD_API_URL
         foreach ($key in $FIREBASE_PROD.Keys) {
             Set-EnvVar $path $key $FIREBASE_PROD[$key]
+        }
+        
+        # Explicitly ensure Server Secrets are set for the function environment
+        if ($path -eq "server/.env") {
+            Set-EnvVar $path "MONGODB_URI" "mongodb+srv://manojkadiyala8_db_user:Manoj587487@cluster0.fjxb0my.mongodb.net/snapadda?retryWrites=true&w=majority&appName=Cluster0"
+            Set-EnvVar $path "CLOUDINARY_CLOUD_NAME" "dipgezyuy"
+            Set-EnvVar $path "CLOUDINARY_API_KEY" "744493735563614"
+            Set-EnvVar $path "CLOUDINARY_API_SECRET" "HScXz9fgi6f9NOKuXShhyadZ50U"
         }
         Write-Host "   -> Updated $path with API and Firebase Production keys" -ForegroundColor Gray
     }
