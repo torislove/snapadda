@@ -1,14 +1,23 @@
+import dotenv from 'dotenv';
+dotenv.config();
+
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import helmet from 'helmet';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import { v2 as cloudinary } from 'cloudinary';
 import { onRequest } from "firebase-functions/v2/https";
+import admin from 'firebase-admin';
 
-dotenv.config();
+// Initialize Firebase Admin for Realtime Database and Auth access
+if (!admin.apps.length) {
+  admin.initializeApp({
+    credential: admin.credential.applicationDefault(),
+    databaseURL: process.env.DB_FIREBASE_URL
+  });
+}
 
 // Critical Environment Check
 console.log('--- PRODUCTION_ENV_DIAGNOSTICS ---');

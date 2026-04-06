@@ -1,0 +1,133 @@
+
+> snapadda@0.0.0 build
+> vite build
+
+[36mvite v5.4.21 [32mbuilding for production...[36m[39m
+transforming...
+[32mΓ£ô[39m 2613 modules transformed.
+src/components/UnitConverter.jsx (71:23): Use of eval in "src/components/UnitConverter.jsx" is strongly discouraged as it poses security risks and may cause issues with minification.
+rendering chunks...
+computing gzip size...
+[2mdist/[22m[32mindex.html                          [39m[1m[2m  4.63 kB[22m[1m[22m[2m Γöé gzip:   1.65 kB[22m
+[2mdist/[22m[35massets/index-B-xw-09I.css           [39m[1m[2m 75.53 kB[22m[1m[22m[2m Γöé gzip:  14.76 kB[22m
+[2mdist/[22m[36massets/priceUtils-ByAGxy0R.js       [39m[1m[2m  0.18 kB[22m[1m[22m[2m Γöé gzip:   0.18 kB[22m
+[2mdist/[22m[36massets/ContactModal-CfsxWfmi.js     [39m[1m[2m  2.44 kB[22m[1m[22m[2m Γöé gzip:   1.14 kB[22m
+[2mdist/[22m[36massets/Login-B-XE2hya.js            [39m[1m[2m  4.88 kB[22m[1m[22m[2m Γöé gzip:   1.96 kB[22m
+[2mdist/[22m[36massets/AndhraLocations-BEcCYrBZ.js  [39m[1m[2m  5.63 kB[22m[1m[22m[2m Γöé gzip:   1.05 kB[22m
+[2mdist/[22m[36massets/RequestPage-BeQ3HyWn.js      [39m[1m[2m  6.17 kB[22m[1m[22m[2m Γöé gzip:   2.19 kB[22m
+[2mdist/[22m[36massets/PropertyCard-Hz3Cww9p.js     [39m[1m[2m  7.84 kB[22m[1m[22m[2m Γöé gzip:   2.94 kB[22m
+[2mdist/[22m[36massets/Onboarding-B5tNBWbv.js       [39m[1m[2m  8.26 kB[22m[1m[22m[2m Γöé gzip:   2.79 kB[22m
+[2mdist/[22m[36massets/Dashboard-DOyxAR0o.js        [39m[1m[2m 14.39 kB[22m[1m[22m[2m Γöé gzip:   4.17 kB[22m
+[2mdist/[22m[36massets/PropertyDetails-DQf5GDJz.js  [39m[1m[2m 23.72 kB[22m[1m[22m[2m Γöé gzip:   6.77 kB[22m
+[2mdist/[22m[36massets/Home-BaT8FCl7.js             [39m[1m[2m 42.92 kB[22m[1m[22m[2m Γöé gzip:  12.87 kB[22m
+[2mdist/[22m[36massets/index-B0no3bWZ.js            [39m[1m[2m 45.71 kB[22m[1m[22m[2m Γöé gzip:  15.77 kB[22m
+[2mdist/[22m[36massets/vendor-motion-Bkl366E1.js    [39m[1m[2m115.99 kB[22m[1m[22m[2m Γöé gzip:  38.44 kB[22m
+[2mdist/[22m[36massets/vendor-core-B8NYbsUJ.js      [39m[1m[2m242.58 kB[22m[1m[22m[2m Γöé gzip:  76.50 kB[22m
+[2mdist/[22m[36massets/vendor-viz-Cu3LZx3R.js       [39m[1m[2m339.76 kB[22m[1m[22m[2m Γöé gzip: 101.28 kB[22m
+[32mΓ£ô built in 6.83s[39m
+
+> real-estate-website@0.0.0 build
+> tsc -b && vite build
+
+[36mvite v8.0.3 [32mbuilding client environment for production...[36m[39m
+[2K
+transforming...Γ£ô 2713 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                             1.02 kB Γöé gzip:   0.50 kB
+dist/assets/Login-BYnZvl2R.css              1.75 kB Γöé gzip:   0.79 kB
+dist/assets/Layout-BjlxCiaM.css             8.33 kB Γöé gzip:   2.23 kB
+dist/assets/index-DU_K92Vc.css              9.85 kB Γöé gzip:   2.98 kB
+dist/assets/Button-BEeZ2_k7.js              0.46 kB Γöé gzip:   0.33 kB
+dist/assets/rolldown-runtime-COnpUsM8.js    0.81 kB Γöé gzip:   0.46 kB
+dist/assets/Login-_e7egG-Q.js               2.90 kB Γöé gzip:   1.22 kB
+dist/assets/api-vNxueXli.js                 4.42 kB Γöé gzip:   0.97 kB
+dist/assets/Cities-CWfXvTWk.js              5.85 kB Γöé gzip:   1.99 kB
+dist/assets/AdminEngagement-8OtO3tRJ.js     7.06 kB Γöé gzip:   1.96 kB
+dist/assets/Questions-DM_IVHCw.js           7.12 kB Γöé gzip:   2.14 kB
+dist/assets/MarqueeStrips-Dp56e2xb.js       7.27 kB Γöé gzip:   2.29 kB
+dist/assets/Layout-CoMYmHg3.js              7.60 kB Γöé gzip:   2.25 kB
+dist/assets/Clients-CvuSJmOa.js             7.88 kB Γöé gzip:   2.56 kB
+dist/assets/Franchise-CVxCSzHh.js           8.63 kB Γöé gzip:   2.61 kB
+dist/assets/Testimonials-Fa3cBfDX.js       11.31 kB Γöé gzip:   3.50 kB
+dist/assets/index-BSD-Ovwv.js              11.52 kB Γöé gzip:   3.88 kB
+dist/assets/Contacts-BMb6iepC.js           13.41 kB Γöé gzip:   3.76 kB
+dist/assets/Leads-DL_66H23.js              14.14 kB Γöé gzip:   3.87 kB
+dist/assets/SystemGuide-D0rvmSdw.js        16.87 kB Γöé gzip:   6.30 kB
+dist/assets/Promotions-BILVbka4.js         23.21 kB Γöé gzip:   6.02 kB
+dist/assets/Settings-BBibPXuy.js           35.44 kB Γöé gzip:   8.25 kB
+dist/assets/Properties-CFGiB1WI.js         44.44 kB Γöé gzip:  10.43 kB
+dist/assets/MediaManager-D2VmVIIF.js       56.22 kB Γöé gzip:  21.48 kB
+dist/assets/vendor-motion-BOdUbI6M.js     126.62 kB Γöé gzip:  41.35 kB
+dist/assets/vendor-core-BBoyYmmo.js       253.18 kB Γöé gzip:  81.77 kB
+dist/assets/Dashboard-r0QJalMm.js         346.33 kB Γöé gzip: 101.32 kB
+
+[32mΓ£ô built in 649ms[39m
+[32m[1m+ [22m[39m Applied hosting target [1mclient[22m to [1msnapadda-7a6e6[22m
+
+Updated: client (snapadda-7a6e6)
+[32m[1m+ [22m[39m Applied hosting target [1madmin[22m to [1msnapaddaadmin[22m
+
+Updated: admin (snapaddaadmin)
+
+[1m[37m===[39m Deploying to 'snapadda-7a6e6'...[22m
+
+[36m[1mi [22m[39m deploying [1mfunctions, hosting[22m
+[36m[1mi  functions:[22m[39m preparing codebase [1mdefault[22m for deployment
+[36m[1mi  functions:[22m[39m ensuring required API [1mcloudfunctions.googleapis.com[22m is enabled...
+[36m[1mi  functions:[22m[39m ensuring required API [1mcloudbuild.googleapis.com[22m is enabled...
+[36m[1mi  artifactregistry:[22m[39m ensuring required API [1martifactregistry.googleapis.com[22m is enabled...
+[33m[1m! [22m[39m [1m[33mfunctions: [39m[22mpackage.json indicates an outdated version of firebase-functions. Please upgrade using [1mnpm install --save firebase-functions@latest[22m in your functions directory.
+[33m[1m! [22m[39m [1m[33mfunctions: [39m[22mPlease note that there will be breaking changes when you upgrade.
+[36m[1mi  functions:[22m[39m Loading and analyzing source code for codebase default to determine what to deploy
+Serving at port 8015
+
+[dotenv@17.3.1] injecting env (8) from .env -- tip: ΓÜÖ∩╕Å  specify custom .env file path with { path: '/custom/path/.env' }
+
+[dotenv@17.3.1] injecting env (0) from .env -- tip: ≡ƒöÉ prevent building .env in docker: https://dotenvx.com/prebuild
+
+[dotenv@17.3.1] injecting env (0) from .env -- tip: ΓÜí∩╕Å secrets for agents: https://dotenvx.com/as2
+
+--- PRODUCTION_ENV_DIAGNOSTICS ---
+
+NODE_ENV: production
+MONGODB_URI_PROVIDED: true
+CLOUDINARY_NAME_PROVIDED: true
+
+CLOUDINARY_KEY_PROVIDED: true
+
+----------------------------------
+
+[36m[1mi  extensions:[22m[39m ensuring required API [1mfirebaseextensions.googleapis.com[22m is enabled...
+[36m[1mi [22m[39m [36m[1mfunctions: [22m[39mLoaded environment variables from .env.
+[36m[1mi  functions:[22m[39m preparing [1mserver[22m directory for uploading...
+[36m[1mi [22m[39m [36m[1mfunctions:[22m[39m packaged [1mD:\real estate website\server[22m (94.26 KB) for uploading
+[36m[1mi  functions:[22m[39m ensuring required API [1mrun.googleapis.com[22m is enabled...
+[36m[1mi  functions:[22m[39m ensuring required API [1meventarc.googleapis.com[22m is enabled...
+[36m[1mi  functions:[22m[39m ensuring required API [1mpubsub.googleapis.com[22m is enabled...
+[36m[1mi  functions:[22m[39m ensuring required API [1mstorage.googleapis.com[22m is enabled...
+[36m[1mi  functions:[22m[39m generating the service identity for [1mpubsub.googleapis.com[22m...
+[36m[1mi  functions:[22m[39m generating the service identity for [1meventarc.googleapis.com[22m...
+[36m[1mi  hosting[snapadda-7a6e6]:[22m[39m beginning deploy...
+[36m[1mi  hosting[snapadda-7a6e6]:[22m[39m found 20 files in [1mclient/dist[22m
+[32m[1m+  hosting[snapadda-7a6e6]:[22m[39m file upload complete
+[36m[1mi  hosting[snapaddaadmin]:[22m[39m beginning deploy...
+[36m[1mi  hosting[snapaddaadmin]:[22m[39m found 29 files in [1madmin/dist[22m
+-  hosting: upload complete
+[32m[1m+  hosting[snapaddaadmin]:[22m[39m file upload complete
+[36m[1mi  functions:[22m[39m Skipping the deploy of unchanged functions.
+[32m[1m+ [22m[39m [1m[35mfunctions[api(us-central1)][39m[22m Skipped (No changes detected)
+[36m[1mi  hosting[snapadda-7a6e6]:[22m[39m finalizing version...
+[36m[1mi  hosting[snapaddaadmin]:[22m[39m finalizing version...
+[32m[1m+  hosting[snapadda-7a6e6]:[22m[39m version finalized
+[36m[1mi  hosting[snapadda-7a6e6]:[22m[39m releasing new version...
+[32m[1m+  hosting[snapaddaadmin]:[22m[39m version finalized
+[36m[1mi  hosting[snapaddaadmin]:[22m[39m releasing new version...
+[32m[1m+  hosting[snapadda-7a6e6]:[22m[39m release complete
+[32m[1m+  hosting[snapaddaadmin]:[22m[39m release complete
+
+[32m[1m+ [22m[39m [1m[4mDeploy complete![24m[22m
+
+[1mProject Console:[22m https://console.firebase.google.com/project/snapadda-7a6e6/overview
+[1mHosting URL:[22m https://snapadda-7a6e6.web.app
+[1mHosting URL:[22m https://snapaddaadmin.web.app

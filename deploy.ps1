@@ -4,15 +4,16 @@ Write-Host "   SNAPADDA PLATFORM - ELITE DEPLOYMENT SUITE" -ForegroundColor Cyan
 Write-Host "==========================================================" -ForegroundColor Cyan
 Write-Host ""
 
-$PROD_API_URL = "https://api-efbbevhoca-uc.a.run.app/api"
+$PROD_API_URL = "/api"
 $LOCAL_API_URL = "http://localhost:5000/api"
 
 # Function to Swap API URL in .env
 function Set-EnvApi($path, $url) {
     if (Test-Path $path) {
         $content = Get-Content $path
+        # Use regex to replace the value, handling both single and double quotes
         $newContent = $content -replace 'VITE_API_URL=.*', "VITE_API_URL=`"$url`""
-        $newContent | Set-Content $path
+        $newContent | Set-Content $path -Encoding UTF8
         Write-Host "[i] Updated $path to $url" -ForegroundColor Gray
     }
 }
@@ -26,7 +27,10 @@ try {
     # 2. Build Client Portal
     Write-Host "`n[2/6] Building Client Portal..." -ForegroundColor Yellow
     Set-Location client
-    if (-not (Test-Path "node_modules")) { npm install --legacy-peer-deps }
+    if (-not (Test-Path "node_modules")) { 
+        Write-Host "   Installing dependencies..." -ForegroundColor Gray
+        npm install --legacy-peer-deps 
+    }
     npm run build
     if ($LASTEXITCODE -ne 0) { throw "Client build failed" }
     Set-Location ..
@@ -34,7 +38,12 @@ try {
     # 3. Build Admin Panel
     Write-Host "`n[3/6] Building Admin Panel..." -ForegroundColor Yellow
     Set-Location admin
-    if (-not (Test-Path "node_modules")) { npm install --legacy-peer-deps }
+    if (-not (Test-Path "node_modules")) { 
+        Write-Host "   Installing dependencies..." -ForegroundColor Gray
+        npm install --legacy-peer-deps 
+    }
+    # Ensure any previous dist is cleared to prevent stale assets
+    if (Test-Path "dist") { Remove-Item -Recurse -Force "dist" }
     npm run build
     if ($LASTEXITCODE -ne 0) { throw "Admin build failed" }
     Set-Location ..
@@ -42,7 +51,10 @@ try {
     # 4. Prepare Server (Cloud Functions)
     Write-Host "`n[4/6] Preparing Server (Functions)..." -ForegroundColor Yellow
     Set-Location server
-    if (-not (Test-Path "node_modules")) { npm install --legacy-peer-deps }
+    if (-not (Test-Path "node_modules")) { 
+        Write-Host "   Installing dependencies..." -ForegroundColor Gray
+        npm install --legacy-peer-deps 
+    }
     Set-Location ..
 
     # 5. Map Firebase Hosting Targets
@@ -52,11 +64,13 @@ try {
 
     # 6. Deploy Everything (Hosting + Functions)
     Write-Host "`n[6/6] Deploying Hosting and Functions..." -ForegroundColor Yellow
-    firebase deploy
+    # Using --only to ensure we deploy hosting and the specific api function
+    firebase deploy --only "hosting,functions"
 
     if ($LASTEXITCODE -ne 0) { throw "Firebase deploy failed" }
 
-} finally {
+}
+finally {
     # Restore Local API URL for development
     Write-Host "`n[i] Restoring Localhost API for development..." -ForegroundColor Gray
     Set-EnvApi "admin/.env" $LOCAL_API_URL
