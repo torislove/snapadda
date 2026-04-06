@@ -37,8 +37,17 @@ function ProtectedRoute({ children }) {
 
   if (isLoading) return <EliteLoader />;
   if (!user) return <Navigate to="/login" replace state={{ from: location }} />;
-  if (user.role !== 'client') return <Navigate to="/" replace />;
-  if (!user.onboardingCompleted && location.pathname !== '/onboarding' && location.pathname !== '/') return <Navigate to="/onboarding" replace />;
+  
+  // If user is not a client, they shouldn't be here. Redirect to login to force a correct account.
+  if (user.role !== 'client') {
+    console.warn('Unauthorized role access:', user.role);
+    return <Navigate to="/login" replace />;
+  }
+
+  if (!user.onboardingCompleted && location.pathname !== '/onboarding') {
+    return <Navigate to="/onboarding" replace />;
+  }
+  
   return children;
 }
 

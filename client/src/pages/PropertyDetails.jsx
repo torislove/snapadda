@@ -93,7 +93,7 @@ export default function PropertyDetails() {
   };
 
   const handleLike = async () => {
-    if (!user || user.isGuest) { alert('Please sign in with Google to like properties'); return; }
+    if (!user) { alert('Please sign in with Google to like properties'); return; }
     try {
       const res = await likeProperty(id, user._id || user.id);
       if (res.status === 'success') {
@@ -105,7 +105,7 @@ export default function PropertyDetails() {
 
   const handleShare = async () => {
     const url = window.location.href;
-    const shareId = user?.isGuest ? null : user?._id;
+    const shareId = user?._id;
     try {
       if (navigator.share) {
         await navigator.share({ title: `SnapAdda: ${property?.title}`, text: `Check out this property in ${property?.location}`, url });
@@ -137,7 +137,7 @@ export default function PropertyDetails() {
       const res = await askQuestion({ 
         propertyId: id, 
         userId: user._id || user.id,
-        authType: user.isGuest ? 'Guest' : (user.token ? 'Google' : 'Email'),
+        authType: user.token ? 'Google' : 'Email',
         clientName: user.name || qName, 
         clientContact: user.email || user.phone || qContact, 
         question: qText 

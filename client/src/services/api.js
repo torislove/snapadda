@@ -116,7 +116,10 @@ export const fetchSetting = async (key) => {
     if (!res.ok) throw new Error(`Failed to fetch setting: ${key}`);
     const data = (await res.json()).data || null;
     // Merge backend data over defaults so admin overrides take effect
-    return data ? { ...DEFAULTS[key], ...data } : DEFAULTS[key] || null;
+    if (data && typeof data === 'object' && !Array.isArray(data)) {
+      return { ...DEFAULTS[key], ...data };
+    }
+    return data || DEFAULTS[key] || null;
   } catch (e) {
     console.warn(`[fetchSetting] Using default for '${key}':`, e.message);
     return DEFAULTS[key] || null;

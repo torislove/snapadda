@@ -39,18 +39,20 @@ export default function Onboarding() {
       try {
         const res = await fetchSetting('onboarding_questions');
         // Filter out disabled ones
-        const active = (res || []).filter(q => q.enabled);
+        const dataArray = Array.isArray(res) ? res : [];
+        const active = dataArray.filter(q => q && q.enabled);
         
         // Build initial form data
         const initial = {};
         active.forEach(q => {
-          initial[q.key] = q.type === 'options' ? '' : '';
+          if (q.key) initial[q.key] = q.type === 'options' ? '' : '';
         });
         
         setQuestions(active);
         setFormData(initial);
       } catch (err) {
         console.error('Failed to load onboarding questions:', err);
+        setQuestions([]);
       } finally {
         setLoading(false);
       }

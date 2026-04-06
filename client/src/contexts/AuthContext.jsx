@@ -28,17 +28,6 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('snapadda_user', JSON.stringify(userWithToken));
   };
 
-  const loginGuest = () => {
-    const guestUser = { 
-      _id: 'guest_' + Date.now(),
-      name: 'Guest User', 
-      role: 'client', 
-      isGuest: true, 
-      onboardingCompleted: true 
-    };
-    setUser(guestUser);
-    localStorage.setItem('snapadda_user', JSON.stringify(guestUser));
-  };
 
   const logout = () => {
     setUser(null);
@@ -64,7 +53,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, loginGoogle, loginGuest, logout, completeOnboarding, isLoading }}>
+    <AuthContext.Provider value={{ user, login, loginGoogle, logout, completeOnboarding, isLoading }}>
       {children}
     </AuthContext.Provider>
   );

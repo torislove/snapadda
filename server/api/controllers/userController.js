@@ -57,37 +57,6 @@ export const googleAuth = async (req, res) => {
   }
 };
 
-export const guestAuth = async (req, res) => {
-  try {
-    // Check if a guest user already exists for this session/request (optional)
-    // For simplicity, we'll create a new guest or use a generic one if desired.
-    // Let's create a unique guest ID for the session.
-    const guestId = `guest_${Math.random().toString(36).substring(2, 9)}`;
-    
-    // In a real app, you might not save guests to DB immediately, 
-    // but to support persistent favorites, let's create a guest user.
-    const user = new User({
-      googleId: guestId,
-      email: `${guestId}@snapadda.guest`,
-      name: 'Guest Explorer',
-      avatar: 'https://cdn-icons-png.flaticon.com/512/149/149071.png',
-      role: 'client',
-      onboardingCompleted: false,
-      isGuest: true
-    });
-    
-    await user.save();
-
-    res.status(200).json({ 
-      status: 'success', 
-      user 
-    });
-  } catch (error) {
-    console.error("Guest Auth Error:", error);
-    res.status(500).json({ status: 'error', message: error.message });
-  }
-};
-
 export const updatePreferences = async (req, res) => {
   try {
     const { id } = req.params;

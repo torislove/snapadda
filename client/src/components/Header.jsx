@@ -72,6 +72,7 @@ export default function Header() {
           </nav>
 
           <div className="nav-right">
+            {/* Desktop Only Auth/Lang */}
             <div className="desktop-only" style={{ display: 'flex', alignItems: 'center' }}>
               <button 
                 onClick={toggleLang} 
@@ -88,26 +89,6 @@ export default function Header() {
                 <Link to="/login" className="nav-signin-btn btn-3d">{t('nav.signIn', 'Sign In')}</Link>
               )}
             </div>
-
-            <button 
-              onClick={toggleLang} 
-              className="mobile-only"
-              style={{ 
-                background: 'transparent', 
-                border: '1px solid rgba(212,175,55,0.4)', 
-                color: 'var(--gold)', 
-                padding: '0.35rem 0.7rem', 
-                borderRadius: '6px', 
-                cursor: 'pointer', 
-                marginRight: '0.85rem', 
-                alignItems: 'center', 
-                gap: '5px', 
-                fontSize: '0.78rem',
-                fontWeight: 600
-              }}
-            >
-              <Globe size={14} /> {i18n.language === 'en' ? 'తెలుగు' : 'English'}
-            </button>
 
             <button
               className="mobile-menu-btn"
@@ -155,6 +136,14 @@ export default function Header() {
                   <User size={18} style={{ marginRight: '8px' }} /> Sign In
                 </Link>
               )}
+              <hr style={{ borderColor: 'rgba(255,255,255,0.1)', margin: '1rem 0' }} />
+              <button 
+                onClick={toggleLang} 
+                className="mobile-auth-btn-glass btn-3d"
+                style={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', color: 'var(--gold)' }}
+              >
+                <Globe size={18} style={{ marginRight: '8px' }} /> {i18n.language === 'en' ? 'తెలుగు' : 'English'}
+              </button>
             </div>
           </motion.div>
         )}

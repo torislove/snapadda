@@ -1,4 +1,44 @@
 import Property from '../models/Property.js';
+import { db } from '../firebase.js';
+
+// Helper to sync to Firebase
+const syncToFirebase = async (property) => {
+  try {
+    if (!property || !db) return;
+    const ref = db.ref(`properties/${property._id || property.id}`);
+    
+    // Only mirror essential data for the client portal to keep RTDB light
+    const syncData = {
+      id: (property._id || property.id).toString(),
+      title: property.title,
+      price: property.price,
+      location: property.location,
+      type: property.type,
+      images: property.images || [],
+      image: property.image || (property.images?.length > 0 ? property.images[0] : ''),
+      status: property.status || 'Active',
+      isVerified: property.isVerified || false,
+      isFeatured: property.isFeatured || false,
+      bhk: property.bhk,
+      updatedAt: new Date().toISOString()
+    };
+
+    await ref.set(syncData);
+    console.log(`SYNC_SUCCESS: Property ${syncData.id} pushed to Firebase`);
+  } catch (err) {
+    console.error('SYNC_ERROR_FIREBASE:', err.message);
+  }
+};
+
+const removeFromFirebase = async (id) => {
+  try {
+    if (!id || !db) return;
+    await db.ref(`properties/${id}`).remove();
+    console.log(`SYNC_DELETE_SUCCESS: Property ${id} removed from Firebase`);
+  } catch (err) {
+    console.error('SYNC_DELETE_ERROR:', err.message);
+  }
+};
 
 // Get all properties (with optional filters)
 export const getProperties = async (req, res) => {
@@ -65,6 +105,10 @@ export const createProperty = async (req, res) => {
 
     const newProperty = new Property(propertyData);
     await newProperty.save();
+    
+    // Sync to Firebase for real-time (Non-blocking)
+    syncToFirebase(newProperty).catch(err => console.error('FIREBASE_SYNC_ERR:', err));
+    
     res.status(201).json({ status: 'success', data: newProperty });
   } catch (error) {
     res.status(400).json({ status: 'error', message: error.message });
@@ -87,6 +131,10 @@ export const updateProperty = async (req, res) => {
   try {
     const property = await Property.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
     if (!property) return res.status(404).json({ message: 'Property not found' });
+    
+    // Sync to Firebase for real-time (Non-blocking)
+    syncToFirebase(property).catch(err => console.error('FIREBASE_SYNC_ERR:', err));
+    
     res.status(200).json({ status: 'success', data: property });
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -98,6 +146,10 @@ export const deleteProperty = async (req, res) => {
   try {
     const property = await Property.findByIdAndDelete(req.params.id);
     if (!property) return res.status(404).json({ message: 'Property not found' });
+    
+    // Remove from Firebase (Non-blocking)
+    removeFromFirebase(req.params.id).catch(err => console.error('FIREBASE_DELETE_ERR:', err));
+    
     res.status(200).json({ status: 'success', message: 'Property deleted successfully' });
   } catch (error) {
     res.status(500).json({ message: error.message });

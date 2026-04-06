@@ -7,22 +7,41 @@ Write-Host ""
 $PROD_API_URL = "/api"
 $LOCAL_API_URL = "http://localhost:5000/api"
 
-# Function to Swap API URL in .env
-function Set-EnvApi($path, $url) {
+# Production Firebase Config (Sourced from Admin)
+$FIREBASE_PROD = @{
+    "VITE_FIREBASE_API_KEY" = "AIzaSyAQX18dK6_wumA5bKEhPnKeckOIfC-SOR0"
+    "VITE_FIREBASE_AUTH_DOMAIN" = "snapadda-7a6e6.firebaseapp.com"
+    "VITE_FIREBASE_PROJECT_ID" = "snapadda-7a6e6"
+    "VITE_FIREBASE_STORAGE_BUCKET" = "snapadda-7a6e6.firebasestorage.app"
+    "VITE_FIREBASE_MESSAGING_SENDER_ID" = "227172321059"
+    "VITE_FIREBASE_APP_ID" = "1:227172321059:web:7fe7097f7937739c0f6e96"
+    "VITE_FIREBASE_MEASUREMENT_ID" = "G-EPKYKL1SPN"
+}
+
+# Function to Swap/Set Env Var in .env
+function Set-EnvVar($path, $key, $value) {
     if (Test-Path $path) {
         $content = Get-Content $path
-        # Use regex to replace the value, handling both single and double quotes
-        $newContent = $content -replace 'VITE_API_URL=.*', "VITE_API_URL=`"$url`""
+        if ($content -match "$key=") {
+            $newContent = $content -replace "$key=.*", "$key=`"$value`""
+        } else {
+            $newContent = $content + "`n$key=`"$value`""
+        }
         $newContent | Set-Content $path -Encoding UTF8
-        Write-Host "[i] Updated $path to $url" -ForegroundColor Gray
     }
 }
 
 try {
     # 1. Prepare for Production Build
-    Write-Host "[1/6] Injecting Production API URL..." -ForegroundColor Yellow
-    Set-EnvApi "admin/.env" $PROD_API_URL
-    Set-EnvApi "client/.env" $PROD_API_URL
+    Write-Host "[1/6] Injecting Production Multi-Env Config..." -ForegroundColor Yellow
+    
+    foreach ($path in @("admin/.env", "client/.env")) {
+        Set-EnvVar $path "VITE_API_URL" $PROD_API_URL
+        foreach ($key in $FIREBASE_PROD.Keys) {
+            Set-EnvVar $path $key $FIREBASE_PROD[$key]
+        }
+        Write-Host "   -> Updated $path with API and Firebase Production keys" -ForegroundColor Gray
+    }
 
     # 2. Build Client Portal
     Write-Host "`n[2/6] Building Client Portal..." -ForegroundColor Yellow
@@ -73,8 +92,8 @@ try {
 finally {
     # Restore Local API URL for development
     Write-Host "`n[i] Restoring Localhost API for development..." -ForegroundColor Gray
-    Set-EnvApi "admin/.env" $LOCAL_API_URL
-    Set-EnvApi "client/.env" $LOCAL_API_URL
+    Set-EnvVar "admin/.env" "VITE_API_URL" $LOCAL_API_URL
+    Set-EnvVar "client/.env" "VITE_API_URL" $LOCAL_API_URL
     Set-Location $PSScriptRoot
 }
 

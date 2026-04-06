@@ -1,11 +1,10 @@
 import express from 'express';
-import { googleAuth, guestAuth, updatePreferences, getAllUsers, toggleFavorite, getFavorites } from '../controllers/userController.js';
+import { googleAuth, updatePreferences, getAllUsers, toggleFavorite, getFavorites } from '../controllers/userController.js';
 
 const router = express.Router();
 
 // Auth routes
 router.post('/auth', googleAuth);
-router.post('/guest', guestAuth);
 
 // Preference update (Onboarding)
 router.post('/:id/preferences', updatePreferences);

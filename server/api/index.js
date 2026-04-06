@@ -9,15 +9,8 @@ import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import { v2 as cloudinary } from 'cloudinary';
 import { onRequest } from "firebase-functions/v2/https";
-import admin from 'firebase-admin';
+import './firebase.js'; // Ensure Firebase is initialized
 
-// Initialize Firebase Admin for Realtime Database and Auth access
-if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.applicationDefault(),
-    databaseURL: process.env.DB_FIREBASE_URL
-  });
-}
 
 // Critical Environment Check
 console.log('--- PRODUCTION_ENV_DIAGNOSTICS ---');
@@ -25,6 +18,7 @@ console.log('NODE_ENV:', process.env.NODE_ENV);
 console.log('MONGODB_URI_PROVIDED:', !!process.env.MONGODB_URI);
 console.log('CLOUDINARY_NAME_PROVIDED:', !!process.env.CLOUDINARY_CLOUD_NAME);
 console.log('CLOUDINARY_KEY_PROVIDED:', !!process.env.CLOUDINARY_API_KEY);
+console.log('FIREBASE_DB_URL_PROVIDED:', !!process.env.DB_FIREBASE_URL);
 console.log('----------------------------------');
 
 const app = express();

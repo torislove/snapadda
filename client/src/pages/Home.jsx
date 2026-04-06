@@ -9,6 +9,8 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { fetchProperties, fetchCities, fetchTestimonials, fetchSetting } from '../services/api';
+import { db } from '../firebase';
+import { ref, onValue, off } from 'firebase/database';
 import PropertyCard from '../components/PropertyCard';
 import ContactModal from '../components/ContactModal';
 import FilterSidebar from '../components/FilterSidebar';
@@ -173,14 +175,34 @@ export default function Home() {
       );
     }
     
-    fetchCities().then(d => { setCities(d); setCitiesLoading(false); }).catch(console.error);
+    // Initial fetch for non-realtime settings
     fetchTestimonials().then(setTestimonials).catch(console.error);
     fetchSetting('appearance').then(d => setAppearance(d || {})).catch(console.error);
     fetchSetting('support_info').then(d => setSupportInfo(d || {})).catch(console.error);
     fetchSetting('hero_content').then(setHeroContent).catch(console.error);
     fetchSetting('site_stats').then(setSiteStats).catch(console.error);
     fetchSetting('seo').then(setSeoData).catch(console.error);
+
+    // 1. ALWAYS FETCH REST API first (ensures data is visible even if Firebase hangs)
+    fetchCities().then(setCities).catch(console.error).finally(() => setCitiesLoading(false));
+
+    // 2. ATTACH REAL-TIME LISTENER (optional/background update)
+    if (db) {
+      const citiesRef = ref(db, 'cities');
+      onValue(citiesRef, (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+          const cityList = Object.values(data);
+          setCities(cityList.sort((a, b) => a.name.localeCompare(b.name)));
+        }
+      }, (err) => {
+        console.warn("RTDB City sync warning:", err.message);
+      });
+
+      return () => off(citiesRef);
+    }
   }, []);
+
 
   useEffect(() => {
     try {
@@ -216,7 +238,7 @@ export default function Home() {
     const smart = parseSmartSearch(keyword);
     fetchProperties({
       ...advFilters,
-      search: smart?.city ? smart.keyword.replace(new RegExp(smart.city, 'gi'), '').trim() : debouncedKeyword,
+      search: (smart?.city && smart?.keyword) ? smart.keyword.replace(new RegExp(smart.city.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), '').trim() : debouncedKeyword,
       type: smart?.type || (typeFilter === 'all' ? undefined : typeFilter),
       city: smart?.city || cityFilter || undefined,
       purpose: intent === 'Buy' ? 'Buy' : intent === 'Rent' ? 'Rent' : undefined,
@@ -225,12 +247,49 @@ export default function Home() {
       minPrice: smart?.minPrice || advFilters.minPrice || undefined,
       bhk: smart?.bhk || advFilters.bhk || undefined,
     })
-      .then(res => setProperties(res?.data || (Array.isArray(res) ? res : [])))
+      .then(res => {
+        const initialProps = res?.data || (Array.isArray(res) ? res : []);
+        setProperties(initialProps);
+      })
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [advFilters, debouncedKeyword, typeFilter, cityFilter, intent, budget]);
 
-  useEffect(() => { loadProperties(); }, [loadProperties]);
+  useEffect(() => { 
+    loadProperties(); 
+
+    // REST API is already handled by loadProperties() above.
+    // Attach real-time listener ONLY for updates to existing properties.
+    if (db) {
+      const propsRef = ref(db, 'properties');
+      onValue(propsRef, (snapshot) => {
+        const data = snapshot.val();
+        if (!data) return;
+        
+        const firebaseProps = Object.values(data);
+        
+        // Merge updates from Firebase into existing state
+        setProperties(prev => {
+          let reversedPrev = [...prev];
+          let changed = false;
+          const next = reversedPrev.map(p => {
+            const updated = firebaseProps.find(fp => fp.id === (p._id || p.id).toString());
+            if (updated && (updated.price !== p.price || updated.status !== p.status || updated.title !== p.title)) {
+              changed = true;
+              return { ...p, ...updated, _id: p._id };
+            }
+            return p;
+          });
+          return changed ? next : prev;
+        });
+      }, (err) => {
+        console.warn("RTDB Property sync warning:", err.message);
+      });
+
+      return () => off(propsRef);
+    }
+  }, [loadProperties]);
+
 
   const sortedProperties = useMemo(() => {
     const arr = [...properties];
@@ -395,11 +454,11 @@ export default function Home() {
               <MapPin size={12} /> {heroContent?.eyebrow || t('hero.eyebrow')}
             </motion.div>
             <motion.h1 className="hero-title" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, delay: 0.1 }}>
-              {heroContent?.title.split('|')[0] || t('hero.title1')}
+              {heroContent?.title?.split('|')[0] || t('hero.title1')}
               <span className="gold-line text-royal-gold" style={{ display: 'block' }}>
                 {typedWord}<span style={{ color: 'var(--gold)', opacity: 0.7 }}>|</span>
               </span>
-              {heroContent?.title.split('|')[1] || t('hero.title2')}
+              {heroContent?.title?.split('|')[1] || t('hero.title2')}
             </motion.h1>
             <motion.p className="hero-subtitle" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2 }}>
               {heroContent?.subtitle || t('hero.subtitle')}
@@ -415,17 +474,17 @@ export default function Home() {
               </a>
             </motion.div>
             <motion.div className="hero-stats-row" initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ delay: 0.5 }}>
-              {siteStats.length > 0 ? (
+              {Array.isArray(siteStats) && siteStats.length > 0 ? (
                 siteStats.map((s, i) => (
                   <div key={i} className="hero-stat-chip">
-                    <div className="stat-v">{s.value}</div>
-                    <div className="stat-l">{s.label}</div>
+                    <div className="stat-v">{s?.value}</div>
+                    <div className="stat-l">{s?.label}</div>
                   </div>
                 ))
               ) : (
                 [
-                  { icon: <ShieldCheck size={15} />, val: `${properties.filter(p => p.isVerified).length || 0}+`, label: t('stats.verified') },
-                  { icon: <MapPin size={15} />, val: `${cities.length}`, label: t('stats.cities') },
+                  { icon: <ShieldCheck size={15} />, val: `${(properties || []).filter(p => p?.isVerified).length || 0}+`, label: t('stats.verified') },
+                  { icon: <MapPin size={15} />, val: `${(cities || []).length}`, label: t('stats.cities') },
                   { icon: <Users size={15} />, val: '2,400+', label: t('stats.clients') },
                   { icon: <Star size={15} />, val: 'CRDA', label: t('stats.approved') },
                 ].map((s, i) => (

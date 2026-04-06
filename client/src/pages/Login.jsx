@@ -11,7 +11,7 @@ import Logo from '../components/Logo';
 
 export default function Login() {
   const { t } = useTranslation();
-  const { loginGoogle, loginGuest } = useAuth();
+  const { loginGoogle } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const from = location.state?.from?.pathname || location.state?.from || '/';
@@ -101,18 +101,9 @@ export default function Login() {
           
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', opacity: 0.5 }}>
             <div style={{ flex: 1, height: '1px', background: 'var(--border-light)' }}></div>
-            <span style={{ fontSize: '0.75rem', color: 'var(--txt-secondary)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Secure Access</span>
+            <span style={{ fontSize: '0.75rem', color: 'var(--txt-secondary)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Secure Identity Verification</span>
             <div style={{ flex: 1, height: '1px', background: 'var(--border-light)' }}></div>
           </div>
-          
-          <button 
-            type="button"
-            onClick={() => { loginGuest(); navigate(from, { replace: true }); }}
-            className="hero-btn hero-btn-glass" 
-            style={{ width: '100%', padding: '0.85rem', display: 'flex', justifyContent: 'center', fontSize: '0.9rem' }}
-          >
-            Continue as Guest
-          </button>
         </div>
 
         <p style={{ textAlign: 'center', marginTop: '3rem', fontSize: '0.8rem', color: 'var(--txt-muted)', lineHeight: 1.6 }}>

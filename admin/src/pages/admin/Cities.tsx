@@ -58,9 +58,17 @@ const AdminCities = () => {
     try {
       // Handle Image Upload
       if (newImageFile) {
-        const uploadResult = await uploadMedia([newImageFile]);
-        if (uploadResult.status === 'success' && uploadResult.data.length > 0) {
-          cityData.image = uploadResult.data[0];
+        try {
+          const uploadResult = await uploadMedia([newImageFile]);
+          if (uploadResult.status === 'success' && uploadResult.data.length > 0) {
+            cityData.image = uploadResult.data[0];
+          } else {
+            throw new Error(uploadResult.message || "Media server error");
+          }
+        } catch (mediaErr: any) {
+          console.error("City Image Upload Failed:", mediaErr);
+          alert(`Image upload failed: ${mediaErr.message || "Connection error"}. Saving without new image.`);
+          cityData.image = currentImageUrl;
         }
       } else {
         cityData.image = currentImageUrl; // Keep existing or empty if removed
@@ -68,10 +76,10 @@ const AdminCities = () => {
 
       if (isEditing && editingCity) {
         await updateCity(editingCity._id || editingCity.id, cityData);
-        alert('Region updated!');
+        alert('Region updated successfully!');
       } else {
         await createCity(cityData);
-        alert('Region added!');
+        alert('Region added successfully!');
       }
       setIsAdding(false);
       setIsEditing(false);
@@ -79,8 +87,9 @@ const AdminCities = () => {
       setNewImageFile(null);
       setCurrentImageUrl('');
       loadCities();
-    } catch (err) {
-      alert('Failed to save region');
+    } catch (err: any) {
+      console.error("City Save Error:", err);
+      alert(`Failed to save region: ${err.response?.data?.message || err.message}`);
     } finally {
       setIsUploading(false);
     }
