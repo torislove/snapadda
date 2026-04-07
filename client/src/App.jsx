@@ -11,6 +11,7 @@ const Login = lazy(() => import('./pages/Login'));
 const Onboarding = lazy(() => import('./pages/Onboarding'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const RequestPage = lazy(() => import('./pages/RequestPage'));
+const SearchResults = lazy(() => import('./pages/SearchResults'));
 
 // Minimalist High-Performance Loader
 const EliteLoader = () => (
@@ -62,6 +63,7 @@ function AppContent() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+          <Route path="/search" element={<ProtectedRoute><SearchResults /></ProtectedRoute>} />
           <Route path="/property/:id" element={<PropertyDetails />} />
           <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
           <Route path="/dashboard/*" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />

@@ -27,6 +27,8 @@ const AdminProperties = () => {
   const [newImageFiles, setNewImageFiles] = useState<File[]>([]);
   const [priceUnit, setPriceUnit] = useState<'Total' | 'Lakhs' | 'Cr'>('Total');
   const [pricePerAcreUnit, setPricePerAcreUnit] = useState<'Total' | 'Lakhs' | 'Cr'>('Lakhs');
+  const [agriAcres, setAgriAcres] = useState<number | string>('');
+  const [agriCents, setAgriCents] = useState<number | string>('');
   const [search, setSearch] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'cards'>('cards');
 
@@ -56,6 +58,8 @@ const AdminProperties = () => {
     setLiveData({});
     setPriceUnit('Total');
     setPricePerAcreUnit('Total');
+    setAgriAcres('');
+    setAgriCents('');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -91,16 +95,42 @@ const AdminProperties = () => {
     else if (prop.pricePerAcre >= 100000) setPricePerAcreUnit('Lakhs');
     else setPricePerAcreUnit('Total');
 
+    // Split totalAcres into acres + cents
+    const ta = Number(prop.totalAcres) || 0;
+    setAgriAcres(Math.floor(ta));
+    setAgriCents(Math.round((ta % 1) * 100));
+
     setIsEditing(true);
     setIsAdding(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const formatPriceAdminLocal = (price: number) => {
-    if (!price) return '₹ 0/-';
-    if (price >= 10000000) return `₹ ${(price / 10000000).toLocaleString('en-IN', { maximumFractionDigits: 2 })} Cr/-`;
-    if (price >= 100000) return `₹ ${(price / 100000).toLocaleString('en-IN', { maximumFractionDigits: 2 })} L/-`;
-    return `₹ ${price.toLocaleString('en-IN')}/-`;
+  const formatPriceAdminLocal = (price: number | string) => {
+    const n = Number(price);
+    if (!n || isNaN(n)) return '₹ 0/-';
+    if (n >= 10000000) return `₹ ${parseFloat((n / 10000000).toFixed(2))} Cr/-`;
+    if (n >= 100000) return `₹ ${parseFloat((n / 100000).toFixed(2))} L/-`;
+    return `₹ ${n.toLocaleString('en-IN')}/-`;
+  };
+
+  const formatLandSizeAdmin = (totalAcres: number) => {
+    if (!totalAcres) return '—';
+    const acres = Math.floor(totalAcres);
+    const cents = Math.round((totalAcres % 1) * 100);
+    if (acres === 0) return `${cents} Cents`;
+    if (cents === 0) return `${acres} Ac`;
+    return `${acres} Ac ${cents} Ct`;
+  };
+
+  const getAgriTotalDecimal = () => {
+    return Number(agriAcres || 0) + Number(agriCents || 0) / 100;
+  };
+
+  const agriAutoValuation = () => {
+    const ta = getAgriTotalDecimal();
+    const ppa = convertToValue(liveData.pricePerAcre || 0, pricePerAcreUnit);
+    if (!ta || !ppa) return 0;
+    return Math.round(ta * Number(ppa));
   };
 
   const convertToValue = (val: number | string, unit: string) => {
@@ -148,11 +178,21 @@ const AdminProperties = () => {
         propData.price = convertToValue(propData.price, priceUnit);
         propData.pricePerAcre = convertToValue(propData.pricePerAcre, pricePerAcreUnit);
 
+        // For agricultural land, combine acres + cents into totalAcres decimal
+        if (liveData.type === 'Agricultural Land') {
+          propData.totalAcres = getAgriTotalDecimal();
+          // If price not set but pricePerAcre and totalAcres exist, auto-calculate
+          if (!propData.price && propData.pricePerAcre && propData.totalAcres) {
+            propData.price = Math.round(Number(propData.pricePerAcre) * Number(propData.totalAcres));
+          }
+        } else {
+          propData.totalAcres = Number(propData.totalAcres) || 0;
+        }
+
         propData.images = uploadedUrls;
         if (uploadedUrls.length > 0) propData.image = uploadedUrls[0];
         
         propData.areaSize = Number(propData.areaSize) || 0;
-        propData.totalAcres = Number(propData.totalAcres) || 0;
         propData.bhk = Number(propData.bhk) || 0;
         propData.carpetArea = Number(propData.carpetArea) || 0;
         propData.superBuiltupArea = Number(propData.superBuiltupArea) || 0;
@@ -162,6 +202,9 @@ const AdminProperties = () => {
         propData.cornerProperty = !!propData.cornerProperty;
         propData.boundaryWall = !!propData.boundaryWall;
         propData.googleMapsLink = propData.googleMapsLink || '';
+        propData.surveyNo = propData.surveyNo || '';
+        propData.waterSource = propData.waterSource || 'N/A';
+        propData.roadType = propData.roadType || 'N/A';
 
         const payload = {
           ...propData,
@@ -428,11 +471,53 @@ const AdminProperties = () => {
                 {liveData.type === 'Agricultural Land' && (
                   <section>
                     <h3 style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--emerald)', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '1.75rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <div style={{ width: '20px', height: '1px', background: 'var(--emerald)' }} /> LAND SPECIFIC DETAILS
+                      <div style={{ width: '20px', height: '1px', background: 'var(--emerald)' }} /> 🌾 AGRICULTURAL LAND DETAILS (AP STANDARD)
                     </h3>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                    {/* Auto-valuation preview */}
+                    {agriAutoValuation() > 0 && (
+                      <div style={{ marginBottom: '1.5rem', padding: '1rem 1.5rem', background: 'rgba(16,217,140,0.05)', borderRadius: '14px', border: '1px solid rgba(16,217,140,0.2)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--emerald)', fontWeight: 800 }}>AUTO-CALCULATED TOTAL VALUATION</div>
+                        <div style={{ fontSize: '1.4rem', fontWeight: 900, color: 'white' }}>{formatPriceAdminLocal(agriAutoValuation())}</div>
+                      </div>
+                    )}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1.5rem' }}>
+                      {/* Acres */}
                       <div>
-                        <label className="admin-label">Price Per Acre</label>
+                        <label className="admin-label">Acres (ఎకరాలు)</label>
+                        <input 
+                          type="number" 
+                          step="1"
+                          min="0"
+                          value={agriAcres}
+                          onChange={(e) => { setAgriAcres(e.target.value); setLiveData((p: any) => ({ ...p, totalAcres: Number(e.target.value) + Number(agriCents) / 100 })); }}
+                          className="admin-input"
+                          placeholder="e.g. 2"
+                        />
+                      </div>
+                      {/* Cents */}
+                      <div>
+                        <label className="admin-label">Cents (సెంట్లు) <span style={{ color: 'var(--text-muted)', fontSize: '0.65rem' }}>100 Cents = 1 Acre</span></label>
+                        <input 
+                          type="number" 
+                          step="1"
+                          min="0"
+                          max="99"
+                          value={agriCents}
+                          onChange={(e) => { setAgriCents(e.target.value); setLiveData((p: any) => ({ ...p, totalAcres: Number(agriAcres) + Number(e.target.value) / 100 })); }}
+                          className="admin-input"
+                          placeholder="e.g. 50"
+                        />
+                      </div>
+                      {/* Total display */}
+                      <div>
+                        <label className="admin-label">Total Area (Auto)</label>
+                        <div className="admin-input" style={{ background: 'rgba(16,217,140,0.05)', color: 'var(--emerald)', fontWeight: 700, display: 'flex', alignItems: 'center' }}>
+                          {getAgriTotalDecimal() > 0 ? `${getAgriTotalDecimal().toFixed(2)} Acres (${formatLandSizeAdmin(getAgriTotalDecimal())})` : '—'}
+                        </div>
+                      </div>
+                      {/* Price Per Acre */}
+                      <div>
+                        <label className="admin-label">Price Per Acre (ఎకరాకు)</label>
                         <div style={{ display: 'flex', gap: '8px' }}>
                           <input 
                             name="pricePerAcre" 
@@ -455,9 +540,45 @@ const AdminProperties = () => {
                           </select>
                         </div>
                       </div>
+                      {/* Price Per Cent (auto-calculated) */}
                       <div>
-                        <label className="admin-label">Total Acres/Cents</label>
-                        <input name="totalAcres" type="number" step="0.01" defaultValue={editingProperty?.totalAcres || ''} className="admin-input" placeholder="e.g. 2.5" />
+                        <label className="admin-label">Price Per Cent (Auto) <span style={{ color: 'var(--text-muted)', fontSize: '0.65rem' }}>1/100 of acre price</span></label>
+                        <div className="admin-input" style={{ background: 'rgba(255,255,255,0.03)', color: 'rgba(255,255,255,0.7)', fontSize: '0.9rem' }}>
+                          {liveData.pricePerAcre ? `₹ ${Math.round(convertToValue(liveData.pricePerAcre, pricePerAcreUnit) / 100).toLocaleString('en-IN')} / Cent` : '—'}
+                        </div>
+                      </div>
+                      {/* Survey Number */}
+                      <div>
+                        <label className="admin-label">Survey Number (సర్వే నంబర్)</label>
+                        <input name="surveyNo" defaultValue={editingProperty?.surveyNo || ''} className="admin-input" placeholder="e.g. 123/A" />
+                      </div>
+                      {/* Water Source */}
+                      <div>
+                        <label className="admin-label">Water Source (నీటి వనరు)</label>
+                        <select name="waterSource" defaultValue={editingProperty?.waterSource || 'N/A'} className="admin-select">
+                          <option value="N/A">N/A</option>
+                          <option value="Borewell">Borewell (బోర్ వెల్)</option>
+                          <option value="Canal">Canal / నాలా</option>
+                          <option value="Both">Both (రెండూ)</option>
+                          <option value="None">None</option>
+                        </select>
+                      </div>
+                      {/* Road Type */}
+                      <div>
+                        <label className="admin-label">Road Type (రోడ్డు రకం)</label>
+                        <select name="roadType" defaultValue={editingProperty?.roadType || 'N/A'} className="admin-select">
+                          <option value="N/A">N/A</option>
+                          <option value="NH">National Highway (NH)</option>
+                          <option value="SH">State Highway (SH)</option>
+                          <option value="CC Road">CC Road (సిసి రోడ్డు)</option>
+                          <option value="Mud Road">Mud Road (మట్టి రోడ్డు)</option>
+                          <option value="Kachha">Kachha Path</option>
+                        </select>
+                      </div>
+                      {/* Road Width */}
+                      <div>
+                        <label className="admin-label">Road Width (Ft)</label>
+                        <input name="roadWidth" type="number" defaultValue={editingProperty?.roadWidth || ''} className="admin-input" placeholder="e.g. 30" />
                       </div>
                     </div>
                   </section>
@@ -812,23 +933,87 @@ const AdminProperties = () => {
                         <img src={prop.image || 'https://via.placeholder.com/400x250?text=No+Asset+Image'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                       </div>
 
-                      <div style={{ flex: 1 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.8rem' }}>
-                          <div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.8rem', gap: '1rem' }}>
+                          <div style={{ minWidth: 0 }}>
                             <div style={{ fontSize: '0.65rem', fontWeight: 900, color: 'var(--violet)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '4px' }}>{prop.type} • {prop.location}</div>
-                            <h4 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'white', fontFamily: 'var(--font-heading)' }}>{prop.title}</h4>
+                            <h4 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'white', fontFamily: 'var(--font-heading)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{prop.title}</h4>
                           </div>
-                          <div style={{ display: 'flex', gap: '0.6rem' }}>
+                          <div style={{ display: 'flex', gap: '0.6rem', flexShrink: 0 }}>
                             {prop.isVerified && <ShieldCheck size={18} style={{ color: 'var(--emerald)' }} />}
                             {prop.isFeatured && <Star size={18} fill="var(--gold)" style={{ color: 'var(--gold)' }} />}
                           </div>
                         </div>
 
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1.5rem', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '1.25rem' }}>
-                          <div style={{ display: 'flex', gap: '2rem' }}>
+                        {/* TYPE-SPECIFIC DETAIL ROW */}
+                        <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
+                          {prop.type === 'Agricultural Land' ? (
+                            <>
+                              <div style={{ fontSize: '0.75rem' }}>
+                                <span style={{ color: 'var(--text-muted)', fontSize: '0.6rem', display: 'block', marginBottom: '2px' }}>AREA</span>
+                                <span style={{ color: 'var(--emerald)', fontWeight: 800 }}>{formatLandSizeAdmin(prop.totalAcres)}</span>
+                              </div>
+                              {prop.pricePerAcre > 0 && (
+                                <div style={{ fontSize: '0.75rem' }}>
+                                  <span style={{ color: 'var(--text-muted)', fontSize: '0.6rem', display: 'block', marginBottom: '2px' }}>PRICE/ACRE</span>
+                                  <span style={{ color: 'var(--gold)', fontWeight: 800 }}>{formatPriceAdminLocal(prop.pricePerAcre)}</span>
+                                </div>
+                              )}
+                              {prop.pricePerAcre > 0 && (
+                                <div style={{ fontSize: '0.75rem' }}>
+                                  <span style={{ color: 'var(--text-muted)', fontSize: '0.6rem', display: 'block', marginBottom: '2px' }}>PRICE/CENT</span>
+                                  <span style={{ color: '#a8ff78', fontWeight: 800 }}>₹{Math.round(Number(prop.pricePerAcre)/100).toLocaleString('en-IN')}</span>
+                                </div>
+                              )}
+                              {prop.waterSource && prop.waterSource !== 'N/A' && (
+                                <div style={{ fontSize: '0.75rem' }}>
+                                  <span style={{ color: 'var(--text-muted)', fontSize: '0.6rem', display: 'block', marginBottom: '2px' }}>WATER</span>
+                                  <span style={{ color: 'var(--cyan)', fontWeight: 800 }}>{prop.waterSource}</span>
+                                </div>
+                              )}
+                            </>
+                          ) : prop.type?.includes('Plot') ? (
+                            <>
+                              <div style={{ fontSize: '0.75rem' }}>
+                                <span style={{ color: 'var(--text-muted)', fontSize: '0.6rem', display: 'block', marginBottom: '2px' }}>AREA</span>
+                                <span style={{ color: 'var(--cyan)', fontWeight: 800 }}>{prop.areaSize} {prop.measurementUnit || 'Sq.Yds'}</span>
+                              </div>
+                              {prop.approvalAuthority && prop.approvalAuthority !== 'N/A' && (
+                                <div style={{ fontSize: '0.75rem' }}>
+                                  <span style={{ color: 'var(--text-muted)', fontSize: '0.6rem', display: 'block', marginBottom: '2px' }}>APPROVAL</span>
+                                  <span style={{ color: 'var(--gold)', fontWeight: 800 }}>{prop.approvalAuthority}</span>
+                                </div>
+                              )}
+                              {prop.isGated && <span style={{ fontSize: '0.65rem', background: 'rgba(212,175,55,0.1)', color: 'var(--gold)', padding: '2px 8px', borderRadius: '6px', fontWeight: 700 }}>GATED</span>}
+                              {prop.cornerProperty && <span style={{ fontSize: '0.65rem', background: 'rgba(34,217,224,0.1)', color: 'var(--cyan)', padding: '2px 8px', borderRadius: '6px', fontWeight: 700 }}>CORNER</span>}
+                            </>
+                          ) : prop.bhk ? (
+                            <>
+                              <div style={{ fontSize: '0.75rem' }}>
+                                <span style={{ color: 'var(--text-muted)', fontSize: '0.6rem', display: 'block', marginBottom: '2px' }}>CONFIG</span>
+                                <span style={{ color: 'var(--violet)', fontWeight: 800 }}>{prop.bhk} BHK</span>
+                              </div>
+                              {prop.areaSize > 0 && (
+                                <div style={{ fontSize: '0.75rem' }}>
+                                  <span style={{ color: 'var(--text-muted)', fontSize: '0.6rem', display: 'block', marginBottom: '2px' }}>AREA</span>
+                                  <span style={{ color: 'white', fontWeight: 700 }}>{prop.areaSize} {prop.measurementUnit || 'Sq.Ft'}</span>
+                                </div>
+                              )}
+                              {prop.facing && <div style={{ fontSize: '0.75rem' }}><span style={{ color: 'var(--text-muted)', fontSize: '0.6rem', display: 'block', marginBottom: '2px' }}>FACING</span><span style={{ color: 'var(--gold)', fontWeight: 800 }}>{prop.facing}</span></div>}
+                            </>
+                          ) : (
+                            <div style={{ fontSize: '0.75rem' }}>
+                              <span style={{ color: 'var(--text-muted)', fontSize: '0.6rem', display: 'block', marginBottom: '2px' }}>AREA</span>
+                              <span style={{ color: 'white', fontWeight: 700 }}>{prop.areaSize || '—'} {prop.measurementUnit || ''}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '1rem', gap: '0.75rem', flexWrap: 'wrap' }}>
+                          <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
                             <div>
                               <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', fontWeight: 800, marginBottom: '2px' }}>MARKET VALUE</div>
-                              <div style={{ fontSize: '1.1rem', fontWeight: 900, color: 'white' }}>{formatPriceAdminLocal(Number(prop.price))}</div>
+                              <div style={{ fontSize: '1.1rem', fontWeight: 900, color: 'white' }}>{formatPriceAdminLocal(prop.price)}</div>
                             </div>
                             <div>
                               <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', fontWeight: 800, marginBottom: '2px' }}>ENGAGEMENT</div>
@@ -843,8 +1028,8 @@ const AdminProperties = () => {
                             </div>
                           </div>
                           <div style={{ display: 'flex', gap: '0.6rem' }}>
-                            <motion.button whileHover={{ scale: 1.1, background: 'rgba(255,255,255,0.1)' }} onClick={() => handleEdit(prop)} style={{ background: 'rgba(255,255,255,0.05)', border: 'none', padding: '10px', borderRadius: '12px', color: 'white', cursor: 'pointer' }}><Edit3 size={16} /></motion.button>
-                            <motion.button whileHover={{ scale: 1.1, background: 'rgba(245,57,123,0.2)' }} onClick={() => { if(window.confirm('Wipe asset data?')) deleteProperty(prop._id || prop.id).then(loadProperties); }} style={{ background: 'rgba(245,57,123,0.1)', border: 'none', padding: '10px', borderRadius: '12px', color: 'var(--rose)', cursor: 'pointer' }}><Trash2 size={16} /></motion.button>
+                            <motion.button whileHover={{ scale: 1.1, background: 'rgba(255,255,255,0.1)' }} onClick={() => handleEdit(prop)} style={{ background: 'rgba(255,255,255,0.05)', border: 'none', padding: '10px', borderRadius: '12px', color: 'white', cursor: 'pointer' }} title="Edit"><Edit3 size={16} /></motion.button>
+                            <motion.button whileHover={{ scale: 1.1, background: 'rgba(245,57,123,0.2)' }} onClick={() => { if(window.confirm('Wipe asset data?')) deleteProperty(prop._id || prop.id).then(loadProperties); }} style={{ background: 'rgba(245,57,123,0.1)', border: 'none', padding: '10px', borderRadius: '12px', color: 'var(--rose)', cursor: 'pointer' }} title="Delete"><Trash2 size={16} /></motion.button>
                           </div>
                         </div>
                       </div>

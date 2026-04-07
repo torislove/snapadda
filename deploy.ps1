@@ -16,6 +16,7 @@ $FIREBASE_PROD = @{
     "VITE_FIREBASE_MESSAGING_SENDER_ID" = "227172321059"
     "VITE_FIREBASE_APP_ID" = "1:227172321059:web:7fe7097f7937739c0f6e96"
     "VITE_FIREBASE_MEASUREMENT_ID" = "G-EPKYKL1SPN"
+    "VITE_FIREBASE_DATABASE_URL" = "https://snapadda-7a6e6-default-rtdb.asia-southeast1.firebasedatabase.app"
 }
 
 # Function to Swap/Set Env Var in .env
@@ -95,21 +96,14 @@ try {
     firebase deploy --only "hosting,functions"
 
     if ($LASTEXITCODE -ne 0) { throw "Firebase deploy failed" }
-
-}
-finally {
-    # Restore Local API URL for development
-    Write-Host "`n[i] Restoring Localhost API for development..." -ForegroundColor Gray
-    Set-EnvVar "admin/.env" "VITE_API_URL" $LOCAL_API_URL
-    Set-EnvVar "client/.env" "VITE_API_URL" $LOCAL_API_URL
-    Set-Location $PSScriptRoot
+} catch {
+    Write-Error "Deployment failed: $_"
 }
 
 Write-Host "`n==========================================================" -ForegroundColor Green
 Write-Host "   DEPLOYMENT SUCCESSFUL!" -ForegroundColor Green
 Write-Host "   ------------------------------------------------------" -ForegroundColor Green
 Write-Host "   Live API:     $PROD_API_URL" -ForegroundColor Green
-Write-Host "   Local API:    $LOCAL_API_URL (Restored)" -ForegroundColor Green
 Write-Host "==========================================================" -ForegroundColor Green
 Write-Host ""
 pause

@@ -1,4 +1,5 @@
 import SiteSetting from '../models/SiteSetting.js';
+import { db as rtdb } from '../firebase.js';
 
 // Get a setting by key
 export const getSetting = async (req, res) => {
@@ -43,6 +44,15 @@ export const updateSetting = async (req, res) => {
       { value },
       { new: true, upsert: true, setDefaultsOnInsert: true }
     );
+
+    // Sync to Real-time Database
+    if (rtdb) {
+      try {
+        await rtdb.ref(`settings/${key}`).set(value);
+      } catch (err) {
+        console.warn('⚠️ RTDB Sync Note:', err.message);
+      }
+    }
     
     res.status(200).json({ status: 'success', data: setting.value });
   } catch (error) {

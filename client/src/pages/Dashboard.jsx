@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Link, Outlet, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { Link, useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Home, Heart, User, Settings, LogOut, Star, MapPin, ShieldCheck, Phone, RefreshCw, MessageSquare } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { getFavorites, fetchUserQuestions } from '../services/api';
@@ -251,16 +251,19 @@ export default function Dashboard() {
     const id = user._id || user.id;
     setLoading(true);
     setQLoading(true);
+    const uid = user._id || user.id || user.sub;
+    if (!uid) { setLoading(false); setQLoading(false); return; }
 
-    getFavorites(id)
+    getFavorites(uid)
       .then(res => {
-        setSaved(res || []);
-        setStats(prev => ({ ...prev, favoritesCount: res.length }));
+        const arr = Array.isArray(res) ? res : [];
+        setSaved(arr);
+        setStats(prev => ({ ...prev, favoritesCount: arr.length }));
       })
       .catch(console.error)
       .finally(() => setLoading(false));
 
-    fetchUserQuestions(id)
+    fetchUserQuestions(uid)
       .then(res => {
         setQuestions(res || []);
         setStats(prev => ({ ...prev, inquiriesCount: res.length, engagementCount: Math.floor(res.length * 2.5) + (user.verified ? 10 : 0) }));

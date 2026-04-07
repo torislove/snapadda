@@ -18,7 +18,7 @@ let db;
 if (firebaseConfig.apiKey && firebaseConfig.apiKey !== 'undefined') {
   try {
     app = initializeApp(firebaseConfig);
-    db = getDatabase(app);
+    db = getDatabase(app, import.meta.env.VITE_FIREBASE_DATABASE_URL);
     console.log("Firebase initialized successfully");
   } catch (err) {
     console.error("Firebase initialization failed:", err);

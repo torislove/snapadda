@@ -1,5 +1,7 @@
 import Property from '../models/Property.js';
 import { db } from '../firebase.js';
+import SiteSetting from '../models/SiteSetting.js';
+import { getCitiesNearby } from '../data/apCoordinates.js';
 
 // Helper to sync to Firebase
 const syncToFirebase = async (property) => {
@@ -40,22 +42,36 @@ const removeFromFirebase = async (id) => {
   }
 };
 
-// Get all properties (with optional filters)
+// Get all properties (with optional filters + pagination + sort)
 export const getProperties = async (req, res) => {
   try {
-    const { type, city, facing, approval, minPrice, maxPrice, search, verified, bhk, furnishing, constructionStatus, franchiseId } = req.query;
-    let filter = {};
+    const {
+      type, city, facing, approval, minPrice, maxPrice, search,
+      verified, bhk, furnishing, constructionStatus, franchiseId,
+      purpose, district, vastu, isGated, subType,
+      sort = 'newest', page = 1, limit = 100
+    } = req.query;
+    let filter = { status: 'Active' };
 
-    if (type && type !== 'all') filter.type = type;
+    if (type && type !== 'all') {
+      if (type === 'Plot') filter.type = { $in: ['Residential Plot', 'Commercial Plot'] };
+      else if (type === 'Agriculture') filter.type = 'Agricultural Land';
+      else filter.type = type;
+    }
     if (city) filter.location = { $regex: city, $options: 'i' };
+    if (district) filter.district = { $regex: district, $options: 'i' };
     if (facing && facing !== 'Any') filter.facing = facing;
-    if (approval) filter.approvalAuthority = approval;
+    if (approval && approval !== 'All') filter.approvalAuthority = approval;
     if (verified === 'true') filter.isVerified = true;
     if (bhk) filter.bhk = Number(bhk);
     if (furnishing && furnishing !== 'N/A') filter.furnishing = furnishing;
     if (constructionStatus && constructionStatus !== 'N/A') filter.constructionStatus = constructionStatus;
     if (franchiseId) filter.franchiseId = franchiseId;
-    
+    if (purpose) filter.purpose = { $regex: purpose, $options: 'i' };
+    if (vastu === 'true') filter.vastuCompliant = true;
+    if (isGated === 'true') filter.isGated = true;
+    if (subType) filter.subType = subType;
+
     if (minPrice || maxPrice) {
       filter.price = {};
       if (minPrice) filter.price.$gte = Number(minPrice);
@@ -63,21 +79,81 @@ export const getProperties = async (req, res) => {
     }
 
     if (search) {
-      // Free Typo-Tolerant Fuzzy Engine
       const cleanSearch = search.replace(/\s+/g, '');
-      const sanitizedSearch = cleanSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // Sanitize regex characters
-      const fuzzyRegex = sanitizedSearch.split('').join('.*?'); 
-      
+      const sanitizedSearch = cleanSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const fuzzyRegex = sanitizedSearch.split('').join('.*?');
       filter.$or = [
         { title: { $regex: fuzzyRegex, $options: 'i' } },
         { location: { $regex: fuzzyRegex, $options: 'i' } },
         { type: { $regex: fuzzyRegex, $options: 'i' } },
-        { district: { $regex: search, $options: 'i' } } // keep district strict or fuzzy too
+        { district: { $regex: search, $options: 'i' } },
+        { address: { $regex: search, $options: 'i' } },
       ];
     }
 
-    const properties = await Property.find(filter).sort({ createdAt: -1 }).populate('cityId');
-    res.status(200).json({ status: 'success', data: properties });
+    let sortObj = { createdAt: -1 };
+    if (sort === 'price_asc') sortObj = { price: 1 };
+    else if (sort === 'price_desc') sortObj = { price: -1 };
+    else if (sort === 'featured') sortObj = { isFeatured: -1, createdAt: -1 };
+
+    const pageNum = Math.max(1, parseInt(page));
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit)));
+    const skip = (pageNum - 1) * limitNum;
+
+    const [properties, total] = await Promise.all([
+      Property.find(filter).sort(sortObj).skip(skip).limit(limitNum).populate('cityId'),
+      Property.countDocuments(filter)
+    ]);
+
+    res.status(200).json({
+      status: 'success',
+      data: properties,
+      meta: { total, page: pageNum, limit: limitNum, totalPages: Math.ceil(total / limitNum), hasNextPage: pageNum < Math.ceil(total / limitNum), hasPrevPage: pageNum > 1 }
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Nearby Properties (using AP coordinate table - no external API)
+export const getNearbyProperties = async (req, res) => {
+  try {
+    const { lat, lng } = req.query;
+    if (!lat || !lng) return res.status(400).json({ message: 'lat and lng are required' });
+
+    // Fetch admin-configurable radius (default 25km)
+    let radiusKm = 25;
+    try {
+      const setting = await SiteSetting.findOne({ key: 'nearby_radius_km' });
+      if (setting?.value) radiusKm = Number(setting.value);
+    } catch (_) { /* use default */ }
+
+    const nearbyCities = getCitiesNearby(parseFloat(lat), parseFloat(lng), radiusKm);
+    if (!nearbyCities.length) {
+      return res.status(200).json({ status: 'success', data: [], meta: { total: 0, radiusKm } });
+    }
+
+    const cityNames = nearbyCities.map(c => c.name);
+    const cityRegexes = cityNames.map(n => new RegExp(n, 'i'));
+
+    const properties = await Property.find({
+      status: 'Active',
+      $or: [
+        { location: { $in: cityRegexes } },
+        { district: { $in: nearbyCities.map(c => new RegExp(c.district, 'i')) } }
+      ]
+    }).sort({ isFeatured: -1, createdAt: -1 }).limit(12);
+
+    // Attach estimated distance based on city
+    const enriched = properties.map(p => {
+      const matchCity = nearbyCities.find(c =>
+        (p.location || '').toLowerCase().includes(c.name.toLowerCase()) ||
+        (p.district || '').toLowerCase().includes(c.district.toLowerCase())
+      );
+      return { ...p.toObject(), _distanceKm: matchCity ? Math.round(matchCity.distance) : null };
+    }).sort((a, b) => (a._distanceKm ?? 999) - (b._distanceKm ?? 999));
+
+    res.status(200).json({ status: 'success', data: enriched, meta: { total: enriched.length, radiusKm, nearbyCities: cityNames } });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

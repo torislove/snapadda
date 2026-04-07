@@ -51,7 +51,7 @@ export const fetchProperties = async (filters = {}) => {
   try {
     const params = new URLSearchParams();
     Object.keys(filters).forEach(k => {
-      if (filters[k] !== undefined && filters[k] !== null && filters[k] !== 'all') {
+      if (filters[k] !== undefined && filters[k] !== null && filters[k] !== 'all' && filters[k] !== '') {
         params.set(k, filters[k]);
       }
     });
@@ -61,6 +61,17 @@ export const fetchProperties = async (filters = {}) => {
   } catch (e) {
     console.error('API Error:', e);
     throw e;
+  }
+};
+
+export const fetchNearbyProperties = async (lat, lng) => {
+  try {
+    const res = await safeFetch(`${API_BASE}/properties/nearby?lat=${lat}&lng=${lng}`);
+    if (!res.ok) throw new Error('Failed to fetch nearby properties');
+    return await res.json();
+  } catch (e) {
+    console.error('API Error:', e);
+    return { status: 'error', data: [], meta: { total: 0 } };
   }
 };
 

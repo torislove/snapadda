@@ -2,11 +2,13 @@ import express from 'express';
 import { 
   getProperties, createProperty, getPropertyById, 
   updateProperty, deleteProperty, getSimilarProperties,
-  likeProperty, shareProperty, validateProperties, getEngagementStats
+  likeProperty, shareProperty, validateProperties, getEngagementStats,
+  getNearbyProperties
 } from '../controllers/propertyController.js';
 
 const router = express.Router();
 
+router.get('/nearby', getNearbyProperties);
 router.get('/', getProperties);
 router.post('/validate', validateProperties);
 router.get('/engagement', getEngagementStats);
@@ -19,3 +21,4 @@ router.put('/:id', updateProperty);
 router.delete('/:id', deleteProperty);
 
 export default router;
+

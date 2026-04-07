@@ -4,23 +4,35 @@ import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import {
   Search, SlidersHorizontal, MapPin, Phone, MessageSquare, ShieldCheck, Star,
-  Building2, Home as HomeIcon, Square, Leaf, Filter, ChevronDown, X, ArrowRight,
-  Zap, Shield, Clock, IndianRupee, Compass, Users, TrendingUp, CheckCircle2, Navigation2
+  Building2, Home as HomeIcon, Square, Leaf, Filter, X, ChevronDown, 
+  IndianRupee, Compass, Users, TrendingUp, CheckCircle2, Navigation2,
+  Trees, Warehouse, ArrowRight, Zap, Shield, Clock, Zap as FastIcon
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { fetchProperties, fetchCities, fetchTestimonials, fetchSetting } from '../services/api';
+import { fetchProperties, fetchCities, fetchTestimonials, fetchSetting, fetchNearbyProperties } from '../services/api';
 import { db } from '../firebase';
 import { ref, onValue, off } from 'firebase/database';
 import PropertyCard from '../components/PropertyCard';
 import ContactModal from '../components/ContactModal';
-import FilterSidebar from '../components/FilterSidebar';
 import PromoCarousel from '../components/PromoCarousel';
 import Marquee from '../components/Marquee';
 import CityCard from '../components/CityCard';
+import FilterSidebar from '../components/FilterSidebar';
 import Logo from '../components/Logo';
 import { SkeletonCityCard, SkeletonPropertyCard } from '../components/SkeletonLoaders';
 import { parseSmartSearch, getFuzzySuggestions, loadAndhraData } from '../services/SearchParser';
 import { useSEO } from '../utils/useSEO';
+
+const PROP_TYPE_CARDS = [
+  { label: 'Apartments', value: 'Apartment', icon: <Building2 size={20}/>, color: '#9b59f5', bg: 'rgba(155,89,245,0.12)' },
+  { label: 'Villas', value: 'Villa', icon: <HomeIcon size={20}/>, color: '#e8b84b', bg: 'rgba(232,184,75,0.12)' },
+  { label: 'Plots', value: 'Residential Plot', icon: <Square size={20}/>, color: '#22d9e0', bg: 'rgba(34,217,224,0.12)' },
+  { label: 'Agriculture', value: 'Agricultural Land', icon: <Leaf size={20}/>, color: '#10d98c', bg: 'rgba(16,217,140,0.12)' },
+  { label: 'Houses', value: 'Independent House', icon: <HomeIcon size={20}/>, color: '#ff8c42', bg: 'rgba(255,140,66,0.12)' },
+  { label: 'Commercial', value: 'Commercial Space', icon: <Warehouse size={20}/>, color: '#f5397b', bg: 'rgba(245,57,123,0.12)' },
+  { label: 'Farmhouses', value: 'Farmhouse', icon: <Trees size={20}/>, color: '#a8ff78', bg: 'rgba(168,255,120,0.1)' },
+  { label: 'For Rent', value: '', icon: <Building2 size={20}/>, color: '#22d9e0', bg: 'rgba(34,217,224,0.1)', purpose: 'Rent' },
+];
 
 const TYPE_TABS = (t) => [
   { label: t('filter.all', 'All'), value: 'all', icon: <Filter size={15} /> },
@@ -111,6 +123,7 @@ export default function Home() {
   const scrolled = useScrolled();
   const typedWord = useTypewriter(['Apartments', 'Villas', 'Farmland', 'Premium Plots', 'CRDA Homes']);
   const searchRef = useRef(null);
+  const [nearbyProps, setNearbyProps] = useState([]);
 
   // 3D search platform tilt
   const mx = useMotionValue(0), my = useMotionValue(0);
@@ -161,44 +174,39 @@ export default function Home() {
     return () => clearTimeout(handler);
   }, [keyword]);
 
-  // 120Hz Smooth Geolocation & Data Sync
+  // Geolocation + Data Sync
   useEffect(() => {
-    if ("geolocation" in navigator) {
+    if ('geolocation' in navigator) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
-          setUserCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+          const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+          setUserCoords(coords);
+          // Fetch nearby properties using real coordinates
+          fetchNearbyProperties(coords.lat, coords.lng)
+            .then(res => setNearbyProps(res?.data || []))
+            .catch(() => setNearbyProps([]));
         },
-        (err) => {
-          setLocationDenied(true);
-        },
+        () => setLocationDenied(true),
         { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
       );
+    } else {
+      setLocationDenied(true);
     }
     
-    // Initial fetch for non-realtime settings
     fetchTestimonials().then(setTestimonials).catch(console.error);
     fetchSetting('appearance').then(d => setAppearance(d || {})).catch(console.error);
     fetchSetting('support_info').then(d => setSupportInfo(d || {})).catch(console.error);
     fetchSetting('hero_content').then(setHeroContent).catch(console.error);
     fetchSetting('site_stats').then(setSiteStats).catch(console.error);
     fetchSetting('seo').then(setSeoData).catch(console.error);
-
-    // 1. ALWAYS FETCH REST API first (ensures data is visible even if Firebase hangs)
     fetchCities().then(setCities).catch(console.error).finally(() => setCitiesLoading(false));
 
-    // 2. ATTACH REAL-TIME LISTENER (optional/background update)
     if (db) {
       const citiesRef = ref(db, 'cities');
       onValue(citiesRef, (snapshot) => {
         const data = snapshot.val();
-        if (data) {
-          const cityList = Object.values(data);
-          setCities(cityList.sort((a, b) => a.name.localeCompare(b.name)));
-        }
-      }, (err) => {
-        console.warn("RTDB City sync warning:", err.message);
-      });
-
+        if (data) setCities(Object.values(data).sort((a, b) => a.name.localeCompare(b.name)));
+      }, (err) => console.warn('RTDB City sync warning:', err.message));
       return () => off(citiesRef);
     }
   }, []);
@@ -233,71 +241,28 @@ export default function Home() {
     if (smartMap[smartPill]) setAdvFilters(prev => ({ ...prev, ...smartMap[smartPill] }));
   }, [smartPill]);
 
+  // Only load featured properties for the home page preview (max 6)
   const loadProperties = useCallback(() => {
     setLoading(true);
-    const smart = parseSmartSearch(keyword);
-    fetchProperties({
-      ...advFilters,
-      search: (smart?.city && smart?.keyword) ? smart.keyword.replace(new RegExp(smart.city.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), '').trim() : debouncedKeyword,
-      type: smart?.type || (typeFilter === 'all' ? undefined : typeFilter),
-      city: smart?.city || cityFilter || undefined,
-      purpose: intent === 'Buy' ? 'Buy' : intent === 'Rent' ? 'Rent' : undefined,
-      approval: advFilters.approval === 'All' ? undefined : advFilters.approval,
-      maxPrice: smart?.maxPrice || budget || advFilters.maxPrice || undefined,
-      minPrice: smart?.minPrice || advFilters.minPrice || undefined,
-      bhk: smart?.bhk || advFilters.bhk || undefined,
-    })
-      .then(res => {
-        const initialProps = res?.data || (Array.isArray(res) ? res : []);
-        setProperties(initialProps);
-      })
+    fetchProperties({ sort: 'featured', limit: 6 })
+      .then(res => setProperties(res?.data || []))
       .catch(console.error)
       .finally(() => setLoading(false));
-  }, [advFilters, debouncedKeyword, typeFilter, cityFilter, intent, budget]);
+  }, []);
 
-  useEffect(() => { 
-    loadProperties(); 
+  useEffect(() => { loadProperties(); }, [loadProperties]);
 
-    // REST API is already handled by loadProperties() above.
-    // Attach real-time listener ONLY for updates to existing properties.
-    if (db) {
-      const propsRef = ref(db, 'properties');
-      onValue(propsRef, (snapshot) => {
-        const data = snapshot.val();
-        if (!data) return;
-        
-        const firebaseProps = Object.values(data);
-        
-        // Merge updates from Firebase into existing state
-        setProperties(prev => {
-          let reversedPrev = [...prev];
-          let changed = false;
-          const next = reversedPrev.map(p => {
-            const updated = firebaseProps.find(fp => fp.id === (p._id || p.id).toString());
-            if (updated && (updated.price !== p.price || updated.status !== p.status || updated.title !== p.title)) {
-              changed = true;
-              return { ...p, ...updated, _id: p._id };
-            }
-            return p;
-          });
-          return changed ? next : prev;
-        });
-      }, (err) => {
-        console.warn("RTDB Property sync warning:", err.message);
-      });
+  // Navigate to /search page with current filters
+  const handleSearch = () => {
+    const params = new URLSearchParams();
+    if (keyword) params.set('keyword', keyword);
+    if (cityFilter) params.set('city', cityFilter);
+    if (intent === 'Rent') params.set('purpose', 'Rent');
+    if (typeFilter && typeFilter !== 'all') params.set('type', typeFilter);
+    if (budget && budget !== '999999999') params.set('maxPrice', budget);
+    navigate(`/search?${params.toString()}`);
+  };
 
-      return () => off(propsRef);
-    }
-  }, [loadProperties]);
-
-
-  const sortedProperties = useMemo(() => {
-    const arr = [...properties];
-    if (sortBy === 'price_asc') return arr.sort((a, b) => parseFloat(String(a.price).replace(/[^0-9.]/g, '')) - parseFloat(String(b.price).replace(/[^0-9.]/g, '')));
-    if (sortBy === 'price_desc') return arr.sort((a, b) => parseFloat(String(b.price).replace(/[^0-9.]/g, '')) - parseFloat(String(a.price).replace(/[^0-9.]/g, '')));
-    if (sortBy === 'featured') return arr.sort((a, b) => (b.isFeatured ? 1 : 0) - (a.isFeatured ? 1 : 0));
-    return arr;
-  }, [properties, sortBy]);
 
   const openLead = (type) => { setModalType(type); setModalOpen(true); };
   const resetFilters = () => { setTypeFilter('all'); setCityFilter(null); setKeyword(''); setSmartPill('all'); setAdvFilters({ ...EMPTY_FILTERS }); setSortBy('newest'); setBudget(''); };
@@ -425,11 +390,9 @@ export default function Home() {
                     </div>
                   </div>
                 </div>
-                <div className="search-action-row" style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '-0.5rem' }}>
-                  <button className="search-filter-btn" onClick={() => setFilterOpen(true)} style={{ width: 'auto', padding: '0.8rem 1.5rem', background: 'var(--gold)', color: 'var(--midnight)', fontWeight: 800 }}>
-                    <SlidersHorizontal size={18} style={{ marginRight: '8px' }} />
-                    Advanced Filters
-                    {filterCount > 0 && <span className="filter-badge" style={{ position: 'relative', top: 0, right: 0, marginLeft: '8px', border: '1px solid currentColor' }}>{filterCount}</span>}
+                <div className="search-action-row" style={{ display: 'flex', justifyContent: 'center', marginTop: '0.5rem' }}>
+                  <button className="search-filter-btn" onClick={handleSearch} style={{ width: '100%', padding: '0.9rem 1.5rem', background: 'var(--gold)', color: 'var(--midnight)', fontWeight: 800, borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '0.95rem' }}>
+                    <Search size={18} /> Search Properties
                   </button>
                 </div>
               </div>
@@ -438,13 +401,29 @@ export default function Home() {
                   <button key={b} className={`quick-chip${advFilters.bhk === b.split(' ')[0] ? ' active' : ''}`} onClick={() => setAdvFilters(prev => ({ ...prev, bhk: prev.bhk === b.split(' ')[0] ? '' : b.split(' ')[0] }))}>{b}</button>
                 ))}
                 <div className="chip-divider" />
-                {[['Under 50L', '', '5000000'], ['50L-1Cr', '5000000', '10000000'], ['1Cr-2Cr', '10000000', '20000000'], ['2Cr+', '20000000', '']].map(([label, min, max]) => {
+                {[['Under 50L', '', '5000000'], ['50L-1Cr', '5000000', '10000000'], ['1Cr-2Cr', '10000000', '20000000']].map(([label, min, max]) => {
                   const active = advFilters.minPrice === min && advFilters.maxPrice === max;
                   return <button key={label} className={`quick-chip${active ? ' active' : ''}`} onClick={() => setAdvFilters(prev => active ? { ...prev, minPrice: '', maxPrice: '' } : { ...prev, minPrice: min, maxPrice: max })}>₹{label}</button>;
                 })}
-                {filterCount > 0 && <button className="quick-chip clear-chip" onClick={resetFilters}><X size={12} /> Clear</button>}
               </div>
             </motion.div>
+          </div>
+        </section>
+
+        {/* PROPERTY TYPE CARDS - Hero Section */}
+        <section style={{ padding: '1.5rem 0 0.5rem' }}>
+          <div className="container">
+            <div style={{ fontSize: '0.72rem', color: 'var(--txt-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 800, marginBottom: '0.85rem' }}>Browse by Property Type</div>
+            <div className="prop-type-hero-grid">
+              {PROP_TYPE_CARDS.map(card => (
+                <motion.button key={card.label} whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}
+                  onClick={() => navigate(`/search?${card.value ? `type=${encodeURIComponent(card.value)}` : ''}${card.purpose ? `&purpose=${card.purpose}` : ''}`)}
+                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', padding: '1rem 0.5rem', background: card.bg, border: `1px solid ${card.color}22`, borderRadius: '14px', cursor: 'pointer', color: card.color, transition: 'all 0.2s', position: 'relative', overflow: 'hidden' }}>
+                  <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: `${card.color}22`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{card.icon}</div>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'rgba(255,255,255,0.85)', textAlign: 'center', lineHeight: 1.2 }}>{card.label}</span>
+                </motion.button>
+              ))}
+            </div>
           </div>
         </section>
 
@@ -498,7 +477,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section id="cities" className="section-wrap" style={{ paddingBottom: '1rem' }}>
+        <section id="cities" className="section-wrap" style={{ paddingBottom: '1rem', paddingTop: '1rem' }}>
           <div className="container">
             <div className="section-head">
               <div className="section-eyebrow">{t('cities.eyebrow')}</div>
@@ -510,8 +489,9 @@ export default function Home() {
                 Array(6).fill(0).map((_, i) => <SkeletonCityCard key={i} />)
               ) : (
                 cities.map((c, i) => (
-                  <motion.div key={c._id || c.id} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.07 }}>
-                    <CityCard city={c} count={c.propertyCount || 0} cityPhoto={c.image} isActive={cityFilter === c.name} onClick={() => setCityFilter(cityFilter === c.name ? null : c.name)} index={i} />
+                  <motion.div key={c._id || c.id} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.07 }}
+                    onClick={() => navigate(`/search?city=${encodeURIComponent(c.name)}`)} style={{ cursor: 'pointer' }}>
+                    <CityCard city={c} count={c.propertyCount || 0} cityPhoto={c.image} isActive={false} onClick={() => {}} index={i} />
                   </motion.div>
                 ))
               )}
@@ -519,95 +499,59 @@ export default function Home() {
           </div>
         </section>
 
+        {/* NEARBY PROPERTIES - Real GPS */}
         <AnimatePresence>
-          {(userCoords || locationDenied) && (
-            <motion.section
-              key="nearby-section"
-              className="section-wrap"
+          {userCoords && nearbyProps.length > 0 && (
+            <motion.section key="nearby-section" className="section-wrap"
               style={{ background: 'rgba(212,175,55,0.02)', borderTop: '1px solid rgba(212,175,55,0.05)', borderBottom: '1px solid rgba(212,175,55,0.05)' }}
               initial={{ opacity: 0, height: 0, overflow: 'hidden' }}
               animate={{ opacity: 1, height: 'auto', overflow: 'visible' }}
-              exit={{ opacity: 0, height: 0, overflow: 'hidden' }}
-              transition={{ duration: 0.5, ease: 'easeOut' }}
-            >
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.5 }}>
               <div className="container">
                 <div className="section-head">
-                  <div className="section-eyebrow" style={{ color: 'var(--gold)' }}><Navigation2 size={14} /> {t('geo.hotspotsTitle', 'REGIONAL HOTSPOTS')}</div>
-                  <h2 className="section-title" style={{ color: '#ffffff' }}>{t('geo.hotspotsHeadline', 'Regional Growth Hotspots')}</h2>
-                  <p className="section-subtitle" style={{ color: 'var(--txt-secondary)' }}>
-                    {userCoords ? 'Verified assets and developments near your current location.' : 'Allow location access for personalised nearby listings.'}
-                  </p>
+                  <div className="section-eyebrow" style={{ color: 'var(--gold)' }}><Navigation2 size={14}/> YOUR LOCATION</div>
+                  <h2 className="section-title" style={{ color: '#ffffff' }}>Properties Near You</h2>
+                  <p className="section-subtitle" style={{ color: 'var(--txt-secondary)' }}>Verified properties within your area, sorted by distance.</p>
                 </div>
                 <div className="properties-grid">
-                  {sortedProperties.slice(0, 6).map((p, i) => (
+                  {nearbyProps.slice(0, 3).map((p, i) => (
                     <motion.div key={`nearby-${p._id}`} initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ delay: i * 0.05 }}>
-                      <PropertyCard {...p} />
+                      <PropertyCard {...p} distanceBadge={p._distanceKm != null ? `~${p._distanceKm} km away` : null}/>
                     </motion.div>
                   ))}
+                </div>
+                <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
+                  <button onClick={() => navigate(`/search?city=${encodeURIComponent(nearbyProps[0]?.location?.split(',')[0] || '')}`)}
+                    style={{ padding: '0.75rem 2rem', background: 'rgba(232,184,75,0.1)', border: '1px solid rgba(232,184,75,0.3)', borderRadius: '10px', color: 'var(--gold)', fontWeight: 700, cursor: 'pointer', fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                    See All Nearby <ArrowRight size={14}/>
+                  </button>
                 </div>
               </div>
             </motion.section>
           )}
         </AnimatePresence>
 
-        <section style={{ padding: '0 0 1.5rem' }}>
-          <div className="container">
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-              <div className="section-head" style={{ marginBottom: '0.5rem' }}>
-                <h3 style={{ color: '#fff', fontSize: '1.25rem', marginBottom: '0.25rem' }}>Asset Classification</h3>
-                <p style={{ color: 'var(--txt-muted)', fontSize: '0.85rem' }}>Filter properties uniquely structured for your needs.</p>
-              </div>
-              <div className="type-cards-grid">
-                {TYPE_TABS(t).map(tOpt => (
-                  <button key={tOpt.value} className={`type-card${typeFilter === tOpt.value ? ' active' : ''}`} onClick={() => setTypeFilter(tOpt.value)}>
-                    {tOpt.icon} 
-                    <span>{tOpt.label}</span>
-                  </button>
-                ))}
-              </div>
-              <div className="smart-filter-pills">
-                {SMART_PILLS(t).map(p => (
-                  <button key={p.key} className={`smart-pill${smartPill === p.key ? ' active' : ''}`} onClick={() => setSmartPill(p.key)}>{p.label}</button>
-                ))}
-              </div>
-            </div>
-          </div>
-        </section>
-
+        {/* FEATURED PROPERTIES PREVIEW */}
         <section id="properties" className="section-wrap" style={{ paddingTop: '0.5rem' }}>
           <div className="container">
             <div className="section-title-row">
               <div>
-                <h2 style={{ fontSize: '1.35rem', marginBottom: '2px', color: '#ffffff' }}>
-                  {cityFilter ? `${t('properties.propsIn')} ${cityFilter}` : intent === 'Rent' ? t('properties.rentals') : intent === 'Plot' ? t('properties.plots') : t('properties.featured')}
-                </h2>
-                <p style={{ fontSize: '0.82rem', color: 'var(--txt-muted)' }}>{t('properties.showing')}</p>
+                <h2 style={{ fontSize: '1.35rem', marginBottom: '2px', color: '#ffffff' }}>✨ Featured Properties</h2>
+                <p style={{ fontSize: '0.82rem', color: 'var(--txt-muted)' }}>Hand-picked premium listings across Andhra Pradesh</p>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <span className="result-count">{sortedProperties.length} {t('properties.found')}</span>
-                <select className="sort-select" value={sortBy} onChange={e => setSortBy(e.target.value)}>
-                  {SORT_OPTIONS(t).map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                </select>
-                {(filterCount > 0 || cityFilter || budget || typeFilter !== 'all') && (
-                  <button className="btn btn-glass btn-sm" onClick={resetFilters}><X size={12} /> {t('search.clear')}</button>
-                )}
-              </div>
+              <button onClick={() => navigate('/search?sort=featured')} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', background: 'rgba(232,184,75,0.1)', border: '1px solid rgba(232,184,75,0.2)', borderRadius: '10px', color: 'var(--gold)', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}>
+                View All <ArrowRight size={14}/>
+              </button>
             </div>
-
             <div className="properties-grid">
-              {loading ? Array(3).fill(0).map((_, i) => <SkeletonPropertyCard key={i} />) : sortedProperties.length > 0 ? (
-                sortedProperties.map((p, i) => (
+              {loading ? Array(3).fill(0).map((_, i) => <SkeletonPropertyCard key={i} />) : properties.length > 0 ? (
+                properties.map((p, i) => (
                   <motion.div key={p._id || p.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}>
                     <PropertyCard {...p} />
                   </motion.div>
                 ))
-              ) : (
-                <div className="empty-state">
-                  <Search size={48} />
-                  <h3>{t('properties.none')}</h3>
-                  <button className="hero-btn hero-btn-primary" onClick={resetFilters}>{t('search.clear')}</button>
-                </div>
-              )}
+              ) : null}
             </div>
           </div>
         </section>

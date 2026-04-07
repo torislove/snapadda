@@ -3,17 +3,19 @@ import { SlidersHorizontal, X, ArrowLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 
-const DEFAULT_FILTERS = { bhk: '', minPrice: '', maxPrice: '', facing: 'Any', furnishing: 'N/A', constructionStatus: 'N/A', verified: false, approval: 'All', propertyType: 'All', keyword: '', vastu: false, listerType: 'All' };
+const DEFAULT_FILTERS = {
+  bhk: '', minPrice: '', maxPrice: '', facing: 'Any', furnishing: 'N/A',
+  constructionStatus: 'N/A', verified: false, approval: 'All',
+  propertyType: 'All', keyword: '', vastu: false, listerType: 'All'
+};
 
 export default function FilterSidebar({ isOpen, onClose, filters, setFilters, onApply }) {
   const { t } = useTranslation();
   const sidebarRef = useRef(null);
   const contentRef = useRef(null);
 
-  // Always scroll sidebar and content back to very top when opened
   useEffect(() => {
     if (isOpen) {
-      // Scroll after animation frame to ensure DOM is ready
       requestAnimationFrame(() => {
         if (sidebarRef.current) sidebarRef.current.scrollTop = 0;
         if (contentRef.current) contentRef.current.scrollTop = 0;
@@ -21,7 +23,6 @@ export default function FilterSidebar({ isOpen, onClose, filters, setFilters, on
     }
   }, [isOpen]);
 
-  // Lock body scroll when filter is open
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -33,6 +34,26 @@ export default function FilterSidebar({ isOpen, onClose, filters, setFilters, on
 
   const set = (key, val) => setFilters(prev => ({ ...prev, [key]: val }));
 
+  const handleClearAll = () => {
+    setFilters({ ...DEFAULT_FILTERS });
+  };
+
+  const toggleStyle = (active) => ({
+    flex: 1,
+    fontSize: '0.72rem',
+    padding: '11px 8px',
+    background: active ? 'var(--gold)' : 'rgba(255,255,255,0.05)',
+    color: active ? '#000' : 'rgba(255,255,255,0.8)',
+    border: active ? '1px solid var(--gold)' : '1px solid rgba(255,255,255,0.1)',
+    borderRadius: '10px',
+    cursor: 'pointer',
+    fontWeight: active ? 800 : 600,
+    transition: 'all 0.2s ease',
+    touchAction: 'manipulation',
+    userSelect: 'none',
+    WebkitTapHighlightColor: 'transparent',
+  });
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -43,6 +64,7 @@ export default function FilterSidebar({ isOpen, onClose, filters, setFilters, on
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}
+          style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}
         >
           <motion.div
             ref={sidebarRef}
@@ -52,43 +74,65 @@ export default function FilterSidebar({ isOpen, onClose, filters, setFilters, on
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.92, opacity: 0, y: -20 }}
             transition={{ type: 'spring', stiffness: 300, damping: 28 }}
+            style={{
+              position: 'relative',
+              background: 'rgba(7,7,15,0.98)',
+              backdropFilter: 'blur(30px)',
+              border: '1px solid rgba(212,175,55,0.2)',
+              borderRadius: '20px',
+              width: '100%',
+              maxWidth: '480px',
+              margin: '20px auto',
+              display: 'flex',
+              flexDirection: 'column',
+              maxHeight: 'calc(100vh - 40px)',
+              overflow: 'hidden',
+            }}
           >
-            {/* Header with 3D BACK Button */}
-            <div className="filter-header" style={{ padding: '16px 20px', borderBottom: '1px solid rgba(212,175,55,0.2)' }}>
-              <button 
-                onClick={onClose} 
-                className="btn-3d-elite" 
-                style={{ padding: '8px 16px', borderRadius: '12px', fontSize: '0.7rem' }}
+            {/* Header */}
+            <div style={{ padding: '18px 20px', borderBottom: '1px solid rgba(212,175,55,0.15)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+              <button
+                onClick={onClose}
+                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.8)', padding: '8px 14px', borderRadius: '10px', fontSize: '0.7rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', touchAction: 'manipulation' }}
               >
-                <ArrowLeft size={16} /> {t('filter.back')}
+                <ArrowLeft size={15} /> {t('filter.back')}
               </button>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <SlidersHorizontal size={16} className="text-gold" />
-                <h3 style={{ fontSize: '1rem', fontWeight: 800, color: '#fff' }}>{t('filter.title')}</h3>
+                <SlidersHorizontal size={16} style={{ color: 'var(--gold)' }} />
+                <h3 style={{ fontSize: '1rem', fontWeight: 800, color: '#fff', margin: 0 }}>{t('filter.title')}</h3>
               </div>
+              <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', padding: '4px', touchAction: 'manipulation' }}>
+                <X size={20} />
+              </button>
             </div>
 
-            {/* Compact content area */}
-            <div className="filter-content" style={{ padding: '16px 20px', gap: '16px', overflow: 'hidden' }}>
-              <div className="filter-group">
-                <label style={{ color: '#fff', fontSize: '0.65rem' }}>{t('filter.keywords')}</label>
-                <input 
-                  type="text" 
+            {/* Scrollable content */}
+            <div
+              ref={contentRef}
+              style={{ padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: '18px', overflowY: 'auto', flex: 1, WebkitOverflowScrolling: 'touch' }}
+            >
+              {/* Keywords */}
+              <div>
+                <label style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.65rem', fontWeight: 800, letterSpacing: '0.1em', display: 'block', marginBottom: '8px' }}>{t('filter.keywords')}</label>
+                <input
+                  type="text"
                   className="dropdown-3d-glass"
-                  placeholder="e.g. Pool, Gated..." 
-                  value={filters.keyword || ''} 
-                  onChange={e => set('keyword', e.target.value)} 
-                  style={{ width: '100%' }}
+                  placeholder="e.g. Pool, Gated, CRDA..."
+                  value={filters.keyword || ''}
+                  onChange={e => set('keyword', e.target.value)}
+                  style={{ width: '100%', boxSizing: 'border-box' }}
                 />
               </div>
-              
+
+              {/* Category + Budget max */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                <div className="filter-group">
-                  <label style={{ color: '#fff', fontSize: '0.65rem' }}>{t('filter.category')}</label>
-                  <select 
+                <div>
+                  <label style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.65rem', fontWeight: 800, letterSpacing: '0.1em', display: 'block', marginBottom: '8px' }}>{t('filter.category')}</label>
+                  <select
                     className="dropdown-3d-glass"
-                    value={filters.propertyType || 'All'} 
+                    value={filters.propertyType || 'All'}
                     onChange={e => set('propertyType', e.target.value)}
+                    style={{ width: '100%' }}
                   >
                     <option value="All">{t('filter.items')}</option>
                     <option value="Apartment">Apartment</option>
@@ -99,75 +143,89 @@ export default function FilterSidebar({ isOpen, onClose, filters, setFilters, on
                     <option value="Agricultural Land">{t('types.agriculture')}</option>
                   </select>
                 </div>
-
-                <div className="filter-group">
-                  <label style={{ color: '#fff', fontSize: '0.65rem' }}>{t('filter.budgetMax')}</label>
-                  <input 
-                    type="number" 
+                <div>
+                  <label style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.65rem', fontWeight: 800, letterSpacing: '0.1em', display: 'block', marginBottom: '8px' }}>{t('filter.budgetMax')}</label>
+                  <input
+                    type="number"
                     className="dropdown-3d-glass"
-                    placeholder="Max" 
-                    value={filters.maxPrice} 
-                    onChange={e => set('maxPrice', e.target.value)} 
+                    placeholder="e.g. 5000000"
+                    value={filters.maxPrice}
+                    onChange={e => set('maxPrice', e.target.value)}
+                    style={{ width: '100%' }}
                   />
                 </div>
               </div>
 
+              {/* Facing + Approval */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                <div className="filter-group">
-                  <label style={{ color: '#fff', fontSize: '0.65rem' }}>{t('filter.facing')}</label>
-                  <select 
+                <div>
+                  <label style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.65rem', fontWeight: 800, letterSpacing: '0.1em', display: 'block', marginBottom: '8px' }}>{t('filter.facing')}</label>
+                  <select
                     className="dropdown-3d-glass"
-                    value={filters.facing} 
+                    value={filters.facing}
                     onChange={e => set('facing', e.target.value)}
+                    style={{ width: '100%' }}
                   >
-                    <option value="Any">Any</option>
+                    <option value="Any">{t('filter.any')}</option>
                     <option value="East">East</option>
                     <option value="North">North</option>
                     <option value="West">West</option>
                     <option value="South">South</option>
+                    <option value="North-East">North-East</option>
                   </select>
                 </div>
-
-                <div className="filter-group">
-                  <label style={{ color: '#fff', fontSize: '0.65rem' }}>{t('filter.approval')}</label>
-                  <select 
+                <div>
+                  <label style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.65rem', fontWeight: 800, letterSpacing: '0.1em', display: 'block', marginBottom: '8px' }}>{t('filter.approval')}</label>
+                  <select
                     className="dropdown-3d-glass"
-                    value={filters.approval || 'All'} 
+                    value={filters.approval || 'All'}
                     onChange={e => set('approval', e.target.value)}
+                    style={{ width: '100%' }}
                   >
-                    <option value="All">Any</option>
+                    <option value="All">{t('filter.any')}</option>
                     <option value="AP CRDA">AP CRDA</option>
                     <option value="AP RERA">AP RERA</option>
+                    <option value="VMRDA">VMRDA</option>
                     <option value="DTCP">DTCP</option>
+                    <option value="TUDA">TUDA</option>
+                    <option value="Panchayat">Panchayat</option>
                   </select>
                 </div>
               </div>
 
-              <div className="filter-group">
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <button 
-                    className={`btn-3d-elite ${filters.vastu ? 'active' : ''}`} 
+              {/* Toggle Buttons */}
+              <div>
+                <label style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.65rem', fontWeight: 800, letterSpacing: '0.1em', display: 'block', marginBottom: '10px' }}>PROPERTY FLAGS</label>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button
+                    style={toggleStyle(filters.vastu)}
                     onClick={() => set('vastu', !filters.vastu)}
-                    style={{ flex: 1, fontSize: '0.7rem', padding: '10px', background: filters.vastu ? 'var(--gold)' : '' }}
+                    type="button"
                   >
-                    {t('filter.vastu')}
+                    🧭 {t('filter.vastu')}
                   </button>
-                  <button 
-                    className={`btn-3d-elite ${filters.verified ? 'active' : ''}`} 
+                  <button
+                    style={toggleStyle(filters.verified)}
                     onClick={() => set('verified', !filters.verified)}
-                    style={{ flex: 1, fontSize: '0.7rem', padding: '10px', background: filters.verified ? 'var(--gold)' : '' }}
+                    type="button"
                   >
-                    {t('filter.elite')}
+                    ⭐ {t('filter.elite')}
                   </button>
                 </div>
               </div>
             </div>
 
-            <div className="filter-footer" style={{ padding: '16px 20px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-              <button 
-                className="btn-3d-elite" 
-                style={{ flex: 1, padding: '12px', background: 'var(--gold)', color: '#000' }} 
+            {/* Footer */}
+            <div style={{ padding: '16px 20px', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', gap: '10px', flexShrink: 0 }}>
+              <button
+                onClick={handleClearAll}
+                style={{ flex: 1, padding: '12px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.7)', borderRadius: '12px', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 700, touchAction: 'manipulation' }}
+              >
+                {t('filter.clearAll')}
+              </button>
+              <button
                 onClick={onApply}
+                style={{ flex: 2, padding: '12px', background: 'var(--gold)', color: '#000', border: 'none', borderRadius: '12px', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 800, touchAction: 'manipulation' }}
               >
                 {t('filter.apply')}
               </button>

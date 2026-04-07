@@ -1,556 +1,681 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { 
-  ArrowLeft, MapPin, Share2, Heart, ShieldCheck, Clock, 
-  Calendar, Layers, Phone, MessageSquare, ChevronRight, Eye,
-  LayoutDashboard, Download, Info, CheckCircle2, Navigation, Building2, User, BedDouble, Bath, Square, Compass, Award, Send, Star, Image, Video
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  ArrowLeft, MapPin, Share2, Heart, ShieldCheck, Phone, MessageSquare,
+  ChevronLeft, ChevronRight, Eye, CheckCircle2, Building2, User,
+  BedDouble, Bath, Square, Compass, Award, Send, Star, Leaf, Maximize2,
+  Droplets, Truck, FileText, ZoomIn, X, TreePine, TrendingUp
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import Logo from '../components/Logo';
-import { fetchProperty, fetchSetting, submitLead, askQuestion, fetchPropertyFAQs, likeProperty, shareProperty } from '../services/api';
-import { formatSnapAddaPrice } from '../utils/priceUtils';
+import { fetchProperty, fetchSetting, askQuestion, fetchPropertyFAQs, likeProperty, shareProperty } from '../services/api';
+import { formatSnapAddaPrice, formatLandSize, calcAgriTotalValue, getAcres, getCents } from '../utils/priceUtils';
+import { useTranslation } from 'react-i18next';
 
+// ─────────────────────────────────────────────
+// Toast
+// ─────────────────────────────────────────────
+function Toast({ msg }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20, scale: 0.9 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: 20, scale: 0.9 }}
+      style={{
+        position: 'fixed', bottom: '90px', left: '50%', transform: 'translateX(-50%)',
+        background: 'rgba(10,10,20,0.97)', border: '1px solid rgba(232,184,75,0.3)',
+        color: '#e8b84b', padding: '12px 24px', borderRadius: '40px',
+        fontSize: '0.85rem', fontWeight: 700, zIndex: 99999,
+        backdropFilter: 'blur(30px)', boxShadow: '0 10px 40px rgba(0,0,0,0.6)',
+        whiteSpace: 'nowrap',
+      }}
+    >{msg}</motion.div>
+  );
+}
 
+// ─────────────────────────────────────────────
+// LightBox
+// ─────────────────────────────────────────────
+function LightBox({ images, startIdx, onClose }) {
+  const [idx, setIdx] = useState(startIdx);
+  const prev = () => setIdx(i => (i - 1 + images.length) % images.length);
+  const next = () => setIdx(i => (i + 1) % images.length);
+
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'ArrowLeft') prev(); if (e.key === 'ArrowRight') next(); if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      style={{ position: 'fixed', inset: 0, zIndex: 100000, background: 'rgba(0,0,0,0.97)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+      onClick={onClose}
+    >
+      <button onClick={onClose} style={{ position: 'absolute', top: '20px', right: '20px', background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white', width: '44px', height: '44px', borderRadius: '50%', fontSize: '1.2rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <X size={20}/>
+      </button>
+      <button onClick={(e) => { e.stopPropagation(); prev(); }}
+        style={{ position: 'absolute', left: '20px', background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white', width: '52px', height: '52px', borderRadius: '50%', fontSize: '1.5rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <ChevronLeft size={28}/>
+      </button>
+      <img src={images[idx]} alt="" style={{ maxWidth: '90vw', maxHeight: '86vh', objectFit: 'contain', borderRadius: '12px' }} onClick={e => e.stopPropagation()} />
+      <button onClick={(e) => { e.stopPropagation(); next(); }}
+        style={{ position: 'absolute', right: '20px', background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white', width: '52px', height: '52px', borderRadius: '50%', fontSize: '1.5rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <ChevronRight size={28}/>
+      </button>
+      <div style={{ position: 'absolute', bottom: '24px', left: '50%', transform: 'translateX(-50%)', color: 'rgba(255,255,255,0.6)', fontSize: '0.82rem' }}>
+        {idx + 1} / {images.length}
+      </div>
+    </motion.div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// Spec Card
+// ─────────────────────────────────────────────
+function SpecCard({ label, value, accent = 'rgba(255,255,255,0.6)', icon }) {
+  if (!value || value === 'N/A' || value === '0') return null;
+  return (
+    <div style={{
+      background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.06)',
+      borderRadius: '14px', padding: '1.1rem 1.25rem', display: 'flex', flexDirection: 'column', gap: '6px',
+    }}>
+      <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '5px' }}>
+        {icon} {label}
+      </div>
+      <div style={{ color: accent, fontWeight: 700, fontSize: '0.95rem' }}>{value}</div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// Main
+// ─────────────────────────────────────────────
 export default function PropertyDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { t } = useTranslation();
+
   const [property, setProperty] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [mediaTab, setMediaTab] = useState('photos');
-  const [activeSection, setActiveSection] = useState('overview');
-  const [similar, setSimilar] = useState([]);
+  const [activeTab, setActiveTab] = useState('overview');
   const [qna, setQna] = useState([]);
   const [supportInfo, setSupportInfo] = useState(null);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [modalType, setModalType] = useState('callback');
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
+  const [imgIdx, setImgIdx] = useState(0);
+  const [lightbox, setLightbox] = useState(false);
+  const [toast, setToast] = useState('');
+  const galleryRef = useRef(null);
 
-  // Q&A form
-  const [qName, setQName] = useState('');
-  const [qContact, setQContact] = useState('');
+  // Q&A
   const [qText, setQText] = useState('');
   const [qStatus, setQStatus] = useState('');
+  const [qSubmitting, setQSubmitting] = useState(false);
 
-  // EMI
-  const [loanPct, setLoanPct] = useState(80);
-  const [rate, setRate] = useState(8.5);
-  const [tenure, setTenure] = useState(20);
+
+
+  const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
 
   useEffect(() => {
     if (!id) return;
     setLoading(true);
-    window.scrollTo(0, 0);
-    
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
     fetchProperty(id)
       .then(res => {
         const data = res.data || res;
         setProperty(data);
         setLikeCount(data.likeCount || 0);
         setLiked(data.isLiked || false);
-        
-        // Add to Recently Viewed in localStorage
-        const recent = JSON.parse(localStorage.getItem('snapadda_recent_viewed') || '[]');
-        const updated = [data, ...recent.filter(r => r._id !== data._id)].slice(0, 4);
-        localStorage.setItem('snapadda_recent_viewed', JSON.stringify(updated));
+        // Recent views
+        try {
+          const arr = JSON.parse(localStorage.getItem('snapadda_recent_views') || '[]');
+          const filtered = arr.filter(p => p._id !== data._id);
+          filtered.unshift({ _id: data._id, title: data.title, price: data.price, location: data.location, type: data.type, image: data.images?.[0] || data.image });
+          localStorage.setItem('snapadda_recent_views', JSON.stringify(filtered.slice(0, 6)));
+        } catch {}
       })
       .catch(() => setProperty(null))
       .finally(() => setLoading(false));
 
-    fetchPropertyFAQs(id).then(setQna).catch(console.error);
+    fetchPropertyFAQs(id).then(setQna).catch(() => setQna([]));
     fetchSetting('support_info').then(setSupportInfo).catch(console.error);
   }, [id]);
 
-  useEffect(() => {
-    if (!property) return;
-    try {
-      const stored = localStorage.getItem('snapadda_recent_views');
-      const arr = stored ? JSON.parse(stored) : [];
-      const propertyId = id || property?._id || property?.id;
-      const filtered = arr.filter(p => p._id !== property._id);
-      filtered.unshift({ _id: property._id, title: property.title, price: property.price, location: property.location, type: property.type, images: property.images?.slice(0, 1) || [], beds: property.beds, baths: property.baths, sqft: property.sqft });
-      if (filtered.length > 6) filtered.length = 6;
-      localStorage.setItem('snapadda_recent_views', JSON.stringify(filtered));
-    } catch {}
-  }, [property]);
+  const property_images = property?.images?.length
+    ? property.images
+    : [property?.image, ...(property?.gallery || [])].filter(Boolean);
 
-  const images = property?.images?.length ? property.images : [property?.image, ...(property?.gallery || [])].filter(Boolean);
-  const authority = property?.approvalAuthority || property?.approval;
+  const isAgri = property?.type === 'Agricultural Land';
+  const isPlot = property?.type?.includes('Plot');
+  const isResidential = ['Apartment', 'Villa', 'Independent House', 'Farmhouse'].includes(property?.type);
 
-  const calcEMI = () => {
-    if (!property?.price) return 0;
-    let raw = parseInt((property.price + '').replace(/[^0-9]/g, ''), 10);
-    const ps = (property.price + '').toLowerCase();
-    if (ps.includes('crore')) raw = parseFloat(ps.replace(/[^0-9.]/g, '')) * 1e7;
-    if (ps.includes('lakh')) raw = parseFloat(ps.replace(/[^0-9.]/g, '')) * 1e5;
-    if (isNaN(raw)) return 0;
-    const principal = raw * loanPct / 100;
-    const mr = rate / 12 / 100;
-    const n = tenure * 12;
-    return Math.round(principal * mr * Math.pow(1 + mr, n) / (Math.pow(1 + mr, n) - 1));
-  };
+  const agriAcres = getAcres(property?.totalAcres);
+  const agriCents = getCents(property?.totalAcres);
+  const pricePerCent = property?.pricePerAcre ? Math.round(Number(property.pricePerAcre) / 100) : 0;
+  const agriTotalValue = calcAgriTotalValue(property?.pricePerAcre, property?.totalAcres);
+  const displayPrice = (isAgri && agriTotalValue > 0) ? agriTotalValue : property?.price;
+
+
 
   const handleLike = async () => {
-    if (!user) { alert('Please sign in with Google to like properties'); return; }
+    if (!user) { navigate('/login', { state: { from: window.location.pathname } }); return; }
     try {
       const res = await likeProperty(id, user._id || user.id);
       if (res.status === 'success') {
         setLiked(res.data.liked);
         setLikeCount(res.data.likeCount);
+        showToast(res.data.liked ? '❤️ Saved to favourites!' : '💔 Removed from saved');
       }
-    } catch (err) { console.error('Like failed', err); }
+    } catch { showToast('⚠️ Could not save — try again'); }
   };
 
   const handleShare = async () => {
     const url = window.location.href;
-    const shareId = user?._id;
     try {
       if (navigator.share) {
-        await navigator.share({ title: `SnapAdda: ${property?.title}`, text: `Check out this property in ${property?.location}`, url });
-        await shareProperty(id, 'native', shareId);
+        await navigator.share({ title: `SnapAdda: ${property?.title}`, text: `Check this property in ${property?.location}`, url });
+        shareProperty(id, 'native', user?._id);
       } else {
         await navigator.clipboard.writeText(url);
-        alert('Link copied!');
-        await shareProperty(id, 'clipboard', shareId);
+        showToast('🔗 Link copied!');
+        shareProperty(id, 'clipboard', user?._id);
       }
-    } catch (err) { console.error('Share failed', err); }
+    } catch { showToast('🔗 Link copied!'); }
   };
 
   const handleWhatsApp = () => {
-    const waPhone = supportInfo?.whatsapp || '919346793364';
-    const text = encodeURIComponent(`Hi SnapAdda, I am interested in "${property?.title || 'this property'}" located in ${property?.location || 'Andhra Pradesh'}. (ID: ${id})`);
-    window.open(`https://wa.me/${waPhone}?text=${text}`, '_blank');
+    const wa = supportInfo?.whatsapp || '919346793364';
+    window.open(`https://wa.me/${wa}?text=${encodeURIComponent(`Hi SnapAdda! I'm interested in "${property?.title}" in ${property?.location}. (ID:${id})`)}`, '_blank');
   };
 
-
-  const handleAsk = async (e) => {
+  const handleAskSubmit = async (e) => {
     e.preventDefault();
-    if (!user) {
-      navigate('/login', { state: { from: window.location.pathname } });
-      return;
-    }
-    if (!qText || !id) return;
-    setQStatus('Sending...');
+    if (!user) { navigate('/login', { state: { from: window.location.pathname } }); return; }
+    if (!qText.trim()) return;
+    setQSubmitting(true);
+    setQStatus('');
     try {
-      const res = await askQuestion({ 
-        propertyId: id, 
+      const res = await askQuestion({
+        propertyId: id,
         userId: user._id || user.id,
         authType: user.token ? 'Google' : 'Email',
-        clientName: user.name || qName, 
-        clientContact: user.email || user.phone || qContact, 
-        question: qText 
+        clientName: user.name || user.displayName,
+        clientContact: user.email || user.phone || '',
+        question: qText,
       });
-      if (res.status === 'success') { 
-        setQStatus('Question submitted! Agent will respond soon.'); 
-        setQText(''); setQName(''); setQContact(''); 
-        setTimeout(() => setQStatus(''), 5000); 
+      if (res.status === 'success') {
+        setQStatus('success');
+        setQText('');
+        showToast('✅ Question submitted! Agent will respond soon.');
+        setTimeout(() => setQStatus(''), 5000);
       } else {
-        setQStatus('Failed to submit question.');
+        setQStatus('error');
       }
-    } catch { setQStatus('Network error.'); }
+    } catch {
+      setQStatus('error');
+    } finally {
+      setQSubmitting(false);
+    }
   };
 
-  function getYouTubeEmbed(url) {
-    if (!url) return '';
-    try {
-      if (url.includes('youtube.com') || url.includes('youtu.be')) {
-        let vid = '';
-        if (url.includes('v=')) vid = url.split('v=')[1];
-        else if (url.includes('youtu.be/')) vid = url.split('youtu.be/')[1];
-        const amp = vid.indexOf('&');
-        if (amp !== -1) vid = vid.substring(0, amp);
-        return `https://www.youtube.com/embed/${vid}?rel=0`;
-      }
-      return url;
-    } catch { return ''; }
-  }
+  const scrollGallery = (dir) => {
+    if (galleryRef.current) galleryRef.current.scrollBy({ left: dir * 380, behavior: 'smooth' });
+  };
 
-  const generateDesc = (prop) => {
-    if (prop.description && prop.description.length > 50) return prop.description;
-    
-    let desc = `This premium ${prop.type || 'property'} is located in the sought-after area of ${prop.location || 'Andhra Pradesh'}. `;
-    
-    if (prop.type === 'Agricultural Land') {
-      desc += `It spans a total of ${prop.areaSize || prop.totalAcres} ${prop.measurementUnit || 'Acres'} of fertile land, offering excellent potential for cultivation or long-term investment. `;
-      if (prop.roadWidth > 0) desc += `The property features a ${prop.roadWidth} ft wide road access, ensuring easy logistical connectivity. `;
-    } else if (prop.type?.includes('Plot')) {
-      desc += `Measuring ${prop.areaSize} ${prop.measurementUnit || 'Sq.Yards'}, this plot is ideal for ${prop.purpose === 'Sale' ? 'building your dream home' : 'commercial development'}. `;
-      if (prop.isGated) desc += `Situated within a secure gated community, it offers both privacy and premium infrastructure. `;
-    } else {
-      if (prop.bhk) desc += `A spacious ${prop.bhk} BHK configuration with modern layouts. `;
-      if (prop.furnishing && prop.furnishing !== 'N/A') desc += `The property comes ${prop.furnishing} and is ready for immediate occupancy. `;
+  const generateDesc = (p) => {
+    if (p.description && p.description.length > 50) return p.description;
+    let d = `This ${p.type ? p.type.toLowerCase() : 'property'} is located in the growing area of ${p.location || 'Andhra Pradesh'}. `;
+    if (isAgri) {
+      d += `Spanning ${formatLandSize(p.totalAcres)} of land, it presents a strong investment with a valuation of ${formatSnapAddaPrice(agriTotalValue || p.price)}. `;
+      if (p.waterSource && p.waterSource !== 'N/A') d += `Water source: ${p.waterSource}. `;
+      if (p.roadType && p.roadType !== 'N/A') d += `Road access: ${p.roadType}. `;
+    } else if (isPlot) {
+      d += `Measuring ${p.areaSize} ${p.measurementUnit || 'Sq.Yds'}, this ${p.isGated ? 'gated ' : ''}plot is ideal for development. `;
+    } else if (isResidential) {
+      if (p.bhk) d += `A ${p.bhk} BHK ${p.furnishing && p.furnishing !== 'N/A' ? p.furnishing.toLowerCase() + ' ' : ''}unit with modern interiors. `;
     }
-    
-    if (prop.facing && prop.facing !== 'Any') desc += `The ${prop.facing}-facing orientation ensures optimal natural light and adherence to Vastu principles. `;
-    
-    return desc + "Contact SnapAdda today for an exclusive site visit and detailed walkthrough.";
+    if (p.facing && p.facing !== 'Any') d += `${p.facing}-facing orientation ensures natural light and Vastu compliance. `;
+    d += `Contact SnapAdda for a site visit!`;
+    return d;
   };
 
   if (loading) return (
-    <div className="property-loading-screen">
-      <div className="loader" />
-      <p>Loading property details...</p>
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', paddingTop: 'var(--nav-h)', flexDirection: 'column', gap: '1.5rem', color: 'var(--txt-muted)' }}>
+      <div className="loader"/>
+      <p style={{ fontSize: '0.85rem' }}>Loading property...</p>
     </div>
   );
 
   if (!property) return (
-    <div className="container" style={{ paddingTop: '120px', textAlign: 'center', minHeight: '60vh' }}>
-      <h2>Property Not Found</h2>
-      <button className="btn btn-primary" onClick={() => navigate('/')} style={{ marginTop: '20px' }}>Return Home</button>
+    <div style={{ minHeight: '60vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', paddingTop: 'var(--nav-h)', gap: '1rem' }}>
+      <Building2 size={48} style={{ opacity: 0.3 }}/>
+      <h2>Property not found</h2>
+      <button className="pd-btn-primary" onClick={() => navigate('/')}>← Back to Home</button>
     </div>
   );
 
+  const supportPhone = (supportInfo?.phone || '+919346793364').replace(/\s+/g, '');
   const TABS = [
     { id: 'overview', label: 'Overview' },
-    { id: 'description', label: 'Details' },
+    { id: 'specs', label: 'Details' },
     { id: 'amenities', label: 'Amenities' },
-    { id: 'emi', label: 'EMI Calculator' },
     { id: 'qna', label: 'Q&A' },
   ];
 
   return (
-    <motion.div className="property-details-page" style={{ paddingTop: 'var(--nav-h)' }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }}>
-      <div className="container" style={{ padding: '1.2rem 0' }}>
-        <button className="back-button" onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--txt-secondary)', fontWeight: 700, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '1px' }}>
-          <ArrowLeft size={18} /> Back to Search
-        </button>
+    <div className="pd-page" style={{ paddingTop: 'var(--nav-h)' }}>
+      <AnimatePresence>{toast && <Toast msg={toast}/>}</AnimatePresence>
+      <AnimatePresence>{lightbox && <LightBox images={property_images} startIdx={imgIdx} onClose={() => setLightbox(false)}/>}</AnimatePresence>
+
+      {/* ── BACK BAR ── */}
+      <div className="pd-back-bar">
+        <div className="container">
+          <button className="pd-back-btn" onClick={() => navigate(-1)}>
+            <ArrowLeft size={16}/> Back to Search
+          </button>
+        </div>
       </div>
 
-      {/* Premium Horizontal Gallery */}
-      <section className="pd-gallery-premium-wrapper">
-        <div className="pd-gallery-container-main">
-          <div className="pd-gallery-scroller" id="pd-gallery-scroller">
-            {/* Unified Media Stream */}
-            {[...images, ...(property.videoUrl ? [property.videoUrl] : [])].map((item, index) => (
-              <div key={index} className="pd-media-item-card">
-                {item.includes('youtube.com') || item.includes('youtu.be') ? (
-                  <div className="pd-video-item-wrapper">
-                    <iframe 
-                      src={getYouTubeEmbed(item)} 
-                      title="Virtual Tour" 
-                      frameBorder="0" 
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                      allowFullScreen 
-                    />
-                  </div>
-                ) : (
-                  <img src={item} alt={`${property.title} - View ${index + 1}`} loading="lazy" />
-                )}
-              </div>
-            ))}
-            {images.length === 0 && !property.videoUrl && (
-              <div className="pd-media-item-card empty">
-                <div className="property-no-image"><Building2 size={64} /><p>No media available</p></div>
-              </div>
+      {/* ── MEDIA GALLERY ── */}
+      <section className="pd-gallery-section">
+        <div className="pd-gallery-main-wrap">
+          {/* Main image */}
+          <div className="pd-gallery-hero" onClick={() => { setImgIdx(0); setLightbox(true); }}>
+            {property_images[0] ? (
+              <img src={property_images[0]} alt={property.title} className="pd-gallery-hero-img"/>
+            ) : (
+              <div className="pd-img-empty"><Building2 size={64} style={{ opacity: 0.2 }}/></div>
             )}
-          </div>
-
-          {/* Gallery Navigation Controls (Desktop) */}
-          <div className="pd-gallery-nav-overlay desktop-only">
-            <button 
-              className="pd-gallery-nav-btn prev" 
-              onClick={() => document.getElementById('pd-gallery-scroller')?.scrollBy({ left: -400, behavior: 'smooth' })}
-            >
-              <ArrowLeft size={24} />
-            </button>
-            <button 
-              className="pd-gallery-nav-btn next" 
-              onClick={() => document.getElementById('pd-gallery-scroller')?.scrollBy({ left: 400, behavior: 'smooth' })}
-            >
-              <ChevronRight size={24} />
-            </button>
-          </div>
-
-          {/* Media Indicators */}
-          <div className="pd-gallery-info-badge">
-            <div className="media-count-chip">
-              <Image size={14} /> {images.length} Photos
+            <div className="pd-gallery-hero-overlay">
+              <ZoomIn size={20}/> View All {property_images.length} Photos
             </div>
-            {property.videoUrl && (
-              <div className="media-count-chip video">
-                <Video size={14} /> 1 Video
-              </div>
-            )}
           </div>
-        </div>
-      </section>
 
-      {/* Title Bar */}
-      <section className="pd-title-bar">
-        <div className="container">
-          <div className="pd-title-row">
-            <div className="pd-title-left">
-              <div className="pd-badges">
-                {property.isVerified && <span className="pd-badge pd-badge-green"><ShieldCheck size={13} /> Verified</span>}
-                {property.type && <span className="pd-badge pd-badge-gold">{property.type}</span>}
-                {property.listerType && (
-                  <span className="pd-badge" style={{ color: property.listerType === 'Verified Builder' ? 'var(--accent-gold)' : 'var(--text-muted)' }}>
-                    {property.listerType === 'Verified Builder' ? <Building2 size={12} /> : <User size={12} />} {property.listerType}
-                  </span>
-                )}
-              </div>
-              <h1 className="pd-title">{property.title}</h1>
-              <p className="pd-location">
-                <MapPin size={16} /> {property.location}
-                {property.googleMapsLink && (
-                  <a 
-                    href={property.googleMapsLink} 
-                    target="_blank" 
-                    rel="noopener noreferrer" 
-                    style={{ 
-                      marginLeft: '12px', 
-                      fontSize: '0.75rem', 
-                      color: 'var(--gold)', 
-                      textDecoration: 'none', 
-                      display: 'inline-flex', 
-                      alignItems: 'center', 
-                      gap: '4px',
-                      background: 'rgba(232, 184, 75, 0.1)',
-                      padding: '4px 10px',
-                      borderRadius: '20px',
-                      border: '1px solid rgba(232, 184, 75, 0.2)'
-                    }}
-                  >
-                    View on Maps
+          {/* Thumbnail strip */}
+          {property_images.length > 1 && (
+            <div className="pd-gallery-strip">
+              <button className="pd-strip-arrow left" onClick={() => scrollGallery(-1)}><ChevronLeft size={18}/></button>
+              <div className="pd-strip-scroller" ref={galleryRef}>
+                {property_images.map((img, i) => (
+                  <div key={i} className={`pd-thumb ${i === imgIdx ? 'active' : ''}`}
+                    onClick={() => { setImgIdx(i); setLightbox(true); }}>
+                    <img src={img} alt={`View ${i+1}`} loading="lazy"/>
+                    {i === 0 && property.videoUrl && (
+                      <span className="pd-thumb-play">▶</span>
+                    )}
+                  </div>
+                ))}
+                {property.videoUrl && (
+                  <a href={property.videoUrl} target="_blank" rel="noopener noreferrer" className="pd-thumb pd-thumb-video">
+                    <span style={{ fontSize: '2rem' }}>▶</span>
+                    <span style={{ fontSize: '0.65rem', color: '#e8b84b', fontWeight: 800 }}>VIDEO TOUR</span>
                   </a>
                 )}
-              </p>
-              {property.address && (
-                <p className="pd-address" style={{ fontSize: '0.9rem', color: 'var(--txt-muted)', marginTop: '0.4rem', fontStyle: 'italic' }}>
-                  {property.address}
-                </p>
+              </div>
+              <button className="pd-strip-arrow right" onClick={() => scrollGallery(1)}><ChevronRight size={18}/></button>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* ── TITLE SECTION ── */}
+      <section className="pd-title-section">
+        <div className="container">
+          <div className="pd-title-grid">
+            {/* Left: title info */}
+            <div className="pd-title-info">
+              <div className="pd-title-badges">
+                {property.isVerified && <span className="pd-badge-green"><ShieldCheck size={12}/> Verified</span>}
+                {property.type && <span className="pd-badge-type">{property.type}</span>}
+                {property.purpose && <span className="pd-badge-purpose" style={{ background: property.purpose === 'Rent' ? 'rgba(34,217,224,0.15)' : 'rgba(16,217,140,0.15)', color: property.purpose === 'Rent' ? '#22d9e0' : '#10d98c', border: `1px solid ${property.purpose === 'Rent' ? 'rgba(34,217,224,0.3)' : 'rgba(16,217,140,0.3)'}` }}>
+                  {property.purpose === 'Rent' ? 'FOR RENT' : 'FOR SALE'}
+                </span>}
+                {property.isFeatured && <span className="pd-badge-gold">⭐ Featured</span>}
+              </div>
+              <h1 className="pd-h1">{property.title}</h1>
+              <div className="pd-location-row">
+                <MapPin size={14} style={{ color: 'var(--gold)', flexShrink: 0 }}/>
+                <span>{property.location}</span>
+                {property.address && <span style={{ color: 'var(--txt-muted)', fontSize: '0.82rem' }}>— {property.address}</span>}
+                {property.googleMapsLink && (
+                  <a href={property.googleMapsLink} target="_blank" rel="noopener noreferrer" className="pd-maps-link">
+                    <MapPin size={10}/> View Map
+                  </a>
+                )}
+              </div>
+              {property.listerType && (
+                <div style={{ fontSize: '0.78rem', color: 'var(--txt-muted)', marginTop: '4px' }}>
+                  {property.listerType.includes('Builder') ? '🏗️' : '👤'} {property.listerType}
+                </div>
               )}
             </div>
+
+            {/* Right: price + actions */}
             <div className="pd-price-block">
-              <div style={{ display: 'flex', gap: '10px', marginBottom: '1rem', justifyContent: 'flex-end' }}>
-                <button 
-                  onClick={handleLike}
-                  style={{ 
-                    background: liked ? 'rgba(240, 93, 94, 0.15)' : 'rgba(255,255,255,0.05)', 
-                    border: liked ? '1px solid var(--rose)' : '1px solid rgba(255,255,255,0.1)', 
-                    color: liked ? 'var(--rose)' : 'white',
-                    padding: '8px 16px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', transition: 'all 0.2s', fontWeight: 700 
-                  }}
-                >
-                  <Heart size={18} fill={liked ? 'var(--rose)' : 'none'} /> {likeCount}
+              <div className="pd-price-main">{formatSnapAddaPrice(displayPrice)}</div>
+              {isAgri && agriTotalValue > 0 && agriTotalValue !== Number(property.price) && (
+                <div className="pd-price-sub">Auto-calculated total value</div>
+              )}
+              <div className="pd-price-actions">
+                <button className={`pd-action-btn ${liked ? 'liked' : ''}`} onClick={handleLike}>
+                  <Heart size={18} fill={liked ? 'currentColor' : 'none'}/>
+                  <span>{likeCount > 0 ? likeCount : ''} Save</span>
                 </button>
-                <button 
-                  onClick={handleShare}
-                  style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', padding: '8px 16px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 700 }}
-                >
-                  <Share2 size={18} /> Share
+                <button className="pd-action-btn" onClick={handleShare}>
+                  <Share2 size={18}/>
+                  <span>Share</span>
                 </button>
               </div>
-              <div className="pd-price">{formatSnapAddaPrice(property.price)}</div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Tab Nav */}
-      <div className="pd-tab-nav-wrapper">
+      {/* ── STICKY TAB NAV ── */}
+      <div className="pd-tab-sticky">
         <div className="container">
-          <div className="pd-tab-nav">
-            {TABS.map(t => (
-              <a key={t.id} href={`#${t.id}`} className={`pd-tab${activeSection === t.id ? ' active' : ''}`} onClick={() => setActiveSection(t.id)}>{t.label}</a>
+          <nav className="pd-tab-nav">
+            {TABS.map(tab => (
+              <a key={tab.id} href={`#pd-${tab.id}`}
+                className={`pd-tab-link ${activeTab === tab.id ? 'active' : ''}`}
+                onClick={() => setActiveTab(tab.id)}>
+                {tab.label}
+              </a>
             ))}
-          </div>
+          </nav>
         </div>
       </div>
 
-      {/* Content Grid */}
-      <div className="container pd-content-grid">
-        <div className="pd-main">
-          <section id="overview" className="pd-section">
-            <h2>Property Overview</h2>
-            <div className="pd-overview-cards">
-              {property.type !== 'Agriculture' && (
-                <>
-                  <div className="pd-ov-card"><BedDouble size={22} className="text-gold" /><div><span className="pd-ov-val">{property.beds}</span><span className="pd-ov-label">Bedrooms</span></div></div>
-                  <div className="pd-ov-card"><Bath size={22} className="text-gold" /><div><span className="pd-ov-val">{property.baths}</span><span className="pd-ov-label">Bathrooms</span></div></div>
-                </>
-              )}
-              <div className="pd-ov-card"><Square size={22} className="text-gold" /><div><span className="pd-ov-val">{property.areaSize || property.sqft}</span><span className="pd-ov-label">{property.measurementUnit || 'Sq.Yds'} {property.totalAcres ? `(${property.totalAcres} Acres)` : ''}</span></div></div>
-              {property.pricePerAcre > 0 && property.type === 'Agricultural Land' && (
-                <div className="pd-ov-card"><Building2 size={22} className="text-emerald" /><div><span className="pd-ov-val">₹ {Number(property.pricePerAcre).toLocaleString('en-IN')}</span><span className="pd-ov-label">Per Acre</span></div></div>
-              )}
-              {property.facing && property.facing !== 'Any' && <div className="pd-ov-card"><Compass size={22} className="text-gold" /><div><span className="pd-ov-val">{property.facing}</span><span className="pd-ov-label">Facing</span></div></div>}
-              {authority && authority !== 'N/A' && <div className="pd-ov-card"><ShieldCheck size={22} style={{ color: 'var(--success)' }} /><div><span className="pd-ov-val">{authority}</span><span className="pd-ov-label">Approval</span></div></div>}
-            </div>
-            
-            {/* Extended Detail Grid */}
-            <div style={{ marginTop: '2.5rem', borderTop: '1px solid var(--border-light)', paddingTop: '2.5rem' }}>
-              <h3 style={{ fontSize: '1rem', fontWeight: 800, color: 'white', marginBottom: '1.25rem' }}>Technical Specifications</h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.25rem' }}>
-                 {property.carpetArea > 0 && <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1.25rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}><div style={{ color: 'var(--txt-muted)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Carpet Area</div><div style={{ fontWeight: 700, fontSize: '1.1rem' }}>{property.carpetArea} Sq.Ft</div></div>}
-                 {property.superBuiltupArea > 0 && <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1.25rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}><div style={{ color: 'var(--txt-muted)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Super Builtup</div><div style={{ fontWeight: 700, fontSize: '1.1rem' }}>{property.superBuiltupArea} Sq.Ft</div></div>}
-                 {property.transactionType && property.transactionType !== 'N/A' && <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1.25rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}><div style={{ color: 'var(--txt-muted)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Transaction</div><div style={{ fontWeight: 700, fontSize: '1.1rem' }}>{property.transactionType}</div></div>}
-                 {property.propertyAge && property.propertyAge !== 'N/A' && <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1.25rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}><div style={{ color: 'var(--txt-muted)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Age of Asset</div><div style={{ fontWeight: 700, fontSize: '1.1rem' }}>{property.propertyAge}</div></div>}
-                 {property.ownershipType && property.ownershipType !== 'N/A' && <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1.25rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}><div style={{ color: 'var(--txt-muted)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Ownership</div><div style={{ fontWeight: 700, fontSize: '1.1rem' }}>{property.ownershipType}</div></div>}
-                 {property.floorNo > 0 && <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1.25rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}><div style={{ color: 'var(--txt-muted)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Floor Level</div><div style={{ fontWeight: 700, fontSize: '1.1rem' }}>{property.floorNo} of {property.totalFloors}</div></div>}
-                 {property.parking && property.parking !== 'N/A' && <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1.25rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}><div style={{ color: 'var(--txt-muted)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Parking</div><div style={{ fontWeight: 700, fontSize: '1.1rem' }}>{property.parking}</div></div>}
-                 
-                 {/* Land & Plot Specifics */}
-                 {(property.type === 'Agricultural Land' || property.type?.includes('Plot')) && (
-                   <>
-                     {property.roadWidth > 0 && <div style={{ background: 'rgba(6,217,140,0.05)', padding: '1.25rem', borderRadius: '16px', border: '1px solid rgba(6,217,140,0.1)' }}><div style={{ color: 'var(--emerald)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Road Width</div><div style={{ fontWeight: 700, fontSize: '1.1rem', color: '#fff' }}>{property.roadWidth} Ft</div></div>}
-                     {property.boundaryWall && <div style={{ background: 'rgba(6,217,140,0.05)', padding: '1.25rem', borderRadius: '16px', border: '1px solid rgba(6,217,140,0.1)' }}><div style={{ color: 'var(--emerald)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Boundary</div><div style={{ fontWeight: 700, fontSize: '1.1rem', color: '#fff' }}>Constructed</div></div>}
-                     {property.isGated && <div style={{ background: 'rgba(232,184,75,0.05)', padding: '1.25rem', borderRadius: '16px', border: '1px solid rgba(232,184,75,0.1)' }}><div style={{ color: 'var(--gold)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Community</div><div style={{ fontWeight: 700, fontSize: '1.1rem', color: '#fff' }}>Gated</div></div>}
-                   </>
-                 )}
-                 {property.reraId && <div style={{ background: 'rgba(232,184,75,0.05)', padding: '1.25rem', borderRadius: '16px', border: '1px solid rgba(232,184,75,0.1)' }}><div style={{ color: 'var(--gold)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>RERA ID</div><div style={{ fontWeight: 700, fontSize: '1.1rem' }}>{property.reraId}</div></div>}
-              </div>
-            </div>
-          </section>
+      {/* ── MAIN CONTENT ── */}
+      <div className="container">
+        <div className="pd-body-grid">
 
-          <section id="description" className="pd-section">
-            <h2>About this Property</h2>
-            <p className="pd-description">{generateDesc(property)}</p>
-          </section>
+          {/* ── LEFT MAIN ── */}
+          <main className="pd-main-col">
 
-          {property.customFeatures?.length > 0 && (
-            <section className="pd-section">
-              <h2>Key Highlights</h2>
-              <div className="pd-highlights-grid">
-                {property.customFeatures.map((f, i) => <div key={i} className="pd-highlight-card"><div className="pd-hl-label">{f.label}</div><div className="pd-hl-value">{f.value}</div></div>)}
+            {/* OVERVIEW */}
+            <section id="pd-overview" className="pd-section">
+              <h2 className="pd-section-h">Property Overview</h2>
+
+              <div className="pd-overview-grid">
+                {/* AGRICULTURE */}
+                {isAgri && (
+                  <>
+                    {agriAcres > 0 && (
+                      <div className="pd-ov-card" style={{ '--ov-accent': '#10d98c' }}>
+                        <Leaf size={20} style={{ color: '#10d98c' }}/>
+                        <div className="pd-ov-val" style={{ color: '#10d98c' }}>{agriAcres}</div>
+                        <div className="pd-ov-lbl">Acres</div>
+                      </div>
+                    )}
+                    {agriCents > 0 && (
+                      <div className="pd-ov-card" style={{ '--ov-accent': '#10d98c' }}>
+                        <Square size={20} style={{ color: '#10d98c' }}/>
+                        <div className="pd-ov-val">{agriCents}</div>
+                        <div className="pd-ov-lbl">Cents</div>
+                      </div>
+                    )}
+                    {property.pricePerAcre > 0 && (
+                      <div className="pd-ov-card" style={{ '--ov-accent': '#e8b84b' }}>
+                        <TrendingUp size={20} style={{ color: '#e8b84b' }}/>
+                        <div className="pd-ov-val" style={{ fontSize: '0.95rem', color: '#e8b84b' }}>{formatSnapAddaPrice(property.pricePerAcre)}</div>
+                        <div className="pd-ov-lbl">Per Acre</div>
+                      </div>
+                    )}
+                    {pricePerCent > 0 && (
+                      <div className="pd-ov-card" style={{ '--ov-accent': '#a8ff78' }}>
+                        <Award size={20} style={{ color: '#a8ff78' }}/>
+                        <div className="pd-ov-val" style={{ fontSize: '0.88rem', color: '#a8ff78' }}>₹{pricePerCent.toLocaleString('en-IN')}</div>
+                        <div className="pd-ov-lbl">Per Cent</div>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {/* RESIDENTIAL */}
+                {isResidential && (
+                  <>
+                    {(property.bhk || property.beds) > 0 && (
+                      <div className="pd-ov-card">
+                        <BedDouble size={20} style={{ color: 'var(--gold)' }}/>
+                        <div className="pd-ov-val">{property.bhk || property.beds}</div>
+                        <div className="pd-ov-lbl">BHK</div>
+                      </div>
+                    )}
+                    {property.baths > 0 && (
+                      <div className="pd-ov-card">
+                        <Bath size={20} style={{ color: 'var(--gold)' }}/>
+                        <div className="pd-ov-val">{property.baths}</div>
+                        <div className="pd-ov-lbl">Baths</div>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {/* COMMON */}
+                {property.areaSize > 0 && (
+                  <div className="pd-ov-card">
+                    <Square size={20} style={{ color: 'var(--gold)' }}/>
+                    <div className="pd-ov-val">{property.areaSize}</div>
+                    <div className="pd-ov-lbl">{property.measurementUnit || 'Sq.Yds'}</div>
+                  </div>
+                )}
+                {property.facing && property.facing !== 'Any' && (
+                  <div className="pd-ov-card">
+                    <Compass size={20} style={{ color: 'var(--gold)' }}/>
+                    <div className="pd-ov-val" style={{ fontSize: '0.9rem' }}>{property.facing}</div>
+                    <div className="pd-ov-lbl">Facing</div>
+                  </div>
+                )}
+                {property.approvalAuthority && property.approvalAuthority !== 'N/A' && (
+                  <div className="pd-ov-card">
+                    <ShieldCheck size={20} style={{ color: '#10d98c' }}/>
+                    <div className="pd-ov-val" style={{ fontSize: '0.88rem', color: '#10d98c' }}>{property.approvalAuthority}</div>
+                    <div className="pd-ov-lbl">Approval</div>
+                  </div>
+                )}
               </div>
             </section>
-          )}
 
-          <section id="amenities" className="pd-section">
-            <h2>Amenities &amp; Features</h2>
-            <div className="pd-amenities-grid">
-              {(property.amenities || ['Power Backup', 'Water Supply', 'Clear Title', 'Vastu Compliant']).map((a, i) => (
-                <div key={i} className="pd-amenity"><Award size={16} className="text-gold" /><span>{a}</span></div>
-              ))}
-            </div>
-          </section>
+            {/* ABOUT */}
+            <section id="pd-specs" className="pd-section">
+              <h2 className="pd-section-h">About this Property</h2>
+              <p className="pd-desc-text">{generateDesc(property)}</p>
 
-          <section id="emi" className="pd-section">
-            <h2><Star size={22} className="text-gold" /> EMI Calculator</h2>
-            <div className="pd-emi-grid">
-              <div className="pd-emi-sliders">
-                {[
-                  { label: 'Loan Amount', val: loanPct, set: setLoanPct, min: 10, max: 90, step: 1, unit: '%' },
-                  { label: 'Interest Rate', val: rate, set: setRate, min: 6, max: 15, step: 0.1, unit: '%' },
-                  { label: 'Tenure', val: tenure, set: setTenure, min: 5, max: 30, step: 1, unit: ' years' },
-                ].map(({ label, val, set, min, max, step, unit }) => (
-                  <div key={label} className="pd-emi-slider-row">
-                    <label>{label}</label>
-                    <span>{val}{unit}</span>
-                    <input type="range" min={min} max={max} step={step} value={val} onChange={e => set(parseFloat(e.target.value))} />
+              <h3 style={{ fontSize: '0.85rem', fontWeight: 800, color: 'white', marginTop: '2rem', marginBottom: '1.25rem', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                Technical Specifications
+              </h3>
+              <div className="pd-specs-grid">
+                <SpecCard label="Carpet Area" value={property.carpetArea > 0 ? `${property.carpetArea} Sq.Ft` : null} accent="white"/>
+                <SpecCard label="Built-up Area" value={property.superBuiltupArea > 0 ? `${property.superBuiltupArea} Sq.Ft` : null} accent="white"/>
+                <SpecCard label="Floor" value={property.floorNo > 0 ? `${property.floorNo} of ${property.totalFloors}` : null} accent="white"/>
+                <SpecCard label="Parking" value={property.parking !== 'N/A' ? property.parking : null} accent="white"/>
+                <SpecCard label="Furnishing" value={property.furnishing !== 'N/A' ? property.furnishing : null} accent="#e8b84b"/>
+                <SpecCard label="Age of Property" value={property.propertyAge !== 'N/A' ? property.propertyAge : null} accent="white"/>
+                <SpecCard label="Ownership" value={property.ownershipType !== 'N/A' ? property.ownershipType : null} accent="white"/>
+                <SpecCard label="Transaction" value={property.transactionType !== 'N/A' ? property.transactionType : null} accent="white"/>
+                <SpecCard label="RERA ID" value={property.reraId} accent="#e8b84b" icon={<FileText size={9}/>}/>
+
+                {/* Land & Plot specific */}
+                {(isAgri || isPlot) && <>
+                  <SpecCard label="Road Width" value={property.roadWidth > 0 ? `${property.roadWidth} Ft` : null} accent="#22d9e0" icon={<Truck size={9}/>}/>
+                  <SpecCard label="Boundary Wall" value={property.boundaryWall ? 'Constructed' : null} accent="#10d98c"/>
+                  <SpecCard label="Community" value={property.isGated ? 'Gated' : null} accent="#e8b84b"/>
+                </>}
+
+                {/* Agriculture specific */}
+                {isAgri && <>
+                  <SpecCard label="Survey No." value={property.surveyNo} accent="#9b59f5" icon={<FileText size={9}/>}/>
+                  <SpecCard label="Water Source" value={property.waterSource !== 'N/A' ? property.waterSource : null} accent="#22d9e0" icon={<Droplets size={9}/>}/>
+                  <SpecCard label="Road Type" value={property.roadType !== 'N/A' ? property.roadType : null} accent="#ff8c42" icon={<Truck size={9}/>}/>
+                  <SpecCard label="Total Area" value={property.totalAcres ? formatLandSize(property.totalAcres) : null} accent="#10d98c" icon={<Leaf size={9}/>}/>
+                </>}
+
+                {property.customFeatures?.map((f, i) => (
+                  <SpecCard key={i} label={f.label} value={f.value} accent="#e8b84b"/>
+                ))}
+              </div>
+            </section>
+
+            {/* AMENITIES */}
+            <section id="pd-amenities" className="pd-section">
+              <h2 className="pd-section-h">Amenities & Features</h2>
+              <div className="pd-amenities-grid">
+                {(property.amenities?.length > 0
+                  ? property.amenities
+                  : ['Clear Title', 'Power Backup', 'Water Supply', 'Vastu Compliant', 'Gated Entry', '24/7 Security']
+                ).map((a, i) => (
+                  <div key={i} className="pd-amenity-item">
+                    <CheckCircle2 size={14} style={{ color: '#10d98c', flexShrink: 0 }}/> {a}
                   </div>
                 ))}
               </div>
-              <div className="pd-emi-result glass-heavy tilt-3d" style={{ padding: '2rem', border: '1px solid var(--royal-gold)', borderRadius: '16px' }}>
-                <p>Estimated Monthly EMI</p>
-                <h3 className="text-royal-gold">₹ {calcEMI().toLocaleString('en-IN')}</h3>
-                <small>*Estimate only. Terms vary by bank.</small>
-              </div>
-            </div>
-          </section>
+            </section>
 
-          <section id="qna" className="pd-section">
-            <h2>Property Q&amp;A</h2>
-            <div className="pd-qna-list">
-              {qna.length === 0 ? <p className="text-muted" style={{ fontStyle: 'italic' }}>No questions yet. Be the first to ask!</p>
-                : qna.map(q => (
-                  <div key={q._id} className="pd-qna-item">
-                    <div className="pd-qna-q">Q: {q.question}</div>
-                    <div className="pd-qna-a"><span className="text-gold">A:</span> {q.answer}</div>
-                  </div>
-                ))}
-            </div>
-            <div className="pd-ask-form glass-heavy tilt-3d" style={{ padding: '2rem', borderRadius: '16px' }}>
-              <h3>Ask the Agent</h3>
-              {!user ? (
-                <div style={{ textAlign: 'center', padding: '1rem' }}>
-                  <p style={{ color: 'var(--txt-muted)', marginBottom: '1.5rem' }}>Login to your elite account to ask questions and track responses.</p>
-                  <button 
-                    onClick={() => navigate('/login', { state: { from: window.location.pathname } })} 
-                    className="btn btn-primary btn-3d"
-                    style={{ width: 'auto', padding: '0.8rem 2rem' }}
-                  >
-                    Login to Ask Question
-                  </button>
+
+            {/* Q&A */}
+            <section id="pd-qna" className="pd-section">
+              <h2 className="pd-section-h">Property Q&A</h2>
+
+              {/* Existing Q&As */}
+              {qna.length > 0 ? (
+                <div className="pd-qna-list">
+                  {qna.map((q, i) => (
+                    <div key={q._id || i} className="pd-qna-item">
+                      <div className="pd-qna-q">
+                        <span className="pd-qna-qlabel">Q:</span> {q.question}
+                      </div>
+                      {q.answer && (
+                        <div className="pd-qna-a">
+                          <span className="pd-qna-alabel">A:</span> {q.answer}
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
               ) : (
-                <form onSubmit={handleAsk}>
-                  <div className="pd-ask-row">
-                    <input type="text" placeholder="Your Name" value={user.name || qName} disabled />
-                    <input type="text" placeholder="Phone or Email" value={user.email || user.phone || qContact} disabled />
-                  </div>
-                  <textarea placeholder="What do you want to know?" value={qText} onChange={e => setQText(e.target.value)} rows={3} required />
-                  <div className="pd-ask-footer">
-                    <span style={{ color: qStatus.includes('submitted') ? 'var(--gold)' : 'var(--text-muted)', fontSize: '0.85rem' }}>{qStatus}</span>
-                    <button type="submit" className="btn btn-primary btn-3d"><Send size={14} /> Submit</button>
-                  </div>
-                </form>
+                <p style={{ color: 'var(--txt-muted)', fontStyle: 'italic', marginBottom: '1.5rem' }}>
+                  No questions yet — be the first to ask!
+                </p>
               )}
-            </div>
-          </section>
-        </div>
 
-        {/* Sidebar */}
-        <aside className="pd-sidebar">
-          <div className="pd-contact-card glass-heavy tilt-3d" style={{ padding: '2rem', borderRadius: '16px' }}>
-            <h3>Interested?</h3>
-            <p className="text-muted">Connect directly with the owner or agent.</p>
-            <div className="pd-contact-actions">
-              <a href={`tel:${(supportInfo?.phone || '+919346793364').replace(/\s+/g, '')}`} className="btn btn-primary btn-lg btn-full btn-3d" style={{ textDecoration: 'none' }}>Call Agent Now</a>
-              <div className="pd-divider">or</div>
-              <button className="btn btn-lg btn-full btn-3d-emerald" style={{ backgroundColor: '#25D366', color: 'white', border: 'none' }} onClick={handleWhatsApp}>
-                <MessageSquare size={18} /> WhatsApp
-              </button>
+              {/* Ask Form */}
+              <div className="pd-ask-card">
+                <h3 style={{ fontSize: '0.95rem', fontWeight: 800, marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <MessageSquare size={16} style={{ color: 'var(--gold)' }}/> Ask the Agent
+                </h3>
+                {!user ? (
+                  <div style={{ textAlign: 'center', padding: '1.5rem' }}>
+                    <p style={{ color: 'var(--txt-muted)', marginBottom: '1rem' }}>Sign in to ask questions and track agent responses.</p>
+                    <button className="pd-btn-primary" onClick={() => navigate('/login', { state: { from: window.location.pathname } })}>
+                      Sign In to Ask
+                    </button>
+                  </div>
+                ) : (
+                  <form onSubmit={handleAskSubmit}>
+                    <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                      <div className="pd-ask-field" style={{ flex: 1 }}>
+                        <span style={{ fontSize: '0.72rem', color: 'var(--txt-muted)', fontWeight: 600 }}>Your Name</span>
+                        <div style={{ fontWeight: 700, color: 'white', fontSize: '0.88rem' }}>{user.name || user.displayName || 'User'}</div>
+                      </div>
+                      <div className="pd-ask-field" style={{ flex: 1 }}>
+                        <span style={{ fontSize: '0.72rem', color: 'var(--txt-muted)', fontWeight: 600 }}>Email / Phone</span>
+                        <div style={{ fontWeight: 700, color: 'white', fontSize: '0.88rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.email || user.phone || '—'}</div>
+                      </div>
+                    </div>
+                    <textarea
+                      value={qText}
+                      onChange={e => setQText(e.target.value)}
+                      placeholder="What would you like to know about this property?"
+                      rows={3}
+                      required
+                      style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '0.9rem 1rem', color: 'white', fontSize: '0.9rem', outline: 'none', resize: 'vertical', boxSizing: 'border-box', marginBottom: '12px', fontFamily: 'inherit' }}
+                      onFocus={e => e.target.style.borderColor = 'var(--gold)'}
+                      onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'}
+                    />
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      {qStatus === 'success' && <span style={{ color: '#10d98c', fontSize: '0.82rem', fontWeight: 600 }}>✅ Question submitted!</span>}
+                      {qStatus === 'error' && <span style={{ color: 'var(--rose)', fontSize: '0.82rem', fontWeight: 600 }}>⚠️ Failed — please try again</span>}
+                      {!qStatus && <span/>}
+                      <button type="submit" disabled={qSubmitting} className="pd-btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '0.75rem 1.5rem' }}>
+                        <Send size={14}/> {qSubmitting ? 'Sending...' : 'Submit Question'}
+                      </button>
+                    </div>
+                  </form>
+                )}
+              </div>
+            </section>
+          </main>
+
+          {/* ── RIGHT SIDEBAR ── */}
+          <aside className="pd-sidebar-col">
+            <div className="pd-contact-sticky">
+
+              {/* Contact Card */}
+              <div className="pd-contact-card">
+                <div style={{ fontSize: '0.72rem', color: 'var(--txt-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 800, marginBottom: '0.75rem' }}>
+                  Get Expert Assistance
+                </div>
+                <a href={`tel:${supportPhone}`} className="pd-btn-primary" style={{ textDecoration: 'none', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '1rem', padding: '1rem' }}>
+                  <Phone size={18}/> Call Agent Now
+                </a>
+                <div style={{ textAlign: 'center', color: 'var(--txt-muted)', fontSize: '0.75rem', margin: '0.75rem 0' }}>or</div>
+                <button onClick={handleWhatsApp} className="pd-btn-wa" style={{ width: '100%', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '1rem', padding: '1rem' }}>
+                  <MessageSquare size={18}/> WhatsApp
+                </button>
+                <div className="pd-trust-row">
+                  <div className="pd-trust-item"><ShieldCheck size={13} style={{ color: '#10d98c' }}/> Verified Listing</div>
+                  <div className="pd-trust-item"><Award size={13} style={{ color: '#e8b84b' }}/> CRDA Approved</div>
+                </div>
+              </div>
+
+              {/* Quick Specs */}
+              <div className="pd-quick-specs">
+                <div style={{ fontSize: '0.72rem', color: 'var(--txt-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 800, marginBottom: '1rem' }}>Quick Facts</div>
+                {[
+                  { label: 'Price', value: formatSnapAddaPrice(displayPrice), accent: '#e8b84b' },
+                  isAgri && { label: 'Total Area', value: formatLandSize(property.totalAcres), accent: '#10d98c' },
+                  isAgri && property.pricePerAcre > 0 && { label: 'Per Acre', value: formatSnapAddaPrice(property.pricePerAcre), accent: 'white' },
+                  isAgri && pricePerCent > 0 && { label: 'Per Cent', value: `₹${pricePerCent.toLocaleString('en-IN')}`, accent: '#a8ff78' },
+                  !isAgri && property.areaSize > 0 && { label: 'Area', value: `${property.areaSize} ${property.measurementUnit || 'Sq.Yds'}`, accent: 'white' },
+                  property.facing && { label: 'Facing', value: property.facing, accent: 'white' },
+                  property.approvalAuthority && { label: 'Approval', value: property.approvalAuthority, accent: '#10d98c' },
+                  property.type && { label: 'Type', value: property.type, accent: 'white' },
+                ].filter(Boolean).map((s, i) => (
+                  <div key={i} className="pd-quick-row">
+                    <span className="pd-quick-lbl">{s.label}</span>
+                    <span className="pd-quick-val" style={{ color: s.accent }}>{s.value}</span>
+                  </div>
+                ))}
+              </div>
+
             </div>
-            <div className="pd-trust-badges">
-              <div className="pd-trust"><ShieldCheck size={15} className="text-gold" /> <span>Verified Listing</span></div>
-              <div className="pd-trust"><Award size={15} className="text-gold" /> <span>CRDA Approved</span></div>
-            </div>
-          </div>
-        </aside>
+          </aside>
+        </div>
       </div>
 
-      {/* Elite Mobile Sticky Action Bar */}
-      <div className="mobile-sticky-action-bar" style={{
-        position: 'fixed',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        background: 'rgba(5,5,10,0.95)',
-        padding: '1.2rem 1.5rem',
-        zIndex: 1000,
-        backdropFilter: 'blur(30px)',
-        borderTop: '1px solid rgba(212,175,55,0.25)',
-        display: 'none', 
-        gap: '1rem',
-        boxShadow: '0 -10px 40px rgba(0,0,0,0.5)'
-      }}>
-        <a 
-          href={`tel:${(supportInfo?.phone || '+919346793364').replace(/\s+/g, '')}`}
-          className="hero-btn hero-btn-primary pulse-primary btn-3d" 
-          style={{ flex: 1, padding: '1rem', fontSize: '0.9rem', fontWeight: 800, letterSpacing: '0.5px', textDecoration: 'none' }}
-        >
-          <Phone size={18} /> CALL AGENT NOW
+      {/* ── MOBILE STICKY BAR ── */}
+      <div className="pd-mobile-bar">
+        <a href={`tel:${supportPhone}`} className="pd-mobile-bar-btn pd-btn-primary" style={{ textDecoration: 'none' }}>
+          <Phone size={18}/> Call
         </a>
-        <button 
-          className="hero-btn hero-btn-whatsapp" 
-          onClick={handleWhatsApp} 
-          style={{ width: '60px', height: '56px', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#25D366', border: 'none' }}
-        >
-          <MessageSquare size={22} color="white" />
+        <button className="pd-mobile-bar-btn pd-btn-wa" onClick={handleWhatsApp}>
+          <MessageSquare size={18}/> WhatsApp
         </button>
       </div>
 
       <style>{`
         @media (max-width: 768px) {
-          .mobile-sticky-action-bar { display: flex !important; }
-          .pd-contact-card { display: none !important; }
-          .property-details-page { padding-bottom: 80px !important; }
+          .pd-mobile-bar { display: flex !important; }
+          .pd-sidebar-col { display: none !important; }
+          .pd-page { padding-bottom: 80px; }
         }
       `}</style>
-    </motion.div>
+    </div>
   );
 }

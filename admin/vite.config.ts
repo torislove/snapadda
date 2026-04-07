@@ -6,7 +6,13 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 3001,
-    strictPort: false
+    strictPort: false,
+    proxy: {
+      '/api': {
+        target: 'https://snapadda-7a6e6.web.app',
+        changeOrigin: true
+      }
+    }
   },
   build: {
     chunkSizeWarningLimit: 1200,
