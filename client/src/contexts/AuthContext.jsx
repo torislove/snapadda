@@ -24,8 +24,9 @@ export const AuthProvider = ({ children }) => {
 
   const loginGoogle = (userData) => {
     const userWithToken = { ...userData.user, token: userData.token || 'mock_token' };
-    setUser(userWithToken);
     localStorage.setItem('snapadda_user', JSON.stringify(userWithToken));
+    setUser(userWithToken);
+    setIsLoading(false); // Force loading off once user is set to prevent router flickers
   };
 
 

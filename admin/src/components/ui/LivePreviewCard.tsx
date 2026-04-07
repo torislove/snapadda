@@ -1,234 +1,277 @@
-import React, { useRef } from 'react';
+import React, { useState } from 'react';
 import { 
-  ShieldCheck, MapPin, Expand, Building2, User, 
-  Star, ArrowRight, Zap
+  Heart, Share2, Eye, Phone, MessageSquare, ShieldCheck, 
+  MapPin, Building2, User, Leaf, Square,
+  TreePine, Award, CheckCircle2
 } from 'lucide-react';
-import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
+import './PropertyCard.css';
+import { 
+  formatSnapAddaPrice, 
+  formatLandSize,
+  smartAreaConverter 
+} from '../../../../client/src/utils/priceUtils';
+
+// Type-specific accent colors (synchronized with client)
+const TYPE_COLORS: Record<string, any> = {
+  'Agricultural Land': { accent: '#10d98c', bg: 'rgba(16,217,140,0.06)', border: 'rgba(16,217,140,0.2)', icon: <Leaf size={12}/> },
+  'Residential Plot':  { accent: '#22d9e0', bg: 'rgba(34,217,224,0.06)', border: 'rgba(34,217,224,0.2)', icon: <Square size={12}/> },
+  'Commercial Plot':   { accent: '#f5397b', bg: 'rgba(245,57,123,0.06)', border: 'rgba(245,57,123,0.2)', icon: <Building2 size={12}/> },
+  'Apartment':         { accent: '#9b59f5', bg: 'rgba(155,89,245,0.06)', border: 'rgba(155,89,245,0.2)', icon: <Building2 size={12}/> },
+  'Villa':             { accent: '#e8b84b', bg: 'rgba(232,184,75,0.06)', border: 'rgba(232,184,75,0.2)', icon: <CheckCircle2 size={12}/> },
+  'Independent House': { accent: '#ff8c42', bg: 'rgba(255,140,66,0.06)', border: 'rgba(255,140,66,0.2)', icon: <User size={12}/> },
+  'Commercial Space':  { accent: '#f5397b', bg: 'rgba(245,57,123,0.06)', border: 'rgba(245,57,123,0.2)', icon: <Building2 size={12}/> },
+  'Farmhouse':         { accent: '#a8ff78', bg: 'rgba(168,255,120,0.06)', border: 'rgba(168,255,120,0.2)', icon: <TreePine size={12}/> },
+};
+const DEFAULT_COLOR = { accent: '#e8b84b', bg: 'rgba(232,184,75,0.06)', border: 'rgba(232,184,75,0.2)', icon: <Square size={12}/> };
 
 interface LivePreviewCardProps {
+  id?: string;
   image?: string;
+  images?: string[];
   title?: string;
-  price?: string;
+  price?: string | number;
   location?: string;
-  beds?: number;
-  baths?: number;
-  areaSize?: number;
-  sqft?: number;
+  beds?: number | string;
+  baths?: number | string;
+  areaSize?: number | string;
+  sqft?: number | string;
   type?: string;
-  condition?: string;
-  facing?: string;
-  approval?: string;
+  purpose?: string;
   measurementUnit?: string;
+  approval?: string;
+  approvalAuthority?: string;
+  facing?: string;
+  totalAcres?: number | string;
+  pricePerAcre?: number | string;
+  bhk?: string;
+  floorNo?: string | number;
+  totalFloors?: string | number;
   isVerified?: boolean;
+  isFeatured?: boolean;
+  vastuCompliant?: boolean;
   listerType?: string;
-  address?: string;
-  pricePerAcre?: number;
+  googleMapsLink?: string;
+  createdAt?: string;
+  isGated?: boolean;
+  constructionStatus?: string;
 }
 
-export const LivePreviewCard: React.FC<LivePreviewCardProps> = ({
-  image,
-  title = 'PREMIUM ROYAL ESTATE',
-  price = '8500000',
-  location = 'AMARAVATI SECTOR, AP',
-  areaSize = 1250,
-  type = 'Apartment',
-  facing = 'East',
-  approval = 'AP CRDA',
-  measurementUnit = 'Sq.Ft',
-  isVerified = true,
-  listerType = 'Certified Builder',
-  address = '',
-  pricePerAcre = 0,
-}) => {
-  const cardRef = useRef<HTMLDivElement>(null);
-  const x = useMotionValue(0);
-  const y = useMotionValue(0);
+export const LivePreviewCard: React.FC<LivePreviewCardProps> = (props) => {
+  const {
+    image, images = [], title = 'Property Title', price = 0, location = 'Location', 
+    beds, bhk, type = 'Apartment', purpose = 'Sale', measurementUnit = 'Sq.Ft',
+    sqft, areaSize, totalAcres, pricePerAcre,
+    approval, approvalAuthority, facing,
+    isVerified, isFeatured, vastuCompliant, listerType, isGated, constructionStatus
+  } = props;
 
-  const mouseXSpring = useSpring(x);
-  const mouseYSpring = useSpring(y);
+  const [imgIdx, setImgIdx] = useState(0);
 
-  const rotateX = useTransform(mouseYSpring, [-0.5, 0.5], ["10deg", "-10deg"]);
-  const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], ["-10deg", "10deg"]);
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!cardRef.current) return;
-    const rect = cardRef.current.getBoundingClientRect();
-    const width = rect.width;
-    const height = rect.height;
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
-    const xPct = mouseX / width - 0.5;
-    const yPct = mouseY / height - 0.5;
-    x.set(xPct);
-    y.set(yPct);
-  };
-
-  const handleMouseLeave = () => {
-    x.set(0);
-    y.set(0);
-  };
-
-  const displayImage = image || 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80';
+  const allImages = (Array.isArray(images) && images.length > 0) 
+    ? images 
+    : (image ? [image] : ['https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80']);
   
-  const formatLivePrice = (p: number | string) => {
-    const n = Number(p);
-    if (!n) return '₹ Price TBD';
-    if (n >= 10000000) return `₹ ${(n / 10000000).toLocaleString('en-IN', { maximumFractionDigits: 2 })} Cr`;
-    if (n >= 100000) return `₹ ${(n / 100000).toLocaleString('en-IN', { maximumFractionDigits: 2 })} Lakhs`;
-    return `₹ ${n.toLocaleString('en-IN')}`;
-  };
+  const mainImage = allImages[imgIdx] || allImages[0];
+  const typeStyle = TYPE_COLORS[type] || DEFAULT_COLOR;
+  const authority = approval || approvalAuthority;
 
-  const displayPrice = formatLivePrice(price);
+  // Real-time calculation logic (mirrors client)
+  const isAgri = type === 'Agricultural Land';
+  const isPlot = type?.includes('Plot');
+  const isResidential = ['Apartment', 'Villa', 'Independent House', 'Farmhouse'].includes(type);
+  const isCommercial = type === 'Commercial Space';
+  const isVastuFacing = facing && ['east', 'north', 'north-east'].includes(facing?.toLowerCase());
+  
+  const agriTotalValue = (pricePerAcre && totalAcres) ? Math.round(Number(pricePerAcre) * Number(totalAcres)) : 0;
+  const gajamInfo = smartAreaConverter(areaSize || 0, (measurementUnit?.toLowerCase()?.includes('yard') ? 'gajam' : measurementUnit?.toLowerCase()) || 'gajam');
+  const displayGajam = (isPlot && (measurementUnit === 'Sq.Yards' || !measurementUnit)) ? gajamInfo.gajam : null;
+  const displayPrice = (isAgri && agriTotalValue > 0) ? agriTotalValue : price;
+
+  const cycleImage = (e: React.MouseEvent, dir: number) => {
+    e.preventDefault(); e.stopPropagation();
+    setImgIdx(i => (i + dir + allImages.length) % allImages.length);
+  };
 
   return (
-    <motion.div
-      ref={cardRef}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
-      style={{
-        rotateX,
-        rotateY,
-        transformStyle: "preserve-3d",
-        perspective: 1000,
-      }}
-    >
-      <div 
-        style={{ 
-          background: 'rgba(14,14,26,0.8)', 
-          borderRadius: '24px', 
-          overflow: 'hidden', 
-          border: '1px solid rgba(255,255,255,0.08)',
-          boxShadow: '0 25px 60px rgba(0,0,0,0.6)',
-          width: '100%',
-          maxWidth: '360px',
-          margin: '0 auto',
-          backdropFilter: 'blur(20px)',
-          position: 'relative'
-        }}
-      >
-        {/* Media Container */}
-        <div style={{ position: 'relative', width: '100%', height: '240px', overflow: 'hidden' }}>
-          <img 
-            src={displayImage} 
-            alt={title} 
-            style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scale(1.05)', transition: 'transform 0.5s ease' }} 
-          />
-          
-          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 40%, rgba(3,3,8,0.9) 100%)' }} />
-
-          {/* Verification Badge */}
-          {isVerified && (
-            <div style={{ 
-              position: 'absolute', top: '16px', left: '16px', 
-              background: 'rgba(16,217,140,0.95)', color: 'black', 
-              padding: '6px 14px', borderRadius: '10px', 
-              display: 'flex', alignItems: 'center', gap: '6px', 
-              fontSize: '0.7rem', fontWeight: 800,
-              boxShadow: '0 4px 15px rgba(16,217,140,0.3)',
-              transform: 'translateZ(30px)'
-            }}>
-              <ShieldCheck size={14} strokeWidth={3} /> VERIFIED
-            </div>
-          )}
-
-          {/* Price Tag */}
-          <div style={{ 
-            position: 'absolute', bottom: '20px', left: '20px', 
-            color: 'white', fontWeight: 800, fontSize: '1.4rem',
-            fontFamily: 'var(--font-heading)',
-            textShadow: '0 2px 10px rgba(0,0,0,0.5)',
-            transform: 'translateZ(40px)'
-          }}>
-            {displayPrice}
-            {pricePerAcre > 0 && type === 'Agricultural Land' && (
-              <div style={{ fontSize: '0.8rem', opacity: 0.8, marginTop: '4px', fontWeight: 600 }}>
-                ₹ {pricePerAcre.toLocaleString('en-IN')} / Acre
-              </div>
-            )}
-          </div>
-
-          <div style={{ position: 'absolute', top: '16px', right: '16px', display: 'flex', flexDirection: 'column', gap: '8px', zIndex: 10, alignItems: 'flex-end', transform: 'translateZ(25px)' }}>
-            {approval && approval !== 'N/A' && (
-              <div style={{ 
-                background: 'rgba(245,200,66,0.95)', color: 'black', 
-                padding: '5px 12px', borderRadius: '8px', 
-                display: 'flex', alignItems: 'center', gap: '5px', 
-                fontSize: '0.65rem', fontWeight: 900,
-                boxShadow: '0 8px 20px rgba(0,0,0,0.3)'
-              }}>
-                <Zap size={12} fill="black" /> {approval}
-              </div>
-            )}
-            <div style={{ 
-              background: 'rgba(0, 0, 0, 0.7)', color: 'var(--gold)', 
-              padding: '5px 12px', borderRadius: '8px', 
-              display: 'flex', alignItems: 'center', gap: '5px', 
-              fontSize: '0.65rem', fontWeight: 800, border: '1px solid var(--gold)'
-            }}>
-              <Star size={12} fill="var(--gold)" /> FEATURED
-            </div>
-          </div>
-        </div>
+    <div className="pc-card-preview-container" style={{ width: '100%', maxWidth: '360px', margin: '0 auto' }}>
+      <div className="pc-card" style={{ 
+        '--type-accent': typeStyle.accent, 
+        '--type-bg': typeStyle.bg, 
+        '--type-border': typeStyle.border 
+      } as any}>
         
-        {/* Content Section */}
-        <div style={{ padding: '24px', transform: 'translateZ(20px)' }}>
-          <div style={{ fontSize: '0.7rem', fontWeight: 800, letterSpacing: '0.12em', color: 'var(--gold)', marginBottom: '8px' }}>
-            {type.toUpperCase()} • {facing.toUpperCase()} FACING
-          </div>
-          
-          <h3 style={{ 
-            margin: '0 0 10px 0', fontSize: '1.25rem', fontWeight: 700, color: 'white',
-            fontFamily: 'var(--font-heading)', letterSpacing: '-0.02em',
-            lineClamp: 2, WebkitLineClamp: 2, display: '-webkit-box', WebkitBoxOrient: 'vertical', overflow: 'hidden'
-          }}>
-            {title}
-          </h3>
-          
-          <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.85rem', margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <MapPin size={15} style={{ color: 'var(--violet)' }} /> {location}
-          </p>
+        {/* IMAGE ZONE */}
+        <div className="pc-img-wrap">
+          <img src={mainImage} alt={title} className="pc-img" />
+          <div className="pc-img-gradient" />
 
-          {address && (
-            <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.75rem', margin: '-12px 0 16px 21px', lineHeight: 1.4 }}>
-              {address}
-            </p>
+          {/* Price badge */}
+          <div className="pc-price-badge">
+            <span className="pc-price">{formatSnapAddaPrice(displayPrice)}</span>
+            {isAgri && agriTotalValue > 0 && <span className="pc-price-sub">Total Value</span>}
+          </div>
+
+          {/* Top left badges */}
+          <div className="pc-badges-tl">
+            {isFeatured && <span className="pc-badge pc-badge-featured">⭐ Featured</span>}
+            <span className="pc-badge pc-badge-new">✨ Live Preview</span>
+            {purpose && (
+              <span className="pc-badge" style={{ background: purpose === 'Rent' ? '#22d9e0' : '#10d98c', color: '#000', fontWeight: 900 }}>
+                {purpose === 'Rent' ? 'FOR RENT' : 'FOR SALE'}
+              </span>
+            )}
+          </div>
+
+          {/* Top right badges */}
+          <div className="pc-badges-tr">
+            {isVerified && <span className="pc-badge pc-badge-verified"><ShieldCheck size={10}/> Verified</span>}
+            {vastuCompliant && <span className="pc-badge pc-badge-vastu">🧭 Vastu</span>}
+            {isGated && <span className="pc-badge pc-badge-gated">🔒 Gated</span>}
+          </div>
+
+          {/* Image nav arrows */}
+          {allImages.length > 1 && (
+            <>
+              <button className="pc-img-arrow pc-img-arrow-left" onClick={(e) => cycleImage(e, -1)}>‹</button>
+              <button className="pc-img-arrow pc-img-arrow-right" onClick={(e) => cycleImage(e, 1)}>›</button>
+              <div className="pc-img-dots">
+                {allImages.slice(0, 5).map((_, i) => (
+                  <span key={i} className={`pc-img-dot ${i === imgIdx ? 'active' : ''}`} />
+                ))}
+              </div>
+            </>
           )}
-          
-          {/* Amenities Row */}
-          <div style={{ 
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center', 
-            padding: '16px 0', borderTop: '1px solid rgba(255,255,255,0.06)',
-            marginBottom: '16px'
-          }}>
-            <div style={{ display: 'flex', gap: '20px' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 700 }}>SPACE</span>
-                <div style={{ color: 'white', fontWeight: 700, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Expand size={14} style={{ color: 'var(--violet)' }} /> {areaSize} {measurementUnit}
-                </div>
-              </div>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-end' }}>
-              <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 700 }}>LISTER</span>
-              <div style={{ color: 'var(--gold)', fontWeight: 700, fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                {listerType === 'Verified Builder' ? <Building2 size={13} /> : <User size={13} />}
-                {listerType}
-              </div>
-            </div>
+
+          {/* Action buttons icon-only mock */}
+          <div className="pc-img-actions">
+            <div className="pc-action-btn"><Heart size={15} /></div>
+            <div className="pc-action-btn"><Share2 size={15} /></div>
           </div>
 
-          <div style={{
-            width: '100%', padding: '12px', borderRadius: '12px',
-            background: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 100%)',
-            border: '1px solid rgba(255,255,255,0.1)',
-            color: 'white', fontWeight: 700, fontSize: '0.85rem',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-            cursor: 'default'
-          }}>
-            VIEW PERFORMANCE DATA <ArrowRight size={14} />
+          <div className="pc-viewers"><Eye size={10}/> 12 viewing</div>
+        </div>
+
+        {/* CONTENT ZONE */}
+        <div className="pc-content">
+          <div className="pc-meta-row">
+            <span className="pc-type-pill" style={{ background: typeStyle.bg, border: `1px solid ${typeStyle.border}`, color: typeStyle.accent }}>
+              {typeStyle.icon} {type}
+            </span>
+            {authority && authority !== 'N/A' && (
+              <span className="pc-auth-pill"><Award size={10}/> {authority}</span>
+            )}
+          </div>
+
+          <h2 className="pc-title">{title}</h2>
+
+          <div className="pc-location">
+            <MapPin size={11}/> {location}
+            {listerType && (
+              <span className="pc-lister"> · {listerType}</span>
+            )}
+          </div>
+
+          {/* Type-Specific Features (exact logic from client) */}
+          <div className="pc-features">
+            {isAgri && (
+              <>
+                <div className="pc-feat">
+                  <span className="pc-feat-val" style={{ color: typeStyle.accent }}>
+                    {totalAcres ? formatLandSize(totalAcres) : (areaSize ? `${areaSize} ${measurementUnit}` : '—')}
+                  </span>
+                  <span className="pc-feat-lbl">Total Area</span>
+                </div>
+                {Number(pricePerAcre) > 0 && (
+                  <>
+                    <div className="pc-feat-div"/>
+                    <div className="pc-feat">
+                      <span className="pc-feat-val" style={{ color: '#e8b84b' }}>{formatSnapAddaPrice(pricePerAcre)}</span>
+                      <span className="pc-feat-lbl">Per Acre</span>
+                    </div>
+                  </>
+                )}
+              </>
+            )}
+
+            {isPlot && (
+              <>
+                <div className="pc-feat">
+                  <span className="pc-feat-val" style={{ color: typeStyle.accent }}>
+                    {displayGajam ? `${displayGajam.toLocaleString('en-IN')}` : (areaSize || '—')}
+                  </span>
+                  <span className="pc-feat-lbl">{displayGajam ? 'Gajaalu' : (measurementUnit || 'Sq.Yds')}</span>
+                </div>
+                {facing && (
+                  <>
+                    <div className="pc-feat-div"/>
+                    <div className="pc-feat">
+                      <span className="pc-feat-val" style={{ color: isVastuFacing ? '#e8b84b' : 'inherit' }}>
+                        {facing} {isVastuFacing && '🧭'}
+                      </span>
+                      <span className="pc-feat-lbl">Facing</span>
+                    </div>
+                  </>
+                )}
+              </>
+            )}
+
+            {isResidential && (
+              <>
+                <div className="pc-feat">
+                  <span className="pc-feat-val">{bhk || beds || '—'} <span style={{ fontSize: '0.7rem', opacity: 0.7 }}>BHK</span></span>
+                  <span className="pc-feat-lbl">Config</span>
+                </div>
+                <div className="pc-feat-div"/>
+                <div className="pc-feat">
+                  <span className="pc-feat-val">{areaSize || sqft || '—'}</span>
+                  <span className="pc-feat-lbl">{measurementUnit || 'Sq.Ft'}</span>
+                </div>
+                {facing && (
+                  <>
+                    <div className="pc-feat-div"/>
+                    <div className="pc-feat">
+                      <span className="pc-feat-val">{facing}</span>
+                      <span className="pc-feat-lbl">Facing</span>
+                    </div>
+                  </>
+                )}
+              </>
+            )}
+
+            {isCommercial && (
+              <>
+                <div className="pc-feat">
+                  <span className="pc-feat-val">{areaSize || '—'}</span>
+                  <span className="pc-feat-lbl">{measurementUnit || 'Sq.Ft'}</span>
+                </div>
+                {constructionStatus && (
+                   <>
+                    <div className="pc-feat-div"/>
+                    <div className="pc-feat">
+                      <span className="pc-feat-val" style={{ fontSize: '0.7rem' }}>{constructionStatus}</span>
+                      <span className="pc-feat-lbl">Status</span>
+                    </div>
+                  </>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* Actions */}
+          <div className="pc-actions">
+            <div className="pc-btn pc-btn-call"><Phone size={13}/> Call</div>
+            <div className="pc-btn pc-btn-wa"><MessageSquare size={13}/> WhatsApp</div>
           </div>
         </div>
       </div>
-    </motion.div>
+      
+      {/* Admin Meta Debug Info */}
+      <div style={{ marginTop: '15px', padding: '12px', background: 'rgba(255,255,255,0.03)', borderRadius: '12px', border: '1px dashed rgba(255,255,255,0.1)', fontSize: '0.7rem', color: '#9d99c4' }}>
+        <p style={{ marginBottom: '4px', fontWeight: 700, color: 'var(--gold)' }}>🛠️ ADMIN PREVIEW DATA</p>
+        <p>Type: {type}</p>
+        <p>Area: {isAgri ? formatLandSize(totalAcres) : `${areaSize} ${measurementUnit}`}</p>
+        <p>Images: {allImages.length} attached</p>
+      </div>
+    </div>
   );
 };

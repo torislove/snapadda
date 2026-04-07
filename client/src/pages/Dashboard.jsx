@@ -297,7 +297,7 @@ export default function Dashboard() {
             ))}
           </div>
           
-          <button onClick={() => navigate('/')} className="hero-btn hero-btn-outline" style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.75rem 1.5rem', fontSize: '0.85rem', height: 'fit-content', borderRadius: '14px' }}>
+          <button onClick={() => window.location.href = '/'} className="hero-btn hero-btn-outline" style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.75rem 1.5rem', fontSize: '0.85rem', height: 'fit-content', borderRadius: '14px' }}>
             <Home size={18} /> {t('dashboard.backToSite')}
           </button>
         </div>

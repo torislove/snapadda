@@ -1,5 +1,6 @@
 import express from 'express';
 import Inquiry from '../models/Inquiry.js';
+import { automationService } from '../modules/automationService.js';
 
 const router = express.Router();
 
@@ -15,7 +16,10 @@ router.post('/', async (req, res) => {
     
     const newInquiry = new Inquiry({ propertyId, clientName, clientContact, question });
     await newInquiry.save();
-    
+
+    // Non-blocking: AI drafts & sends WhatsApp acknowledgement
+    automationService.handleNewInquiry(newInquiry).catch(e => console.error('Automation error:', e));
+
     res.status(201).json({ status: 'success', data: newInquiry });
   } catch (error) {
     res.status(500).json({ status: 'error', message: 'Server error saving inquiry' });

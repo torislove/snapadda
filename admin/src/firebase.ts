@@ -11,7 +11,8 @@ const firebaseConfig = {
   storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
+  databaseURL: import.meta.env.VITE_RTDB_URL
 };
 
 // Initialize Firebase
@@ -19,6 +20,6 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const storage = getStorage(app);
 const db = getFirestore(app);
-const rtdb = getDatabase(app, import.meta.env.VITE_FIREBASE_DATABASE_URL);
+const rtdb = getDatabase(app, import.meta.env.VITE_RTDB_URL);
 
 export { app, auth, storage, db, rtdb };

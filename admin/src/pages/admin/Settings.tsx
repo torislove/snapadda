@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import {
   MessageSquare, CheckCircle, AlertCircle, Phone,
   RefreshCw, Shield, Camera, Lock, Eye, EyeOff,
   User, KeyRound, Palette, Image as ImageIcon, Sparkles,
-  Trash2, UploadCloud, Mail, MapPin, Activity, Link, X
+  Trash2, UploadCloud, Mail, MapPin, Activity, Link as LinkIcon, X,
+  ChevronUp, ChevronDown
 } from 'lucide-react';
 import {
   fetchWhatsappSettings, saveWhatsappSettings,
@@ -405,6 +407,16 @@ const AdminSettings = () => {
     setOnboardingQuestions(prev => prev.filter(question => question.id !== id));
   };
 
+  const handleMoveQuestion = (index: number, direction: 'up' | 'down') => {
+    if (direction === 'up' && index === 0) return;
+    if (direction === 'down' && index === onboardingQuestions.length - 1) return;
+
+    const nextIndex = direction === 'up' ? index - 1 : index + 1;
+    const nextArr = [...onboardingQuestions];
+    [nextArr[index], nextArr[nextIndex]] = [nextArr[nextIndex], nextArr[index]];
+    setOnboardingQuestions(nextArr);
+  };
+
   const handleSaveQuestions = async () => {
     setQuestionsStatus('saving');
     try {
@@ -710,7 +722,7 @@ const AdminSettings = () => {
             </div>
             <div>
               <label style={lbl}>Canonical URL</label>
-              {inputWrap(<Link size={14}/>, <input type="text" value={seoCanonicalUrl} onChange={e => setSeoCanonicalUrl(e.target.value)} style={inp} placeholder="https://snapadda.com/" />)}
+              {inputWrap(<LinkIcon size={14}/>, <input type="text" value={seoCanonicalUrl} onChange={e => setSeoCanonicalUrl(e.target.value)} style={inp} placeholder="https://snapadda.com/" />)}
             </div>
             <div>
               <label style={lbl}>Robots Directive</label>
@@ -730,8 +742,13 @@ const AdminSettings = () => {
 
       {activeSection === 'questions' && (
         <div style={card('var(--emerald)')}>
-          {cardHeader(<MessageSquare size={17}/>, 'Onboarding Questions', 'Add, edit, or disable the questions users see after login.', 'var(--emerald-dim)', 'var(--emerald)')}
-        <div style={{ padding:'1.5rem', display:'flex', flexDirection:'column', gap:'1rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingRight: '1.5rem' }}>
+            {cardHeader(<MessageSquare size={17}/>, 'Onboarding Questions', 'Edit the questions users see after login.', 'var(--emerald-dim)', 'var(--emerald)')}
+            <Link to="/admin/questions" className="btn btn-emerald btn-sm" style={{ padding: '0.5rem 1rem', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <MessageSquare size={14}/> Manage Client Inquiries
+            </Link>
+          </div>
+          <div style={{ padding:'1.5rem', display:'flex', flexDirection:'column', gap:'1rem' }}>
           {onboardingQuestions.map((question, index) => (
             <div key={question.id} style={{ display:'grid', gap:'0.85rem', padding:'0.95rem 0', borderBottom: index < onboardingQuestions.length - 1 ? '1px solid rgba(255,255,255,0.08)' : 'none' }}>
               <div style={{ display:'flex', justifyContent:'space-between', gap:'1rem', alignItems:'flex-start' }}>
@@ -746,12 +763,22 @@ const AdminSettings = () => {
                   </div>
                 </div>
                 <div style={{ display:'flex', flexDirection:'column', gap:'0.5rem', alignItems:'flex-end' }}>
+                  <div style={{ display:'flex', gap:'0.4rem', marginBottom:'0.2rem' }}>
+                    <button type="button" onClick={() => handleMoveQuestion(index, 'up')} disabled={index === 0}
+                      style={{ padding:'0.4rem', borderRadius:'8px', border:'1px solid rgba(255,255,255,0.1)', background:'rgba(255,255,255,0.03)', color: index === 0 ? 'rgba(255,255,255,0.1)' : 'var(--emerald)', cursor: index === 0 ? 'default' : 'pointer', display:'flex' }}>
+                      <ChevronUp size={16}/>
+                    </button>
+                    <button type="button" onClick={() => handleMoveQuestion(index, 'down')} disabled={index === onboardingQuestions.length - 1}
+                      style={{ padding:'0.4rem', borderRadius:'8px', border:'1px solid rgba(255,255,255,0.1)', background:'rgba(255,255,255,0.03)', color: index === onboardingQuestions.length - 1 ? 'rgba(255,255,255,0.1)' : 'var(--emerald)', cursor: index === onboardingQuestions.length - 1 ? 'default' : 'pointer', display:'flex' }}>
+                      <ChevronDown size={16}/>
+                    </button>
+                  </div>
                   <button type="button" onClick={() => handleToggleQuestion(question.id)}
-                    style={{ padding:'0.65rem 1rem', borderRadius:'12px', border:'none', background: question.enabled ? 'var(--emerald)' : 'rgba(255,255,255,0.08)', color: question.enabled ? '#08121f' : 'var(--text-muted)', cursor:'pointer' }}>
+                    style={{ padding:'0.65rem 1rem', borderRadius:'12px', border:'none', background: question.enabled ? 'var(--emerald)' : 'rgba(255,255,255,0.08)', color: question.enabled ? '#08121f' : 'var(--text-muted)', cursor:'pointer', fontSize:'0.75rem', fontWeight:600 }}>
                     {question.enabled ? 'Enabled' : 'Disabled'}
                   </button>
                   <button type="button" onClick={() => handleRemoveQuestion(question.id)}
-                    style={{ padding:'0.65rem 1rem', borderRadius:'12px', border:'1px solid rgba(255,255,255,0.12)', background:'transparent', color:'var(--rose)', cursor:'pointer' }}>
+                    style={{ padding:'0.65rem 1rem', borderRadius:'12px', border:'1px solid rgba(255,255,255,0.12)', background:'transparent', color:'var(--rose)', cursor:'pointer', fontSize:'0.75rem' }}>
                     Remove
                   </button>
                 </div>

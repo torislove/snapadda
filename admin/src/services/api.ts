@@ -196,6 +196,6 @@ export const saveSetting = async (key: string, value: any) => {
   return res.json();
 };
 
-export const fetchWhatsappSettings = () => fetchSetting('whatsapp');
+export const fetchWhatsappSettings = () => fetchSetting('whatsapp_settings');
 export const saveWhatsappSettings = (number: string, message: string) =>
-  saveSetting('whatsapp', { number, message });
+  saveSetting('whatsapp_settings', { number, message });

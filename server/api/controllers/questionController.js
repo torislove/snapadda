@@ -3,11 +3,26 @@ import Question from '../models/Question.js';
 // Client sends a question
 export const askQuestion = async (req, res) => {
   try {
-    const newQuestion = new Question({ ...req.body });
+    const { propertyId, userId, authType, clientName, clientContact, question } = req.body;
+    
+    // Normalize and fallback for missing fields
+    const normalizedName = clientName?.trim() || 'Interested Client';
+    const normalizedContact = clientContact?.trim() || 'No contact provided';
+
+    const newQuestion = new Question({ 
+      propertyId, 
+      userId, 
+      authType: authType || 'Other',
+      clientName: normalizedName,
+      clientContact: normalizedContact,
+      question: question?.trim()
+    });
+
     await newQuestion.save();
     res.status(201).json({ status: 'success', data: newQuestion });
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    console.error('ASK_QUESTION_ERROR:', error);
+    res.status(400).json({ status: 'error', message: error.message });
   }
 };
 

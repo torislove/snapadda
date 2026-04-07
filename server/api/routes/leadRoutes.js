@@ -1,5 +1,6 @@
 import express from 'express';
 import Lead from '../models/Lead.js';
+import { automationService } from '../modules/automationService.js';
 
 const router = express.Router();
 
@@ -24,7 +25,10 @@ router.post('/', async (req, res) => {
     });
     
     await newLead.save();
-    
+
+    // Non-blocking: AI drafts & sends WhatsApp/Email response
+    automationService.handleNewLead(newLead).catch(e => console.error('Automation error:', e));
+
     res.status(201).json({ status: 'success', data: newLead });
   } catch (error) {
     console.error('Lead submission error:', error);

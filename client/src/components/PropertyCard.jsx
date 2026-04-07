@@ -9,7 +9,11 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { likeProperty, shareProperty } from '../services/api';
 import { useTranslation } from 'react-i18next';
-import { formatSnapAddaPrice, formatLandSize } from '../utils/priceUtils';
+import { 
+  formatSnapAddaPrice, 
+  formatLandSize,
+  smartAreaConverter 
+} from '../utils/priceUtils';
 
 // Type-specific accent colors
 const TYPE_COLORS = {
@@ -82,6 +86,10 @@ export default function PropertyCard({
   // Agriculture calcs
   const pricePerCent = pricePerAcre ? Math.round(Number(pricePerAcre) / 100) : 0;
   const agriTotalValue = (pricePerAcre && totalAcres) ? Math.round(Number(pricePerAcre) * Number(totalAcres)) : 0;
+  
+  // Gajam calcs for Plots
+  const gajamInfo = smartAreaConverter(areaSize || 0, (measurementUnit?.toLowerCase()?.includes('yard') ? 'gajam' : measurementUnit?.toLowerCase()) || 'gajam');
+  const displayGajam = (isPlot && (measurementUnit === 'Sq.Yards' || !measurementUnit)) ? gajamInfo.gajam : null;
 
   // Effective display price
   const displayPrice = (isAgri && agriTotalValue > 0) ? agriTotalValue : price;
@@ -274,8 +282,10 @@ export default function PropertyCard({
               {isPlot && (
                 <>
                   <div className="pc-feat">
-                    <span className="pc-feat-val" style={{ color: typeStyle.accent }}>{areaSize || '—'}</span>
-                    <span className="pc-feat-lbl">{measurementUnit || 'Sq.Yds'}</span>
+                    <span className="pc-feat-val" style={{ color: typeStyle.accent }}>
+                      {displayGajam ? `${displayGajam.toLocaleString('en-IN')}` : (areaSize || '—')}
+                    </span>
+                    <span className="pc-feat-lbl">{displayGajam ? 'Gajaalu' : (measurementUnit || 'Sq.Yds')}</span>
                   </div>
                   {facing && (
                     <>

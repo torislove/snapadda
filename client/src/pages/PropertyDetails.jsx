@@ -200,12 +200,13 @@ export default function PropertyDetails() {
     setQSubmitting(true);
     setQStatus('');
     try {
+      const userData = user?.user || user; // Handle nested vs flattened user structure
       const res = await askQuestion({
         propertyId: id,
-        userId: user._id || user.id,
+        userId: userData?._id || userData?.id,
         authType: user.token ? 'Google' : 'Email',
-        clientName: user.name || user.displayName,
-        clientContact: user.email || user.phone || '',
+        clientName: userData?.name || userData?.displayName || 'Interested Client',
+        clientContact: userData?.email || userData?.phone || userData?.phoneNumber || 'No contact provided',
         question: qText,
       });
       if (res.status === 'success') {

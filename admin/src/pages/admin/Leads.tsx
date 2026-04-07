@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { 
   MessageSquare, Search, ChevronDown, ChevronUp, Target, Send, 
-  MoreHorizontal, User, Calendar, Building
+  MoreHorizontal, User, Calendar, Building, Bot, Sparkles, AlertCircle, RefreshCcw
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -24,6 +24,91 @@ const StatusBadge = ({ status }: { status: string }) => {
       padding: '3px 10px', borderRadius: '6px',
       background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}`,
     }}>{cfg.label}</span>
+  );
+};
+
+/* ── AI Insight Component ── */
+const LeadAIInsight = ({ text }: { text: string }) => {
+  const [insight, setInsight] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
+
+  const handleAnalyze = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (loading) return;
+    setLoading(true);
+    setError(false);
+    try {
+      const res = await fetch(`${API_URL}/ai/analyze-lead`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ inquiry: text })
+      });
+      const data = await res.json();
+      if (data.status === 'success') {
+        setInsight(data.data);
+      } else {
+        setError(true);
+      }
+    } catch (err) {
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!insight && !loading && !error) {
+    return (
+      <button 
+        onClick={handleAnalyze}
+        style={{
+          marginTop: '8px', width: '100%', padding: '6px', borderRadius: '8px',
+          background: 'rgba(16,217,140,0.05)', border: '1px solid rgba(16,217,140,0.15)',
+          color: 'var(--emerald)', fontSize: '0.65rem', fontWeight: 800,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+          cursor: 'pointer', transition: 'all 0.2s'
+        }}
+        onMouseEnter={e => (e.currentTarget.style.background = 'rgba(16,217,140,0.1)')}
+        onMouseLeave={e => (e.currentTarget.style.background = 'rgba(16,217,140,0.05)')}
+      >
+        <Sparkles size={12} /> GET AI INSIGHT
+      </button>
+    );
+  }
+
+  return (
+    <div style={{
+      marginTop: '8px', padding: '10px', borderRadius: '10px',
+      background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)',
+      animation: 'fadeInUp 0.3s ease'
+    }}>
+      {loading ? (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.65rem', color: 'var(--text-muted)' }}>
+          <RefreshCcw size={12} className="animate-spin" /> Gemma is analyzing intent...
+        </div>
+      ) : error ? (
+        <div style={{ fontSize: '0.65rem', color: 'var(--rose)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+          <AlertCircle size={10} /> AI Analysis Unavailable
+        </div>
+      ) : (
+        <>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.65rem', fontWeight: 800, color: 'var(--gold)' }}>
+              <Bot size={12} /> GEMMA ANALYTICS
+            </div>
+            <span style={{ 
+              fontSize: '0.55rem', padding: '1px 6px', borderRadius: '4px',
+              background: insight.status === 'HOT' ? 'var(--rose)' : insight.status === 'WARM' ? 'var(--gold)' : 'rgba(255,255,255,0.1)',
+              color: 'black', fontWeight: 900
+            }}>{insight.status}</span>
+          </div>
+          <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: 1.4, margin: '4px 0' }}>{insight.insight}</p>
+          <div style={{ fontSize: '0.7rem', color: 'var(--emerald)', fontWeight: 600, marginTop: '6px' }}>
+            💡 Action: {insight.suggestedAction}
+          </div>
+        </>
+      )}
+    </div>
   );
 };
 
@@ -117,6 +202,9 @@ const LeadCard = ({ lead, onDelete, onStatusChange }: { lead: any; onDelete: (id
         <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', background: 'rgba(255,255,255,0.03)', padding: '0.5rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
           {lead.message || 'No specific inquiries.'}
         </div>
+        
+        {lead.message && <LeadAIInsight text={lead.message} />}
+
         <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
           <Calendar size={12} /> {new Date(lead.createdAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
         </div>
@@ -231,7 +319,7 @@ const InquiryCard = ({ inq, onAnswer }: { inq: any; onAnswer: (id: string, text:
   );
 };
 
-/* ═══════════════════════════ MAIN ═══════════════════════════ */
+/* ── MAIN ── */
 const AdminLeads = () => {
   const [inquiries, setInquiries] = useState<any[]>([]);
   const [leads, setLeads] = useState<any[]>([]);

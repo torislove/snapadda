@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-route
 import { useAuth } from './contexts/AuthContext';
 import Header from './components/Header';
 import UnitConverter from './components/UnitConverter';
+import PropertyConcierge from './components/AI/PropertyConcierge';
 
 // Lazy loading all routes for maximum startup speed
 const Home = lazy(() => import('./pages/Home'));
@@ -45,7 +46,7 @@ function ProtectedRoute({ children }) {
     return <Navigate to="/login" replace />;
   }
 
-  if (!user.onboardingCompleted && location.pathname !== '/onboarding') {
+  if (!user.onboardingCompleted && location.pathname !== '/onboarding' && location.pathname !== '/') {
     return <Navigate to="/onboarding" replace />;
   }
   
@@ -71,6 +72,7 @@ function AppContent() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
         <UnitConverter />
+        <PropertyConcierge />
       </Suspense>
     </>
   );

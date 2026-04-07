@@ -21,20 +21,13 @@ function getCountdown(date) {
   return d > 0 ? `${d}d ${h}h left` : `${h}h ${m}m left`;
 }
 
-export default function PromoCarousel() {
-  const [slides, setSlides] = useState([]);
+export default function PromoCarousel({ promotions }) {
   const [index, setIndex] = useState(0);
   const [hovered, setHovered] = useState(false);
-  const [loading, setLoading] = useState(true);
   const timer = useRef(null);
   const touchStart = useRef(0);
 
-  useEffect(() => {
-    fetchPromotions()
-      .then(data => { const active = (data || []).filter(d => d.isActive !== false); setSlides(active.length > 0 ? active : FALLBACK); })
-      .catch(() => setSlides(FALLBACK))
-      .finally(() => setLoading(false));
-  }, []);
+  const slides = (Array.isArray(promotions) && promotions.length > 0) ? promotions : FALLBACK;
 
   const next = useCallback(() => setIndex(i => (i + 1) % Math.max(slides.length, 1)), [slides.length]);
   const prev = () => setIndex(i => (i - 1 + slides.length) % slides.length);
@@ -44,8 +37,6 @@ export default function PromoCarousel() {
     timer.current = setInterval(next, 4500);
     return () => clearInterval(timer.current);
   }, [next, hovered, slides.length]);
-
-  if (loading) return <div style={{ height: '180px', borderRadius: 'var(--r-lg)', background: 'linear-gradient(90deg,var(--midnight-1) 25%,var(--midnight-2) 50%,var(--midnight-1) 75%)', backgroundSize: '200% 100%', animation: 'shimmer 1.8s infinite' }} />;
 
   const slide = slides[index] || FALLBACK[0];
   const theme = slide.cardColor || 'dark';

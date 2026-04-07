@@ -64,28 +64,38 @@ export default function FilterSidebar({ isOpen, onClose, filters, setFilters, on
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}
-          style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}
+          style={{ 
+            position: 'fixed', 
+            inset: 0, 
+            zIndex: 9999, 
+            background: 'rgba(5,5,15,0.85)', 
+            backdropFilter: 'blur(12px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px'
+          }}
         >
           <motion.div
             ref={sidebarRef}
             className="filter-sidebar"
             onClick={e => e.stopPropagation()}
-            initial={{ scale: 0.92, opacity: 0, y: -20 }}
-            animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.92, opacity: 0, y: -20 }}
-            transition={{ type: 'spring', stiffness: 300, damping: 28 }}
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.9, opacity: 0 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 350 }}
             style={{
-              position: 'relative',
-              background: 'rgba(7,7,15,0.98)',
+              background: 'rgba(12,12,24,0.98)',
               backdropFilter: 'blur(30px)',
-              border: '1px solid rgba(212,175,55,0.2)',
-              borderRadius: '20px',
+              border: '1px solid rgba(212,175,55,0.3)',
+              borderRadius: '24px',
               width: '100%',
               maxWidth: '480px',
-              margin: '20px auto',
+              height: 'auto',
+              maxHeight: '90vh',
               display: 'flex',
               flexDirection: 'column',
-              maxHeight: 'calc(100vh - 40px)',
+              boxShadow: '0 20px 80px rgba(0,0,0,0.8), 0 0 0 1px rgba(212,175,55,0.1)',
               overflow: 'hidden',
             }}
           >

@@ -394,14 +394,16 @@
   p { font-size: 0.85rem !important; }
 
   /* Floating Render / Sticky items de-sticking */
-  div[style*="position: sticky"] {
+  div[style*="position: sticky"],
+  div[style*="position:sticky"] {
     position: relative !important;
     top: 0 !important;
-    margin-top: 1.5rem;
+    margin-top: 0;
   }
 
   /* Fix for fixed modals widths */
-  div[style*="position: fixed"][style*="width: 500px"] {
+  div[style*="position: fixed"][style*="width: 500px"],
+  div[style*="position:fixed"][style*="width:500px"] {
     width: 94% !important;
     left: 3% !important;
     padding: 1.5rem !important;
@@ -413,6 +415,33 @@
   /* Hidden items on mobile */
   .desktop-only { display: none !important; }
   .mobile-only { display: block !important; }
+}
+
+/* ── UTILITY CLASSES FOR MOBILE ALIGNMENT ── */
+.flex-row-mobile-stack {
+  display: flex !important;
+  flex-direction: row;
+}
+
+@media (max-width: 768px) {
+  .flex-row-mobile-stack {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    width: 100% !important;
+  }
+}
+
+.admin-grid-1-2 {
+  display: grid !important;
+  grid-template-columns: 1.8fr 1.2fr;
+  gap: 2.5rem;
+}
+
+@media (max-width: 1024px) {
+  .admin-grid-1-2 {
+    grid-template-columns: 1fr !important;
+    gap: 1.5rem !important;
+  }
 }
 
 .table-responsive {

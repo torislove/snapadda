@@ -9,9 +9,17 @@ export default function AdminQuestions() {
   
   const [replyModal, setReplyModal] = useState<any>(null);
   const [replyText, setReplyText] = useState('');
+  const [isSyncing, setIsSyncing] = useState(false);
 
   useEffect(() => {
     loadQuestions();
+    
+    // Real-time Sync: Poll every 30s
+    const pollInterval = setInterval(() => {
+      syncQuestions();
+    }, 30000);
+
+    return () => clearInterval(pollInterval);
   }, []);
 
   const loadQuestions = async () => {
@@ -23,6 +31,18 @@ export default function AdminQuestions() {
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const syncQuestions = async () => {
+    try {
+      setIsSyncing(true);
+      const res = await fetchQuestions();
+      setQuestions(res.data);
+      setTimeout(() => setIsSyncing(false), 2000);
+    } catch (err) {
+      console.error('Real-time sync failed:', err);
+      setIsSyncing(false);
     }
   };
 
@@ -56,10 +76,21 @@ export default function AdminQuestions() {
 
   return (
     <div className="admin-page-content">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <h1 style={{ fontSize: '1.75rem', fontFamily: 'var(--font-heading)', color: 'var(--text-primary)', marginBottom: '0.25rem' }}>Client Questions (Q&A)</h1>
           <p style={{ color: 'var(--text-muted)' }}>Answer client questions to build property FAQs automatically.</p>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(255,255,255,0.03)', padding: '0.5rem 1rem', borderRadius: '99px', border: '1px solid rgba(255,255,255,0.05)' }}>
+          <div style={{ 
+            width: '8px', height: '8px', borderRadius: '50%', 
+            background: isSyncing ? 'var(--gold)' : 'var(--emerald)',
+            boxShadow: isSyncing ? '0 0 10px var(--gold)' : '0 0 10px var(--emerald)',
+            animation: isSyncing ? 'none' : 'pulse 2s infinite'
+          }} />
+          <span style={{ fontSize: '0.7rem', fontWeight: 800, letterSpacing: '0.05em', color: isSyncing ? 'var(--gold)' : 'var(--text-muted)', textTransform: 'uppercase' }}>
+            {isSyncing ? 'Syncing...' : 'Live Sync Active'}
+          </span>
         </div>
       </div>
 

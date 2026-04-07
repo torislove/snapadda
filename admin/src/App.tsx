@@ -19,6 +19,9 @@ const AdminMarquee = lazy(() => import('./pages/admin/MarqueeStrips'));
 const AdminEngagement = lazy(() => import('./pages/admin/AdminEngagement'));
 const SystemGuide = lazy(() => import('./pages/admin/SystemGuide'));
 const AdminLogin = lazy(() => import('./pages/admin/Login'));
+const AdminAIAutomation = lazy(() => import('./pages/admin/AIAutomation'));
+const AdminCommsHub = lazy(() => import('./pages/admin/CommsHub'));
+const AdminAIDeveloper = lazy(() => import('./pages/admin/AIDeveloper'));
 
 const AdminLoader = () => (
   <div style={{ 
@@ -89,6 +92,9 @@ function App() {
             <Route path="questions" element={<AdminQuestions />} />
             <Route path="engagement" element={<AdminEngagement />} />
             <Route path="marquee" element={<AdminMarquee />} />
+            <Route path="automation" element={<AdminAIAutomation />} />
+            <Route path="comms" element={<AdminCommsHub />} />
+            <Route path="developer" element={<AdminAIDeveloper />} />
             <Route path="guide" element={<SystemGuide />} />
           </Route>
         </Routes>

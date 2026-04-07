@@ -18,7 +18,7 @@ console.log('NODE_ENV:', process.env.NODE_ENV);
 console.log('MONGODB_URI_PROVIDED:', !!process.env.MONGODB_URI);
 console.log('CLOUDINARY_NAME_PROVIDED:', !!process.env.CLOUDINARY_CLOUD_NAME);
 console.log('CLOUDINARY_KEY_PROVIDED:', !!process.env.CLOUDINARY_API_KEY);
-console.log('FIREBASE_DB_URL_PROVIDED:', !!process.env.DB_FIREBASE_URL);
+console.log('DB_URL_PROVIDED:', !!process.env.DB_URL);
 console.log('----------------------------------');
 
 const app = express();
@@ -52,6 +52,29 @@ app.use('/api/', limiter);
 // Error Handling Middleware
 app.use((err, req, res, next) => {
   console.error('SERVER_ERROR:', err.stack);
+
+  // Background AI Diagnosis - Non-blocking
+  if (process.env.OLLAMA_URL) {
+    (async () => {
+      try {
+        const diagnosis = await aiService.diagnoseError(
+          err.message, 
+          err.stack, 
+          `Path: ${req.originalUrl}, Method: ${req.method}`
+        );
+        await AIDiagnostic.create({
+          errorMessage: err.message,
+          stackTrace: err.stack,
+          context: `Path: ${req.originalUrl}, Method: ${req.method}`,
+          ...diagnosis
+        });
+        console.log('✅ AI_DIAGNOSIS_LOGGED:', err.message);
+      } catch (aiErr) {
+        console.error('❌ AI_DIAGNOSIS_FAILED:', aiErr.message);
+      }
+    })();
+  }
+
   res.status(err.status || 500).json({
     status: 'error',
     message: process.env.NODE_ENV === 'production' 
@@ -139,6 +162,12 @@ import promotionRoutes from './routes/promotionRoutes.js';
 import testimonialRoutes from './routes/testimonialRoutes.js';
 import questionRoutes from './routes/questionRoutes.js';
 
+import aiRoutes from './routes/aiRoutes.js';
+import automationRoutes from './routes/automationRoutes.js';
+import { aiService } from './modules/aiService.js';
+import { automationService } from './modules/automationService.js';
+import AIDiagnostic from './models/AIDiagnostic.js';
+
 app.use('/api/properties', propertyRoutes);
 app.use('/api/cities', cityRoutes);
 app.use('/api/settings', settingRoutes);
@@ -154,6 +183,11 @@ app.use('/api/media', mediaRoutes);
 app.use('/api/promotions', promotionRoutes);
 app.use('/api/testimonials', testimonialRoutes);
 app.use('/api/questions', questionRoutes);
+app.use('/api/ai', aiRoutes);
+app.use('/api/automation', automationRoutes);
+
+// Log automation init status
+console.log('🤖 Automation status:', automationService.getStatus().email.enabled ? 'Email ACTIVE' : 'Email DISABLED', '|', automationService.getStatus().whatsapp.enabled ? 'WhatsApp ACTIVE' : 'WhatsApp DISABLED');
 
 // Health and Diagnostics Route
 app.get('/api/health', (req, res) => {
@@ -164,7 +198,7 @@ app.get('/api/health', (req, res) => {
       NODE_ENV: process.env.NODE_ENV,
       MONGODB_URI_SET: !!process.env.MONGODB_URI,
       CLOUDINARY_SET: !!process.env.CLOUDINARY_CLOUD_NAME,
-      FIREBASE_URL_SET: !!process.env.DB_FIREBASE_URL
+      FIREBASE_URL_SET: !!process.env.DB_URL
     },
     platform: process.platform
   });
@@ -180,8 +214,15 @@ app.use((req, res) => {
   });
 });
 
-// Export for Firebase Functions
-export const api = onRequest({ cors: true }, app);
+// Export for Firebase Functions (V2 with AI configuration)
+export const api = onRequest({ 
+  cors: true,
+  memory: "4GiB",
+  timeoutSeconds: 300,
+  minInstances: 0,
+  maxInstances: 10,
+  cpu: 2,
+}, app);
 
 // Local Development Fallback
 // Only run the server if started via 'npm start' or explicitly in local mode

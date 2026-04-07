@@ -6,9 +6,10 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { 
-  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area 
+import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area 
 } from 'recharts';
+import { useAdminAuth } from '../../contexts/AdminAuthContext';
+import { WelcomeOverlay } from '../../components/ui/WelcomeOverlay';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -171,11 +172,20 @@ const QuickAction = ({ icon: Icon, label, color, to }: any) => (
 
 /* ─── Dashboard Main ─── */
 const AdminDashboard = () => {
+  const { adminUser } = useAdminAuth();
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [greeting, setGreeting] = useState('');
+  const [showWelcome, setShowWelcome] = useState(false);
 
   useEffect(() => {
+    // Show welcome only once per session
+    const hasShown = sessionStorage.getItem('snapadda_welcome_shown');
+    if (!hasShown && adminUser) {
+      setShowWelcome(true);
+      sessionStorage.setItem('snapadda_welcome_shown', 'true');
+    }
+
     const hour = new Date().getHours();
     if (hour < 12) setGreeting('Good Morning');
     else if (hour < 17) setGreeting('Good Afternoon');
@@ -239,11 +249,20 @@ const AdminDashboard = () => {
   );
 
   return (
-    <motion.div 
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}
-    >
+    <>
+      {showWelcome && adminUser && (
+        <WelcomeOverlay 
+          adminName={adminUser.name} 
+          adminAvatar={adminUser.avatar} 
+          onComplete={() => setShowWelcome(false)} 
+        />
+      )}
+      
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}
+      >
 
       {/* ── Header ── */}
       <div className="flex-row-mobile-stack" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '1.5rem' }}>
@@ -279,7 +298,7 @@ const AdminDashboard = () => {
         {METRICS.map((m, i) => <MetricCard key={m.title} index={i} {...m} />)}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(450px, 100%), 1fr))', gap: '1.5rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(310px, 100%), 1fr))', gap: '1.5rem' }}>
         {/* ── Engagement Analytics Chart ── */}
         <motion.div 
           initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
@@ -437,7 +456,8 @@ const AdminDashboard = () => {
         </motion.div>
 
       </div>
-    </motion.div>
+      </motion.div>
+    </>
   );
 };
 

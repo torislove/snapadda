@@ -28,27 +28,38 @@ export const updateSetting = async (req, res) => {
       return res.status(400).json({ status: 'error', message: 'Value is required' });
     }
 
-    // Key-specific validation
-    if (key === 'whatsapp_settings') {
+    // Key-specific validation & Normalization
+    let normalizedKey = key;
+    if (key === 'whatsapp' || key === 'whatsapp_settings') {
+      normalizedKey = 'whatsapp_settings';
       if (value.number && !/^\d+$/.test(value.number.replace(/\D/g, ''))) {
         return res.status(400).json({ status: 'error', message: 'WhatsApp number must be numeric' });
       }
     }
 
-    if (key === 'hero_content') {
-      if (!value.title) return res.status(400).json({ status: 'error', message: 'Hero title is required' });
+    if (key === 'hero_content' && !value.title) {
+      return res.status(400).json({ status: 'error', message: 'Hero title is required' });
     }
     
+    if (key === 'onboarding_questions' && !Array.isArray(value)) {
+      return res.status(400).json({ status: 'error', message: 'Questions must be an array' });
+    }
+
     const setting = await SiteSetting.findOneAndUpdate(
-      { key },
+      { key: normalizedKey },
       { value },
       { new: true, upsert: true, setDefaultsOnInsert: true }
     );
 
-    // Sync to Real-time Database
-    if (rtdb) {
+    // Real-time Sync for critical UI/Logic settings
+    const rtdbSyncKeys = [
+      'whatsapp_settings', 'hero_content', 'onboarding_questions', 
+      'site_stats', 'site_appearance', 'seo', 'support_info'
+    ];
+
+    if (rtdb && rtdbSyncKeys.includes(normalizedKey)) {
       try {
-        await rtdb.ref(`settings/${key}`).set(value);
+        await rtdb.ref(`settings/${normalizedKey}`).set(value);
       } catch (err) {
         console.warn('⚠️ RTDB Sync Note:', err.message);
       }

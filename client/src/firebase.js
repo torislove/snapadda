@@ -8,7 +8,8 @@ const firebaseConfig = {
   storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
+  databaseURL: import.meta.env.VITE_RTDB_URL
 };
 
 // Initialize Firebase
@@ -18,7 +19,7 @@ let db;
 if (firebaseConfig.apiKey && firebaseConfig.apiKey !== 'undefined') {
   try {
     app = initializeApp(firebaseConfig);
-    db = getDatabase(app, import.meta.env.VITE_FIREBASE_DATABASE_URL);
+    db = getDatabase(app, import.meta.env.VITE_RTDB_URL);
     console.log("Firebase initialized successfully");
   } catch (err) {
     console.error("Firebase initialization failed:", err);

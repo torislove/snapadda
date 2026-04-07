@@ -137,6 +137,7 @@ export default function Home() {
   const [citiesLoading, setCitiesLoading] = useState(true);
   const [cities, setCities] = useState([]);
   const [testimonials, setTestimonials] = useState([]);
+  const [promotions, setPromotions] = useState([]);
   const [supportInfo, setSupportInfo] = useState(null);
   const [appearance, setAppearance] = useState({});
   const [userCoords, setUserCoords] = useState(null);
@@ -208,6 +209,29 @@ export default function Home() {
         if (data) setCities(Object.values(data).sort((a, b) => a.name.localeCompare(b.name)));
       }, (err) => console.warn('RTDB City sync warning:', err.message));
       return () => off(citiesRef);
+    }
+  }, []);
+
+  // Instant Load: Promotions from local cache
+  useEffect(() => {
+    try {
+      const cached = localStorage.getItem('snapadda_promo_cache');
+      if (cached) setPromotions(JSON.parse(cached));
+    } catch {}
+
+    if (db) {
+      const promoRef = ref(db, 'promotions');
+      const unsubscribe = onValue(promoRef, (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+          const list = Object.values(data).sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
+          setPromotions(list);
+          localStorage.setItem('snapadda_promo_cache', JSON.stringify(list));
+        } else {
+          setPromotions([]);
+        }
+      });
+      return () => off(promoRef, 'value', unsubscribe);
     }
   }, []);
 
@@ -289,7 +313,7 @@ export default function Home() {
         <section className="promo-section-top">
           <div className="container">
             <div className="promo-header-label"><Zap size={13} /> Featured Promotions &amp; Offers</div>
-            <PromoCarousel />
+            <PromoCarousel promotions={promotions} />
           </div>
         </section>
 
@@ -307,13 +331,38 @@ export default function Home() {
               }}
               onMouseLeave={() => { mx.set(0); my.set(0); }}
             >
-              <div className="intent-cards">
-                {INTENT_TABS(t).map(tab => (
-                  <button key={tab.value} className={`intent-card${intent === tab.value ? ' active' : ''}`} onClick={() => setIntent(tab.value)}>
-                    {tab.icon}
-                    <span>{tab.label}</span>
-                  </button>
-                ))}
+              {/* PROPERTY TYPE SELECTION (Relocated) */}
+              <div className="search-prop-types-row">
+                <div style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gold)', letterSpacing: '0.1em', marginBottom: '0.75rem', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                   <Zap size={12}/> {t('hero.startSearch', 'Start Your Search')}
+                </div>
+                <div className="hero-prop-type-scroller">
+                  {PROP_TYPE_CARDS.map(card => (
+                    <button key={card.label} 
+                      className={`hero-type-pill ${typeFilter === card.value ? 'active' : ''}`}
+                      onClick={() => setTypeFilter(card.value)}
+                      style={{ '--accent': card.color, '--bg': card.bg }}
+                    >
+                      {card.icon}
+                      <span>{card.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="search-platform-header">
+                <div className="intent-cards">
+                  {INTENT_TABS(t).map(tab => (
+                    <button key={tab.value} className={`intent-card${intent === tab.value ? ' active' : ''}`} onClick={() => setIntent(tab.value)}>
+                      {tab.icon}
+                      <span>{tab.label}</span>
+                    </button>
+                  ))}
+                </div>
+                <button className="adv-filter-trigger" onClick={() => setFilterOpen(true)}>
+                  <SlidersHorizontal size={14} /> <span>Advanced Filters</span>
+                  {filterCount > 0 && <span className="filter-badge">{filterCount}</span>}
+                </button>
               </div>
               <div className="search-main-row">
                 <div className="search-bar-wrap">
@@ -353,7 +402,7 @@ export default function Home() {
                     <div style={{ fontSize: '0.85rem', color: 'var(--txt-primary)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <MapPin size={14} style={{ color: 'var(--gold)' }}/> Explore Regions
                     </div>
-                    <div className="hero-city-cards-scroller" style={{ display: 'flex', gap: '0.75rem', overflowX: 'auto', paddingBottom: '0.5rem', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
+                    <div className="hero-city-cards-grid">
                       <div className={`city-image-pill ${!cityFilter ? 'active' : ''}`} onClick={() => setCityFilter(null)}>
                         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, var(--midnight) 0%, rgba(212,175,55,0.4) 100%)', zIndex: 0 }}></div>
                         <span>All AP</span>
@@ -407,23 +456,6 @@ export default function Home() {
                 })}
               </div>
             </motion.div>
-          </div>
-        </section>
-
-        {/* PROPERTY TYPE CARDS - Hero Section */}
-        <section style={{ padding: '1.5rem 0 0.5rem' }}>
-          <div className="container">
-            <div style={{ fontSize: '0.72rem', color: 'var(--txt-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 800, marginBottom: '0.85rem' }}>Browse by Property Type</div>
-            <div className="prop-type-hero-grid">
-              {PROP_TYPE_CARDS.map(card => (
-                <motion.button key={card.label} whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}
-                  onClick={() => navigate(`/search?${card.value ? `type=${encodeURIComponent(card.value)}` : ''}${card.purpose ? `&purpose=${card.purpose}` : ''}`)}
-                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', padding: '1rem 0.5rem', background: card.bg, border: `1px solid ${card.color}22`, borderRadius: '14px', cursor: 'pointer', color: card.color, transition: 'all 0.2s', position: 'relative', overflow: 'hidden' }}>
-                  <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: `${card.color}22`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{card.icon}</div>
-                  <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'rgba(255,255,255,0.85)', textAlign: 'center', lineHeight: 1.2 }}>{card.label}</span>
-                </motion.button>
-              ))}
-            </div>
           </div>
         </section>
 

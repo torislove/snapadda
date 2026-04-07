@@ -91,7 +91,7 @@ export default function Onboarding() {
   };
 
   const handleContinue = () => {
-    navigate('/');
+    window.location.href = '/';
   };
 
   const getIcon = (key) => {
@@ -137,7 +137,7 @@ export default function Onboarding() {
           <Logo size={42} showText />
         </Link>
         <button 
-          onClick={() => navigate('/')}
+          onClick={() => window.location.href = '/'}
           className="glass-heavy btn-3d"
           style={{ 
             border: '1px solid rgba(212,175,55,0.4)', 
@@ -190,7 +190,7 @@ export default function Onboarding() {
                       {t('onboarding.getStarted', 'Get Started')} <ChevronRight size={18} style={{ marginLeft: '8px' }} />
                     </button>
                     <button 
-                      onClick={() => navigate('/')}
+                      onClick={() => window.location.href = '/'}
                       style={{ 
                         background: 'transparent', border: 'none', color: 'var(--txt-muted)', 
                         fontSize: '0.9rem', cursor: 'pointer', textDecoration: 'underline' 

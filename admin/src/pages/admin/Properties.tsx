@@ -12,6 +12,13 @@ import { LivePreviewCard } from '../../components/ui/LivePreviewCard';
 import { motion, AnimatePresence } from 'framer-motion';
 import { parseSmartSearch, getFuzzySuggestions } from '../../services/SearchParser';
 import { MediaManager } from '../../components/ui/MediaManager';
+import { 
+  formatSnapAddaPrice, 
+  formatLandSize, 
+  smartAreaConverter, 
+  acresCentsToDecimal,
+  decomposeAcres
+} from '../../../../client/src/utils/priceUtils';
 
 const AdminProperties = () => {
   const [properties, setProperties] = useState<any[]>([]);
@@ -21,6 +28,7 @@ const AdminProperties = () => {
   const [customFeatures, setCustomFeatures] = useState<{label: string, value: string}[]>([]);
   const [isVerified, setIsVerified] = useState(false);
   const [isFeatured, setIsFeatured] = useState(false);
+  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [liveData, setLiveData] = useState<any>({});
   const [currentImageUrls, setCurrentImageUrls] = useState<string[]>([]);
@@ -95,35 +103,60 @@ const AdminProperties = () => {
     else if (prop.pricePerAcre >= 100000) setPricePerAcreUnit('Lakhs');
     else setPricePerAcreUnit('Total');
 
-    // Split totalAcres into acres + cents
-    const ta = Number(prop.totalAcres) || 0;
-    setAgriAcres(Math.floor(ta));
-    setAgriCents(Math.round((ta % 1) * 100));
+    // Sync agri components
+    if (prop.type === 'Agricultural Land' && prop.totalAcres) {
+      const { acres, cents } = decomposeAcres(prop.totalAcres);
+      setAgriAcres(acres);
+      setAgriCents(cents);
+    }
 
     setIsEditing(true);
     setIsAdding(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+  
+  const handleGenerateAIDescription = async () => {
+    if (!liveData.title || !liveData.location) {
+      alert("Please enter a Title and Location first to help the AI.");
+      return;
+    }
+    
+    setIsGeneratingAI(true);
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/ai/generate-description`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          details: {
+            title: liveData.title,
+            location: liveData.location,
+            features: JSON.stringify(customFeatures),
+            price: liveData.price
+          }
+        })
+      });
+      const data = await res.json();
+      if (data.status === 'success') {
+        setLiveData((prev: any) => ({ ...prev, description: data.data }));
+        // Manually update the textarea value if needed, but liveData binding should handle it
+      }
+    } catch (err) {
+      console.error("AI Generation failed:", err);
+    } finally {
+      setIsGeneratingAI(false);
+    }
+  };
 
   const formatPriceAdminLocal = (price: number | string) => {
-    const n = Number(price);
-    if (!n || isNaN(n)) return '₹ 0/-';
-    if (n >= 10000000) return `₹ ${parseFloat((n / 10000000).toFixed(2))} Cr/-`;
-    if (n >= 100000) return `₹ ${parseFloat((n / 100000).toFixed(2))} L/-`;
-    return `₹ ${n.toLocaleString('en-IN')}/-`;
+    return formatSnapAddaPrice(Number(price));
   };
 
   const formatLandSizeAdmin = (totalAcres: number) => {
-    if (!totalAcres) return '—';
-    const acres = Math.floor(totalAcres);
-    const cents = Math.round((totalAcres % 1) * 100);
-    if (acres === 0) return `${cents} Cents`;
-    if (cents === 0) return `${acres} Ac`;
-    return `${acres} Ac ${cents} Ct`;
+    return formatLandSize(totalAcres);
   };
 
   const getAgriTotalDecimal = () => {
-    return Number(agriAcres || 0) + Number(agriCents || 0) / 100;
+    return acresCentsToDecimal(Number(agriAcres), Number(agriCents));
   };
 
   const agriAutoValuation = () => {
@@ -355,7 +388,7 @@ const AdminProperties = () => {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -30 }}
-            style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.8fr) minmax(0, 1.2fr)', gap: '2.5rem', alignItems: 'start' }}
+            className="admin-grid-1-2"
           >
             {/* Editor Console */}
             <div className="glass-card" style={{ padding: '3rem', borderRadius: '28px', border: '1px solid rgba(255,255,255,0.08)' }}>
@@ -443,6 +476,34 @@ const AdminProperties = () => {
                     <div style={{ gridColumn: '1 / -1' }}>
                       <label className="admin-label">Full Address</label>
                       <textarea name="address" defaultValue={editingProperty?.address || ''} className="admin-input" rows={2} placeholder="Near coca cola factory..." />
+                    </div>
+                    <div style={{ gridColumn: '1 / -1' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                        <label className="admin-label" style={{ marginBottom: 0 }}>Property Description</label>
+                        <button 
+                          type="button" 
+                          onClick={handleGenerateAIDescription}
+                          disabled={isGeneratingAI}
+                          className="btn-ghost"
+                          style={{ 
+                            fontSize: '0.65rem', padding: '4px 10px', borderRadius: '6px', 
+                            border: '1px solid var(--gold)', color: 'var(--gold)',
+                            display: 'flex', alignItems: 'center', gap: '5px',
+                            background: isGeneratingAI ? 'rgba(212,175,55,0.1)' : 'transparent'
+                          }}
+                        >
+                          <Zap size={10} fill={isGeneratingAI ? 'var(--gold)' : 'none'} /> 
+                          {isGeneratingAI ? 'GENERATING...' : 'GENERATE WITH AI'}
+                        </button>
+                      </div>
+                      <textarea 
+                        name="description" 
+                        value={liveData.description || ''} 
+                        onChange={(e) => setLiveData((p: any) => ({ ...p, description: e.target.value }))}
+                        className="admin-input" 
+                        rows={4} 
+                        placeholder="Luxury 3BHK with panoramic views..." 
+                      />
                     </div>
                     <div style={{ gridColumn: '1 / -1' }}>
                       <label className="admin-label">Google Maps Link</label>
@@ -579,6 +640,32 @@ const AdminProperties = () => {
                       <div>
                         <label className="admin-label">Road Width (Ft)</label>
                         <input name="roadWidth" type="number" defaultValue={editingProperty?.roadWidth || ''} className="admin-input" placeholder="e.g. 30" />
+                      </div>
+                    </div>
+
+                    {/* SMART UNIT CONVERTER WIDGET */}
+                    <div className="glass-card" style={{ marginTop: '2rem', padding: '1.5rem', border: '1px solid rgba(212,175,55,0.2)', background: 'rgba(212,175,55,0.02)' }}>
+                      <div style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gold)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Zap size={14} /> SMART UNIT CONVERTER (GAJAM STANDARD)
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '1rem' }}>
+                        <div style={{ background: 'rgba(255,255,255,0.03)', padding: '0.75rem', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                          <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', marginBottom: '4px' }}>GAJAALU (SQ.YDS)</div>
+                          <div style={{ fontSize: '0.9rem', fontWeight: 800, color: 'white' }}>{smartAreaConverter(getAgriTotalDecimal(), 'acre').gajam.toLocaleString('en-IN')}</div>
+                        </div>
+                        <div style={{ background: 'rgba(255,255,255,0.03)', padding: '0.75rem', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                          <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', marginBottom: '4px' }}>SQUARE FEET</div>
+                          <div style={{ fontSize: '0.9rem', fontWeight: 800, color: 'white' }}>{smartAreaConverter(getAgriTotalDecimal(), 'acre').sqft.toLocaleString('en-IN')}</div>
+                        </div>
+                        <div style={{ background: 'rgba(255,255,255,0.03)', padding: '0.75rem', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                          <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', marginBottom: '4px' }}>PRICE PER GAJAM</div>
+                          <div style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--gold)' }}>
+                            {liveData.pricePerAcre ? `₹ ${Math.round(convertToValue(liveData.pricePerAcre, pricePerAcreUnit) / 4840).toLocaleString('en-IN')}` : '—'}
+                          </div>
+                        </div>
+                      </div>
+                      <div style={{ marginTop: '1rem', fontSize: '0.65rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                        * 1 Acre = 100 Cents = 4840 Gajam. Land values are calculated using standard AP regional metrics.
                       </div>
                     </div>
                   </section>
@@ -814,13 +901,24 @@ const AdminProperties = () => {
                  location={liveData.location}
                  type={liveData.type}
                  facing={liveData.facing}
+                 purpose={liveData.purpose}
                  isVerified={isVerified}
-                 listerType="Certified Builder"
+                 isFeatured={isFeatured}
+                 isGated={liveData.isGated}
+                 vastuCompliant={liveData.vastuCompliant}
+                 listerType={liveData.listerType || "SnapAdda verified"}
                  measurementUnit={liveData.measurementUnit}
+                 sqft={liveData.sqft}
                  areaSize={liveData.areaSize}
-                 image={currentImageUrls.length > 0 ? currentImageUrls[0] : undefined}
-                 address={liveData.address}
+                 totalAcres={liveData.totalAcres}
                  pricePerAcre={liveData.pricePerAcre}
+                 bhk={liveData.bhk}
+                 floorNo={liveData.floorNo}
+                 totalFloors={liveData.totalFloors}
+                 constructionStatus={liveData.constructionStatus}
+                 approval={liveData.approvalAuthority || liveData.approval}
+                 images={currentImageUrls}
+                 image={currentImageUrls.length > 0 ? currentImageUrls[0] : undefined}
                 />
                <div style={{ marginTop: '2.5rem', padding: '2rem', borderRadius: '24px', background: 'rgba(255,255,255,0.02)', border: '1px dashed rgba(255,255,255,0.1)' }}>
                  <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: 1.8 }}>

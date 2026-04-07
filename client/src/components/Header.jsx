@@ -90,6 +90,14 @@ export default function Header() {
               )}
             </div>
 
+            <button 
+              onClick={toggleLang} 
+              className="mobile-only"
+              style={{ background: 'transparent', border: '1px solid rgba(212,175,55,0.4)', color: 'var(--gold)', padding: '0.4rem 0.6rem', borderRadius: '4px', cursor: 'pointer', marginRight: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem' }}
+            >
+              <Globe size={14} /> {i18n.language === 'en' ? 'తెలుగు' : 'English'}
+            </button>
+
             <button
               className="mobile-menu-btn"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -136,14 +144,6 @@ export default function Header() {
                   <User size={18} style={{ marginRight: '8px' }} /> Sign In
                 </Link>
               )}
-              <hr style={{ borderColor: 'rgba(255,255,255,0.1)', margin: '1rem 0' }} />
-              <button 
-                onClick={toggleLang} 
-                className="mobile-auth-btn-glass btn-3d"
-                style={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', color: 'var(--gold)' }}
-              >
-                <Globe size={18} style={{ marginRight: '8px' }} /> {i18n.language === 'en' ? 'తెలుగు' : 'English'}
-              </button>
             </div>
           </motion.div>
         )}
