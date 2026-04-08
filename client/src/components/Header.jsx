@@ -59,6 +59,7 @@ export default function Header() {
                 key={link.label}
                 href={link.path.startsWith('/#') ? link.path.substring(1) : link.path}
                 className="nav-link"
+                aria-current={location.pathname === link.path ? 'page' : undefined}
                 style={{
                   color: location.pathname === link.path ? 'var(--gold)' : 'var(--txt-secondary)',
                   display: 'flex',
@@ -72,14 +73,30 @@ export default function Header() {
           </nav>
 
           <div className="nav-right">
-            {/* Desktop Only Auth/Lang */}
+            {/* Unified Lang Toggle */}
+            <button 
+              onClick={toggleLang} 
+              aria-label={i18n.language === 'en' ? 'Switch to Telugu' : 'Switch to English'}
+              style={{ 
+                background: 'transparent', 
+                border: '1px solid rgba(212,175,55,0.4)', 
+                color: 'var(--gold)', 
+                padding: '0.4rem 0.6rem', 
+                borderRadius: '6px', 
+                cursor: 'pointer', 
+                marginRight: '0.75rem', 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '6px', 
+                fontSize: '0.75rem',
+                fontWeight: 700
+              }}
+            >
+              <Globe size={14} /> {i18n.language === 'en' ? 'తెలుగు' : 'English'}
+            </button>
+
+            {/* Desktop Only Auth */}
             <div className="desktop-only" style={{ display: 'flex', alignItems: 'center' }}>
-              <button 
-                onClick={toggleLang} 
-                style={{ background: 'transparent', border: '1px solid rgba(212,175,55,0.4)', color: 'var(--gold)', padding: '0.4rem 0.8rem', borderRadius: '4px', cursor: 'pointer', marginRight: '1rem', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem' }}
-              >
-                <Globe size={14} /> {i18n.language === 'en' ? 'తెలుగు' : 'English'}
-              </button>
               {user ? (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                   <span style={{ fontSize: '0.85rem', color: 'var(--txt-muted)' }}>{user.name}</span>
@@ -90,17 +107,10 @@ export default function Header() {
               )}
             </div>
 
-            <button 
-              onClick={toggleLang} 
-              className="mobile-only"
-              style={{ background: 'transparent', border: '1px solid rgba(212,175,55,0.4)', color: 'var(--gold)', padding: '0.4rem 0.6rem', borderRadius: '4px', cursor: 'pointer', marginRight: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem' }}
-            >
-              <Globe size={14} /> {i18n.language === 'en' ? 'తెలుగు' : 'English'}
-            </button>
-
             <button
               className="mobile-menu-btn"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label={mobileMenuOpen ? 'Close mobile menu' : 'Open mobile menu'}
             >
               {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>

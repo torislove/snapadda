@@ -1,318 +1,278 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, IndianRupee, MapPin, Target, ChevronRight, ChevronLeft, CheckCircle2, LogOut, Sparkles, MessageSquare, HelpCircle } from 'lucide-react';
-import { fetchSetting } from '../services/api';
+import { 
+  Home, IndianRupee, MapPin, Target, ChevronRight, ChevronLeft, 
+  CheckCircle2, Sparkles, HelpCircle, Activity, ShieldCheck, 
+  Cpu, Zap, Layers 
+} from 'lucide-react';
+import { db } from '../firebase';
+import { ref, onValue, off } from 'firebase/database';
 import { useTranslation } from 'react-i18next';
 import Logo from '../components/Logo';
 
-const STEPS = [
-  { id: 'welcome', title: 'Welcome' },
-  { id: 'purpose', title: 'Strategy', icon: Target },
-  { id: 'propertyType', title: 'Category', icon: Home },
-  { id: 'budget', title: 'Budget', icon: IndianRupee },
-  { id: 'locations', title: 'Search Area', icon: MapPin },
-  { id: 'finish', title: 'Finish' }
-];
-
-const PROPERTY_TYPES = ['Apartment', 'Independent House', 'Villa', 'Residential Plot', 'Agriculture Land', 'Commercial Space'];
-const PURPOSES = ['Personal Use', 'Investment', 'Agriculture'];
-const BUDGETS = ['Below 50L', '50L - 1Cr', '1Cr - 3Cr', '3Cr - 5Cr', 'Above 5Cr'];
-const DISTRICTS = ['Amaravati', 'Vijayawada', 'Guntur', 'Mangalagiri', 'Tenali', 'Visakhapatnam', 'Tirupati', 'Nellore'];
-
+/**
+ * SnapAdda Elite Onboarding
+ * Real-time, Admin-Controlled, Quiet Luxury UX
+ */
 export default function Onboarding() {
   const { t } = useTranslation();
-  const { user, completeOnboarding, logout } = useAuth();
+  const { user, completeOnboarding } = useAuth();
   const navigate = useNavigate();
-  const [step, setStep] = useState(0);
+  
+  const [step, setStep] = useState(0); 
   const [loading, setLoading] = useState(true);
   const [questions, setQuestions] = useState([]);
-  
   const [formData, setFormData] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isFinished, setIsFinished] = useState(false);
 
-  // Fetch dynamic questions
+  // --- Real-time Question Pulse ---
   useEffect(() => {
-    const loadQuestions = async () => {
+    if (!db) {
+      setLoading(false);
+      return;
+    }
+
+    const qRef = ref(db, 'onboarding_questions');
+    const unsubscribe = onValue(qRef, (snapshot) => {
       try {
-        const res = await fetchSetting('onboarding_questions');
-        // Filter out disabled ones
-        const dataArray = Array.isArray(res) ? res : [];
-        const active = dataArray.filter(q => q && q.enabled);
-        
-        // Build initial form data
-        const initial = {};
-        active.forEach(q => {
-          if (q.key) initial[q.key] = q.type === 'options' ? '' : '';
-        });
-        
-        setQuestions(active);
-        setFormData(initial);
+        const data = snapshot.val();
+        if (data) {
+          const active = Object.values(data)
+            .filter(q => q && q.enabled)
+            .sort((a, b) => (Number(a.displayOrder) || 0) - (Number(b.displayOrder) || 0));
+          
+          setQuestions(active);
+          
+          // Sync form keys without wiping existing answers
+          setFormData(prev => {
+            const next = { ...prev };
+            active.forEach(q => {
+              if (q.key && next[q.key] === undefined) {
+                next[q.key] = '';
+              }
+            });
+            return next;
+          });
+        }
       } catch (err) {
-        console.error('Failed to load onboarding questions:', err);
-        setQuestions([]);
+        console.error('Onboarding Sync Failure:', err);
       } finally {
         setLoading(false);
       }
-    };
-    loadQuestions();
+    });
+
+    return () => off(qRef, 'value', unsubscribe);
   }, []);
 
+  // Stability: Redirect if already qualified
   useEffect(() => { 
-    if (user?.onboardingCompleted && !isFinished) navigate('/'); 
+    if (user?.onboardingCompleted && !isFinished) {
+      const t = setTimeout(() => navigate('/'), 2000);
+      return () => clearTimeout(t);
+    }
   }, [user, navigate, isFinished]);
 
-  const handleNext = () => setStep(s => Math.min(s + 1, STEPS.length - 1));
+  const handleNext = () => setStep(s => Math.min(s + 1, questions.length + 1));
   const handleBack = () => setStep(s => Math.max(s - 1, 0));
-
-  const toggleLocation = (loc) => {
-    setFormData(prev => ({
-      ...prev,
-      locations: prev.locations.includes(loc) 
-        ? prev.locations.filter(l => l !== loc)
-        : [...prev.locations, loc]
-    }));
-  };
 
   const handleFinish = async () => {
     setIsSubmitting(true);
     try {
       await completeOnboarding(formData);
       setIsFinished(true);
-      setStep(questions.length + 1); // Move to final step
+      setStep(questions.length + 1);
     } catch (e) {
-      console.error(e);
-      alert('Failed to save preferences. Please try again.');
+      console.error('Qualification sync failure:', e);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleContinue = () => {
-    window.location.href = '/';
-  };
-
   const getIcon = (key) => {
+    const props = { size: 28, strokeWidth: 1.5 };
     switch(key) {
-      case 'propertyType': return <Home size={32} />;
-      case 'budget': return <IndianRupee size={32} />;
-      case 'purpose': return <Target size={32} />;
-      case 'locations': return <MapPin size={32} />;
-      default: return <HelpCircle size={32} />;
+      case 'propertyType': return <Home {...props} />;
+      case 'budget': return <IndianRupee {...props} />;
+      case 'purpose': return <Target {...props} />;
+      case 'locations': return <MapPin {...props} />;
+      default: return <Sparkles {...props} />;
     }
   };
 
   if (loading) return (
-    <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--midnight)' }}>
-      <div className="loader" />
+    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#05050a', gap: '2rem' }}>
+      <Logo size={60} />
+      <div style={{ display: 'flex', gap: '8px' }}>
+        {[0, 1, 2].map(i => (
+          <motion.div key={i} animate={{ opacity: [0.3, 1, 0.3] }} transition={{ repeat: Infinity, duration: 1, delay: i * 0.2 }}
+            style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--gold)' }} />
+        ))}
+      </div>
     </div>
   );
 
-  const totalSteps = questions.length + 2; // Welcome + Questions + Finish
+  const currentQuestion = step > 0 && step <= questions.length ? questions[step - 1] : null;
+  const isLastQuestion = step === questions.length;
   const isFinalStep = step === questions.length + 1;
 
   return (
     <div style={{ 
-      minHeight: '100vh', 
-      display: 'flex', 
-      flexDirection: 'column',
-      background: 'var(--midnight)',
-      position: 'relative',
-      overflow: 'hidden'
+      minHeight: '100vh', width: '100%', background: '#05050a', position: 'relative', 
+      display: 'flex', flexDirection: 'column', overflow: 'hidden' 
     }}>
-      {/* Background Decor */}
-      <div style={{ 
-        position: 'absolute', top: '-10%', left: '-10%', width: '40%', height: '40%', 
-        background: 'radial-gradient(circle, var(--royal-emerald) 0%, transparent 70%)', opacity: 0.15, filter: 'blur(80px)' 
-      }} />
-      <div style={{ 
-        position: 'absolute', bottom: '-5%', right: '-5%', width: '30%', height: '30%', 
-        background: 'radial-gradient(circle, var(--royal-gold) 0%, transparent 70%)', opacity: 0.1, filter: 'blur(100px)' 
-      }} />
-
-      <div style={{ padding: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative', zIndex: 10 }}>
-        <Link to="/" style={{ textDecoration: 'none' }}>
-          <Logo size={42} showText />
-        </Link>
-        <button 
-          onClick={() => window.location.href = '/'}
-          className="glass-heavy btn-3d"
-          style={{ 
-            border: '1px solid rgba(212,175,55,0.4)', 
-            color: 'var(--gold)', padding: '0.6rem 1.4rem', borderRadius: '12px', cursor: 'pointer',
-            fontSize: '0.85rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px',
-            textTransform: 'uppercase', letterSpacing: '0.05em'
-          }}
-        >
-          <ChevronLeft size={16} /> {t('dashboard.backToSite')}
-        </button>
+      {/* Dynamic Background */}
+      <div style={{ position: 'absolute', inset: 0, opacity: 0.4, pointerEvents: 'none' }}>
+        <div style={{ position: 'absolute', top: '10%', right: '10%', width: '40vw', height: '40vw', background: 'radial-gradient(circle, #064e3b11 0%, transparent 70%)', filter: 'blur(100px)' }} />
+        <div style={{ position: 'absolute', bottom: '10%', left: '10%', width: '40vw', height: '40vw', background: 'radial-gradient(circle, #e8b84b09 0%, transparent 70%)', filter: 'blur(100px)' }} />
       </div>
 
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem 2rem 4rem' }}>
-        <motion.div 
-          className="glass-heavy onboarding-card"
-          style={{ width: '100%', maxWidth: '520px', borderRadius: '28px', position: 'relative', overflow: 'hidden' }}
-          layout
-        >
-          {/* Progress Bar */}
-          {!isFinished && (
-            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '4px', background: '#ffffff08', borderRadius: '4px 4px 0 0', overflow: 'hidden' }}>
-              <motion.div 
-                style={{ height: '100%', background: 'linear-gradient(90deg, var(--royal-emerald), var(--royal-gold))' }}
-                initial={{ width: 0 }}
-                animate={{ width: `${(step / (questions.length + 1)) * 100}%` }}
-              />
-            </div>
-          )}
+      <header style={{ padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative', zIndex: 100 }}>
+        <Link to="/" style={{ textDecoration: 'none' }}><Logo size={32} showText /></Link>
+        <div style={{ fontSize: '0.65rem', color: 'var(--gold)', letterSpacing: '0.4em', fontWeight: 900 }}>SECURE_PROTOCOL // {isFinalStep ? 'QUALIFIED' : `STEP_${step}`}</div>
+      </header>
 
+      <main style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem', position: 'relative', zIndex: 10 }}>
+        <motion.div 
+          layout
+          style={{ 
+            width: '100%', maxWidth: '480px', background: 'rgba(255,255,255,0.02)', 
+            backdropFilter: 'blur(20px)', borderRadius: '32px', border: '1px solid rgba(212,175,55,0.1)',
+            padding: '2.5rem', boxShadow: '0 40px 100px rgba(0,0,0,0.5)', position: 'relative'
+          }}
+        >
           <AnimatePresence mode="wait">
             <motion.div
               key={step}
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
             >
-              {/* --- STEP 0: WELCOME --- */}
               {step === 0 && (
                 <div style={{ textAlign: 'center' }}>
-                  <div style={{ display: 'inline-flex', padding: '1rem', background: 'var(--gold-dim)', borderRadius: '20px', color: 'var(--royal-gold)', marginBottom: '2rem' }}>
-                    <Sparkles size={32} />
-                  </div>
-                  <h2 style={{ fontSize: '2.5rem', fontWeight: 900, marginBottom: '1rem', fontFamily: 'var(--font-serif)' }}>{t('onboarding.welcomeTitle', 'Tailored Experience')}</h2>
-                  <p style={{ color: 'var(--txt-secondary)', lineHeight: 1.8, marginBottom: '2.5rem' }}>
-                    {t('onboarding.welcomeText', { name: user?.name?.split(' ')[0] || 'Explorer' })}
+                  <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} style={{ marginBottom: '2rem', color: 'var(--gold)' }}><Zap size={48} strokeWidth={1} /></motion.div>
+                  <h2 style={{ fontSize: '2.2rem', fontWeight: 950, color: '#fff', marginBottom: '1rem', fontFamily: 'var(--font-serif)', letterSpacing: '-0.02em' }}>
+                    {t('onboarding.welcomeTitle', 'Elite Access')}
+                  </h2>
+                  <p style={{ color: 'var(--txt-secondary)', lineHeight: 1.6, marginBottom: '2.5rem', fontSize: '1rem' }}>
+                    Welcome to the specialized acquisition portal. To align with our premium inventory, we require your investment parameters.
                   </p>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                    <button className="btn-3d" onClick={handleNext} style={{ width: '100%', padding: '1.2rem' }}>
-                      {t('onboarding.getStarted', 'Get Started')} <ChevronRight size={18} style={{ marginLeft: '8px' }} />
-                    </button>
-                    <button 
-                      onClick={() => window.location.href = '/'}
-                      style={{ 
-                        background: 'transparent', border: 'none', color: 'var(--txt-muted)', 
-                        fontSize: '0.9rem', cursor: 'pointer', textDecoration: 'underline' 
-                      }}
-                    >
-                      {t('dashboard.backToSite')}
-                    </button>
-                  </div>
+                  <button onClick={handleNext} className="btn-3d" style={{ width: '100%', padding: '1.2rem', borderRadius: '20px', fontSize: '1rem' }}>
+                    {t('onboarding.getStarted', 'Initialize Profile')} <ChevronRight size={18} style={{ marginLeft: '10px' }} />
+                  </button>
                 </div>
               )}
 
-              {/* --- DYNAMIC QUESTIONS --- */}
-              {step > 0 && step <= questions.length && (
+              {currentQuestion && (
                 <div>
-                  <div style={{ display: 'inline-flex', padding: '1rem', background: 'var(--gold-dim)', borderRadius: '20px', color: 'var(--royal-gold)', marginBottom: '1.5rem' }}>
-                    {getIcon(questions[step-1].key)}
-                  </div>
-                  <h3 style={{ fontSize: '1.8rem', fontWeight: 800, marginBottom: '0.5rem' }}>{t(`onboarding.q.${questions[step-1].key}`, questions[step-1].title)}</h3>
-                  <p style={{ color: 'var(--txt-muted)', marginBottom: '2rem' }}>{t('onboarding.selectPref', 'Select your preference below.')}</p>
-                  
-                  {questions[step-1].type === 'options' ? (
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '0.85rem' }}>
-                      {questions[step-1].options.map(opt => {
-                        const isSelected = formData[questions[step-1].key] === opt;
-                        return (
-                          <button 
-                            key={opt}
-                            onClick={() => setFormData({...formData, [questions[step-1].key]: opt})}
-                            style={{ 
-                              padding: '1.1rem 1.4rem', borderRadius: '16px', border: '1.5px solid',
-                              borderColor: isSelected ? 'var(--royal-gold)' : 'rgba(255,255,255,0.08)',
-                              background: isSelected ? 'rgba(212,175,55,0.08)' : 'rgba(255,255,255,0.03)',
-                              color: isSelected ? 'var(--royal-gold)' : 'var(--txt-primary)',
-                              textAlign: 'left', cursor: 'pointer', transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)', fontWeight: 600,
-                              fontSize: '0.95rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between'
-                            }}
-                          >
-                            <span>{t(`onboarding.opt.${opt.replace(/\s+/g, '')}`, opt)}</span>
-                            {isSelected && <CheckCircle2 size={18} />}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <div style={{ marginTop: '1rem' }}>
-                      <textarea 
-                        placeholder={t('onboarding.placeholder', 'Type your answer here...')}
-                        value={formData[questions[step-1].key] || ''}
-                        onChange={(e) => setFormData({...formData, [questions[step-1].key]: e.target.value})}
-                        style={{ 
-                          width: '100%', background: '#ffffff05', border: '1px solid var(--border-light)', 
-                          borderRadius: '12px', padding: '1rem', color: '#fff', outline: 'none', resize: 'none', height: '140px'
-                        }}
-                      />
-                    </div>
-                  )}
+                   <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
+                      <div style={{ background: 'rgba(212,175,55,0.1)', color: 'var(--gold)', padding: '14px', borderRadius: '18px' }}>
+                        {getIcon(currentQuestion.key)}
+                      </div>
+                      <div style={{ fontSize: '0.65rem', fontWeight: 900, color: 'var(--gold)', letterSpacing: '0.2em' }}>ACQUISITION_PARAMETER</div>
+                   </div>
+                   
+                   <h3 style={{ fontSize: '1.75rem', fontWeight: 950, color: '#fff', marginBottom: '2rem', lineHeight: 1.2 }}>
+                     {t(`onboarding.q.${currentQuestion.key}`, currentQuestion.title)}
+                   </h3>
+
+                   {currentQuestion.type === 'options' ? (
+                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                       {(currentQuestion.options || []).map(opt => {
+                         const active = formData[currentQuestion.key] === opt;
+                         return (
+                           <motion.button 
+                             key={opt}
+                             whileHover={{ x: 5, backgroundColor: 'rgba(255,255,255,0.05)' }}
+                             whileTap={{ scale: 0.98 }}
+                             onClick={() => setFormData({...formData, [currentQuestion.key]: opt})}
+                             style={{ 
+                               width: '100%', padding: '1.2rem', borderRadius: '20px', textAlign: 'left',
+                               background: active ? 'rgba(212,175,55,0.1)' : 'rgba(255,255,255,0.03)',
+                               border: active ? '1px solid var(--gold)' : '1px solid rgba(255,255,255,0.08)',
+                               color: active ? 'var(--gold)' : '#fff', fontWeight: 700, cursor: 'pointer',
+                               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                               transition: '0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+                             }}
+                           >
+                             <span>{opt}</span>
+                             {active && <CheckCircle2 size={18} />}
+                           </motion.button>
+                         );
+                       })}
+                     </div>
+                   ) : (
+                     <textarea 
+                       placeholder="Detail your requirements..."
+                       value={formData[currentQuestion.key] || ''}
+                       onChange={(e) => setFormData({...formData, [currentQuestion.key]: e.target.value})}
+                       style={{ 
+                         width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.12)', 
+                         borderRadius: '24px', padding: '1.5rem', color: '#fff', outline: 'none', resize: 'none', height: '160px',
+                         fontSize: '1rem', transition: '0.3s border-color'
+                       }}
+                       onFocus={(e) => e.target.style.borderColor = 'var(--gold)'}
+                       onBlur={(e) => e.target.style.borderColor = 'rgba(255,255,255,0.12)'}
+                     />
+                   )}
                 </div>
               )}
 
-              {/* --- STEP FINISH --- */}
-              {step === questions.length + 1 && (
+              {isFinalStep && (
                 <div style={{ textAlign: 'center' }}>
-                  <div style={{ position: 'relative', width: '80px', height: '80px', margin: '0 auto 2rem' }}>
-                    <motion.div 
-                      initial={{ scale: 0 }} animate={{ scale: 1 }}
-                      style={{ 
-                        width: '100%', height: '100%', background: 'var(--royal-emerald)', 
-                        borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff'
-                      }}
-                    >
-                      <CheckCircle2 size={42} />
-                    </motion.div>
-                  </div>
-                  <h2 style={{ fontSize: '2.2rem', fontWeight: 900, marginBottom: '1rem', color: 'var(--emerald)' }}>{t('dashboard.overview')} {t('onboarding.finishTitle', 'Strategy Optimized')}</h2>
-                  <p style={{ color: 'var(--txt-secondary)', lineHeight: 1.8, marginBottom: '2.5rem' }}>
-                    {t('onboarding.finishText', 'Welcome to the Inner Circle. Your investment strategy has been secured. You can now explore properties and growth hotspots tailored to your profile.')}
+                  <motion.div animate={{ rotate: 360 }} transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
+                    style={{ margin: '0 auto 2rem', color: 'var(--gold)', display: 'flex', justifyContent: 'center' }}><Layers size={60} strokeWidth={1} /></motion.div>
+                  <h2 style={{ fontSize: '2.2rem', fontWeight: 950, color: 'var(--emerald)', marginBottom: '1rem', fontFamily: 'var(--font-serif)' }}>
+                    {t('onboarding.finishTitle', 'Credential Verified')}
+                  </h2>
+                  <p style={{ color: 'var(--txt-secondary)', lineHeight: 1.6, marginBottom: '2.5rem' }}>
+                    Your investment profile is now synchronized. You are authorized to access our premium verified inventory across Andhra Pradesh.
                   </p>
-                  <button className="btn-3d" onClick={handleContinue} style={{ width: '100%', padding: '1.2rem', background: 'var(--royal-emerald)', color: '#fff' }}>
-                    {t('dashboard.backToSite')} <ChevronRight size={18} style={{ marginLeft: '8px' }} />
+                  <button className="btn-3d btn-3d-emerald" onClick={() => navigate('/')} style={{ width: '100%', padding: '1.2rem', borderRadius: '20px' }}>
+                    Enter Portal <ChevronRight size={18} style={{ marginLeft: '10px' }} />
                   </button>
                 </div>
               )}
             </motion.div>
           </AnimatePresence>
 
-          {/* Controls */}
-          {step > 0 && step < questions.length + 1 && (
+          {/* Navigation Controls */}
+          {step > 0 && !isFinalStep && (
             <div style={{ marginTop: '3rem', display: 'flex', gap: '1rem' }}>
-              <button 
-                onClick={handleBack} 
-                style={{ 
-                  flex: 1, padding: '1.2rem', borderRadius: '18px', border: '1.5px solid var(--border-light)',
-                  background: 'transparent', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'
-                }}
-              >
+              <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={handleBack} 
+                style={{ flex: 1, padding: '1.2rem', borderRadius: '20px', background: 'rgba(255,255,255,0.05)', border: 'none', color: '#fff', cursor: 'pointer' }}>
                 <ChevronLeft size={20} />
-              </button>
+              </motion.button>
               
-              {step < questions.length ? (
-                <button 
-                  className="btn-3d" 
-                  onClick={handleNext}
-                  disabled={!formData[questions[step-1].key]}
-                  style={{ flex: 3, opacity: !formData[questions[step-1].key] ? 0.5 : 1 }}
-                >
-                  Continue <ChevronRight size={18} style={{ marginLeft: '8px' }} />
+              {!isLastQuestion ? (
+                <button className="btn-3d" onClick={handleNext} disabled={!formData[currentQuestion?.key]} style={{ flex: 4, opacity: !formData[currentQuestion?.key] ? 0.5 : 1 }}>
+                  Continue <ChevronRight size={18} style={{ marginLeft: '10px' }} />
                 </button>
               ) : (
-                <button 
-                  className="btn-3d btn-3d-emerald" 
-                  onClick={handleFinish}
-                  disabled={isSubmitting || !formData[questions[step-1].key]}
-                  style={{ flex: 3, opacity: (!formData[questions[step-1].key]) ? 0.5 : 1 }}
-                >
-                  {isSubmitting ? 'Syncing...' : 'Save Strategy'} <ChevronRight size={18} style={{ marginLeft: '8px' }} />
+                <button className="btn-3d btn-3d-emerald" onClick={handleFinish} disabled={isSubmitting || !formData[currentQuestion?.key]} style={{ flex: 4, opacity: (isSubmitting || !formData[currentQuestion?.key]) ? 0.5 : 1 }}>
+                  {isSubmitting ? 'SECURE_SYNCING...' : 'Synchronize Profile'} <ChevronRight size={18} style={{ marginLeft: '10px' }} />
                 </button>
               )}
             </div>
           )}
-
         </motion.div>
-      </div>
+      </main>
+
+      <footer style={{ padding: '2rem', textAlign: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '30px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', opacity: 0.3 }}>
+            <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: 'var(--gold)' }} />
+            <span style={{ fontSize: '0.6rem', letterSpacing: '0.3em', fontWeight: 900 }}>REALTIME_SYNC</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', opacity: 0.3 }}>
+            <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: 'var(--emerald)' }} />
+            <span style={{ fontSize: '0.6rem', letterSpacing: '0.3em', fontWeight: 900 }}>ENCRYPTED</span>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

@@ -323,10 +323,10 @@
     top: 0; left: -300px;
     height: 100vh;
     width: 280px;
-    z-index: 100;
+    z-index: 1000;
     transition: left 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: 20px 0 50px rgba(0,0,0,0.9);
-    background: rgba(8,8,18,0.95); /* More opaque on mobile */
+    background: rgba(8,8,18,0.98); 
   }
   .admin-sidebar.open { left: 0; }
 
@@ -334,87 +334,69 @@
     display: block;
     position: fixed;
     inset: 0;
-    background: rgba(0,0,0,0.8);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    z-index: 95;
+    background: rgba(0,0,0,0.85);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    z-index: 999;
     animation: fadeIn 0.3s ease;
   }
 
   @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-  .admin-content { width: 100%; }
-  .admin-page-content { padding: 1.25rem; max-width: 100%; }
-  .admin-topbar { padding: 0 1.25rem; }
+  .admin-content { width: 100%; min-width: 0; }
+  .admin-page-content { padding: 1rem; max-width: 100%; overflow-x: hidden; }
+  .admin-topbar { padding: 0 1rem; height: 64px; }
 }
 
 /* ── Universal Vertical Stacking Overrides (Surgical) ── */
 @media (max-width: 768px) {
-  /* Targets any element with inline grid styles having multiple columns */
-  div[style*="display: grid"], 
-  div[style*="display:grid"] {
-    grid-template-columns: 1fr !important;
-    gap: 1.25rem !important;
+  /* Prevent horizontal scroll on containers */
+  .admin-page-content {
+    overflow-x: hidden;
   }
 
-  /* Target specific dashboard metric grids */
-  [style*="gridTemplateColumns: repeat(auto-fit"][style*="minmax(min(240px"] {
+  /* Force stack grids that use inline styles */
+  [style*="display: grid"], 
+  [style*="display:grid"] {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+  }
+
+  /* Specifically target multi-column dashboards */
+  .dashboard-grid {
     grid-template-columns: 1fr !important;
   }
 
-  /* Ensures all flex-rows (like toolbar / headers) wrap on mobile */
-  div[style*="display: flex"][style*="justifyContent: space-between"],
-  div[style*="display:flex"][style*="justify-content: space-between"] {
+  /* Flex wrap for dual-action headers */
+  .page-header-actions {
     flex-direction: column !important;
-    align-items: flex-start !important;
-    gap: 1.25rem !important;
+    align-items: stretch !important;
+    gap: 1rem !important;
   }
 
   /* Form & Input scaling (Touch-Friendly) */
   .admin-input, .admin-select, .admin-textarea, textarea, input, select {
-    font-size: 16px !important; /* Prevents auto-zoom on iOS */
-    padding: 0.9rem !important;
-    height: auto !important;
+    font-size: 16px !important; 
+    padding: 0.85rem !important;
   }
 
+  /* Buttons: Better touch area */
   button, .btn {
-    min-height: 48px !important; /* Min touch target */
-    width: 100% !important;
-    justify-content: center !important;
+    min-height: 44px; 
+    width: 100%;
+    justify-content: center;
   }
 
-  /* Padding scaling for smaller screens */
-  .admin-page-content { padding: 1rem !important; }
-  .glass-card { padding: 1.5rem !important; border-radius: 18px !important; }
+  .admin-card {
+    padding: 1.25rem !important;
+    margin-bottom: 1rem;
+  }
 
   /* Typography scale down */
-  h1 { font-size: 1.8rem !important; margin-bottom: 0.5rem !important; }
-  h2 { font-size: 1.4rem !important; }
-  h3 { font-size: 1.1rem !important; }
-  p { font-size: 0.85rem !important; }
-
-  /* Floating Render / Sticky items de-sticking */
-  div[style*="position: sticky"],
-  div[style*="position:sticky"] {
-    position: relative !important;
-    top: 0 !important;
-    margin-top: 0;
-  }
-
-  /* Fix for fixed modals widths */
-  div[style*="position: fixed"][style*="width: 500px"],
-  div[style*="position:fixed"][style*="width:500px"] {
-    width: 94% !important;
-    left: 3% !important;
-    padding: 1.5rem !important;
-  }
-
-  /* Navigation Item Spacing */
-  .nav-item { padding: 0.8rem 1.5rem !important; }
-
-  /* Hidden items on mobile */
+  h1 { font-size: 1.6rem !important; }
+  h2 { font-size: 1.3rem !important; }
+  
   .desktop-only { display: none !important; }
-  .mobile-only { display: block !important; }
 }
 
 /* ── UTILITY CLASSES FOR MOBILE ALIGNMENT ── */

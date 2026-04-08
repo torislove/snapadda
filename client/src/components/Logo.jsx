@@ -7,6 +7,8 @@ export default function Logo({ className = '', size = 48, showText = false, text
   return (
     <div
       className={`snapadda-logo-container ${className}`}
+      role="img"
+      aria-label="SnapAdda Real Estate Logo"
       style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', textDecoration: 'none', transition: 'all 0.4s ease' }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
@@ -47,6 +49,9 @@ export default function Logo({ className = '', size = 48, showText = false, text
               <rect x="255" y="160" width="65" height="190" rx="4" />
             </clipPath>
           </defs>
+          
+          <title>SnapAdda Premium Logo</title>
+          <desc>A futuristic skyscraper design in royal gold with illuminating windows representing premium real estate opportunities in Andhra Pradesh.</desc>
           
           {/* Shadows / Depth */}
           <rect x="158" y="58" width="100" height="300" rx="4" fill="rgba(0,0,0,0.3)" />

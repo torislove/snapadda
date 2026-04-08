@@ -52,7 +52,8 @@ const getLevenshteinDistance = (a, b) => {
 
 export const parseSmartSearch = (query) => {
   if (!query) return null;
-  const q = query.toLowerCase();
+  if (!query) return { isPlot: false, isVilla: false, isApt: false, isAgri: false, isCom: false, loc: null, intent: 'Buy' };
+  const q = String(query).toLowerCase();
   const result = {
     keyword: query,
     type: null,

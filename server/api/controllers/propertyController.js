@@ -79,15 +79,11 @@ export const getProperties = async (req, res) => {
     }
 
     if (search) {
-      const cleanSearch = search.replace(/\s+/g, '');
-      const sanitizedSearch = cleanSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      const fuzzyRegex = sanitizedSearch.split('').join('.*?');
+      // Use text index if searching for words, otherwise fallback to indexed field regex
       filter.$or = [
-        { title: { $regex: fuzzyRegex, $options: 'i' } },
-        { location: { $regex: fuzzyRegex, $options: 'i' } },
-        { type: { $regex: fuzzyRegex, $options: 'i' } },
-        { district: { $regex: search, $options: 'i' } },
-        { address: { $regex: search, $options: 'i' } },
+        { $text: { $search: search } },
+        { location: { $regex: search, $options: 'i' } },
+        { district: { $regex: search, $options: 'i' } }
       ];
     }
 

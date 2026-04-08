@@ -1,6 +1,6 @@
 import nodemailer from 'nodemailer';
 import { EventEmitter } from 'events';
-import { aiService } from './aiService.js';
+
 
 /**
  * SnapAdda Automation Service
@@ -128,42 +128,14 @@ class AutomationService {
 
   /* ─── AUTOMATED LEAD RESPONSE ─── */
   async handleNewLead(lead) {
-    if (!aiService.isReady) await aiService.init();
-    const context = { name: lead.name, phone: lead.phone, email: lead.email, property: lead.propertyId?.title || 'a SnapAdda property', message: lead.message };
     pushLog('lead', `🎯 New lead received: ${lead.name} (${lead.phone})`);
-    try {
-      const [whatsappMsg, emailMsg] = await Promise.allSettled([
-        aiService.draftCommunication('WhatsApp', context),
-        aiService.draftCommunication('Email', context),
-      ]);
-      if (lead.phone && whatsappMsg.status === 'fulfilled') {
-        await this.sendWhatsApp({ phone: lead.phone, message: whatsappMsg.value });
-      }
-      if (lead.email && emailMsg.status === 'fulfilled') {
-        const emailText = emailMsg.value;
-        const subjectMatch = emailText.match(/^Subject:\s*(.+)/i);
-        const subject = subjectMatch ? subjectMatch[1] : 'Thank you for your inquiry — SnapAdda';
-        const body = emailText.replace(/^Subject:.+\n?/i, '').trim();
-        await this.sendEmail({ to: lead.email, subject, body });
-      }
-    } catch (err) {
-      pushLog('error', `Lead automation failed: ${err.message}`);
-    }
+    // AI Drafting Removed
   }
 
   /* ─── AUTOMATED INQUIRY RESPONSE ─── */
   async handleNewInquiry(inquiry) {
-    if (!aiService.isReady) await aiService.init();
-    const context = { name: inquiry.clientName, phone: inquiry.clientContact, email: null, property: inquiry.propertyId?.title || 'a listed property', message: inquiry.question };
     pushLog('inquiry', `💬 New inquiry from: ${inquiry.clientName}`);
-    try {
-      if (inquiry.clientContact) {
-        const msg = await aiService.draftCommunication('WhatsApp', context);
-        await this.sendWhatsApp({ phone: inquiry.clientContact, message: msg });
-      }
-    } catch (err) {
-      pushLog('error', `Inquiry automation failed: ${err.message}`);
-    }
+    // AI Drafting Removed
   }
 
   /* ─── REAL-TIME STATE ─── */
@@ -171,7 +143,6 @@ class AutomationService {
     return {
       email: { enabled: this.emailEnabled, provider: 'Brevo (Free 300/day)', fromAddress: process.env.BREVO_SMTP_LOGIN || process.env.SMTP_USER || null },
       whatsapp: { enabled: this.whatsappEnabled, connected: this.whatsappReady, pendingQR: !!this.whatsappQR, qr: this.whatsappQR },
-      aiModel: 'Phi-3-Mini (Transformers.js)',
       recentLogs: LOG_BUFFER.slice(0, 20),
     };
   }
@@ -180,7 +151,7 @@ class AutomationService {
 
   /* ─── BRANDED EMAIL HTML ─── */
   _wrapEmailHTML(body) {
-    return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{font-family:'Georgia',serif;background:#0a0a15;color:#e0e0e0;margin:0;padding:0}.container{max-width:600px;margin:0 auto;padding:40px 30px}.header{border-bottom:2px solid #d4af37;padding-bottom:20px;margin-bottom:30px}.logo{font-size:24px;font-weight:900;color:#d4af37;letter-spacing:.1em}.sub{font-size:11px;color:#888;letter-spacing:.2em;text-transform:uppercase}.body-text{line-height:1.7;color:#ccc;font-size:15px;white-space:pre-wrap}.footer{margin-top:40px;padding-top:20px;border-top:1px solid #222;font-size:11px;color:#555;text-align:center}.cta{display:inline-block;margin:20px 0;padding:12px 28px;background:#d4af37;color:#000;font-weight:700;text-decoration:none;border-radius:6px}</style></head><body><div class="container"><div class="header"><div class="logo">SNAP ADDA</div><div class="sub">Premium Real Estate · Andhra Pradesh</div></div><div class="body-text">${body.replace(/\n/g, '<br>')}</div><a href="https://snapadda.com" class="cta">Browse Properties</a><div class="footer">SnapAdda Real Estate | Andhra Pradesh, India<br>Powered by SnapAdda AI Automation</div></div></body></html>`;
+    return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{font-family:'Georgia',serif;background:#0a0a15;color:#e0e0e0;margin:0;padding:0}.container{max-width:600px;margin:0 auto;padding:40px 30px}.header{border-bottom:2px solid #d4af37;padding-bottom:20px;margin-bottom:30px}.logo{font-size:24px;font-weight:900;color:#d4af37;letter-spacing:.1em}.sub{font-size:11px;color:#888;letter-spacing:.2em;text-transform:uppercase}.body-text{line-height:1.7;color:#ccc;font-size:15px;white-space:pre-wrap}.footer{margin-top:40px;padding-top:20px;border-top:1px solid #222;font-size:11px;color:#555;text-align:center}.cta{display:inline-block;margin:20px 0;padding:12px 28px;background:#d4af37;color:#000;font-weight:700;text-decoration:none;border-radius:6px}</style></head><body><div class="container"><div class="header"><div class="logo">SNAP ADDA</div><div class="sub">Premium Real Estate · Andhra Pradesh</div></div><div class="body-text">${body.replace(/\n/g, '<br>')}</div><a href="https://snapadda.com" class="cta">Browse Properties</a><div class="footer">SnapAdda Real Estate | Andhra Pradesh, India</div></div></body></html>`;
   }
 }
 

@@ -90,6 +90,14 @@ const propertySchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 });
 
+// Performance Indexes
+propertySchema.index({ status: 1, createdAt: -1 });
+propertySchema.index({ status: 1, type: 1 });
+propertySchema.index({ price: 1 });
+propertySchema.index({ isVerified: 1 });
+propertySchema.index({ isFeatured: -1, createdAt: -1 });
+propertySchema.index({ district: 1, location: 1 });
+
 // Text search index
 propertySchema.index({ title: 'text', location: 'text', district: 'text' });
 

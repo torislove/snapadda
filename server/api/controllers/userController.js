@@ -60,26 +60,34 @@ export const googleAuth = async (req, res) => {
 export const updatePreferences = async (req, res) => {
   try {
     const { id } = req.params;
-    const { propertyType, budget, locations, purpose, additionalNotes, extraAnswers } = req.body;
+    const incomingData = req.body;
 
     const user = await User.findById(id);
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    user.preferences = {
-      propertyType: propertyType || user.preferences.propertyType,
-      budget: budget || user.preferences.budget,
-      locations: locations || user.preferences.locations,
-      purpose: purpose || user.preferences.purpose,
-      additionalNotes: additionalNotes || user.preferences.additionalNotes,
-      extraAnswers: extraAnswers || user.preferences.extraAnswers || {}
-    };
+    // Standard fields we expect
+    const standardKeys = ['propertyType', 'budget', 'locations', 'purpose', 'additionalNotes'];
     
-    // Mark onboarding complete
+    // Distribute incoming data into standard fields or extraAnswers Map
+    Object.keys(incomingData).forEach(key => {
+      if (standardKeys.includes(key)) {
+        if (!user.preferences) user.preferences = {};
+        user.preferences[key] = incomingData[key];
+      } else {
+        // Ensure preferences and extraAnswers is initialized as a Map if it's missing
+        if (!user.preferences) user.preferences = {};
+        if (!user.preferences.extraAnswers) user.preferences.extraAnswers = new Map();
+        user.preferences.extraAnswers.set(key, String(incomingData[key]));
+      }
+    });
+    
     user.onboardingCompleted = true;
+    user.markModified('preferences');
 
     await user.save();
     res.status(200).json({ status: 'success', user });
   } catch (error) {
+    console.error('Update Preferences Error:', error);
     res.status(500).json({ status: 'error', message: error.message });
   }
 };

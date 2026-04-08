@@ -12,20 +12,24 @@ const firebaseConfig = {
   databaseURL: import.meta.env.VITE_RTDB_URL
 };
 
-// Initialize Firebase
 let app;
-let db;
+let db = null;
 
 if (firebaseConfig.apiKey && firebaseConfig.apiKey !== 'undefined') {
   try {
     app = initializeApp(firebaseConfig);
-    db = getDatabase(app, import.meta.env.VITE_RTDB_URL);
-    console.log("Firebase initialized successfully");
+    const rtdbUrl = import.meta.env.VITE_RTDB_URL || firebaseConfig.databaseURL;
+    if (rtdbUrl && rtdbUrl !== 'undefined') {
+      db = getDatabase(app, rtdbUrl);
+      console.log("Firebase RTDB initialized:", rtdbUrl);
+    } else {
+      console.warn("RTDB URL missing or invalid. Sync features will be limited.");
+    }
   } catch (err) {
-    console.error("Firebase initialization failed:", err);
+    console.error("Firebase startup failure:", err);
   }
 } else {
   console.warn("Firebase configuration missing. Real-time features will be disabled.");
 }
 
-export { db };
+export { app, db };

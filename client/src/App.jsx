@@ -1,11 +1,13 @@
-import { Suspense, lazy } from 'react';
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { LazyMotion, domAnimation } from 'framer-motion';
 import { useAuth } from './contexts/AuthContext';
 import Header from './components/Header';
-import UnitConverter from './components/UnitConverter';
-import PropertyConcierge from './components/AI/PropertyConcierge';
 
-// Lazy loading all routes for maximum startup speed
+// Lazy load complex global features
+const UnitConverter = lazy(() => import('./components/UnitConverter'));
+
+// Lazy imports for performance optimization
 const Home = lazy(() => import('./pages/Home'));
 const PropertyDetails = lazy(() => import('./pages/PropertyDetails'));
 const Login = lazy(() => import('./pages/Login'));
@@ -14,7 +16,7 @@ const Dashboard = lazy(() => import('./pages/Dashboard'));
 const RequestPage = lazy(() => import('./pages/RequestPage'));
 const SearchResults = lazy(() => import('./pages/SearchResults'));
 
-// Minimalist High-Performance Loader
+// Minimalist High-Performance Loader (Used only for Auth states)
 const EliteLoader = () => (
   <div style={{ 
     height: '100vh', 
@@ -32,6 +34,7 @@ const EliteLoader = () => (
     ELITE LOADING...
   </div>
 );
+
 
 function ProtectedRoute({ children }) {
   const { user, isLoading } = useAuth();
@@ -71,18 +74,20 @@ function AppContent() {
           <Route path="/request-callback" element={<RequestPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+      </Suspense>
+      <Suspense fallback={null}>
         <UnitConverter />
-        <PropertyConcierge />
       </Suspense>
     </>
   );
 }
 
 export default function App() {
-  console.log('App router rendering...');
   return (
-    <BrowserRouter>
-      <AppContent />
-    </BrowserRouter>
+    <LazyMotion features={domAnimation}>
+      <BrowserRouter>
+        <AppContent />
+      </BrowserRouter>
+    </LazyMotion>
   );
 }

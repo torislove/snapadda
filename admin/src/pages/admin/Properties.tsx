@@ -17,7 +17,8 @@ import {
   formatLandSize, 
   smartAreaConverter, 
   acresCentsToDecimal,
-  decomposeAcres
+  decomposeAcres,
+  calcPricePerCent
 } from '../../../../client/src/utils/priceUtils';
 
 const AdminProperties = () => {
@@ -562,9 +563,8 @@ const AdminProperties = () => {
                           type="number" 
                           step="1"
                           min="0"
-                          max="99"
                           value={agriCents}
-                          onChange={(e) => { setAgriCents(e.target.value); setLiveData((p: any) => ({ ...p, totalAcres: Number(agriAcres) + Number(e.target.value) / 100 })); }}
+                          onChange={(e) => { setAgriCents(e.target.value); setLiveData((p: any) => ({ ...p, totalAcres: acresCentsToDecimal(agriAcres, e.target.value) })); }}
                           className="admin-input"
                           placeholder="e.g. 50"
                         />
@@ -603,9 +603,9 @@ const AdminProperties = () => {
                       </div>
                       {/* Price Per Cent (auto-calculated) */}
                       <div>
-                        <label className="admin-label">Price Per Cent (Auto) <span style={{ color: 'var(--text-muted)', fontSize: '0.65rem' }}>1/100 of acre price</span></label>
-                        <div className="admin-input" style={{ background: 'rgba(255,255,255,0.03)', color: 'rgba(255,255,255,0.7)', fontSize: '0.9rem' }}>
-                          {liveData.pricePerAcre ? `₹ ${Math.round(convertToValue(liveData.pricePerAcre, pricePerAcreUnit) / 100).toLocaleString('en-IN')} / Cent` : '—'}
+                        <label className="admin-label">Price Per Cent (సెంటుకు ధర) <span style={{ color: 'var(--text-muted)', fontSize: '0.65rem' }}>Auto: Acre Price / 100</span></label>
+                        <div className="admin-input" style={{ background: 'rgba(16,217,140,0.05)', color: 'var(--emerald)', fontWeight: 700 }}>
+                          {liveData.pricePerAcre ? `₹ ${calcPricePerCent(convertToValue(liveData.pricePerAcre, pricePerAcreUnit)).toLocaleString('en-IN')} / Cent` : '—'}
                         </div>
                       </div>
                       {/* Survey Number */}

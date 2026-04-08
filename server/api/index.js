@@ -53,28 +53,7 @@ app.use('/api/', limiter);
 app.use((err, req, res, next) => {
   console.error('SERVER_ERROR:', err.stack);
 
-  // Background AI Diagnosis - Non-blocking
-  if (process.env.OLLAMA_URL) {
-    (async () => {
-      try {
-        const diagnosis = await aiService.diagnoseError(
-          err.message, 
-          err.stack, 
-          `Path: ${req.originalUrl}, Method: ${req.method}`
-        );
-        await AIDiagnostic.create({
-          errorMessage: err.message,
-          stackTrace: err.stack,
-          context: `Path: ${req.originalUrl}, Method: ${req.method}`,
-          ...diagnosis
-        });
-        console.log('✅ AI_DIAGNOSIS_LOGGED:', err.message);
-      } catch (aiErr) {
-        console.error('❌ AI_DIAGNOSIS_FAILED:', aiErr.message);
-      }
-    })();
-  }
-
+  // Standard Error Response moves directly to result
   res.status(err.status || 500).json({
     status: 'error',
     message: process.env.NODE_ENV === 'production' 
@@ -123,7 +102,7 @@ if (cloud_name && api_key && api_secret) {
   cloudinary.config({ cloud_name, api_key, api_secret });
 }
 
-// 2. Optimized MongoDB Connection (Lazy)
+// 2. Optimized MongoDB Connection (Pre-connected for lower latency)
 let isConnected = false;
 const connectDB = async () => {
   if (isConnected) return;
@@ -131,19 +110,25 @@ const connectDB = async () => {
   try {
     await mongoose.connect(MONGODB_URI, {
       serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
     });
     isConnected = true;
-    console.log('MongoDB connection established');
+    console.log('AUTO_INIT: MongoDB connection established');
   } catch (err) {
     console.error('CRITICAL: MongoDB connection error:', err.message);
   }
 };
 
-// Middleware to ensure DB connection
+// Immediate connection attempt (non-blocking)
+connectDB().catch(console.error);
+
+
+// Middleware to ensure DB connection (Safety check)
 app.use(async (req, res, next) => {
-  await connectDB();
+  if (!isConnected) await connectDB();
   next();
 });
+
 
 // 3. API Routes (Restored relative paths, no internal movements)
 import propertyRoutes from './routes/propertyRoutes.js';
@@ -162,11 +147,7 @@ import promotionRoutes from './routes/promotionRoutes.js';
 import testimonialRoutes from './routes/testimonialRoutes.js';
 import questionRoutes from './routes/questionRoutes.js';
 
-import aiRoutes from './routes/aiRoutes.js';
-import automationRoutes from './routes/automationRoutes.js';
-import { aiService } from './modules/aiService.js';
 import { automationService } from './modules/automationService.js';
-import AIDiagnostic from './models/AIDiagnostic.js';
 
 app.use('/api/properties', propertyRoutes);
 app.use('/api/cities', cityRoutes);
@@ -183,13 +164,8 @@ app.use('/api/media', mediaRoutes);
 app.use('/api/promotions', promotionRoutes);
 app.use('/api/testimonials', testimonialRoutes);
 app.use('/api/questions', questionRoutes);
-app.use('/api/ai', aiRoutes);
-app.use('/api/automation', automationRoutes);
 
-// Log automation init status
-console.log('🤖 Automation status:', automationService.getStatus().email.enabled ? 'Email ACTIVE' : 'Email DISABLED', '|', automationService.getStatus().whatsapp.enabled ? 'WhatsApp ACTIVE' : 'WhatsApp DISABLED');
-
-// Health and Diagnostics Route
+// Standard Response Logic
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'healthy',
@@ -214,14 +190,13 @@ app.use((req, res) => {
   });
 });
 
-// Export for Firebase Functions (V2 with AI configuration)
+// Export for Firebase Functions
 export const api = onRequest({ 
   cors: true,
-  memory: "4GiB",
-  timeoutSeconds: 300,
+  memory: "1GiB",
+  timeoutSeconds: 60,
   minInstances: 0,
   maxInstances: 10,
-  cpu: 2,
 }, app);
 
 // Local Development Fallback

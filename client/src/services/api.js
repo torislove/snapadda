@@ -112,30 +112,76 @@ export const fetchPromotions = async () => {
   }
 };
 
-export const fetchSetting = async (key) => {
-  // Hardcoded defaults — Admin can override via backend
-  const DEFAULTS = {
-    support_info: {
-      phone: '+919346793364',
-      whatsapp: '919346793364',
-      email: 'snapadda@snapadda.com',
-    },
-  };
+// Hardcoded defaults — Admin can override via backend
+const SETTING_DEFAULTS = {
+  support_info: {
+    phone: '+919346793364',
+    whatsapp: '919346793364',
+    email: 'snapadda@snapadda.com',
+  },
+  appearance: {
+    primaryColor: '#e8b84b',
+    secondaryColor: '#10d98c',
+    logoUrl: '/logo.png',
+  },
+  hero_content: {
+    title: 'Discover Your Dream Place in Andhra',
+    subtitle: 'Browse verified listings across Amaravati, Vijayawada, Guntur & beyond.',
+    backgroundImage: '',
+  },
+  site_stats: [
+    { label: 'Verified Listings', value: '1,200+' },
+    { label: 'Cities Covered', value: '18+' },
+    { label: 'Happy Clients', value: '2,400+' },
+    { label: 'Approved Properties', value: 'CRDA/RERA' }
+  ],
+  marquee_strips: {
+    speed1: 30, speed2: 35,
+    band1: [
+      { id: '1', label: 'Amaravati Region', link: '#cities', icon: 'Landmark' },
+      { id: '2', label: 'Verified Listings ✅', link: '#properties', icon: 'ShieldCheck' },
+      { id: '3', label: 'Under 50 Lakhs 🔥', link: '#search', icon: 'IndianRupee' },
+      { id: '4', label: 'Premium Villas', link: '#search', icon: 'Home' },
+    ],
+    band2: [
+      { id: '5', label: 'Vijayawada Central', link: '#cities', icon: 'MapPin' },
+      { id: '6', label: 'CRDA Approved 🏛️', link: '#properties', icon: 'Award' },
+      { id: '7', label: 'Invest in Plots ✨', link: '#search', icon: 'Square' },
+      { id: '8', label: '24/7 Expert Support', link: '#contact', icon: 'Phone' },
+    ]
+  },
+  onboarding_questions: [
+    { id: 'propertyType', key: 'propertyType', title: 'I am looking for', type: 'options', options: ['Apartment', 'Villa', 'Agriculture Land', 'Commercial', 'Plot'], enabled: true },
+    { id: 'budget', key: 'budget', title: 'My budget is', type: 'options', options: ['Under 50 Lakhs', '50L - 1 Crore', '1Cr - 5 Crore', '5 Crore+'], enabled: true },
+    { id: 'purpose', key: 'purpose', title: 'Preferred purpose', type: 'options', options: ['Personal Use', 'Investment', 'Agriculture'], enabled: true },
+    { id: 'additionalNotes', key: 'additionalNotes', title: 'Additional details', type: 'text', options: [], enabled: true }
+  ],
+};
 
+export const fetchSetting = async (key) => {
   try {
     const res = await fetch(`${API_BASE}/settings/${key}`);
-    if (!res.ok) throw new Error(`Failed to fetch setting: ${key}`);
-    const data = (await res.json()).data || null;
-    // Merge backend data over defaults so admin overrides take effect
+    const isArrayType = key === 'onboarding_questions' || key === 'site_stats';
+    const defaultVal = SETTING_DEFAULTS[key] || (isArrayType ? [] : {});
+
+    if (!res.ok) return defaultVal;
+    
+    const json = await res.json();
+    const data = json.data;
+
+    // Handle Object merge
     if (data && typeof data === 'object' && !Array.isArray(data)) {
-      return { ...DEFAULTS[key], ...data };
+      return { ...defaultVal, ...data };
     }
-    return data || DEFAULTS[key] || null;
+
+    return data || defaultVal;
   } catch (e) {
     console.warn(`[fetchSetting] Using default for '${key}':`, e.message);
-    return DEFAULTS[key] || null;
+    const isArrayType = key === 'onboarding_questions' || key === 'site_stats';
+    return SETTING_DEFAULTS[key] || (isArrayType ? [] : {});
   }
 };
+
 
 export const fetchTestimonials = async () => {
   try {

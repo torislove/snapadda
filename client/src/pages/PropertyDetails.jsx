@@ -144,7 +144,12 @@ export default function PropertyDetails() {
 
     fetchPropertyFAQs(id).then(setQna).catch(() => setQna([]));
     fetchSetting('support_info').then(setSupportInfo).catch(console.error);
-  }, [id]);
+    
+    // Sync Metadata for Search/Social
+    if (property) {
+      document.title = `${property.title} | ${property.type} in ${property.location} | SnapAdda`;
+    }
+  }, [id, property]);
 
   const property_images = property?.images?.length
     ? property.images
@@ -176,21 +181,31 @@ export default function PropertyDetails() {
 
   const handleShare = async () => {
     const url = window.location.href;
+    const shareText = `Check out this ${property?.type} in ${property?.location} on SnapAdda.\n\nPrice: ${formatSnapAddaPrice(displayPrice)}\n\nView details:`;
+    
     try {
       if (navigator.share) {
-        await navigator.share({ title: `SnapAdda: ${property?.title}`, text: `Check this property in ${property?.location}`, url });
+        await navigator.share({ 
+          title: `SnapAdda: ${property?.title}`, 
+          text: shareText, 
+          url 
+        });
         shareProperty(id, 'native', user?._id);
       } else {
-        await navigator.clipboard.writeText(url);
-        showToast('🔗 Link copied!');
+        await navigator.clipboard.writeText(`${shareText} ${url}`);
+        showToast('🔗 Link & details copied!');
         shareProperty(id, 'clipboard', user?._id);
       }
-    } catch { showToast('🔗 Link copied!'); }
+    } catch { 
+      await navigator.clipboard.writeText(url);
+      showToast('🔗 Link copied!'); 
+    }
   };
 
   const handleWhatsApp = () => {
     const wa = supportInfo?.whatsapp || '919346793364';
-    window.open(`https://wa.me/${wa}?text=${encodeURIComponent(`Hi SnapAdda! I'm interested in "${property?.title}" in ${property?.location}. (ID:${id})`)}`, '_blank');
+    const waMsg = `Hi SnapAdda! I'm interested in this property:\n\n*${property?.title}*\nType: ${property?.type}\nLocation: ${property?.location}\nPrice: ${formatSnapAddaPrice(displayPrice)}\n\nLink: ${window.location.href}`;
+    window.open(`https://wa.me/${wa}?text=${encodeURIComponent(waMsg)}`, '_blank');
   };
 
   const handleAskSubmit = async (e) => {
@@ -230,15 +245,15 @@ export default function PropertyDetails() {
 
   const generateDesc = (p) => {
     if (p.description && p.description.length > 50) return p.description;
-    let d = `This ${p.type ? p.type.toLowerCase() : 'property'} is located in the growing area of ${p.location || 'Andhra Pradesh'}. `;
+    let d = `This ${(p.type || 'property').toLowerCase()} is located in the growing area of ${p.location || 'Andhra Pradesh'}. `;
     if (isAgri) {
-      d += `Spanning ${formatLandSize(p.totalAcres)} of land, it presents a strong investment with a valuation of ${formatSnapAddaPrice(agriTotalValue || p.price)}. `;
-      if (p.waterSource && p.waterSource !== 'N/A') d += `Water source: ${p.waterSource}. `;
-      if (p.roadType && p.roadType !== 'N/A') d += `Road access: ${p.roadType}. `;
+      d += `Spanning ${formatLandSize(p.totalAcres)} of land, it presents a strong investment with a valuation of ${formatSnapAddaPrice(agriTotalValue || p.price || 0)}. `;
+      if (p.waterSource && p.waterSource !== 'N/A') d += `Water source: ${String(p.waterSource)}. `;
+      if (p.roadType && p.roadType !== 'N/A') d += `Road access: ${String(p.roadType)}. `;
     } else if (isPlot) {
-      d += `Measuring ${p.areaSize} ${p.measurementUnit || 'Sq.Yds'}, this ${p.isGated ? 'gated ' : ''}plot is ideal for development. `;
+      d += `Measuring ${p.areaSize || 0} ${p.measurementUnit || 'Sq.Yds'}, this ${p.isGated ? 'gated ' : ''}plot is ideal for development. `;
     } else if (isResidential) {
-      if (p.bhk) d += `A ${p.bhk} BHK ${p.furnishing && p.furnishing !== 'N/A' ? p.furnishing.toLowerCase() + ' ' : ''}unit with modern interiors. `;
+      if (p.bhk) d += `A ${p.bhk} BHK ${p.furnishing && p.furnishing !== 'N/A' ? String(p.furnishing).toLowerCase() + ' ' : ''}unit with modern interiors. `;
     }
     if (p.facing && p.facing !== 'Any') d += `${p.facing}-facing orientation ensures natural light and Vastu compliance. `;
     d += `Contact SnapAdda for a site visit!`;

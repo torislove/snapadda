@@ -24,7 +24,7 @@ export const sendTestEmail = async (req, res) => {
     const result = await automationService.sendEmail({
       to,
       subject: 'SnapAdda — Automation Test ✅',
-      body: `Hello!\n\nYour email automation is working perfectly.\nPowered by Brevo SMTP (free 300/day) + SnapAdda AI.\n\n— SnapAdda Admin`,
+      body: `Hello!\n\nYour email automation is working perfectly.\nPowered by Brevo SMTP (free 300/day).\n\n— SnapAdda Admin`,
     });
     res.json({ status: result.success ? 'success' : 'error', data: result });
   } catch (err) {
@@ -38,7 +38,7 @@ export const sendTestWhatsApp = async (req, res) => {
     if (!phone) return res.status(400).json({ status: 'fail', message: '`phone` number required' });
     const result = await automationService.sendWhatsApp({
       phone,
-      message: `Hello from SnapAdda! 👋\n\nYour WhatsApp automation is active.\nThis message was sent by *SnapAdda AI*.\n\n🏠 Browse: https://snapadda.com`,
+      message: `Hello from SnapAdda! 👋\n\nYour WhatsApp automation is active.\n\n🏠 Browse: https://snapadda.com`,
     });
     res.json({ status: result.success ? 'success' : 'error', data: result });
   } catch (err) {

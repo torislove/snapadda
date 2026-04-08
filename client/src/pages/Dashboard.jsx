@@ -20,7 +20,7 @@ function DashboardHome({ user, stats, recent, setModalOpen }) {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
             <h2 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: '0.5rem', fontFamily: 'var(--font-heading)' }}>
-              {t('dashboard.welcome')}, {user?.name?.split(' ')[0] || 'Elite'}! ✦
+              {t('dashboard.welcome')}, {(user?.name || 'Elite').split(' ')[0]}! ✦
             </h2>
             <p style={{ color: 'var(--txt-muted)', fontSize: '0.95rem' }}>Your digital real estate registry is up-to-date.</p>
           </div>
@@ -92,7 +92,7 @@ function DashboardHome({ user, stats, recent, setModalOpen }) {
                       <div style={{ fontSize: '0.72rem', color: 'var(--txt-muted)' }}>{p.location}</div>
                     </div>
                     <div style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--gold)' }}>
-                      Rs.{p.price >= 10000000 ? (p.price / 10000000).toFixed(2) + ' Cr' : (p.price / 100000).toFixed(2) + ' L'}
+                      Rs.{Number(p.price || 0) >= 10000000 ? (Number(p.price || 0) / 10000000).toFixed(2) + ' Cr' : (Number(p.price || 0) / 100000).toFixed(2) + ' L'}
                     </div>
                   </Link>
                 ))}
@@ -173,7 +173,7 @@ function Inquiries({ questions, loading }) {
                   color: q.status === 'Answered' ? 'var(--accent-emerald)' : 'var(--gold)',
                   border: `1px solid ${q.status === 'Answered' ? 'rgba(16,217,140,0.2)' : 'rgba(244,208,63,0.2)'}`
                 }}>
-                  {q.status.toUpperCase()}
+                  {(q.status || 'Pending').toUpperCase()}
                 </div>
               </div>
               <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1.25rem', borderRadius: '14px', marginBottom: '1rem' }}>

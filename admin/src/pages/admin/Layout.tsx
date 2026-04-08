@@ -3,7 +3,7 @@ import { Outlet, Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Building, Users, MapPin, 
   Settings, UserPlus, Menu, Contact2, Megaphone, X, LogOut, Layers, BookOpen, Activity, Search,
-  MessageSquare, Shield, Bot, Mail, Code
+  MessageSquare, Shield, Mail
 } from 'lucide-react';
 import { Logo } from '../../components/ui/Logo';
 import { useAdminAuth } from '../../contexts/AdminAuthContext';
@@ -57,9 +57,7 @@ const NAV_ITEMS = [
   { to: '/admin/marquee',    label: 'Scrolling Bands',icon: Layers,          exact: false, activeClass: 'active-promotions', color: 'var(--cyan)'    },
   { to: '/admin/settings',   label: 'Settings',       icon: Settings,        exact: false, activeClass: 'active-settings',   color: 'var(--violet)'  },
   { to: '/admin/questions',  label: 'Questions & FAQ',icon: MessageSquare,   exact: false, activeClass: 'active-promotions', color: 'var(--gold)'    },
-  { to: '/admin/automation', label: 'AI Automation',   icon: Bot,    exact: false, activeClass: 'active-dashboard',  color: 'var(--gold)'    },
   { to: '/admin/comms',      label: 'Comms Hub',        icon: Mail,   exact: false, activeClass: 'active-settings',   color: 'var(--emerald)' },
-  { to: '/admin/developer',  label: 'AI Developer',     icon: Code,   exact: false, activeClass: 'active-dashboard',  color: 'var(--gold)'    },
   { to: '/admin/guide',      label: 'System Guide',     icon: BookOpen, exact: false, activeClass: 'active-settings', color: 'var(--emerald)' },
 ];
 

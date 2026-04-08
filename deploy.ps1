@@ -15,7 +15,6 @@ $FIREBASE_PROD = @{
     "VITE_FIREBASE_APP_ID" = "1:227172321059:web:7fe7097f7937739c0f6e96"
     "VITE_FIREBASE_MEASUREMENT_ID" = "G-EPKYKL1SPN"
     "VITE_RTDB_URL" = "https://snapadda-7a6e6-default-rtdb.firebaseio.com"
-    "GEMINI_API_KEY" = "AIzaSyB1vmdbSiXoFW1hKM-sXId-7CBW05n_xkM"
 }
 
 # Function to Robustly Set Env Var in .env files
@@ -60,7 +59,7 @@ try {
             Set-EnvVar $path "CLOUDINARY_CLOUD_NAME" "dipgezyuy"
             Set-EnvVar $path "CLOUDINARY_API_KEY" "744493735563614"
             Set-EnvVar $path "CLOUDINARY_API_SECRET" "HScXz9fgi6f9NOKuXShhyadZ50U"
-            Set-EnvVar $path "DB_URL" $FIREBASE_PROD["VITE_RTDB_URL"]
+            Set-EnvVar $path "DB_FIREBASE_URL" $FIREBASE_PROD["VITE_RTDB_URL"]
         }
     }
 
