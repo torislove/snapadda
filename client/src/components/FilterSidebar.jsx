@@ -119,10 +119,10 @@ export default function FilterSidebar({ isOpen, onClose, filters, setFilters, on
             {/* Scrollable content */}
             <div
               ref={contentRef}
-              style={{ padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: '18px', overflowY: 'auto', flex: 1, WebkitOverflowScrolling: 'touch' }}
+              style={{ padding: '18px 20px', display: 'flex', flexDirection: 'column', overflowY: 'auto', flex: 1, WebkitOverflowScrolling: 'touch' }}
             >
               {/* Keywords */}
-              <div>
+              <div className="filter-card-elite">
                 <label style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.65rem', fontWeight: 800, letterSpacing: '0.1em', display: 'block', marginBottom: '8px' }}>{t('filter.keywords')}</label>
                 <input
                   type="text"
@@ -135,76 +135,80 @@ export default function FilterSidebar({ isOpen, onClose, filters, setFilters, on
               </div>
 
               {/* Category + Budget max */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                <div>
-                  <label style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.65rem', fontWeight: 800, letterSpacing: '0.1em', display: 'block', marginBottom: '8px' }}>{t('filter.category')}</label>
-                  <select
-                    className="dropdown-3d-glass"
-                    value={filters.propertyType || 'All'}
-                    onChange={e => set('propertyType', e.target.value)}
-                    style={{ width: '100%' }}
-                  >
-                    <option value="All">{t('filter.items')}</option>
-                    <option value="Apartment">Apartment</option>
-                    <option value="Independent House">House</option>
-                    <option value="Villa">{t('types.villa')}</option>
-                    <option value="Residential Plot">{t('types.plot')}</option>
-                    <option value="Commercial Plot">Comm. Plot</option>
-                    <option value="Agricultural Land">{t('types.agriculture')}</option>
-                  </select>
-                </div>
-                <div>
-                  <label style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.65rem', fontWeight: 800, letterSpacing: '0.1em', display: 'block', marginBottom: '8px' }}>{t('filter.budgetMax')}</label>
-                  <input
-                    type="number"
-                    className="dropdown-3d-glass"
-                    placeholder="e.g. 5000000"
-                    value={filters.maxPrice}
-                    onChange={e => set('maxPrice', e.target.value)}
-                    style={{ width: '100%' }}
-                  />
+              <div className="filter-card-elite">
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div>
+                    <label style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.65rem', fontWeight: 800, letterSpacing: '0.1em', display: 'block', marginBottom: '8px' }}>{t('filter.category')}</label>
+                    <select
+                      className="dropdown-3d-glass"
+                      value={filters.propertyType || 'All'}
+                      onChange={e => set('propertyType', e.target.value)}
+                      style={{ width: '100%' }}
+                    >
+                      <option value="All">{t('filter.items')}</option>
+                      <option value="Apartment">Apartment</option>
+                      <option value="Independent House">House</option>
+                      <option value="Villa">{t('types.villa')}</option>
+                      <option value="Residential Plot">{t('types.plot')}</option>
+                      <option value="Commercial Plot">Comm. Plot</option>
+                      <option value="Agricultural Land">{t('types.agriculture')}</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.65rem', fontWeight: 800, letterSpacing: '0.1em', display: 'block', marginBottom: '8px' }}>{t('filter.budgetMax')}</label>
+                    <input
+                      type="number"
+                      className="dropdown-3d-glass"
+                      placeholder="e.g. 5000000"
+                      value={filters.maxPrice}
+                      onChange={e => set('maxPrice', e.target.value)}
+                      style={{ width: '100%' }}
+                    />
+                  </div>
                 </div>
               </div>
 
               {/* Facing + Approval */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                <div>
-                  <label style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.65rem', fontWeight: 800, letterSpacing: '0.1em', display: 'block', marginBottom: '8px' }}>{t('filter.facing')}</label>
-                  <select
-                    className="dropdown-3d-glass"
-                    value={filters.facing}
-                    onChange={e => set('facing', e.target.value)}
-                    style={{ width: '100%' }}
-                  >
-                    <option value="Any">{t('filter.any')}</option>
-                    <option value="East">East</option>
-                    <option value="North">North</option>
-                    <option value="West">West</option>
-                    <option value="South">South</option>
-                    <option value="North-East">North-East</option>
-                  </select>
-                </div>
-                <div>
-                  <label style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.65rem', fontWeight: 800, letterSpacing: '0.1em', display: 'block', marginBottom: '8px' }}>{t('filter.approval')}</label>
-                  <select
-                    className="dropdown-3d-glass"
-                    value={filters.approval || 'All'}
-                    onChange={e => set('approval', e.target.value)}
-                    style={{ width: '100%' }}
-                  >
-                    <option value="All">{t('filter.any')}</option>
-                    <option value="AP CRDA">AP CRDA</option>
-                    <option value="AP RERA">AP RERA</option>
-                    <option value="VMRDA">VMRDA</option>
-                    <option value="DTCP">DTCP</option>
-                    <option value="TUDA">TUDA</option>
-                    <option value="Panchayat">Panchayat</option>
-                  </select>
+              <div className="filter-card-elite">
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div>
+                    <label style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.65rem', fontWeight: 800, letterSpacing: '0.1em', display: 'block', marginBottom: '8px' }}>{t('filter.facing')}</label>
+                    <select
+                      className="dropdown-3d-glass"
+                      value={filters.facing}
+                      onChange={e => set('facing', e.target.value)}
+                      style={{ width: '100%' }}
+                    >
+                      <option value="Any">{t('filter.any')}</option>
+                      <option value="East">East</option>
+                      <option value="North">North</option>
+                      <option value="West">West</option>
+                      <option value="South">South</option>
+                      <option value="North-East">North-East</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.65rem', fontWeight: 800, letterSpacing: '0.1em', display: 'block', marginBottom: '8px' }}>{t('filter.approval')}</label>
+                    <select
+                      className="dropdown-3d-glass"
+                      value={filters.approval || 'All'}
+                      onChange={e => set('approval', e.target.value)}
+                      style={{ width: '100%' }}
+                    >
+                      <option value="All">{t('filter.any')}</option>
+                      <option value="AP CRDA">AP CRDA</option>
+                      <option value="AP RERA">AP RERA</option>
+                      <option value="VMRDA">VMRDA</option>
+                      <option value="DTCP">DTCP</option>
+                      <option value="TUDA">TUDA</option>
+                      <option value="Panchayat">Panchayat</option>
+                    </select>
+                  </div>
                 </div>
               </div>
 
               {/* Toggle Buttons */}
-              <div>
+              <div className="filter-card-elite">
                 <label style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.65rem', fontWeight: 800, letterSpacing: '0.1em', display: 'block', marginBottom: '10px' }}>PROPERTY FLAGS</label>
                 <div style={{ display: 'flex', gap: '10px' }}>
                   <button
@@ -229,12 +233,14 @@ export default function FilterSidebar({ isOpen, onClose, filters, setFilters, on
             <div style={{ padding: '16px 20px', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', gap: '10px', flexShrink: 0 }}>
               <button
                 onClick={handleClearAll}
+                className="btn-glass"
                 style={{ flex: 1, padding: '12px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.7)', borderRadius: '12px', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 700, touchAction: 'manipulation' }}
               >
                 {t('filter.clearAll')}
               </button>
               <button
                 onClick={onApply}
+                className="btn-3d"
                 style={{ flex: 2, padding: '12px', background: 'var(--gold)', color: '#000', border: 'none', borderRadius: '12px', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 800, touchAction: 'manipulation' }}
               >
                 {t('filter.apply')}

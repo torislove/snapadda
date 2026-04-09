@@ -149,7 +149,7 @@ export default function PropertyDetails() {
     if (property) {
       document.title = `${property.title} | ${property.type} in ${property.location} | SnapAdda`;
     }
-  }, [id, property]);
+  }, [id]);
 
   const property_images = property?.images?.length
     ? property.images

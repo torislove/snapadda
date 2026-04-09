@@ -41,6 +41,15 @@ function Set-EnvVar($path, $key, $value) {
     $newContent | Set-Content $path -Encoding UTF8
 }
 
+# Function to Clear reserved keys (Firebase restriction)
+function Clear-EnvReservedKey($path) {
+    if (Test-Path $path) {
+        $content = Get-Content $path
+        $newContent = $content | Where-Object { $_ -notmatch "^PORT=" }
+        $newContent | Set-Content $path -Encoding UTF8
+    }
+}
+
 try {
     # 1. Prepare for Production Build
     Write-Host "[1/6] Injecting Production Multi-Env Config..." -ForegroundColor Yellow
@@ -61,6 +70,9 @@ try {
             Set-EnvVar $path "CLOUDINARY_API_SECRET" "HScXz9fgi6f9NOKuXShhyadZ50U"
             Set-EnvVar $path "DB_FIREBASE_URL" $FIREBASE_PROD["VITE_RTDB_URL"]
         }
+        
+        # FINAL SANITIZATION: Remove reserved keys
+        Clear-EnvReservedKey $path
     }
 
     # 2. Build Client Portal
@@ -89,6 +101,12 @@ try {
     firebase deploy --only "hosting:client,hosting:admin,functions"
 
     if ($LASTEXITCODE -ne 0) { throw "Firebase deploy failed" }
+    
+    # 6. Post-Deployment Verification
+    Write-Host "`n[6/6] Running Infrastructure Heartbeat..." -ForegroundColor Yellow
+    Start-Sleep -Seconds 5
+    Invoke-WebRequest -Uri "$PROD_API_URL/health" -UseBasicParsing | Out-Null
+    Write-Host "   ✅ API Gateway Reachable" -ForegroundColor Gray
 } catch {
     Write-Error "Deployment failed: $_"
     exit 1

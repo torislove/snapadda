@@ -38,6 +38,7 @@ const PropertyCard = memo(({
   listerType = 'Individual Owner', googleMapsLink = '',
   createdAt, likeCount: initialLikeCount = 0, initialLiked = false,
   isGated, cornerProperty, constructionStatus,
+  supportPhone = '+919346793364', supportWA = '919346793364'
 }) => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -105,191 +106,98 @@ const PropertyCard = memo(({
     <>
       <AnimatePresence>{toast && <Toast msg={toast} onDone={() => setToast('')} />}</AnimatePresence>
       <motion.article
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 30 }}
         whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.5, ease: "easeOut" }}
+        viewport={{ once: true, margin: "-50px" }}
+        transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
       >
-        <div className="property-card">
+        <div className="property-card elite-card shadow-lg">
           
-          {/* Image Zone */}
-            <div className="property-image-container">
-              {property_image ? (
-                <img 
-                  src={property_image} 
-                  alt={`${title} - ${type} in ${location}`} 
-                  className="property-image" 
-                  loading="lazy" 
-                  width="400" 
-                  height="300"
-                />
-              ) : (
-                <div className="property-no-image"><Building2 size={40} opacity={0.2}/></div>
-              )}
+          {/* Elite Header: Image + Social Floating */}
+          <div className="property-image-container">
+            {property_image ? (
+              <img src={property_image} alt={title} className="property-image" loading="lazy" />
+            ) : (
+              <div className="property-no-image"><Building2 size={40} opacity={0.2}/></div>
+            )}
             
             <div className="property-image-gradient" />
             
-            <div className="property-image-overlay">
-               <button 
-                className="view-details-btn" 
-                onClick={() => navigate(`/property/${propertyId}`)}
-                aria-label={`View full details of ${title}`}
-               >
-                  <Eye size={14}/> {t('card.viewDetails', 'View Property')}
-               </button>
+            {/* Social Pulse Overlays */}
+            <div className="pc-social-group">
+              <button className="pc-social-btn glass-premium" onClick={handleLike} title="Like">
+                <Heart size={16} fill={initialLiked ? "var(--rose)" : "none"} color={initialLiked ? "var(--rose)" : "white"} />
+              </button>
+              <button className="pc-social-btn glass-premium" onClick={handleShare} title="Share">
+                <Share2 size={16} color="white" />
+              </button>
             </div>
 
-            {/* Like/Share Overlays */}
-            <div className="property-tags-top-right">
-               <button 
-                className="pc-icon-btn pc-like-btn" 
-                onClick={handleLike} 
-                title="Save"
-                aria-label={initialLiked ? "Remove from saved" : "Save property"}
-               >
-                  <Heart size={16} fill={initialLiked ? "var(--rose)" : "none"} color={initialLiked ? "var(--rose)" : "white"} />
-               </button>
-               <button 
-                className="pc-icon-btn pc-share-btn" 
-                onClick={handleShare} 
-                title="Share"
-                aria-label="Share property details"
-               >
-                  <Share2 size={16} color="white" />
-               </button>
-            </div>
-            
-            {/* Price badge */}
-            <div className="property-price-tag">
-              <span>{formatSnapAddaPrice(displayPrice)}</span>
-              {isAgri && agriTotalValue > 0 && <div className="pc-price-sub">{t('pd.totalVal', 'Total Value')}</div>}
+            {/* Price Tag: Professional Elite Look */}
+            <div className="pc-floating-price">
+              <span className="price-main">{formatSnapAddaPrice(displayPrice)}</span>
+              {isAgri && <span className="price-suffix">Total</span>}
             </div>
 
-            {/* Badges */}
-            <div className="property-tags-top-left">
-              {isFeatured && <span className="badge badge-featured">⭐ {t('card.featured')}</span>}
-              {isNew && <span className="badge badge-new">✨ {t('card.new')}</span>}
-              {purpose && (
-                <span className="badge" style={{ background: purpose === 'Rent' ? '#22d9e0' : '#10d98c', color: '#000', fontWeight: 900 }}>
-                  {purpose === 'Rent' ? t('intent.rent').toUpperCase() : t('intent.buy').toUpperCase()}
-                </span>
-              )}
+            {/* Labels */}
+            <div className="pc-status-labels">
+               {isFeatured && <span className="pc-label featured">FEATURED</span>}
+               {isVerified && <span className="pc-label verified">VERIFIED</span>}
             </div>
           </div>
 
           <div className="property-content">
-            <div className="property-badges">
-              <span className="badge">
-                {typeStyle.icon} {t(`types.${(type || 'apartments').toLowerCase().replace(/\s+/g, '')}`, type)}
-              </span>
-              {authority && authority !== 'N/A' && (
-                <span className="badge badge-verified"><ShieldCheck size={10}/> {authority}</span>
-              )}
+            <div className="pc-entity-type">
+              {typeStyle.icon} <span>{(type || 'Property').toUpperCase()}</span>
             </div>
 
-            <Link to={`/property/${propertyId}`} className="pc-title-link">
-              <h2 className="pc-title">{title}</h2>
-            </Link>
-
-            <div className="property-location">
-              <MapPin size={11}/> {location}
+            <h3 className="pc-title-elite">{title}</h3>
+            
+            <div className="pc-location-elite">
+              <MapPin size={12} /> {location}
             </div>
 
-            {/* FEATURES */}
-            <div className="property-features">
-
-              {/* AGRICULTURAL LAND */}
-              {isAgri && (
-                <>
-                  <div className="feature">
-                    <span className="feature-value" style={{ color: typeStyle.accent }}>
-                      {totalAcres ? formatLandSize(totalAcres) : (areaSize ? `${areaSize} ${t('card.cents')}` : '—')}
-                    </span>
-                    <span className="feature-label">{t('card.totalArea')}</span>
-                  </div>
-                  {pricePerAcre > 0 && (
-                    <>
-                      <div className="feature-divider"/>
-                      <div className="feature">
-                        <span className="feature-value" style={{ color: 'var(--gold)' }}>{formatSnapAddaPrice(pricePerAcre)}</span>
-                        <span className="feature-label">{t('card.perAcre')}</span>
-                      </div>
-                    </>
-                  )}
-                  {pricePerCent > 0 && (
-                    <>
-                      <div className="feature-divider"/>
-                      <div className="feature">
-                        <span className="feature-value" style={{ color: '#a8ff78' }}>₹{pricePerCent.toLocaleString('en-IN')}</span>
-                        <span className="feature-label">{t('card.perCent')}</span>
-                      </div>
-                    </>
-                  )}
-                </>
-              )}
-
-              {/* PLOTS */}
-              {isPlot && (
-                <>
-                  <div className="feature">
-                    <span className="feature-value" style={{ color: typeStyle.accent }}>
-                      {displaySqYards ? `${displaySqYards.toLocaleString('en-IN')}` : (areaSize || '—')}
-                    </span>
-                    <span className="feature-label">{displaySqYards ? t('card.sqyds') : t(`card.${measurementUnit?.toLowerCase()}`, measurementUnit)}</span>
-                  </div>
-                  {facing && (
-                    <>
-                      <div className="feature-divider"/>
-                      <div className="feature">
-                        <span className="feature-value" style={{ color: isVastuFacing ? 'var(--gold)' : 'inherit' }}>
-                          {t(`pills.${(facing || '').toLowerCase()}`, facing)} {isVastuFacing && '🧭'}
-                        </span>
-                        <span className="feature-label">{t('card.facing')}</span>
-                      </div>
-                    </>
-                  )}
-                </>
-              )}
-
-              {/* RESIDENTIAL */}
-              {isResidential && (
-                <>
-                  {(bhk || beds) && (
-                    <div className="feature">
-                      <span className="feature-value">{bhk || beds} <span style={{ fontSize: '0.7rem' }}>BHK</span></span>
-                      <span className="feature-label">{t('card.config')}</span>
-                    </div>
-                  )}
-                  <div className="feature">
-                    <span className="feature-value">{areaSize || sqft || '—'}</span>
-                    <span className="feature-label">{t('pd.area')}</span>
-                  </div>
-                </>
-              )}
+            {/* Features Row */}
+            <div className="pc-specs-grid">
+               {isResidential && (bhk || beds) && (
+                 <div className="spec-item">
+                   <HomeIcon size={14} /> <span>{bhk || beds} BHK</span>
+                 </div>
+               )}
+               {isAgri && (
+                 <div className="spec-item">
+                   <Leaf size={14} /> <span>{totalAcres ? formatLandSize(totalAcres) : `${areaSize} Cents`}</span>
+                 </div>
+               )}
+               {isPlot && (
+                 <div className="spec-item">
+                   <Square size={14} /> <span>{displaySqYards ? `${displaySqYards} SqYds` : `${areaSize} ${measurementUnit}`}</span>
+                 </div>
+               )}
+               {facing && (
+                 <div className="spec-item">
+                   <Compass size={14} /> <span>{facing}</span>
+                 </div>
+               )}
             </div>
 
-            <div className="property-actions">
-              <a 
-                href="tel:+919346793364" 
-                className="action-btn action-btn-call"
-                aria-label="Call SnapAdda Support"
-              >
-                <Phone size={13}/> {t('card.call')}
-              </a>
-              <a 
-                href={`https://wa.me/919346793364?text=${encodeURIComponent(`Hi SnapAdda! I'm interested in this property:\n\n*${title}*\nType: ${type}\nLocation: ${location}\nPrice: ${formatSnapAddaPrice(displayPrice)}\n\nLink: ${window.location.origin}/property/${propertyId}`)}`}
-                target="_blank" rel="noopener noreferrer" className="action-btn action-btn-contact"
-                aria-label="Chat with SnapAdda on WhatsApp"
-              >
-                <MessageSquare size={13}/> {t('card.whatsapp')}
-              </a>
-              <button 
-                onClick={() => navigate(`/property/${propertyId}`)}
-                className="action-btn"
-                aria-label={`View more information about ${title}`}
-              >
-                <ArrowRight size={13}/> {t('card.more', 'View')}
+            {/* Elite Action Bar: Professional CTAs */}
+            <div className="pc-elite-actions">
+              <button onClick={() => navigate(`/property/${propertyId}`)} className="pc-btn pc-btn-view btn-3d">
+                <Eye size={15}/> VIEW
               </button>
+              
+              <a href={`tel:${supportPhone}`} className="pc-btn pc-btn-call">
+                <Phone size={15}/>
+              </a>
+
+              <a 
+                href={`https://wa.me/${supportWA}?text=Interested in: ${title}`} 
+                target="_blank" rel="noopener noreferrer" 
+                className="pc-btn pc-btn-wa btn-3d-emerald"
+              >
+                <MessageSquare size={15}/> WHATSAPP
+              </a>
             </div>
           </div>
         </div>

@@ -57,18 +57,44 @@ export default function CityCard({ city, count, cityPhoto, isActive, onClick, in
         zIndex: 1,
         borderRadius: 'inherit',
       }} />
-      <div className="city-card-content" style={{ position: 'relative', zIndex: 2 }}>
-        <div className="city-card-name" style={{ color: '#fff', fontWeight: 800, textShadow: '0 2px 8px rgba(0,0,0,0.9)' }}>
+      <div className="city-card-content" style={{ position: 'relative', zIndex: 2, padding: '1.25rem' }}>
+        <div className="city-card-name" style={{ 
+          color: '#fff', 
+          fontWeight: 900, 
+          fontSize: '1.35rem',
+          lineHeight: '1.2',
+          textShadow: '0 2px 10px rgba(0,0,0,0.8)',
+          fontFamily: 'var(--font-serif)',
+          letterSpacing: '-0.02em',
+          marginBottom: '4px'
+        }}>
           {city.name}
         </div>
         {count > 0 && (
-          <div className="city-card-count">
-            <MapPin size={10} style={{ marginRight: 2 }} />
-            {count} properties
+          <div className="city-card-count" style={{
+            background: 'var(--gold)',
+            color: 'var(--midnight)',
+            padding: '2px 10px',
+            borderRadius: '99px',
+            fontSize: '0.65rem',
+            fontWeight: 800,
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '4px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
+          }}>
+            <MapPin size={10} />
+            {count} PROPERTIES
           </div>
         )}
         {!count && (
-          <div style={{ fontSize: '0.62rem', color: 'rgba(255,255,255,0.55)', marginTop: '2px' }}>
+          <div style={{ 
+            fontSize: '0.68rem', 
+            color: 'rgba(255,255,255,0.7)', 
+            fontWeight: 600,
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em'
+          }}>
             {city.district || 'Andhra Pradesh'}
           </div>
         )}

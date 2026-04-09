@@ -146,24 +146,33 @@ import mediaRoutes from './routes/mediaRoutes.js';
 import promotionRoutes from './routes/promotionRoutes.js';
 import testimonialRoutes from './routes/testimonialRoutes.js';
 import questionRoutes from './routes/questionRoutes.js';
+import automationRoutes from './routes/automationRoutes.js';
 
 import { automationService } from './modules/automationService.js';
 
-app.use('/api/properties', propertyRoutes);
-app.use('/api/cities', cityRoutes);
-app.use('/api/settings', settingRoutes);
-app.use('/api/seo', seoRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/admin', adminRoutes);
-app.use('/api/admin', adminStatsRoute);
-app.use('/api/inquiries', inquiryRoutes);
-app.use('/api/leads', leadRoutes);
-app.use('/api/contacts', contactRoutes);
-app.use('/api/districts', districtRoutes);
-app.use('/api/media', mediaRoutes);
-app.use('/api/promotions', promotionRoutes);
-app.use('/api/testimonials', testimonialRoutes);
-app.use('/api/questions', questionRoutes);
+// 3. Resilient API Routing (Handled by a unified router for Cloud vs Local)
+const apiRouter = express.Router();
+
+apiRouter.use('/properties', propertyRoutes);
+apiRouter.use('/cities', cityRoutes);
+apiRouter.use('/settings', settingRoutes);
+apiRouter.use('/seo', seoRoutes);
+apiRouter.use('/users', userRoutes);
+apiRouter.use('/admin', adminRoutes);
+apiRouter.use('/admin', adminStatsRoute);
+apiRouter.use('/inquiries', inquiryRoutes);
+apiRouter.use('/leads', leadRoutes);
+apiRouter.use('/contacts', contactRoutes);
+apiRouter.use('/districts', districtRoutes);
+apiRouter.use('/media', mediaRoutes);
+apiRouter.use('/promotions', promotionRoutes);
+apiRouter.use('/testimonials', testimonialRoutes);
+apiRouter.use('/questions', questionRoutes);
+apiRouter.use('/automation', automationRoutes);
+
+// Attach the unified router to both prefixed and root paths
+app.use('/api', apiRouter);
+app.use('/', apiRouter);
 
 // Standard Response Logic
 app.get('/api/health', (req, res) => {
@@ -200,8 +209,8 @@ export const api = onRequest({
 }, app);
 
 // Local Development Fallback
-// Only run the server if started via 'npm start' or explicitly in local mode
-if (process.env.npm_lifecycle_event === 'start' || process.env.LOCAL_DEV === 'true') {
+// Only run the server if explicitly started via 'npm start' and NOT in a Firebase/Function environment
+if (process.env.npm_lifecycle_event === 'start' && !process.env.FUNCTIONS_EMULATOR && !process.env.FIREBASE_CONFIG) {
   const PORT = process.env.PORT || 5000;
   app.listen(PORT, () => {
     console.log(`🚀 Server fully running locally on port ${PORT}`);

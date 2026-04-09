@@ -15,12 +15,8 @@ const LogoutButton = ({ onLogout }: { onLogout: () => void }) => {
   if (confirm) return (
     <button
       onClick={onLogout}
-      style={{
-        width: '100%', padding: '0.5rem', borderRadius: '8px', cursor: 'pointer',
-        background: 'var(--rose)', color: '#fff', border: 'none',
-        fontSize: '0.78rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
-        animation: 'fadeInUp 0.2s ease',
-      }}
+      className="btn-elite"
+      style={{ width: '100%', background: 'var(--rose)', color: '#fff' }}
     >
       <LogOut size={13} /> Confirm Sign Out
     </button>
@@ -153,20 +149,20 @@ const AdminLayout = () => {
         <div className="sidebar-footer">
           <div style={{
             margin: '0 0.75rem 0.5rem',
-            padding: '0.75rem',
-            background: 'rgba(255,255,255,0.02)',
-            border: '1px solid rgba(255,255,255,0.06)',
-            borderRadius: '12px',
+            padding: '1rem',
+            background: 'rgba(255,255,255,0.03)',
+            borderRadius: '16px',
+            border: '1px solid var(--gold-border)'
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.6rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '1rem' }}>
               <img
-                src={adminUser?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(adminUser?.name || 'Admin')}&background=9b59f5&color=fff&bold=true`}
+                src={adminUser?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(adminUser?.name || 'Admin')}&background=e8b84b&color=000&bold=true`}
                 alt="Admin"
-                style={{ width: '30px', height: '30px', borderRadius: '50%', objectFit: 'cover', border: '1.5px solid var(--violet)' }}
+                style={{ width: '36px', height: '36px', borderRadius: '50%', border: '2px solid var(--gold)' }}
               />
               <div>
-                <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1 }}>{adminUser?.name || 'Admin'}</div>
-                <div style={{ fontSize: '0.62rem', color: 'var(--violet)', marginTop: '2px', fontFamily: 'var(--font-mono)' }}>● Authenticated</div>
+                <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#fff' }}>{adminUser?.name || 'Admin'}</div>
+                <div style={{ fontSize: '0.65rem', color: 'var(--gold)', fontWeight: 800 }}>SNAP_ADDA_OFFICIAL</div>
               </div>
             </div>
             <LogoutButton onLogout={adminLogout} />

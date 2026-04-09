@@ -1,28 +1,25 @@
 {
-  "name": "SnapAdda Real Estate",
   "short_name": "SnapAdda",
-  "description": "Buy plots, apartments, villas & agriculture land across Andhra Pradesh",
-  "start_url": "/",
-  "display": "standalone",
-  "background_color": "#111111",
-  "theme_color": "#111111",
+  "name": "SnapAdda | Premium Real Estate Platform",
   "icons": [
     {
-      "src": "/favicon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml"
+      "src": "favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
     },
     {
-      "src": "/favicon-96.png",
-      "sizes": "96x96",
-      "type": "image/png"
+      "src": "logo192.png",
+      "type": "image/png",
+      "sizes": "192x192"
     },
     {
-      "src": "/favicon-192.png",
-      "sizes": "192x192",
-      "type": "image/png"
+      "src": "logo512.png",
+      "type": "image/png",
+      "sizes": "512x512"
     }
   ],
-  "categories": ["business", "lifestyle"],
-  "lang": "en-IN"
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#07070f",
+  "background_color": "#07070f"
 }

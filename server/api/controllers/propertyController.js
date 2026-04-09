@@ -67,7 +67,13 @@ export const getProperties = async (req, res) => {
     if (furnishing && furnishing !== 'N/A') filter.furnishing = furnishing;
     if (constructionStatus && constructionStatus !== 'N/A') filter.constructionStatus = constructionStatus;
     if (franchiseId) filter.franchiseId = franchiseId;
-    if (purpose) filter.purpose = { $regex: purpose, $options: 'i' };
+    if (purpose) {
+      if (purpose.toLowerCase() === 'buy') {
+        filter.purpose = { $regex: 'Sale|Buy', $options: 'i' };
+      } else {
+        filter.purpose = { $regex: purpose, $options: 'i' };
+      }
+    }
     if (vastu === 'true') filter.vastuCompliant = true;
     if (isGated === 'true') filter.isGated = true;
     if (subType) filter.subType = subType;

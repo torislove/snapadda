@@ -4,6 +4,7 @@ import {
   Terminal, Bot, Activity, Phone, AtSign
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { adminAIService } from '../../services/aiService';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -54,6 +55,8 @@ const CommsHub = () => {
   const [testPhone, setTestPhone] = useState('');
   const [sending, setSending] = useState('');
   const [toastMsg, setToastMsg] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiProgress, setAiProgress] = useState(0);
   const logsEndRef = useRef<HTMLDivElement>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
 
@@ -163,7 +166,7 @@ const CommsHub = () => {
           Comms Hub
         </h1>
         <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-          WhatsApp · Brevo Email · Real-time System Logs — Powered by Gemma 4
+          WhatsApp · Brevo Email · Real-time System Logs — Powered by Transformers.js
         </p>
       </div>
 
@@ -219,15 +222,20 @@ const CommsHub = () => {
           </div>
         </div>
 
-        {/* AI Model */}
-        <div className="glass-card" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '14px' }}>
+        {/* AI Model (Local Migration) */}
+        <div className="glass-card" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '14px', cursor: 'pointer' }} onClick={async () => {
+          setAiLoading(true);
+          try { await adminAIService.init((p) => setAiProgress(Math.floor(p * 100))); } finally { setAiLoading(false); }
+        }}>
           <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: 'rgba(212,175,55,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--gold)' }}>
-            <Bot size={20} />
+            <Bot size={20} className={aiLoading ? 'animate-spin' : ''} />
           </div>
           <div>
-            <div style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>AI Engine</div>
-            <div style={{ fontWeight: 700, fontSize: '0.88rem', marginTop: '2px', color: 'var(--gold)' }}>{status?.aiModel || 'Gemma 4'}</div>
-            <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)' }}>via Ollama (Free)</div>
+            <div style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>AI Engine (Local)</div>
+            <div style={{ fontWeight: 700, fontSize: '0.88rem', marginTop: '2px', color: 'var(--gold)' }}>
+              {aiLoading ? `Loading ${aiProgress}%` : 'Transformers.js'}
+            </div>
+            <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)' }}>Browser-Native (Free)</div>
           </div>
         </div>
       </div>
