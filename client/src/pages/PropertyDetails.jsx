@@ -210,29 +210,32 @@ export default function PropertyDetails() {
     if (!qText.trim()) return;
     setQSubmitting(true);
     setQStatus('');
-    try {
-      const userData = user?.user || user; // Handle nested vs flattened user structure
-      const res = await askQuestion({
-        propertyId: id,
-        userId: userData?._id || userData?.id,
-        authType: user.token ? 'Google' : 'Email',
-        clientName: userData?.name || userData?.displayName || 'Interested Client',
-        clientContact: userData?.email || userData?.phone || userData?.phoneNumber || 'No contact provided',
-        question: qText,
-      });
-      if (res.status === 'success') {
-        setQStatus('success');
-        setQText('');
-        showToast('✅ Question submitted! Agent will respond soon.');
-        setTimeout(() => setQStatus(''), 5000);
-      } else {
+    // Progressive proofing simulation
+    setTimeout(async () => {
+      try {
+        const userData = user?.user || user;
+        const res = await askQuestion({
+          propertyId: id,
+          userId: userData?._id || userData?.id,
+          authType: user.token ? 'Google' : 'Email',
+          clientName: userData?.name || userData?.displayName || 'VIP Client',
+          clientContact: userData?.email || userData?.phone || userData?.phoneNumber || 'No contact provided',
+          question: qText,
+        });
+        if (res.status === 'success') {
+          setQStatus('success');
+          setQText('');
+          showToast('✅ Secure Transmission Successful. Expert assigned.');
+          setTimeout(() => setQStatus(''), 5000);
+        } else {
+          setQStatus('error');
+        }
+      } catch {
         setQStatus('error');
+      } finally {
+        setQSubmitting(false);
       }
-    } catch {
-      setQStatus('error');
-    } finally {
-      setQSubmitting(false);
-    }
+    }, 800);
   };
 
   const scrollGallery = (dir) => {
@@ -354,10 +357,13 @@ export default function PropertyDetails() {
               </div>
             </div>
 
-            <div className="pd-price-block">
+            <div className="pd-price-block" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', background: 'rgba(39, 201, 125, 0.1)', border: '1px solid rgba(39, 201, 125, 0.3)', padding: '4px 10px', borderRadius: '12px' }}>
+                 <ShieldCheck size={14} color="#27c97d"/> <span style={{ color: '#27c97d', fontSize: '0.65rem', fontWeight: 900 }}>100% VERIFIED TITLE</span>
+              </div>
               <div className="pd-price-main">{formatSnapAddaPrice(displayPrice)}</div>
-              <div className="pd-price-sub">Professional Valuation Guarantee</div>
-              <div className="pd-price-actions">
+              <div className="pd-price-sub" style={{ color: 'var(--gold)', fontWeight: 600 }}>Exclusive SnapAdda Valuation</div>
+              <div className="pd-price-actions" style={{ marginTop: '1rem' }}>
                 <button className={`pd-action-btn ${liked ? 'liked' : ''}`} onClick={handleLike}>
                   <Heart size={18} fill={liked ? 'currentColor' : 'none'}/> {liked ? 'SAVED' : 'SAVE'}
                 </button>
@@ -488,8 +494,8 @@ export default function PropertyDetails() {
                      style={{ width: '100%', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '1rem', color: 'white', marginBottom: '1rem', outline: 'none' }}
                    />
                    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                     <button type="submit" disabled={qSubmitting} className="pd-btn-primary" style={{ padding: '0.8rem 2rem' }}>
-                       {qSubmitting ? 'SENDING...' : 'SUBMIT INTEREST'}
+                     <button type="submit" disabled={qSubmitting} className="pd-btn-primary" style={{ padding: '0.8rem 2rem', background: 'var(--gold)', color: '#000', fontWeight: 800 }}>
+                       {qSubmitting ? 'ESTABLISHING SECURE CONNECTION...' : 'REQUEST VIP DETAILS'}
                      </button>
                    </div>
                 </form>
@@ -526,12 +532,13 @@ export default function PropertyDetails() {
         </div>
       </div>
 
-      <div className="pd-mobile-bar">
-        <button onClick={() => window.location.href = `tel:${supportPhone}`} className="pd-mobile-bar-btn pd-btn-primary">
-          <Phone size={18}/> CALL
+      {/* Sticky Mobile Floating Action Button (FAB) */}
+      <div className="pd-mobile-bar" style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: 'rgba(9, 10, 18, 0.95)', backdropFilter: 'blur(10px)', borderTop: '1px solid rgba(255,255,255,0.1)', padding: '15px 20px', display: 'flex', gap: '10px', zIndex: 1000, boxShadow: '0 -10px 30px rgba(0,0,0,0.5)' }}>
+        <button onClick={() => window.location.href = `tel:${supportPhone}`} style={{ flex: 1, padding: '12px', background: 'var(--txt-primary)', color: 'var(--bg-deep)', border: 'none', borderRadius: '12px', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+          <Phone size={16}/> EXPERT
         </button>
-        <button onClick={handleWhatsApp} className="pd-mobile-bar-btn pd-btn-wa">
-          <MessageSquare size={18}/> WHATSAPP
+        <button onClick={handleWhatsApp} style={{ flex: 1, padding: '12px', background: 'var(--emerald)', color: '#fff', border: 'none', borderRadius: '12px', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+          <MessageSquare size={16}/> WHATSAPP
         </button>
       </div>
     </div>

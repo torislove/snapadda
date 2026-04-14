@@ -110,37 +110,49 @@ export default function SearchResults() {
   }, [keyword, type, city, purpose, minPrice, maxPrice, bhk, facing, approval, vastu, verified, sort, page, setSearchParams]);
 
   const loadResults = useCallback(() => {
-    setLoading(true);
+    if (page === 1) setLoading(true);
     const filters = buildFilters();
     fetchProperties(filters)
       .then(res => {
-        setProperties(res?.data || []);
-        setMeta(res?.meta || { total: res?.data?.length || 0, totalPages: 1, page: 1 });
+        const newData = res?.data || [];
+        setProperties(prev => page > 1 ? [...prev, ...newData] : newData);
+        setMeta(res?.meta || { total: res?.data?.length || 0, totalPages: 1, page: filters.page });
       })
-      .catch(() => setProperties([]))
+      .catch(() => { if (page === 1) setProperties([]); })
       .finally(() => setLoading(false));
-  }, [buildFilters]);
+  }, [buildFilters, page]);
 
   useEffect(() => {
     syncToUrl();
     loadResults();
   }, [keyword, type, city, purpose, minPrice, maxPrice, bhk, facing, approval, vastu, verified, sort, page]);
 
+  // Infinite Scroll Observer
+  const loadMoreRef = useRef(null);
+  useEffect(() => {
+    if (!loadMoreRef.current || loading || page >= meta.totalPages) return;
+    const observer = new IntersectionObserver(([ent]) => {
+      if (ent.isIntersecting) setPage(p => p + 1);
+    }, { rootMargin: '200px' });
+    observer.observe(loadMoreRef.current);
+    return () => observer.disconnect();
+  }, [loading, page, meta.totalPages]);
+
   const activeFilterChips = useMemo(() => {
     const chips = [];
-    if (keyword) chips.push({ label: `"${keyword}"`, clear: () => setKeyword('') });
-    if (type) chips.push({ label: type, clear: () => setType('') });
-    if (city) chips.push({ label: `📍 ${city}`, clear: () => setCity('') });
-    if (purpose) chips.push({ label: purpose, clear: () => setPurpose('') });
+    if (keyword) chips.push({ label: `"${keyword}"`, clear: () => { setKeyword(''); setPage(1); } });
+    if (type) chips.push({ label: type, clear: () => { setType(''); setPage(1); } });
+    if (city) chips.push({ label: `📍 ${city}`, clear: () => { setCity(''); setPage(1); } });
+    if (purpose) chips.push({ label: purpose, clear: () => { setPurpose(''); setPage(1); } });
     if (minPrice || maxPrice) {
       const label = minPrice && maxPrice ? `₹${Number(minPrice)/100000}L–₹${Number(maxPrice)/100000}L` : minPrice ? `From ₹${Number(minPrice)/100000}L` : `Up to ₹${Number(maxPrice)/100000}L`;
-      chips.push({ label, clear: () => { setMinPrice(''); setMaxPrice(''); } });
+      chips.push({ label, clear: () => { setMinPrice(''); setMaxPrice(''); setPage(1); } });
     }
-    if (bhk) chips.push({ label: `${bhk} BHK`, clear: () => setBhk('') });
-    if (facing) chips.push({ label: `${facing} Facing`, clear: () => setFacing('') });
-    if (approval) chips.push({ label: approval, clear: () => setApproval('') });
-    if (vastu) chips.push({ label: '🧭 Vastu', clear: () => setVastu(false) });
-    if (verified) chips.push({ label: '✅ Verified', clear: () => setVerified(false) });
+    if (bhk) chips.push({ label: `${bhk} BHK`, clear: () => { setBhk(''); setPage(1); } });
+    if (facing) chips.push({ label: `${facing} Facing`, clear: () => { setFacing(''); setPage(1); } });
+    if (approval) chips.push({ label: approval, clear: () => { setApproval(''); setPage(1); } });
+    if (vastu) chips.push({ label: '🧭 Vastu', clear: () => { setVastu(false); setPage(1); } });
+    if (verified) chips.push({ label: '✅ Verified', clear: () => { setVerified(false); setPage(1); } });
     return chips;
   }, [keyword, type, city, purpose, minPrice, maxPrice, bhk, facing, approval, vastu, verified]);
 
@@ -222,8 +234,14 @@ export default function SearchResults() {
           })}
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-          <input className="admin-input" type="number" placeholder="Min (₹)" value={minPrice} onChange={e => { setMinPrice(e.target.value); setPage(1); }} style={{ fontSize: '0.8rem' }}/>
-          <input className="admin-input" type="number" placeholder="Max (₹)" value={maxPrice} onChange={e => { setMaxPrice(e.target.value); setPage(1); }} style={{ fontSize: '0.8rem' }}/>
+          <div style={{ position: 'relative' }}>
+             <span style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--txt-muted)', fontSize: '0.8rem' }}>₹</span>
+             <input className="admin-input" type="number" placeholder="Min" value={minPrice} onChange={e => { setMinPrice(e.target.value); setPage(1); }} style={{ fontSize: '0.8rem', paddingLeft: '22px' }}/>
+          </div>
+          <div style={{ position: 'relative' }}>
+             <span style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--txt-muted)', fontSize: '0.8rem' }}>₹</span>
+             <input className="admin-input" type="number" placeholder="Max" value={maxPrice} onChange={e => { setMaxPrice(e.target.value); setPage(1); }} style={{ fontSize: '0.8rem', paddingLeft: '22px' }}/>
+          </div>
         </div>
       </div>
 
@@ -314,14 +332,15 @@ export default function SearchResults() {
 
           {/* Active filter chips */}
           {activeFilterChips.length > 0 && (
-            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '10px' }}>
+            <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', marginTop: '10px', paddingBottom: '4px' }}>
+              <style>{`.container ::-webkit-scrollbar { display: none; }`}</style>
               {activeFilterChips.map((chip, i) => (
                 <motion.button key={i} initial={{ scale: 0.9 }} animate={{ scale: 1 }} onClick={chip.clear}
-                  style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 10px', background: 'rgba(232,184,75,0.1)', border: '1px solid rgba(232,184,75,0.3)', color: 'var(--gold)', borderRadius: '20px', fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer' }}>
+                  style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 10px', background: 'rgba(232,184,75,0.1)', border: '1px solid rgba(232,184,75,0.3)', color: 'var(--gold)', borderRadius: '20px', fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer' }}>
                   {chip.label} <X size={10}/>
                 </motion.button>
               ))}
-              <button onClick={resetAll} style={{ padding: '4px 10px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.4)', borderRadius: '20px', fontSize: '0.68rem', cursor: 'pointer' }}>Clear all</button>
+              <button onClick={resetAll} style={{ flexShrink: 0, padding: '4px 10px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.4)', borderRadius: '20px', fontSize: '0.68rem', cursor: 'pointer' }}>Clear all</button>
             </div>
           )}
         </div>
@@ -350,34 +369,22 @@ export default function SearchResults() {
             </div>
           ) : properties.length > 0 ? (
             <>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem' }}>
-                {properties.map((p, i) => (
-                  <motion.div key={p._id || p.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}>
-                    <PropertyCard {...p}/>
-                  </motion.div>
+              <div className="properties-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem' }}>
+                {properties.map((p) => (
+                  <PropertyCard key={p._id || p.id} {...p} />
                 ))}
               </div>
 
-              {/* Pagination */}
+              {/* Pagination / Infinite Scroll Node */}
               {meta.totalPages > 1 && (
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', marginTop: '3rem' }}>
-                  <button disabled={page <= 1} onClick={() => setPage(p => p - 1)}
-                    style={{ padding: '8px 16px', borderRadius: '10px', background: page > 1 ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.1)', color: page > 1 ? 'white' : 'rgba(255,255,255,0.3)', cursor: page > 1 ? 'pointer' : 'not-allowed', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <ChevronLeft size={15}/> Prev
-                  </button>
-                  {Array.from({ length: Math.min(7, meta.totalPages) }, (_, i) => {
-                    const p = i + 1;
-                    return (
-                      <button key={p} onClick={() => setPage(p)}
-                        style={{ width: '36px', height: '36px', borderRadius: '8px', border: page === p ? '1px solid var(--gold)' : '1px solid rgba(255,255,255,0.1)', background: page === p ? 'rgba(232,184,75,0.15)' : 'rgba(255,255,255,0.04)', color: page === p ? 'var(--gold)' : 'rgba(255,255,255,0.7)', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 700 }}>
-                        {p}
-                      </button>
-                    );
-                  })}
-                  <button disabled={page >= meta.totalPages} onClick={() => setPage(p => p + 1)}
-                    style={{ padding: '8px 16px', borderRadius: '10px', background: page < meta.totalPages ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.1)', color: page < meta.totalPages ? 'white' : 'rgba(255,255,255,0.3)', cursor: page < meta.totalPages ? 'pointer' : 'not-allowed', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    Next <ChevronRight size={15}/>
-                  </button>
+                <div style={{ textAlign: 'center', marginTop: '3rem', padding: '1rem' }}>
+                  {page < meta.totalPages ? (
+                    <div ref={loadMoreRef} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', color: 'var(--txt-muted)' }}>
+                      <div className="pulse-primary" style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--gold)' }} /> Loading more properties...
+                    </div>
+                  ) : (
+                    <span style={{ color: 'var(--txt-muted)', fontSize: '0.85rem' }}>You've reached the end of the results.</span>
+                  )}
                 </div>
               )}
             </>
@@ -397,26 +404,32 @@ export default function SearchResults() {
         </main>
       </div>
 
-      {/* Mobile Filter Drawer */}
+      {/* Mobile Filter Bottom Sheet */}
       <AnimatePresence>
         {showMobileFilter && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}
+            style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(5px)' }}
             onClick={() => setShowMobileFilter(false)}>
-            <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
-              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+            <motion.div 
+              initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
+              transition={{ type: 'spring', stiffness: 350, damping: 35 }}
+              drag="y" dragConstraints={{ top: 0 }} dragElastic={0.2}
+              onDragEnd={(e, info) => { if (info.offset.y > 100) setShowMobileFilter(false); }}
               onClick={e => e.stopPropagation()}
-              style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'rgba(7,7,15,0.99)', borderRadius: '20px 20px 0 0', padding: '1.5rem', maxHeight: '85vh', overflowY: 'auto' }}>
+              style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'rgba(9,9,18,0.98)', borderTop: '1px solid rgba(255,255,255,0.1)', borderRadius: '28px 28px 0 0', padding: '1.5rem', maxHeight: '90vh', overflowY: 'auto' }}>
+              <div style={{ width: '40px', height: '4px', background: 'rgba(255,255,255,0.2)', borderRadius: '4px', margin: '0 auto 1.5rem auto' }} />
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                <div style={{ fontWeight: 800, color: 'white', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <SlidersHorizontal size={16} style={{ color: 'var(--gold)' }}/> Search Filters
+                <div style={{ fontWeight: 800, color: 'white', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <SlidersHorizontal size={18} style={{ color: 'var(--gold)' }}/> Advanced Filters
                 </div>
-                <button onClick={() => setShowMobileFilter(false)} style={{ background: 'rgba(255,255,255,0.08)', border: 'none', color: 'white', width: '32px', height: '32px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><X size={16}/></button>
+                <button onClick={() => setShowMobileFilter(false)} style={{ background: 'rgba(255,255,255,0.08)', border: 'none', color: 'white', width: '34px', height: '34px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><X size={16}/></button>
               </div>
               {filterPanel}
-              <button onClick={() => setShowMobileFilter(false)} style={{ width: '100%', marginTop: '1.5rem', padding: '1rem', background: 'var(--gold)', color: '#000', border: 'none', borderRadius: '12px', fontWeight: 800, fontSize: '0.9rem', cursor: 'pointer' }}>
-                Show {meta.total} Results
-              </button>
+              <div style={{ position: 'sticky', bottom: '-1.5rem', left: 0, right: 0, background: 'linear-gradient(to top, rgba(9,9,18,1) 50%, rgba(9,9,18,0))', padding: '1.5rem 0', marginTop: '1rem', zIndex: 10 }}>
+                <button onClick={() => setShowMobileFilter(false)} style={{ width: '100%', padding: '1.1rem', background: 'var(--gold)', color: '#000', border: 'none', borderRadius: '16px', fontWeight: 800, fontSize: '0.95rem', cursor: 'pointer', boxShadow: '0 8px 20px rgba(245,200,66,0.3)' }}>
+                  Show {meta.total} Matching Results
+                </button>
+              </div>
             </motion.div>
           </motion.div>
         )}

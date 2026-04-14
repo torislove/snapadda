@@ -400,8 +400,15 @@ export default function Home() {
                 <div className="search-action-row" style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '-0.5rem', flexWrap: 'wrap' }}>
                   <button className="search-go-btn btn-3d" 
                     onClick={() => {
-                      loadProperties();
-                      document.getElementById('properties')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      const params = new URLSearchParams();
+                      if (keyword) params.set('keyword', keyword);
+                      if (intent && intent !== 'Any') params.set('purpose', intent);
+                      if (budget && budget !== '999999999') params.set('maxPrice', budget);
+                      if (cityFilter) params.set('city', cityFilter);
+                      if (advFilters.propertyType && advFilters.propertyType !== 'All') params.set('type', advFilters.propertyType);
+                      if (advFilters.bhk) params.set('bhk', advFilters.bhk);
+                      if (advFilters.minPrice) params.set('minPrice', advFilters.minPrice);
+                      navigate(`/search?${params.toString()}`);
                     }} 
                     style={{ width: 'auto', padding: '0.8rem 2rem', background: 'var(--gold)', color: 'var(--midnight)', fontWeight: 800 }}>
                     <Search size={18} style={{ marginRight: '8px' }} />
@@ -554,10 +561,8 @@ export default function Home() {
 
             <div className="properties-grid">
               {loading ? Array(3).fill(0).map((_, i) => <SkeletonPropertyCard key={i} />) : sortedProperties.length > 0 ? (
-                sortedProperties.slice(0, 9).map((p, i) => (
-                  <motion.div key={p._id || p.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}>
-                    <PropertyCard {...p} />
-                  </motion.div>
+                sortedProperties.slice(0, 9).map((p) => (
+                  <PropertyCard key={p._id || p.id} {...p} />
                 ))
               ) : (
                 <div className="empty-state">
@@ -616,6 +621,12 @@ export default function Home() {
               <div className="footer-col"><h4>{t('footer.quick')}</h4><a href="#properties">Properties</a><a href="#cities">Locations</a><a href="#contact">Contact</a></div>
               <div className="footer-col"><h4>{t('footer.support')}</h4><a href={`mailto:${supportInfo?.email || 'info@snapadda.com'}`}>{supportInfo?.email || 'info@snapadda.com'}</a><a href={`tel:${supportPhone}`}>{supportInfo?.phone || '+91 93467 93364'}</a></div>
             </div>
+            <div className="footer-legal-links">
+              <a href="/terms">Terms of Service</a>
+              <a href="/privacy">Privacy Policy</a>
+              <a href="/#contact">Contact Us</a>
+              <a href="/#about">About SnapAdda</a>
+            </div>
             <div className="footer-bottom"><span>© 2026 SnapAdda. {t('footer.rights')}</span></div>
           </div>
         </footer>
@@ -645,12 +656,29 @@ export default function Home() {
 
       <style>{`
         @media (max-width: 768px) {
-          .mobile-sticky-quick-contact { display: flex !important; }
-          .section-wrap { padding-bottom: 100px !important; }
+          .mobile-sticky-quick-contact {
+            display: flex !important;
+            bottom: calc(64px + env(safe-area-inset-bottom, 0px)) !important;
+          }
         }
       `}</style>
 
-      <FilterSidebar isOpen={filterOpen} onClose={() => setFilterOpen(false)} filters={advFilters} setFilters={setAdvFilters} onApply={() => setFilterOpen(false)} />
+      <FilterSidebar isOpen={filterOpen} onClose={() => setFilterOpen(false)} filters={advFilters} setFilters={setAdvFilters} onApply={() => {
+        const params = new URLSearchParams();
+        if (keyword) params.set('keyword', keyword);
+        if (intent && intent !== 'Any') params.set('purpose', intent);
+        if (budget && budget !== '999999999') params.set('maxPrice', budget);
+        if (cityFilter) params.set('city', cityFilter);
+        if (advFilters.propertyType && advFilters.propertyType !== 'All') params.set('type', advFilters.propertyType);
+        if (advFilters.bhk) params.set('bhk', advFilters.bhk);
+        if (advFilters.minPrice) params.set('minPrice', advFilters.minPrice);
+        if (advFilters.maxPrice) params.set('maxPrice', advFilters.maxPrice);
+        if (advFilters.facing && advFilters.facing !== 'Any') params.set('facing', advFilters.facing);
+        if (advFilters.approval && advFilters.approval !== 'All') params.set('approval', advFilters.approval);
+        if (advFilters.verified) params.set('verified', 'true');
+        navigate(`/search?${params.toString()}`);
+        setFilterOpen(false);
+      }} />
       <ContactModal isOpen={modalOpen} onClose={() => setModalOpen(false)} type={modalType} />
     </div>
   );

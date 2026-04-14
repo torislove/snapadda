@@ -107,16 +107,45 @@ export default function Header() {
               )}
             </div>
 
+            {/* Hamburger Hidden for New App Nav */}
             <button
               className="mobile-menu-btn"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               aria-label={mobileMenuOpen ? 'Close mobile menu' : 'Open mobile menu'}
+              style={{ display: 'none' }}
             >
               {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
           </div>
         </div>
       </header>
+
+      {/* App-Style Bottom Navigation Drawer (Mobile) */}
+      <nav className="mobile-bottom-nav">
+        <Link to="/" className={`bot-nav-item ${location.pathname === '/' && location.hash === '' ? 'active' : ''}`}>
+          <Home size={22} />
+          <span>Home</span>
+        </Link>
+        <a href="/#properties" className={`bot-nav-item ${location.hash === '#properties' ? 'active' : ''}`}>
+          <Search size={22} />
+          <span>Explore</span>
+        </a>
+        <a href="/#contact" className={`bot-nav-item ${location.hash === '#contact' ? 'active' : ''}`}>
+          <Phone size={22} />
+          <span>Contact</span>
+        </a>
+        {user ? (
+          <Link to="/dashboard" className={`bot-nav-item ${location.pathname === '/dashboard' ? 'active' : ''}`}>
+            <LayoutDashboard size={22} />
+            <span>Dash</span>
+          </Link>
+        ) : (
+          <Link to="/login" className={`bot-nav-item ${location.pathname === '/login' ? 'active' : ''}`}>
+            <User size={22} />
+            <span>Login</span>
+          </Link>
+        )}
+      </nav>
 
       {/* Mobile Nav Overlay */}
       <AnimatePresence>

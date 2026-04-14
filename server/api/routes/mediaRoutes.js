@@ -27,6 +27,7 @@ const storage = new CloudinaryStorage({
       resource_type: 'auto',
       allowed_formats: ['jpg', 'png', 'jpeg', 'webp', 'mp4', 'mov', 'heic', 'heif', 'bmp', 'pdf'],
       public_id: `file_${Date.now()}_${Math.round(Math.random() * 1E9)}`,
+      transformation: isVideo ? [] : [{ width: 800, crop: "limit" }, { fetch_format: "auto", quality: "auto" }]
     };
   }
 });
@@ -62,7 +63,11 @@ router.post('/upload', async (req, res) => {
       const uploadPromises = files.map(fileStr => {
         return cloudinary.uploader.upload(fileStr, {
           folder: 'snapadda/properties',
-          resource_type: 'auto'
+          resource_type: 'auto',
+          transformation: [
+            { width: 800, crop: "limit" },
+            { fetch_format: "auto", quality: "auto" }
+          ]
         });
       });
 

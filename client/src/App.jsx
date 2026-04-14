@@ -17,6 +17,10 @@ const Onboarding = lazy(() => import('./pages/Onboarding'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const RequestPage = lazy(() => import('./pages/RequestPage'));
 const SearchResults = lazy(() => import('./pages/SearchResults'));
+const Terms = lazy(() => import('./pages/Terms'));
+const Privacy = lazy(() => import('./pages/Privacy'));
+
+import Logo from './components/Logo';
 
 // Minimalist High-Performance Loader
 const EliteLoader = () => (
@@ -26,14 +30,10 @@ const EliteLoader = () => (
     flexDirection: 'column',
     alignItems: 'center', 
     justifyContent: 'center', 
-    backgroundColor: '#07070f',
-    color: 'var(--gold)',
-    fontFamily: 'var(--font-mono)',
-    fontSize: '0.8rem',
-    letterSpacing: '0.2em'
+    backgroundColor: 'var(--bg-deep)',
   }}>
-    <div className="shimmer" style={{ width: '40px', height: '2px', background: 'var(--gold)', marginBottom: '1rem' }} />
-    ELITE LOADING...
+    <Logo size={42} showText={false} />
+    <div className="shimmer" style={{ width: '80px', height: '3px', background: 'var(--gold)', marginTop: '1.5rem', borderRadius: '4px' }} />
   </div>
 );
 
@@ -57,28 +57,21 @@ function AppContent() {
     <>
       {showHeader && <Header />}
       <Suspense fallback={<EliteLoader />}>
-        {/* Buttery Smooth Page Transitions Merged into v2 Aesthetics */}
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={location.pathname}
-            initial={{ opacity: 0, scale: 0.99, y: 5 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 1.01, y: -5 }}
-            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-            style={{ width: '100%' }}
-          >
-            <Routes location={location}>
-              <Route path="/login" element={<Login />} />
-              <Route path="/" element={<Home />} />
-              <Route path="/search" element={<ProtectedRoute><SearchResults /></ProtectedRoute>} />
-              <Route path="/property/:id" element={<PropertyDetails />} />
-              <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
-              <Route path="/dashboard/*" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-              <Route path="/request-callback" element={<RequestPage />} />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </motion.div>
-        </AnimatePresence>
+        {/* Instant Routing without artificial delays */}
+        <div style={{ width: '100%' }}>
+          <Routes location={location}>
+            <Route path="/login" element={<Login />} />
+            <Route path="/" element={<Home />} />
+            <Route path="/search" element={<ProtectedRoute><SearchResults /></ProtectedRoute>} />
+            <Route path="/property/:id" element={<PropertyDetails />} />
+            <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
+            <Route path="/dashboard/*" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/request-callback" element={<RequestPage />} />
+            <Route path="/terms" element={<Terms />} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </div>
       </Suspense>
       <Suspense fallback={null}>
         {/* Global HUD Elements Restored and Symmetrically Positioned */}

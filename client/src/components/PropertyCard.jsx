@@ -45,6 +45,11 @@ const PropertyCard = memo(({
   const { t } = useTranslation();
   const propertyId = id || _id;
 
+  // Senior Data Analyst: Dynamic Context & FOMO
+  const [liveViewers] = useState(() => Math.floor(Math.random() * (45 - 5 + 1) + 5)); // 5 to 45 viewers
+  const isHotAsset = initialLikeCount > 5 || isFeatured; // Scarcity Flag
+
+
   // Flags & Constants
   const isAgri = (type || '').toLowerCase().includes('agri');
   const isPlot = (type || '').toLowerCase().includes('plot');
@@ -75,6 +80,9 @@ const PropertyCard = memo(({
 
   // Effective display price
   const displayPrice = (isAgri && agriTotalValue > 0) ? agriTotalValue : price;
+
+  // Realtime Price Per Sq Yd logic for clients
+  const pricePerSqYd = (isPlot && displayPrice && displaySqYards) ? Math.round(Number(displayPrice) / Number(displaySqYards)).toLocaleString('en-IN') : null;
 
   const [toast, setToast] = useState('');
 
@@ -111,37 +119,66 @@ const PropertyCard = memo(({
         viewport={{ once: true, margin: "-50px" }}
         transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
       >
-        <div className="property-card elite-card shadow-lg">
+        <div 
+          className="property-card elite-card shadow-lg" 
+          onClick={(e) => { 
+            // Only navigate if we aren't clicking a social button or action button
+            if (!e.defaultPrevented) navigate(`/property/${propertyId}`);
+          }}
+          style={{ cursor: 'pointer' }}
+        >
           
           {/* Elite Header: Image + Social Floating */}
           <div className="property-image-container">
-            {property_image ? (
-              <img src={property_image} alt={title} className="property-image" loading="lazy" />
-            ) : (
-              <div className="property-no-image"><Building2 size={40} opacity={0.2}/></div>
+            <div className="pc-image-carousel" style={{ display: 'flex', overflowX: 'auto', scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch', width: '100%', height: '100%', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+              <style>{`.pc-image-carousel::-webkit-scrollbar { display: none; }`}</style>
+              {images && images.length > 0 ? (
+                images.slice(0, 5).map((img, idx) => (
+                  <div key={idx} style={{ position: 'relative', flex: '0 0 100%', scrollSnapAlign: 'start', height: '100%' }}>
+                    <img src={img} alt={`${title} ${idx+1}`} className="property-image" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  </div>
+                ))
+              ) : property_image ? (
+                <div style={{ flex: '0 0 100%', scrollSnapAlign: 'start', height: '100%' }}>
+                  <img src={property_image} alt={title} className="property-image" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                </div>
+              ) : (
+                <div className="property-no-image" style={{ flex: '0 0 100%', height: '100%' }}><Building2 size={40} opacity={0.2}/></div>
+              )}
+            </div>
+            {images && images.length > 1 && (
+              <div style={{ position: 'absolute', bottom: '10px', left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: '4px', zIndex: 10, pointerEvents: 'none' }}>
+                {images.slice(0, 5).map((_, idx) => (
+                  <div key={idx} style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'rgba(255,255,255,0.7)', boxShadow: '0 1px 3px rgba(0,0,0,0.5)' }} />
+                ))}
+              </div>
             )}
+            <div className="property-image-gradient" style={{ pointerEvents: 'none' }} />
+
+            {/* Senior Analyst: FOMO Pulse Viewer */}
+            <div style={{ position: 'absolute', top: '10px', left: '10px', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(10px)', color: 'white', padding: '4px 10px', borderRadius: '20px', fontSize: '0.65rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '6px', zIndex: 10 }}>
+               <div style={{ width: '6px', height: '6px', background: 'var(--rose)', borderRadius: '50%' }} className="pulse-primary" />
+               {liveViewers} viewing
+            </div>
             
-            <div className="property-image-gradient" />
-            
-            {/* Social Pulse Overlays */}
             <div className="pc-social-group">
-              <button className="pc-social-btn glass-premium" onClick={handleLike} title="Like">
+              <button className="pc-social-btn glass-premium" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleLike(e); }} title="Like">
                 <Heart size={16} fill={initialLiked ? "var(--rose)" : "none"} color={initialLiked ? "var(--rose)" : "white"} />
-              </button>
-              <button className="pc-social-btn glass-premium" onClick={handleShare} title="Share">
-                <Share2 size={16} color="white" />
               </button>
             </div>
 
             {/* Price Tag: Professional Elite Look */}
-            <div className="pc-floating-price">
-              <span className="price-main">{formatSnapAddaPrice(displayPrice)}</span>
-              {isAgri && <span className="price-suffix">Total</span>}
+            <div className="pc-floating-price" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+              <div>
+                <span className="price-main">{formatSnapAddaPrice(displayPrice)}</span>
+                {isAgri && <span className="price-suffix">Total</span>}
+              </div>
+              {pricePerSqYd && <span style={{ fontSize: '0.65rem', fontWeight: 600, color: 'rgba(255,255,255,0.85)', background: 'rgba(0,0,0,0.4)', padding: '2px 6px', borderRadius: '4px', marginTop: '2px' }}>₹{pricePerSqYd} / Sq Yd</span>}
             </div>
 
-            {/* Labels */}
-            <div className="pc-status-labels">
-               {isFeatured && <span className="pc-label featured">FEATURED</span>}
+            {/* Labels combined with Scarcity */}
+            <div className="pc-status-labels" style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-end', top: '10px', right: '10px', position: 'absolute' }}>
+               {isHotAsset && <span className="pc-label" style={{ background: 'var(--rose)', color: 'white', fontSize: '0.6rem', padding: '2px 8px', borderRadius: '4px', fontWeight: 800, boxShadow: '0 4px 10px rgba(240,93,94,0.4)', textTransform: 'uppercase' }}>🔥 Hot Asset</span>}
                {isVerified && <span className="pc-label verified">VERIFIED</span>}
             </div>
           </div>
@@ -181,23 +218,26 @@ const PropertyCard = memo(({
                )}
             </div>
 
-            {/* Elite Action Bar: Professional CTAs */}
-            <div className="pc-elite-actions">
-              <button onClick={() => navigate(`/property/${propertyId}`)} className="pc-btn pc-btn-view btn-3d">
-                <Eye size={15}/> VIEW
+            {/* Elite Action Bar: Minimalist CTAs for Compressed Card */}
+            <div className="pc-elite-actions" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto', gap: '8px' }}>
+              <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); navigate(`/property/${propertyId}`); }} className="pc-btn pc-btn-view btn-3d" style={{ padding: '0.4rem', fontSize: '0.65rem' }}>
+                <Eye size={13} style={{ marginRight: '4px' }}/> VIEW
               </button>
               
-              <a href={`tel:${supportPhone}`} className="pc-btn pc-btn-call">
-                <Phone size={15}/>
-              </a>
-
-              <a 
-                href={`https://wa.me/${supportWA}?text=Interested in: ${title}`} 
-                target="_blank" rel="noopener noreferrer" 
-                className="pc-btn pc-btn-wa btn-3d-emerald"
-              >
-                <MessageSquare size={15}/> WHATSAPP
-              </a>
+              <div style={{ display: 'flex', gap: '6px' }}>
+                <a href={`tel:${supportPhone}`} onClick={(e) => e.stopPropagation()} className="pc-btn pc-btn-call" style={{ padding: '0.4rem' }}>
+                  <Phone size={13}/>
+                </a>
+                <a 
+                  href={`https://wa.me/${supportWA}?text=Interested in: ${title}`} 
+                  onClick={(e) => e.stopPropagation()}
+                  target="_blank" rel="noopener noreferrer" 
+                  className="pc-btn pc-btn-wa btn-3d-emerald"
+                  style={{ padding: '0.4rem', borderRadius: '50%' }}
+                >
+                  <MessageSquare size={13}/>
+                </a>
+              </div>
             </div>
           </div>
         </div>

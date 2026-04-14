@@ -786,6 +786,45 @@ iframe {
   .property-price-tag {
     font-size: 1.1rem;
   }
+  
+  /* Elite UI - Mobile Miniature 2x2 Grid Optimizations */
+  .properties-grid, div[style*="minmax(280px"] {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.5rem !important;
+  }
+  .property-card {
+    border-radius: 12px !important;
+  }
+  .property-image-container {
+    height: 130px !important;
+  }
+  .property-content {
+    padding: 0.5rem !important;
+    gap: 0.4rem !important;
+  }
+  .pc-title-elite {
+    font-size: 0.7rem !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+  .pc-location-elite {
+    font-size: 0.6rem !important;
+    margin-bottom: 0 !important;
+  }
+  .pc-specs-grid {
+    gap: 4px !important;
+  }
+  .pc-specs-grid .spec-item {
+    font-size: 0.55rem !important;
+  }
+  .pc-floating-price .price-main {
+    font-size: 0.8rem !important;
+  }
+  .pc-elite-actions .pc-btn {
+    padding: 0.35rem !important;
+    font-size: 0.6rem !important;
+  }
 }
 .btn {
   border-radius: var(--radius-sm);
@@ -4635,4 +4674,143 @@ iframe {
   
   img, video, iframe, canvas { max-width: 100% !important; }
   h1, h2, h3, h4, h5, h6, p { max-width: 100% !important; word-wrap: break-word !important; }
+}
+
+/* -------------------------------------------------------
+   TOUCH-FIRST CARD ARCHITECTURE — ELITE UPGRADE
+   --------------------------------------------------- */
+
+/* 1. GLOBAL TOUCH TARGETS */
+@media (max-width: 768px) {
+  button, .btn, .btn-3d, .hero-btn, select { min-height: 48px; }
+}
+
+/* 2. APP-STYLE BOTTOM NAVIGATION */
+.mobile-bottom-nav { display: none; }
+@media (max-width: 768px) {
+  .mobile-bottom-nav {
+    display: flex; position: fixed; bottom: 0; left: 0;
+    width: 100%; height: 64px;
+    background: rgba(9,10,18,0.96);
+    backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+    border-top: 1px solid rgba(255,255,255,0.1);
+    z-index: 99999; justify-content: space-around; align-items: center;
+    padding: 0 8px; padding-bottom: env(safe-area-inset-bottom, 0px);
+    box-shadow: 0 -8px 32px rgba(0,0,0,0.6);
+  }
+  .bot-nav-item {
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; gap: 3px; flex: 1;
+    color: rgba(255,255,255,0.4); font-size: 0.6rem; font-weight: 700;
+    text-decoration: none; letter-spacing: 0.04em; text-transform: uppercase;
+    transition: color 0.2s ease; padding: 8px 4px; border-radius: 12px; min-height: 52px;
+  }
+  .bot-nav-item.active, .bot-nav-item:hover { color: var(--gold); }
+  .bot-nav-item.active svg { stroke: var(--gold); }
+  body { padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px)) !important; }
+  .pd-mobile-bar { bottom: calc(64px + env(safe-area-inset-bottom, 0px)) !important; }
+}
+
+/* 3. HORIZONTAL SWIPE FILTER TRACK */
+.filter-swipe-track {
+  display: flex; gap: 10px; overflow-x: auto;
+  scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch;
+  padding: 8px 4px; scrollbar-width: none;
+}
+.filter-swipe-track::-webkit-scrollbar { display: none; }
+.filter-swipe-track .filter-pill {
+  flex-shrink: 0; scroll-snap-align: start; white-space: nowrap;
+  padding: 10px 20px; background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.12); border-radius: 40px;
+  color: var(--txt-secondary); font-size: 0.8rem; font-weight: 700;
+  cursor: pointer; transition: all 0.2s ease; min-height: 42px;
+  display: flex; align-items: center;
+}
+.filter-swipe-track .filter-pill.active,
+.filter-swipe-track .filter-pill:hover {
+  background: rgba(232,184,75,0.15); border-color: var(--gold); color: var(--gold);
+}
+
+/* 4. ELITE GLASS SEARCH CARD */
+.search-glass-card {
+  background: rgba(9,10,20,0.7); backdrop-filter: blur(30px) saturate(180%);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  border: 1px solid rgba(212,175,55,0.25); border-radius: 24px;
+  padding: 2rem 2.5rem;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08);
+}
+@media (max-width: 768px) {
+  .search-glass-card { padding: 1.25rem; border-radius: 20px; margin: 0 12px; }
+}
+
+/* 5. GLASS SECTION CARD WRAPPER */
+.elite-section-card {
+  background: rgba(10,12,20,0.65); border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 20px; padding: 2rem; margin-bottom: 2rem;
+}
+@media (max-width: 768px) {
+  .elite-section-card { padding: 1.25rem; border-radius: 16px; margin-bottom: 1rem; }
+}
+
+/* 6. FORM GLASS CARD */
+.form-glass-card {
+  background: rgba(9,10,18,0.8); backdrop-filter: blur(20px);
+  border: 1px solid rgba(232,184,75,0.2); border-radius: 20px;
+  padding: 2.5rem; box-shadow: 0 8px 40px rgba(0,0,0,0.4);
+}
+@media (max-width: 768px) {
+  .form-glass-card { padding: 1.5rem; border-radius: 16px; }
+}
+
+/* 7. ADMIN STACKED CARD LIST */
+.admin-card-list { display: flex; flex-direction: column; gap: 1rem; }
+.admin-list-card {
+  background: rgba(10,12,20,0.8); border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px; padding: 1.25rem; display: flex; gap: 1rem;
+  align-items: flex-start; transition: border-color 0.2s ease;
+}
+.admin-list-card:hover { border-color: rgba(232,184,75,0.3); }
+.admin-list-card-img { width: 80px; height: 80px; border-radius: 10px; object-fit: cover; flex-shrink: 0; }
+.admin-list-card-content { flex: 1; min-width: 0; }
+.admin-list-card-title { font-size: 0.9rem; font-weight: 800; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 4px; }
+.admin-list-card-meta { font-size: 0.72rem; color: var(--txt-muted); display: flex; flex-wrap: wrap; gap: 8px; }
+.admin-list-card-actions { display: flex; gap: 8px; flex-shrink: 0; align-items: center; }
+
+/* 8. ADMIN STAT CARDS */
+.admin-stat-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px,1fr)); gap: 1rem; margin-bottom: 2rem; }
+.admin-stat-card {
+  background: rgba(10,12,20,0.8); border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 16px; padding: 1.5rem; text-align: center;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.admin-stat-card:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(0,0,0,0.5); }
+.admin-stat-card-value { font-size: 2rem; font-weight: 900; color: var(--gold); line-height: 1; margin-bottom: 6px; }
+.admin-stat-card-label { font-size: 0.65rem; color: var(--txt-muted); text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700; }
+
+/* 9. PERFECT MASONRY GRID */
+@media (min-width: 1200px) { .properties-grid { grid-template-columns: repeat(4,1fr) !important; gap: 1.25rem !important; } }
+@media (min-width: 900px) and (max-width: 1199px) { .properties-grid { grid-template-columns: repeat(3,1fr) !important; gap: 1rem !important; } }
+@media (min-width: 560px) and (max-width: 899px) { .properties-grid { grid-template-columns: repeat(2,1fr) !important; gap: 0.75rem !important; } }
+
+/* 10. PROPERTY CARD TOUCH FEEL */
+.property-card, .pc-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  -webkit-tap-highlight-color: transparent; cursor: pointer; user-select: none;
+}
+.property-card:active, .pc-card:active { transform: scale(0.97); }
+@media (hover: hover) {
+  .property-card:hover, .pc-card:hover { transform: translateY(-4px); box-shadow: 0 16px 48px rgba(0,0,0,0.5); }
+}
+
+/* 11. FOOTER LEGAL LINKS */
+.footer-legal-links { display: flex; gap: 1.5rem; flex-wrap: wrap; justify-content: center; padding: 1.5rem 0; border-top: 1px solid rgba(255,255,255,0.07); margin-top: 2rem; }
+.footer-legal-links a { color: var(--txt-muted); font-size: 0.78rem; font-weight: 600; text-decoration: none; transition: color 0.2s ease; }
+.footer-legal-links a:hover { color: var(--gold); }
+
+/* 12. PULSE ANIMATION */
+.pulse-primary { animation: pulseDot 1.4s ease-in-out infinite; }
+@keyframes pulseDot {
+  0%   { box-shadow: 0 0 0 0 rgba(240,93,94,0.7); }
+  70%  { box-shadow: 0 0 0 8px rgba(240,93,94,0); }
+  100% { box-shadow: 0 0 0 0 rgba(240,93,94,0); }
 }

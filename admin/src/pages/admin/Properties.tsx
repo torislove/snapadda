@@ -5,8 +5,8 @@ import {
   updateProperty, uploadMedia 
 } from '../../services/api';
 import { 
-  ShieldCheck, Plus, Trash2, Star, X, 
-  Search, Zap, Edit3, LayoutGrid, List, MapPin, Heart, Share2
+  Plus, Trash2, X, 
+  Search, Zap, Edit3, LayoutGrid, List, MapPin
 } from 'lucide-react';
 import { LivePreviewCard } from '../../components/ui/LivePreviewCard';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -997,10 +997,10 @@ const AdminProperties = () => {
             </div>
 
             {/* Asset List */}
-            <div style={{ 
+            <div className="admin-properties-grid" style={{ 
               display: 'grid', 
-              gridTemplateColumns: viewMode === 'grid' ? '1fr' : 'repeat(auto-fill, minmax(340px, 1fr))', 
-              gap: '2rem' 
+              gridTemplateColumns: viewMode === 'grid' ? '1fr' : 'repeat(auto-fill, minmax(320px, 1fr))', 
+              gap: '1.5rem' 
             }}>
               <AnimatePresence>
                 {filteredProperties.length === 0 ? (
@@ -1009,133 +1009,23 @@ const AdminProperties = () => {
                     <p>No assets found in current sector.</p>
                   </div>
                 ) : (
-                  filteredProperties.map((prop, idx) => (
+                  filteredProperties.map((prop) => (
                     <motion.div 
                       layout
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: idx * 0.03 }}
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0 }}
                       key={prop._id || prop.id}
-                      className="glass-card"
-                      style={{ 
-                        padding: viewMode === 'grid' ? '1.25rem 1.75rem' : '1.75rem', 
-                        display: 'flex', 
-                        flexDirection: viewMode === 'grid' ? 'row' : 'column',
-                        gap: '1.5rem',
-                        alignItems: viewMode === 'grid' ? 'center' : 'stretch',
-                        borderLeft: prop.isVerified ? '4px solid var(--emerald)' : '4px solid transparent',
-                        position: 'relative'
-                      }}
+                      style={{ position: 'relative' }}
                     >
-                      {/* Media Index */}
-                      <div style={{ 
-                        width: viewMode === 'grid' ? '140px' : '100%', 
-                        aspectRatio: viewMode === 'grid' ? '16/10' : '16/9',
-                        borderRadius: '16px', overflow: 'hidden', flexShrink: 0,
-                        background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.05)'
-                      }}>
-                        <img src={prop.image || 'https://via.placeholder.com/400x250?text=No+Asset+Image'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      </div>
-
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.8rem', gap: '1rem' }}>
-                          <div style={{ minWidth: 0 }}>
-                            <div style={{ fontSize: '0.65rem', fontWeight: 900, color: 'var(--violet)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '4px' }}>{prop.type} • {prop.location}</div>
-                            <h4 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'white', fontFamily: 'var(--font-heading)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{prop.title}</h4>
-                          </div>
-                          <div style={{ display: 'flex', gap: '0.6rem', flexShrink: 0 }}>
-                            {prop.isVerified && <ShieldCheck size={18} style={{ color: 'var(--emerald)' }} />}
-                            {prop.isFeatured && <Star size={18} fill="var(--gold)" style={{ color: 'var(--gold)' }} />}
-                          </div>
-                        </div>
-
-                        {/* TYPE-SPECIFIC DETAIL ROW */}
-                        <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
-                          {prop.type === 'Agricultural Land' ? (
-                            <>
-                              <div style={{ fontSize: '0.75rem' }}>
-                                <span style={{ color: 'var(--text-muted)', fontSize: '0.6rem', display: 'block', marginBottom: '2px' }}>AREA</span>
-                                <span style={{ color: 'var(--emerald)', fontWeight: 800 }}>{formatLandSizeAdmin(prop.totalAcres)}</span>
-                              </div>
-                              {prop.pricePerAcre > 0 && (
-                                <div style={{ fontSize: '0.75rem' }}>
-                                  <span style={{ color: 'var(--text-muted)', fontSize: '0.6rem', display: 'block', marginBottom: '2px' }}>PRICE/ACRE</span>
-                                  <span style={{ color: 'var(--gold)', fontWeight: 800 }}>{formatPriceAdminLocal(prop.pricePerAcre)}</span>
-                                </div>
-                              )}
-                              {prop.pricePerAcre > 0 && (
-                                <div style={{ fontSize: '0.75rem' }}>
-                                  <span style={{ color: 'var(--text-muted)', fontSize: '0.6rem', display: 'block', marginBottom: '2px' }}>PRICE/CENT</span>
-                                  <span style={{ color: '#a8ff78', fontWeight: 800 }}>₹{Math.round(Number(prop.pricePerAcre)/100).toLocaleString('en-IN')}</span>
-                                </div>
-                              )}
-                              {prop.waterSource && prop.waterSource !== 'N/A' && (
-                                <div style={{ fontSize: '0.75rem' }}>
-                                  <span style={{ color: 'var(--text-muted)', fontSize: '0.6rem', display: 'block', marginBottom: '2px' }}>WATER</span>
-                                  <span style={{ color: 'var(--cyan)', fontWeight: 800 }}>{prop.waterSource}</span>
-                                </div>
-                              )}
-                            </>
-                          ) : prop.type?.includes('Plot') ? (
-                            <>
-                              <div style={{ fontSize: '0.75rem' }}>
-                                <span style={{ color: 'var(--text-muted)', fontSize: '0.6rem', display: 'block', marginBottom: '2px' }}>AREA</span>
-                                <span style={{ color: 'var(--cyan)', fontWeight: 800 }}>{prop.areaSize} {prop.measurementUnit || 'Sq.Yds'}</span>
-                              </div>
-                              {prop.approvalAuthority && prop.approvalAuthority !== 'N/A' && (
-                                <div style={{ fontSize: '0.75rem' }}>
-                                  <span style={{ color: 'var(--text-muted)', fontSize: '0.6rem', display: 'block', marginBottom: '2px' }}>APPROVAL</span>
-                                  <span style={{ color: 'var(--gold)', fontWeight: 800 }}>{prop.approvalAuthority}</span>
-                                </div>
-                              )}
-                              {prop.isGated && <span style={{ fontSize: '0.65rem', background: 'rgba(212,175,55,0.1)', color: 'var(--gold)', padding: '2px 8px', borderRadius: '6px', fontWeight: 700 }}>GATED</span>}
-                              {prop.cornerProperty && <span style={{ fontSize: '0.65rem', background: 'rgba(34,217,224,0.1)', color: 'var(--cyan)', padding: '2px 8px', borderRadius: '6px', fontWeight: 700 }}>CORNER</span>}
-                            </>
-                          ) : prop.bhk ? (
-                            <>
-                              <div style={{ fontSize: '0.75rem' }}>
-                                <span style={{ color: 'var(--text-muted)', fontSize: '0.6rem', display: 'block', marginBottom: '2px' }}>CONFIG</span>
-                                <span style={{ color: 'var(--violet)', fontWeight: 800 }}>{prop.bhk} BHK</span>
-                              </div>
-                              {prop.areaSize > 0 && (
-                                <div style={{ fontSize: '0.75rem' }}>
-                                  <span style={{ color: 'var(--text-muted)', fontSize: '0.6rem', display: 'block', marginBottom: '2px' }}>AREA</span>
-                                  <span style={{ color: 'white', fontWeight: 700 }}>{prop.areaSize} {prop.measurementUnit || 'Sq.Ft'}</span>
-                                </div>
-                              )}
-                              {prop.facing && <div style={{ fontSize: '0.75rem' }}><span style={{ color: 'var(--text-muted)', fontSize: '0.6rem', display: 'block', marginBottom: '2px' }}>FACING</span><span style={{ color: 'var(--gold)', fontWeight: 800 }}>{prop.facing}</span></div>}
-                            </>
-                          ) : (
-                            <div style={{ fontSize: '0.75rem' }}>
-                              <span style={{ color: 'var(--text-muted)', fontSize: '0.6rem', display: 'block', marginBottom: '2px' }}>AREA</span>
-                              <span style={{ color: 'white', fontWeight: 700 }}>{prop.areaSize || '—'} {prop.measurementUnit || ''}</span>
-                            </div>
-                          )}
-                        </div>
-
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '1rem', gap: '0.75rem', flexWrap: 'wrap' }}>
-                          <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
-                            <div>
-                              <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', fontWeight: 800, marginBottom: '2px' }}>MARKET VALUE</div>
-                              <div style={{ fontSize: '1.1rem', fontWeight: 900, color: 'white' }}>{formatPriceAdminLocal(prop.price)}</div>
-                            </div>
-                            <div>
-                              <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', fontWeight: 800, marginBottom: '2px' }}>ENGAGEMENT</div>
-                              <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginTop: '4px' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--rose)', fontSize: '0.85rem', fontWeight: 700 }}>
-                                  <Heart size={14} fill="var(--rose)" /> {prop.likeCount || 0}
-                                </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--cyan)', fontSize: '0.85rem', fontWeight: 700 }}>
-                                  <Share2 size={14} /> {prop.shareCount || 0}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                          <div style={{ display: 'flex', gap: '0.6rem' }}>
-                            <motion.button whileHover={{ scale: 1.1, background: 'rgba(255,255,255,0.1)' }} onClick={() => handleEdit(prop)} style={{ background: 'rgba(255,255,255,0.05)', border: 'none', padding: '10px', borderRadius: '12px', color: 'white', cursor: 'pointer' }} title="Edit"><Edit3 size={16} /></motion.button>
-                            <motion.button whileHover={{ scale: 1.1, background: 'rgba(245,57,123,0.2)' }} onClick={() => { if(window.confirm('Wipe asset data?')) deleteProperty(prop._id || prop.id).then(loadProperties); }} style={{ background: 'rgba(245,57,123,0.1)', border: 'none', padding: '10px', borderRadius: '12px', color: 'var(--rose)', cursor: 'pointer' }} title="Delete"><Trash2 size={16} /></motion.button>
-                          </div>
-                        </div>
+                      <LivePreviewCard {...prop} />
+                      <div style={{ position: 'absolute', top: 0, right: 0, margin: '15px', zIndex: 100, display: 'flex', gap: '8px' }}>
+                        <button onClick={() => handleEdit(prop)} style={{ background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.2)', padding: '10px', borderRadius: '50%', color: 'white', cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,0,0,0.5)' }} title="Edit">
+                          <Edit3 size={18} />
+                        </button>
+                        <button onClick={() => { if(window.confirm('Wipe asset data?')) deleteProperty(prop._id || prop.id).then(loadProperties); }} style={{ background: 'rgba(245,57,123,0.8)', backdropFilter: 'blur(10px)', border: '1px solid rgba(245,57,123,0.4)', padding: '10px', borderRadius: '50%', color: 'white', cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,0,0,0.5)' }} title="Delete">
+                          <Trash2 size={18} />
+                        </button>
                       </div>
                     </motion.div>
                   ))

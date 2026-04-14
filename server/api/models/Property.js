@@ -90,13 +90,14 @@ const propertySchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 });
 
-// Performance Indexes
+// Performance Indexes - Aggressive Compound Indexing for Real Estate Filters
 propertySchema.index({ status: 1, createdAt: -1 });
-propertySchema.index({ status: 1, type: 1 });
-propertySchema.index({ price: 1 });
-propertySchema.index({ isVerified: 1 });
+propertySchema.index({ status: 1, type: 1, city: 1, price: 1 }); // Core multi-filter index
+propertySchema.index({ price: 1, bhk: 1 }); // Native budget sorting
+propertySchema.index({ isVerified: -1, createdAt: -1 });
 propertySchema.index({ isFeatured: -1, createdAt: -1 });
-propertySchema.index({ district: 1, location: 1 });
+propertySchema.index({ district: 1, location: 1, type: 1 }); // Locational filtering
+propertySchema.index({ pricePerAcre: 1, totalAcres: 1 }); // Agri specific
 
 // Text search index
 propertySchema.index({ title: 'text', location: 'text', district: 'text' });
