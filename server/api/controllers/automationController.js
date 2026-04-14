@@ -1,32 +1,42 @@
 import { automationService, logEmitter } from '../modules/automationService.js';
+import NotificationToken from '../models/NotificationToken.js';
+import ChatMessage from '../models/ChatMessage.js';
 
 export const getAutomationStatus = async (req, res) => {
   try {
-    res.json({ status: 'success', data: automationService.getStatus() });
+    const status = await automationService.getStatus();
+    res.json({ status: 'success', data: status });
   } catch (err) {
     res.status(500).json({ status: 'error', message: err.message });
   }
 };
 
-export const getEmailLogs = async (req, res) => {
+export const getChatList = async (req, res) => {
   try {
-    const status = automationService.getStatus();
-    res.json({ status: 'success', data: status.recentLogs });
+    const list = await ChatMessage.aggregate([
+      { $sort: { timestamp: -1 } },
+      { $group: {
+          _id: '$number',
+          lastMessage: { $first: '$body' },
+          lastTimestamp: { $first: '$timestamp' },
+          senderName: { $first: '$senderName' },
+          fromMe: { $first: '$fromMe' }
+      }},
+      { $sort: { lastTimestamp: -1 } }
+    ]);
+    res.json({ status: 'success', data: list });
   } catch (err) {
     res.status(500).json({ status: 'error', message: err.message });
   }
 };
 
-export const sendTestEmail = async (req, res) => {
+export const getChatHistory = async (req, res) => {
   try {
-    const { to } = req.body;
-    if (!to) return res.status(400).json({ status: 'fail', message: '`to` email required' });
-    const result = await automationService.sendEmail({
-      to,
-      subject: 'SnapAdda — Automation Test ✅',
-      body: `Hello!\n\nYour email automation is working perfectly.\nPowered by Brevo SMTP (free 300/day).\n\n— SnapAdda Admin`,
-    });
-    res.json({ status: result.success ? 'success' : 'error', data: result });
+    const { number } = req.params;
+    if (!number) return res.status(400).json({ status: 'fail', message: 'Number required' });
+    const formatted = number.replace(/\D/g, '');
+    const history = await ChatMessage.find({ number: formatted }).sort({ timestamp: 1 });
+    res.json({ status: 'success', data: history });
   } catch (err) {
     res.status(500).json({ status: 'error', message: err.message });
   }
@@ -34,12 +44,41 @@ export const sendTestEmail = async (req, res) => {
 
 export const sendTestWhatsApp = async (req, res) => {
   try {
-    const { phone } = req.body;
+    const { phone, message } = req.body;
     if (!phone) return res.status(400).json({ status: 'fail', message: '`phone` number required' });
     const result = await automationService.sendWhatsApp({
       phone,
-      message: `Hello from SnapAdda! 👋\n\nYour WhatsApp automation is active.\n\n🏠 Browse: https://snapadda.com`,
+      message: message || `Hello from SnapAdda! 👋\n\nYour WhatsApp automation is active.\n\n🏠 Browse: https://snapadda.com`,
     });
+    res.json({ status: result.success ? 'success' : 'error', data: result });
+  } catch (err) {
+    res.status(500).json({ status: 'error', message: err.message });
+  }
+};
+
+export const registerToken = async (req, res) => {
+  try {
+    const { token, deviceInfo } = req.body;
+    if (!token) return res.status(400).json({ status: 'fail', message: 'Token required' });
+
+    await NotificationToken.findOneAndUpdate(
+      { token },
+      { token, deviceInfo, lastUsed: new Date() },
+      { upsert: true, new: true }
+    );
+
+    res.json({ status: 'success', message: 'Token registered' });
+  } catch (err) {
+    res.status(500).json({ status: 'error', message: err.message });
+  }
+};
+
+export const sendPushNotification = async (req, res) => {
+  try {
+    const { title, body, imageUrl, link } = req.body;
+    if (!title || !body) return res.status(400).json({ status: 'fail', message: 'Title and body required' });
+
+    const result = await automationService.sendPushNotification({ title, body, imageUrl, link });
     res.json({ status: result.success ? 'success' : 'error', data: result });
   } catch (err) {
     res.status(500).json({ status: 'error', message: err.message });
@@ -79,4 +118,14 @@ export const streamLogs = (req, res) => {
     logEmitter.off('log', onLog);
     clearInterval(heartbeat);
   });
+};
+
+export const notifyAIInteraction = async (req, res) => {
+  try {
+    const { type, clientContext, previewText } = req.body;
+    const result = await automationService.notifyAdminAIInsight({ type, clientContext, previewText });
+    res.json({ status: result.success ? 'success' : 'error', data: result });
+  } catch (err) {
+    res.status(500).json({ status: 'error', message: err.message });
+  }
 };

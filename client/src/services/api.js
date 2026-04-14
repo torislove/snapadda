@@ -310,3 +310,19 @@ export const fetchUserQuestions = async (userId) => {
     return [];
   }
 };
+
+export const notifyAIInteraction = async (payload) => {
+  try {
+    const res = await fetch(`${API_BASE}/automation/notify-interaction`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error('Failed to notify admin');
+    return await res.json();
+  } catch (e) {
+    console.error('API Error:', e);
+    // Fail silently to avoid interrupting user experience
+    return { status: 'error' };
+  }
+};

@@ -61,7 +61,7 @@ class AIService {
         });
     }
 
-    async draftResponse(context) {
+    async draftResponse(context, type = 'inquiry') {
         this._ensureWorker();
         if (this.status !== 'ready') await this.init();
 
@@ -69,7 +69,30 @@ class AIService {
             this.callbacks.set('generate', { resolve, reject });
             this.worker.postMessage({ 
                 type: 'generate', 
-                data: { prompt: `Draft a professional real estate response for: ${context}` } 
+                data: { 
+                    task: type,
+                    context: context,
+                    prompt: `Draft a professional real estate response for: ${context}` 
+                } 
+            });
+        });
+    }
+
+    async getMarketInsight(onboardingData) {
+        this._ensureWorker();
+        if (this.status !== 'ready') await this.init();
+
+        const summary = `User is looking for ${onboardingData.propertyType} in ${onboardingData.locations || 'Andhra Pradesh'} with a budget of ${onboardingData.budget}.`;
+        
+        return new Promise((resolve, reject) => {
+            this.callbacks.set('generate', { resolve, reject });
+            this.worker.postMessage({ 
+                type: 'generate', 
+                data: { 
+                    task: 'insight',
+                    data: summary,
+                    prompt: `Provide market insight for: ${summary}` 
+                } 
             });
         });
     }

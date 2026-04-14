@@ -148,6 +148,29 @@ const DocumentationCard = ({ category, title, icon, features, styles, database, 
 
 export default function SystemGuide() {
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiInput, setAiInput] = useState('');
+  const [aiResult, setAiResult] = useState('');
+
+  const handleAskAI = async () => {
+    if (!aiInput.trim()) return;
+    setAiLoading(true);
+    setAiResult('');
+    try {
+      const { adminAIService } = await import('../../services/aiService');
+      const docContext = coreCards.map(c => `${c.title}: ${c.features.join(', ')}`).join('. ');
+      const response = await adminAIService.generate(
+        `System Doc Context: ${docContext}. User Question: ${aiInput}`,
+        'general'
+      );
+      setAiResult(response);
+    } catch (err) {
+      console.error(err);
+      setAiResult("Failed to query the AI engine. Ensure Transformers.js is initialized in the Comms Hub.");
+    } finally {
+      setAiLoading(false);
+    }
+  };
 
   const coreCards = [
     {
@@ -436,6 +459,45 @@ export default function SystemGuide() {
             onToggle={() => setExpandedCard(expandedCard === card.id ? null : card.id)}
           />
         ))}
+      </div>
+
+      {/* AI DOCUMENTATION SEARCH / CHAT */}
+      <div style={{ marginTop: '3rem', padding: '2.5rem', background: 'linear-gradient(135deg, rgba(155,89,245,0.05), rgba(34,217,224,0.05))', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.05)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
+          <Sparkles size={24} color="var(--gold)" />
+          <h2 style={{ margin: 0, fontSize: '1.25rem' }}>Interactive System Assistant</h2>
+        </div>
+        
+        <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
+          <input 
+            type="text"
+            className="admin-input"
+            value={aiInput}
+            onChange={(e) => setAiInput(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleAskAI()}
+            placeholder="Ask me how the Vastu logic or CRM workflow works..."
+            style={{ flex: 1 }}
+          />
+          <button 
+            onClick={handleAskAI}
+            disabled={aiLoading}
+            className="btn btn-gold"
+            style={{ padding: '0 2rem', fontWeight: 800 }}
+          >
+            {aiLoading ? 'ANALYZING...' : 'ASK AI'}
+          </button>
+        </div>
+
+        {aiResult && (
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            style={{ padding: '1.5rem', background: 'rgba(0,0,0,0.3)', borderRadius: '16px', border: '1px solid var(--border)', fontSize: '0.9rem', lineHeight: 1.6, color: 'var(--text-secondary)' }}
+          >
+            <div style={{ fontWeight: 800, color: 'var(--gold)', marginBottom: '8px', fontSize: '0.7rem', letterSpacing: '0.1em' }}>AI RESPONSE</div>
+            {aiResult}
+          </motion.div>
+        )}
       </div>
 
       {/* GLOBAL SERVICES SECTION */}

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { 
-  Mail, MessageCircle, Wifi, WifiOff, Send, RefreshCcw,
-  Terminal, Bot, Activity, Phone, AtSign
+  MessageCircle, Send, RefreshCcw, Wifi, WifiOff,
+  Terminal, Bot, Bell, Users
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { adminAIService } from '../../services/aiService';
@@ -50,13 +50,27 @@ const CommsHub = () => {
   const [status, setStatus] = useState<any>(null);
   const [logs, setLogs] = useState<any[]>([]);
   const [sseConnected, setSseConnected] = useState(false);
-  const [activeTab, setActiveTab] = useState<'logs' | 'email' | 'whatsapp'>('logs');
-  const [testEmail, setTestEmail] = useState('');
-  const [testPhone, setTestPhone] = useState('');
+  const [activeTab, setActiveTab] = useState<'logs' | 'chat' | 'push'>('chat');
+  
+  // Chat Specific State
+  const [chats, setChats] = useState<any[]>([]);
+  const [activeChat, setActiveChat] = useState<string | null>(null);
+  const [chatHistory, setChatHistory] = useState<any[]>([]);
+  const [isHistoryLoading, setIsHistoryLoading] = useState(false);
+  const activeChatRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    activeChatRef.current = activeChat;
+  }, [activeChat]);
+  const [pushTitle, setPushTitle] = useState('');
+  const [pushBody, setPushBody] = useState('');
+  const [pushLink, setPushLink] = useState('');
+  const [pushImage, setPushImage] = useState('');
   const [sending, setSending] = useState('');
   const [toastMsg, setToastMsg] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
   const [aiProgress, setAiProgress] = useState(0);
+  const [whatsappBody, setWhatsappBody] = useState('');
   const logsEndRef = useRef<HTMLDivElement>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
 
@@ -79,68 +93,122 @@ const CommsHub = () => {
     fetchStatus();
 
     const connect = () => {
-      const es = new EventSource(`${API_URL}/automation/logs/stream`);
-      eventSourceRef.current = es;
-
-      es.onopen = () => setSseConnected(true);
-
-      es.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          if (data.type === 'history') {
-            setLogs(data.logs);
-          } else {
-            setLogs(prev => [data, ...prev].slice(0, 100));
+      const source = new EventSource(`${API_URL}/automation/logs/stream`);
+      source.onopen = () => setSseConnected(true);
+      source.onmessage = (e) => {
+        if (e.data === ': heartbeat') return;
+        const entry = JSON.parse(e.data);
+        
+        if (entry.type === 'history') {
+          setLogs(entry.logs);
+        } else {
+          setLogs(prev => [entry, ...prev].slice(0, 100));
+          // Real-time chat update
+          if (entry.type === 'whatsapp' && entry.meta?.chatMessage) {
+            const newMsg = entry.meta.chatMessage;
+            fetchChats(); // Refresh sidebar for last message
+            if (activeChatRef.current === newMsg.number) {
+               setChatHistory(prev => [...prev, newMsg]);
+            }
           }
-        } catch {}
+        }
       };
-
-      es.onerror = () => {
+      source.onerror = () => {
         setSseConnected(false);
-        es.close();
-        setTimeout(connect, 5000); // Auto-reconnect
+        source.close();
+        setTimeout(connect, 5000);
       };
+      eventSourceRef.current = source;
     };
 
     connect();
+    fetchChats();
     const statusPoll = setInterval(fetchStatus, 15000);
+    const chatPoll = setInterval(fetchChats, 60000); // Periodic chat list refresh
 
     return () => {
       eventSourceRef.current?.close();
       clearInterval(statusPoll);
+      clearInterval(chatPoll);
     };
   }, []);
+
+  const fetchChats = async () => {
+    try {
+      const res = await fetch(`${API_URL}/automation/chat/list`);
+      const data = await res.json();
+      if (data.status === 'success') setChats(data.data);
+    } catch {}
+  };
+
+  const loadHistory = async (number: string) => {
+    setIsHistoryLoading(true);
+    setActiveChat(number);
+    try {
+      const res = await fetch(`${API_URL}/automation/chat/history/${number}`);
+      const data = await res.json();
+      if (data.status === 'success') setChatHistory(data.data);
+    } catch {}
+    finally { setIsHistoryLoading(false); }
+  };
 
   useEffect(() => {
     logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [logs]);
 
-  const handleTestEmail = async () => {
-    if (!testEmail) return;
-    setSending('email');
+  const handleSendWhatsApp = async () => {
+    if (!activeChat || !whatsappBody) return;
+    setSending('whatsapp');
     try {
-      const res = await fetch(`${API_URL}/automation/test-email`, {
+      const res = await fetch(`${API_URL}/automation/send-whatsapp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ to: testEmail }),
+        body: JSON.stringify({ phone: activeChat, message: whatsappBody }),
       });
       const data = await res.json();
-      showToast(data.status === 'success' ? '✅ Test email sent!' : `❌ Failed: ${data.data?.reason}`);
+      if (data.status === 'success') {
+        showToast('✅ Message sent');
+        setWhatsappBody('');
+        loadHistory(activeChat); // Refresh local view
+      } else {
+        showToast(`❌ Failed: ${data.data?.reason}`);
+      }
     } catch { showToast('❌ Connection error'); }
     finally { setSending(''); }
   };
 
-  const handleTestWhatsApp = async () => {
-    if (!testPhone) return;
-    setSending('whatsapp');
+  const handleDraftPush = async () => {
+    setAiLoading(true);
     try {
-      const res = await fetch(`${API_URL}/automation/test-whatsapp`, {
+      const text = await adminAIService.generate(`Short engaging push notification about a new property or market update`, 'draft_email');
+      const lines = text.split('\n').filter(l => l.trim());
+      if (lines.length > 1) {
+        setPushTitle(lines[0].replace(/Title: /i, '').trim());
+        setPushBody(lines.slice(1).join(' ').trim());
+      } else {
+        setPushTitle('SnapAdda Update 🏠');
+        setPushBody(text);
+      }
+    } catch { showToast('❌ AI Draft failed'); }
+    finally { setAiLoading(false); }
+  };
+
+  const handleSendPush = async () => {
+    if (!pushTitle || !pushBody) return;
+    setSending('push');
+    try {
+      const res = await fetch(`${API_URL}/automation/send-push`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: testPhone }),
+        body: JSON.stringify({ 
+          title: pushTitle, 
+          body: pushBody, 
+          link: pushLink,
+          imageUrl: pushImage 
+        }),
       });
       const data = await res.json();
-      showToast(data.status === 'success' ? '✅ WhatsApp message sent!' : `❌ Failed: ${data.data?.reason}`);
+      showToast(data.status === 'success' ? `✅ Push sent!` : `❌ Failed: ${data.data?.reason}`);
     } catch { showToast('❌ Connection error'); }
     finally { setSending(''); }
   };
@@ -166,7 +234,7 @@ const CommsHub = () => {
           Comms Hub
         </h1>
         <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-          WhatsApp · Brevo Email · Real-time System Logs — Powered by Transformers.js
+          Direct Chat · SIM-Based Automation · Push Notifications · Real-time System Logs
         </p>
       </div>
 
@@ -186,22 +254,6 @@ const CommsHub = () => {
           </div>
         </div>
 
-        {/* Email Status */}
-        <div className="glass-card" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '14px' }}>
-          <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: 'rgba(34,217,224,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--cyan)' }}>
-            <Mail size={20} />
-          </div>
-          <div>
-            <div style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Brevo Email</div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
-              <StatusDot active={status?.email?.enabled ?? false} />
-              <span style={{ fontWeight: 700, fontSize: '0.88rem' }}>{status?.email?.enabled ? `Active` : 'Not Configured'}</span>
-            </div>
-            {status?.email?.fromAddress && (
-              <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '2px' }}>{status.email.fromAddress}</div>
-            )}
-          </div>
-        </div>
 
         {/* WhatsApp Status */}
         <div className="glass-card" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '14px' }}>
@@ -219,6 +271,20 @@ const CommsHub = () => {
             {status?.whatsapp?.pendingQR && (
               <div style={{ fontSize: '0.62rem', color: 'var(--gold)', marginTop: '2px' }}>⚡ QR ready in server terminal</div>
             )}
+          </div>
+        </div>
+
+        {/* FCM Status */}
+        <div className="glass-card" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '14px' }}>
+          <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: 'rgba(245,57,123,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--rose)' }}>
+            <Bell size={20} />
+          </div>
+          <div>
+            <div style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Push (FCM)</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
+              <StatusDot active={status?.fcm?.enabled ?? false} />
+              <span style={{ fontWeight: 700, fontSize: '0.88rem' }}>{status?.fcm?.enabled ? `Active` : 'Not Initialized'}</span>
+            </div>
           </div>
         </div>
 
@@ -244,9 +310,9 @@ const CommsHub = () => {
       <div className="glass-card" style={{ padding: 0, overflow: 'hidden' }}>
         <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
           {[
-            { id: 'logs', label: 'Live Logs', icon: Activity },
-            { id: 'email', label: 'Email Test', icon: Mail },
-            { id: 'whatsapp', label: 'WhatsApp Test', icon: MessageCircle },
+            { id: 'chat', label: 'WhatsApp Chat', icon: MessageCircle },
+            { id: 'push', label: 'Push Broadcast', icon: Bell },
+            { id: 'logs', label: 'System Logs', icon: Terminal },
           ].map(tab => (
             <button
               key={tab.id}
@@ -309,101 +375,190 @@ const CommsHub = () => {
             </div>
           )}
 
-          {/* EMAIL TEST TAB */}
-          {activeTab === 'email' && (
-            <div style={{ maxWidth: '520px' }}>
-              <div style={{ background: 'rgba(34,217,224,0.04)', border: '1px solid rgba(34,217,224,0.15)', borderRadius: '12px', padding: '1rem', marginBottom: '1.5rem' }}>
-                <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--cyan)', marginBottom: '8px', letterSpacing: '0.1em' }}>📧 BREVO SMTP — FREE PLAN</div>
-                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: 1.5, margin: 0 }}>
-                  <strong style={{ color: 'var(--text-secondary)' }}>300 free emails/day.</strong> No credit card required.<br/>
-                  Setup: Register at <a href="https://www.brevo.com" target="_blank" style={{ color: 'var(--cyan)' }}>brevo.com</a> → SMTP &amp; API → Generate SMTP key → add to <code style={{ background: 'rgba(255,255,255,0.05)', padding: '1px 5px', borderRadius: '4px' }}>.env</code>
-                </p>
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                <div>
-                  <label className="admin-label"><AtSign size={12} style={{ marginRight: '4px' }} />Recipient Email</label>
-                  <input
-                    type="email"
-                    className="admin-input"
-                    value={testEmail}
-                    onChange={(e) => setTestEmail(e.target.value)}
-                    placeholder="client@example.com"
-                  />
+          {/* WHATSAPP CHAT TAB */}
+          {activeTab === 'chat' && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(250px, 1fr) 2fr', gap: '1rem', height: '600px' }}>
+              
+              {/* Sidebar: Chat List */}
+              <div style={{ borderRight: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', gap: '0.5rem', overflowY: 'auto', paddingRight: '0.5rem' }}>
+                <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--emerald)', marginBottom: '0.5rem', letterSpacing: '0.1em', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Users size={12} /> ACTIVE CONVERSATIONS
                 </div>
-                <button
-                  onClick={handleTestEmail}
-                  disabled={!!sending || !testEmail}
-                  className="btn btn-gold"
-                  style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center', padding: '12px' }}
-                >
-                  {sending === 'email' ? <RefreshCcw size={16} className="animate-spin" /> : <Send size={16} />}
-                  {sending === 'email' ? 'Sending...' : 'Send Test Email'}
-                </button>
-                <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textAlign: 'center' }}>
-                  Gemma 4 will draft a professional confirmation email
-                </p>
+                {chats.length === 0 ? (
+                  <div style={{ padding: '2rem', textAlign: 'center', opacity: 0.3, fontSize: '0.8rem' }}>No conversations yet.</div>
+                ) : chats.map((c) => (
+                  <button
+                    key={c._id}
+                    onClick={() => loadHistory(c._id)}
+                    style={{
+                      width: '100%', textAlign: 'left', padding: '1rem', borderRadius: '12px',
+                      background: activeChat === c._id ? 'rgba(16,217,140,0.1)' : 'rgba(255,255,255,0.02)',
+                      border: activeChat === c._id ? '1px solid var(--emerald)' : '1px solid rgba(255,255,255,0.05)',
+                      transition: 'all 0.2s', cursor: 'pointer'
+                    }}
+                  >
+                    <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'white', marginBottom: '4px' }}>{c.senderName || c._id}</div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                       {c.fromMe ? 'You: ' : ''}{c.lastMessage}
+                    </div>
+                  </button>
+                ))}
               </div>
 
-              <div style={{ marginTop: '2rem', padding: '1rem', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.06)' }}>
-                <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--gold)', marginBottom: '8px', letterSpacing: '0.1em' }}>⚙️ REQUIRED .ENV VARIABLES</div>
-                <pre style={{ fontSize: '0.72rem', color: 'var(--emerald)', margin: 0, lineHeight: 1.6, fontFamily: 'var(--font-mono)' }}>
-{`BREVO_SMTP_LOGIN=your@email.com
-BREVO_SMTP_KEY=xsmtpXXXXXXXXXXXXXX`}
-                </pre>
+              {/* Main: Message Window */}
+              <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'rgba(255,255,255,0.01)', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.04)', overflow: 'hidden' }}>
+                {!activeChat ? (
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', opacity: 0.3 }}>
+                    <MessageCircle size={48} style={{ marginBottom: '1rem' }} />
+                    <p style={{ fontWeight: 700 }}>Select a lead to start chatting</p>
+                  </div>
+                ) : (
+                  <>
+                    <div style={{ padding: '1rem', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ fontWeight: 800, fontSize: '0.9rem' }}>{activeChat}</div>
+                      <div style={{ fontSize: '0.7rem', color: isHistoryLoading ? 'var(--emerald)' : 'var(--text-muted)' }}>
+                        {isHistoryLoading ? 'Loading history...' : 'Chat Sync Active'}
+                      </div>
+                    </div>
+
+                    <div style={{ flex: 1, padding: '1.5rem', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                      {chatHistory.map((m, i) => (
+                        <div key={i} style={{ 
+                          maxWidth: '80%', padding: '0.75rem 1rem', borderRadius: '16px',
+                          alignSelf: m.fromMe ? 'flex-end' : 'flex-start',
+                          background: m.fromMe ? 'var(--emerald)' : 'rgba(255,255,255,0.08)',
+                          color: m.fromMe ? 'black' : 'white',
+                          fontWeight: m.fromMe ? 600 : 500,
+                          fontSize: '0.88rem',
+                          boxShadow: m.fromMe ? '0 4px 12px rgba(16,217,140,0.2)' : 'none',
+                          borderTopRightRadius: m.fromMe ? '4px' : '16px',
+                          borderTopLeftRadius: m.fromMe ? '16px' : '4px'
+                        }}>
+                          {m.body}
+                          <div style={{ fontSize: '0.65rem', opacity: 0.5, marginTop: '4px', textAlign: m.fromMe ? 'right' : 'left' }}>
+                            {new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div style={{ padding: '1rem', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', gap: '10px' }}>
+                      <textarea 
+                        className="admin-input" 
+                        rows={2} 
+                        value={whatsappBody}
+                        onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendWhatsApp(); } }}
+                        onChange={(e) => setWhatsappBody(e.target.value)}
+                        placeholder="Type a message..."
+                        style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', paddingLeft: '1rem' }}
+                      />
+                      <button 
+                         onClick={handleSendWhatsApp}
+                         disabled={!!sending || !whatsappBody}
+                         style={{ padding: '0 1.5rem', borderRadius: '12px', background: 'var(--emerald)', color: 'black', border: 'none', cursor: 'pointer', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                      >
+                         {sending === 'whatsapp' ? <RefreshCcw size={18} className="animate-spin" /> : <Send size={18} />}
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           )}
 
-          {/* WHATSAPP TEST TAB */}
-          {activeTab === 'whatsapp' && (
-            <div style={{ maxWidth: '520px' }}>
-              <div style={{ background: 'rgba(16,217,140,0.04)', border: '1px solid rgba(16,217,140,0.15)', borderRadius: '12px', padding: '1rem', marginBottom: '1.5rem' }}>
-                <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--emerald)', marginBottom: '8px', letterSpacing: '0.1em' }}>📱 WHATSAPP — FREE (YOUR SIM)</div>
+          {/* PUSH NOTIFICATIONS TAB */}
+          {activeTab === 'push' && (
+            <div style={{ maxWidth: '600px' }}>
+              <div style={{ background: 'rgba(245,57,123,0.04)', border: '1px solid rgba(245,57,123,0.15)', borderRadius: '12px', padding: '1rem', marginBottom: '1.5rem' }}>
+                <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--rose)', marginBottom: '8px', letterSpacing: '0.1em' }}>🔔 FIREBASE PUSH NOTIFICATIONS</div>
                 <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: 1.5, margin: 0 }}>
-                  Uses <strong style={{ color: 'var(--text-secondary)' }}>your existing WhatsApp</strong> number — no API cost.<br/>
-                  Enable by adding to <code style={{ background: 'rgba(255,255,255,0.05)', padding: '1px 5px', borderRadius: '4px' }}>.env</code>, then scan the QR in the server terminal once.
+                  Send real-time alerts to all registered client devices.<br/>
+                  Total registered tokens: <strong style={{ color: 'var(--rose)' }}>{status?.fcm?.tokenCount || 'Calculating...'}</strong>
                 </p>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '10px' }}>
-                  <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: status?.whatsapp?.connected ? 'var(--emerald)' : 'var(--rose)', boxShadow: status?.whatsapp?.connected ? '0 0 8px var(--emerald)' : 'none' }} />
-                  <span style={{ fontSize: '0.78rem', fontWeight: 700 }}>
-                    {status?.whatsapp?.connected ? 'Phone linked & active' : status?.whatsapp?.pendingQR ? 'QR code waiting in server terminal' : 'Disabled — set WHATSAPP_ENABLED=true'}
-                  </span>
-                </div>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                  <div>
+                    <label className="admin-label">Notification Title</label>
+                    <input
+                      className="admin-input"
+                      value={pushTitle}
+                      onChange={(e) => setPushTitle(e.target.value)}
+                      placeholder="e.g. New Luxury Villa! 🏠"
+                    />
+                  </div>
+                  <div>
+                    <label className="admin-label">Action URL (Click Action)</label>
+                    <input
+                      className="admin-input"
+                      value={pushLink}
+                      onChange={(e) => setPushLink(e.target.value)}
+                      placeholder="e.g. /properties/123"
+                    />
+                  </div>
+                </div>
+
                 <div>
-                  <label className="admin-label"><Phone size={12} style={{ marginRight: '4px' }} />Phone Number (Indian)</label>
+                  <label className="admin-label">Notification Body</label>
+                  <textarea 
+                    className="admin-input" 
+                    rows={3} 
+                    value={pushBody} 
+                    onChange={(e) => setPushBody(e.target.value)}
+                    placeholder="Brief & engaging message..."
+                  />
+                  <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                    <button 
+                      type="button" 
+                      onClick={handleDraftPush}
+                      className="btn-ghost" 
+                      style={{ fontSize: '0.7rem', color: 'var(--rose)', border: '1px solid var(--rose)', padding: '4px 12px', borderRadius: '6px' }}
+                    >
+                      {aiLoading ? 'DRAFTING...' : '⚡ AI SMART DRAFT'}
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="admin-label">Image URL (Optional)</label>
                   <input
-                    type="tel"
                     className="admin-input"
-                    value={testPhone}
-                    onChange={(e) => setTestPhone(e.target.value)}
-                    placeholder="9876543210"
+                    value={pushImage}
+                    onChange={(e) => setPushImage(e.target.value)}
+                    placeholder="https://example.com/image.jpg"
                   />
                 </div>
-                <button
-                  onClick={handleTestWhatsApp}
-                  disabled={!!sending || !testPhone || !status?.whatsapp?.connected}
-                  className="btn btn-emerald"
-                  style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center', padding: '12px' }}
-                >
-                  {sending === 'whatsapp' ? <RefreshCcw size={16} className="animate-spin" /> : <MessageCircle size={16} />}
-                  {sending === 'whatsapp' ? 'Sending...' : 'Send Test WhatsApp'}
-                </button>
-                {!status?.whatsapp?.connected && (
-                  <p style={{ fontSize: '0.72rem', color: 'var(--rose)', textAlign: 'center' }}>
-                    ⚠ WhatsApp not connected. Check server terminal for QR code.
-                  </p>
-                )}
-              </div>
 
-              <div style={{ marginTop: '2rem', padding: '1rem', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.06)' }}>
-                <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--gold)', marginBottom: '8px', letterSpacing: '0.1em' }}>⚙️ REQUIRED .ENV VARIABLES</div>
-                <pre style={{ fontSize: '0.72rem', color: 'var(--emerald)', margin: 0, lineHeight: 1.6, fontFamily: 'var(--font-mono)' }}>
-{`WHATSAPP_ENABLED=true`}
-                </pre>
+                <div style={{ padding: '1rem', background: 'rgba(255,255,255,0.03)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)' }}>
+                  <div style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--text-muted)', marginBottom: '8px' }}>PREVIEW</div>
+                  <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                    <div style={{ width: '40px', height: '40px', background: 'var(--rose)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Bell size={20} color="white" />
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>{pushTitle || 'Project Title'}</div>
+                      <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{pushBody || 'Notification body content will appear here...'}</div>
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  onClick={handleSendPush}
+                  disabled={!!sending || !pushTitle || !pushBody}
+                  className="btn"
+                  style={{ 
+                    display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center', padding: '12px', width: '100%',
+                    background: 'var(--rose)', color: 'white'
+                  }}
+                >
+                  {sending === 'push' ? <RefreshCcw size={16} className="animate-spin" /> : <Send size={16} />}
+                  {sending === 'push' ? 'Broadcasting...' : 'Send Broadcast Notification'}
+                </button>
+                
+                <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textAlign: 'center' }}>
+                  This will send a notification to ALL registered tokens concurrently.
+                </p>
               </div>
             </div>
           )}

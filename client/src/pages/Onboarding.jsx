@@ -7,8 +7,7 @@ import {
   CheckCircle2, Sparkles, HelpCircle, Activity, ShieldCheck, 
   Cpu, Zap, Layers 
 } from 'lucide-react';
-import { db } from '../firebase';
-import { ref, onValue, off } from 'firebase/database';
+import { fetchSetting } from '../services/api';
 import { useTranslation } from 'react-i18next';
 import Logo from '../components/Logo';
 
@@ -28,43 +27,29 @@ export default function Onboarding() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isFinished, setIsFinished] = useState(false);
 
-  // --- Real-time Question Pulse ---
+  // --- Real-time Question Sync from Server ---
   useEffect(() => {
-    if (!db) {
-      setLoading(false);
-      return;
-    }
-
-    const qRef = ref(db, 'onboarding_questions');
-    const unsubscribe = onValue(qRef, (snapshot) => {
-      try {
-        const data = snapshot.val();
-        if (data) {
-          const active = Object.values(data)
-            .filter(q => q && q.enabled)
-            .sort((a, b) => (Number(a.displayOrder) || 0) - (Number(b.displayOrder) || 0));
-          
-          setQuestions(active);
-          
-          // Sync form keys without wiping existing answers
-          setFormData(prev => {
-            const next = { ...prev };
-            active.forEach(q => {
-              if (q.key && next[q.key] === undefined) {
-                next[q.key] = '';
-              }
-            });
-            return next;
+    fetchSetting('onboarding_questions')
+      .then(res => {
+        const active = (Array.isArray(res) ? res : [])
+          .filter(q => q && q.enabled)
+          .sort((a, b) => (Number(a.displayOrder) || 0) - (Number(b.displayOrder) || 0));
+        
+        setQuestions(active);
+        
+        // Sync form keys without wiping existing answers
+        setFormData(prev => {
+          const next = { ...prev };
+          active.forEach(q => {
+            if (q.key && next[q.key] === undefined) {
+              next[q.key] = '';
+            }
           });
-        }
-      } catch (err) {
-        console.error('Onboarding Sync Failure:', err);
-      } finally {
-        setLoading(false);
-      }
-    });
-
-    return () => off(qRef, 'value', unsubscribe);
+          return next;
+        });
+      })
+      .catch(err => console.error('Onboarding Sync Failure:', err))
+      .finally(() => setLoading(false));
   }, []);
 
   // Stability: Redirect if already qualified

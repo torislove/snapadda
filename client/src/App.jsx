@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-route
 import { LazyMotion, domAnimation, motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from './contexts/AuthContext';
 import Header from './components/Header';
+import { useNotifications } from './hooks/useNotifications';
 
 // Global HUD components - Symmetrically aligned
 const UnitConverter = lazy(() => import('./components/UnitConverter'));
@@ -48,6 +49,7 @@ function ProtectedRoute({ children }) {
 }
 
 function AppContent() {
+  useNotifications();
   const location = useLocation();
   const showHeader = location.pathname !== '/login';
 

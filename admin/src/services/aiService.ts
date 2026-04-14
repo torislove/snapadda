@@ -59,7 +59,7 @@ class AdminAIService {
         });
     }
 
-    async generate(prompt: string): Promise<string> {
+    async generate(prompt: string, task: 'general' | 'description' | 'draft_email' = 'general', details?: any): Promise<string> {
         this._ensureWorker();
         if (this.status !== 'ready') await this.init();
 
@@ -67,7 +67,7 @@ class AdminAIService {
             this.callbacks.set('generate', { resolve, reject });
             this.worker?.postMessage({ 
                 type: 'generate', 
-                data: { prompt } 
+                data: { prompt, task, details } 
             });
         });
     }

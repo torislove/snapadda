@@ -15,6 +15,7 @@ $FIREBASE_PROD = @{
     "VITE_FIREBASE_APP_ID" = "1:227172321059:web:7fe7097f7937739c0f6e96"
     "VITE_FIREBASE_MEASUREMENT_ID" = "G-EPKYKL1SPN"
     "VITE_RTDB_URL" = "https://snapadda-7a6e6-default-rtdb.firebaseio.com"
+    "VITE_GOOGLE_CLIENT_ID" = "227172321059-3ss62q0vtlsh0rh3u2vs2g0f1uf594mc.apps.googleusercontent.com"
 }
 
 # Function to Robustly Set Env Var in .env files

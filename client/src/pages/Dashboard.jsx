@@ -7,6 +7,7 @@ import { getFavorites, fetchUserQuestions } from '../services/api';
 import PropertyCard from '../components/PropertyCard';
 import Logo from '../components/Logo';
 import ContactModal from '../components/ContactModal';
+import AiInsights from '../components/AiInsights';
 import { useTranslation } from 'react-i18next';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
@@ -145,60 +146,9 @@ function Favorites({ saved, loading }) {
   );
 }
 
-// Inquiries tab
-function Inquiries({ questions, loading }) {
-  const { t } = useTranslation();
-  if (loading) {
-    return <div style={{ padding: '2rem 0', textAlign: 'center' }}><RefreshCw className="animate-spin" /> Loading inquiries...</div>;
-  }
-
-  return (
-    <div style={{ padding: '2rem 0' }}>
-      <h2 style={{ marginBottom: '1.5rem' }}>{t('dashboard.inquiries')}</h2>
-      {questions.length > 0 ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          {questions.map(q => (
-            <div key={q._id} className="glass-heavy" style={{ padding: '2rem', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.05)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
-                <Link to={`/property/${q.propertyId?._id}`} style={{ display: 'flex', gap: '1rem', textDecoration: 'none' }}>
-                  <img src={q.propertyId?.image || q.propertyId?.images?.[0]} style={{ width: '60px', height: '60px', borderRadius: '10px', objectFit: 'cover' }} alt="Prop" />
-                  <div>
-                    <div style={{ fontWeight: 700, color: 'white' }}>{q.propertyId?.title || 'Unknown Asset'}</div>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--txt-muted)' }}><MapPin size={10}/> {q.propertyId?.location}</div>
-                  </div>
-                </Link>
-                <div style={{ 
-                  padding: '6px 14px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 700, height: 'fit-content',
-                  background: q.status === 'Answered' ? 'rgba(16,217,140,0.1)' : 'rgba(244,208,63,0.1)',
-                  color: q.status === 'Answered' ? 'var(--accent-emerald)' : 'var(--gold)',
-                  border: `1px solid ${q.status === 'Answered' ? 'rgba(16,217,140,0.2)' : 'rgba(244,208,63,0.2)'}`
-                }}>
-                  {(q.status || 'Pending').toUpperCase()}
-                </div>
-              </div>
-              <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1.25rem', borderRadius: '14px', marginBottom: '1rem' }}>
-                <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--txt-muted)', marginBottom: '0.4rem', fontWeight: 800 }}>Question</div>
-                <div style={{ fontSize: '0.95rem' }}>{q.question}</div>
-              </div>
-              {q.answer && (
-                <div style={{ background: 'rgba(155,89,245,0.05)', padding: '1.25rem', borderRadius: '14px', borderLeft: '3px solid var(--violet)' }}>
-                  <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--violet)', marginBottom: '0.4rem', fontWeight: 800 }}>Agent Response</div>
-                  <div style={{ fontSize: '0.95rem' }}>{q.answer}</div>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="empty-state">
-          <MessageSquare size={48} />
-          <h3>No inquiries found</h3>
-          <p>Ask questions on any property page to see them here.</p>
-          <Link to="/" className="hero-btn hero-btn-primary" style={{ marginTop: '0.5rem' }}>Start Browsing</Link>
-        </div>
-      )}
-    </div>
-  );
+// Intelligence/AI Hub tab
+function IntelligenceHub({ user, savedCount }) {
+  return <AiInsights user={user} savedCount={savedCount} />;
 }
 
 // Profile tab
@@ -275,7 +225,7 @@ export default function Dashboard() {
   const TABS = [
     { key: 'home', label: 'Overview', icon: <ShieldCheck size={18} /> },
     { key: 'favorites', label: 'Saved Assets', icon: <Heart size={18} /> },
-    { key: 'inquiries', label: 'Intelligence', icon: <MessageSquare size={18} /> },
+    { key: 'intelligence', label: 'AI Intelligence', icon: <Sparkles size={18} /> },
     { key: 'profile', label: 'Executive Info', icon: <User size={18} /> },
   ];
 
@@ -284,14 +234,39 @@ export default function Dashboard() {
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-deep)', paddingTop: 'var(--nav-h)', paddingBottom: '4rem' }}>
 
-      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 2rem' }}>
+      <div className="dashboard-container" style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 1rem' }}>
         {/* Tab Nav */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.5rem 0', borderBottom: '1px solid rgba(255,255,255,0.05)', marginBottom: '0', flexWrap: 'wrap', gap: '1rem' }}>
-          <div style={{ display: 'flex', gap: '0.4rem', background: 'rgba(255,255,255,0.02)', padding: '6px', borderRadius: '18px', border: '1px solid rgba(255,255,255,0.05)' }}>
+          <div style={{ 
+            display: 'flex', 
+            gap: '0.4rem', 
+            background: 'rgba(255,255,255,0.02)', 
+            padding: '6px', 
+            borderRadius: '18px', 
+            border: '1px solid rgba(255,255,255,0.05)',
+            overflowX: 'auto',
+            scrollbarWidth: 'none',
+            WebkitOverflowScrolling: 'touch',
+            maxWidth: '100%'
+          }}>
             {TABS.map(t => (
               <button key={t.key} onClick={() => setActiveTab(t.key)}
-                style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.75rem 1.5rem', borderRadius: '14px', border: 'none', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 700, transition: 'all 0.3s',
-                  background: activeTab === t.key ? 'rgba(244,208,63,0.1)' : 'transparent', color: activeTab === t.key ? 'var(--gold)' : 'var(--txt-muted)', boxShadow: activeTab === t.key ? '0 4px 15px rgba(0,0,0,0.1)' : 'none' }}>
+                style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '0.6rem', 
+                  padding: '0.75rem 1.25rem', 
+                  borderRadius: '14px', 
+                  border: 'none', 
+                  cursor: 'pointer', 
+                  fontSize: '0.82rem', 
+                  fontWeight: 700, 
+                  transition: 'all 0.3s',
+                  whiteSpace: 'nowrap',
+                  background: activeTab === t.key ? 'rgba(244,208,63,0.1)' : 'transparent', 
+                  color: activeTab === t.key ? 'var(--gold)' : 'var(--txt-muted)', 
+                  boxShadow: activeTab === t.key ? '0 4px 15px rgba(0,0,0,0.1)' : 'none' 
+                }}>
                 {t.icon} {t.label}
               </button>
             ))}
@@ -307,7 +282,7 @@ export default function Dashboard() {
           <motion.div key={activeTab} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} transition={{ duration: 0.2 }}>
             {activeTab === 'home' && <DashboardHome user={user} stats={stats} recent={recent} setModalOpen={setModalOpen} />}
             {activeTab === 'favorites' && <Favorites saved={saved} loading={loading} />}
-            {activeTab === 'inquiries' && <Inquiries questions={questions} loading={qLoading} />}
+            {activeTab === 'intelligence' && <IntelligenceHub user={user} savedCount={saved.length} />}
             {activeTab === 'profile' && <Profile user={user} logout={logout} />}
           </motion.div>
         </AnimatePresence>

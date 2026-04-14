@@ -158,7 +158,6 @@ export default function Login() {
                   theme="filled_black"
                   shape="circle"
                   size="large"
-                  width="100%"
                 />
               )}
             </div>

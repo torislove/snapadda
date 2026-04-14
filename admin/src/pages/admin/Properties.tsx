@@ -124,25 +124,31 @@ const AdminProperties = () => {
     
     setIsGeneratingAI(true);
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/ai/generate-description`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          details: {
-            title: liveData.title,
-            location: liveData.location,
-            features: JSON.stringify(customFeatures),
-            price: liveData.price
-          }
-        })
-      });
-      const data = await res.json();
-      if (data.status === 'success') {
-        setLiveData((prev: any) => ({ ...prev, description: data.data }));
-        // Manually update the textarea value if needed, but liveData binding should handle it
+      // Import the service dynamically or use existing instance
+      const { adminAIService } = await import('../../services/aiService');
+      
+      const details = {
+        title: liveData.title,
+        location: liveData.location,
+        type: liveData.type,
+        price: liveData.price,
+        features: customFeatures.map(f => f.label + ': ' + f.value).join(', ')
+      };
+
+      const description = await adminAIService.generate(
+        `Generate description for ${liveData.title} in ${liveData.location}`,
+        'description',
+        details
+      );
+      
+      if (description) {
+        setLiveData((prev: any) => ({ ...prev, description }));
       }
     } catch (err) {
       console.error("AI Generation failed:", err);
+      // Optional: Fallback to a simple template if AI fails
+      const fallback = `${liveData.title} located in ${liveData.location}. This premium ${liveData.type} offers exceptional value and strategic positioning in the Andhra market. Contact for details.`;
+      setLiveData((prev: any) => ({ ...prev, description: fallback }));
     } finally {
       setIsGeneratingAI(false);
     }

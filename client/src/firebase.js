@@ -1,5 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getDatabase } from "firebase/database";
+import { getMessaging } from "firebase/messaging";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -14,6 +15,7 @@ const firebaseConfig = {
 
 let app;
 let db = null;
+let messaging = null;
 
 if (firebaseConfig.apiKey && firebaseConfig.apiKey !== 'undefined') {
   try {
@@ -25,6 +27,11 @@ if (firebaseConfig.apiKey && firebaseConfig.apiKey !== 'undefined') {
     } else {
       console.warn("RTDB URL missing or invalid. Sync features will be limited.");
     }
+    
+    // Initialize Messaging
+    messaging = getMessaging(app);
+    console.log("Firebase Messaging initialized");
+    
   } catch (err) {
     console.error("Firebase startup failure:", err);
   }
@@ -32,4 +39,4 @@ if (firebaseConfig.apiKey && firebaseConfig.apiKey !== 'undefined') {
   console.warn("Firebase configuration missing. Real-time features will be disabled.");
 }
 
-export { app, db };
+export { app, db, messaging };

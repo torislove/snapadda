@@ -1,5 +1,8 @@
-import nodemailer from 'nodemailer';
 import { EventEmitter } from 'events';
+import { fcm } from '../firebase.js';
+import NotificationToken from '../models/NotificationToken.js';
+import SiteSetting from '../models/SiteSetting.js';
+import ChatMessage from '../models/ChatMessage.js';
 
 
 /**
@@ -21,35 +24,29 @@ function pushLog(type, message, meta = {}) {
 
 class AutomationService {
   constructor() {
-    this.emailTransporter = null;
     this.whatsappClient = null;
     this.whatsappReady = false;
     this.whatsappQR = null;
-    this.emailEnabled = !!(process.env.BREVO_SMTP_KEY || process.env.SMTP_PASS);
     this.whatsappEnabled = process.env.WHATSAPP_ENABLED === 'true';
 
-    this._initEmail();
+    this._init();
+  }
+
+  async _init() {
+    await this.refreshSettings();
     if (this.whatsappEnabled) this._initWhatsApp();
   }
 
-  /* ─── BREVO (FREE SMTP) SETUP ─── */
-  _initEmail() {
-    if (!this.emailEnabled) {
-      pushLog('system', 'Email automation disabled — add BREVO_SMTP_KEY to .env');
-      return;
+  async refreshSettings() {
+    try {
+      const settings = await SiteSetting.findOne({ key: 'automation_settings' });
+      if (settings?.value) {
+        const { fcmVapid } = settings.value;
+        if (fcmVapid) this.fcmVapid = fcmVapid;
+      }
+    } catch (err) {
+      console.error('Failed to load automation settings:', err);
     }
-
-    // Brevo SMTP config (free tier: 300 emails/day)
-    this.emailTransporter = nodemailer.createTransport({
-      host: 'smtp-relay.brevo.com',
-      port: 587,
-      secure: false,
-      auth: {
-        user: process.env.BREVO_SMTP_LOGIN || process.env.SMTP_USER,
-        pass: process.env.BREVO_SMTP_KEY || process.env.SMTP_PASS,
-      },
-    });
-    pushLog('system', '📧 Brevo SMTP initialized (free 300 emails/day)');
   }
 
   /* ─── WHATSAPP SETUP ─── */
@@ -81,30 +78,31 @@ class AutomationService {
         setTimeout(() => this._initWhatsApp(), 8000);
       });
 
+      this.whatsappClient.on('message', async (msg) => {
+        // Capture incoming message
+        const chatMsg = await ChatMessage.create({
+          number: msg.from.split('@')[0],
+          body: msg.body,
+          fromMe: false,
+          senderName: msg._data?.notifyName || 'Lead'
+        });
+        
+        // Push to log for live updates
+        pushLog('whatsapp', `📩 New message from ${chatMsg.number}: ${msg.body.substring(0, 50)}...`, { 
+          chatMessage: chatMsg 
+        });
+
+        // Optional: Trigger FCM to alert admin
+        this.sendPushNotification({
+          title: `💬 WhatsApp: ${chatMsg.senderName}`,
+          body: msg.body.substring(0, 100),
+          link: '/admin/comms'
+        });
+      });
+
       await this.whatsappClient.initialize();
     } catch (err) {
       pushLog('error', `❌ WhatsApp init failed: ${err.message}`);
-    }
-  }
-
-  /* ─── SEND EMAIL ─── */
-  async sendEmail({ to, subject, body }) {
-    if (!this.emailEnabled || !this.emailTransporter) {
-      pushLog('email', `Email skipped (disabled) — to: ${to}`);
-      return { success: false, reason: 'Email not configured' };
-    }
-    try {
-      const info = await this.emailTransporter.sendMail({
-        from: `"SnapAdda Premium Real Estate" <${process.env.BREVO_SMTP_LOGIN || process.env.SMTP_USER}>`,
-        to,
-        subject,
-        html: this._wrapEmailHTML(body),
-      });
-      pushLog('email', `✅ Email sent to ${to}`, { subject, messageId: info.messageId });
-      return { success: true, messageId: info.messageId };
-    } catch (err) {
-      pushLog('error', `❌ Email failed to ${to}: ${err.message}`);
-      return { success: false, reason: err.message };
     }
   }
 
@@ -118,12 +116,88 @@ class AutomationService {
       const formatted = phone.replace(/\D/g, '');
       const withCountry = formatted.startsWith('91') ? formatted : `91${formatted}`;
       await this.whatsappClient.sendMessage(`${withCountry}@c.us`, message);
+      
+      // Save to chat history
+      await ChatMessage.create({
+        number: formatted,
+        body: message,
+        fromMe: true,
+        senderName: 'Admin'
+      });
+
       pushLog('whatsapp', `✅ WhatsApp sent to ${phone}`);
       return { success: true };
     } catch (err) {
       pushLog('error', `❌ WhatsApp failed to ${phone}: ${err.message}`);
       return { success: false, reason: err.message };
     }
+  }
+
+  /* ─── SEND PUSH NOTIFICATION (FCM) ─── */
+  async sendPushNotification({ title, body, imageUrl, link }) {
+    if (!fcm) {
+      pushLog('system', 'Push notification skipped — FCM not initialized');
+      return { success: false, reason: 'FCM not initialized' };
+    }
+
+    try {
+      const tokens = await NotificationToken.find().distinct('token');
+      if (tokens.length === 0) {
+        pushLog('system', 'Push notification skipped — No registered tokens');
+        return { success: false, reason: 'No registered tokens' };
+      }
+
+      const message = {
+        notification: { title, body },
+        data: { 
+          click_action: link || '/',
+          ...(imageUrl && { image: imageUrl })
+        },
+        tokens: tokens
+      };
+
+      const response = await fcm.sendEachForMulticast(message);
+      
+      const successCount = response.successCount;
+      const failureCount = response.failureCount;
+
+      pushLog('system', `🔔 Push notification sent to ${successCount} devices (${failureCount} failed)`);
+      
+      // Cleanup invalid tokens
+      if (response.failureCount > 0) {
+        const invalidTokens = [];
+        response.responses.forEach((resp, idx) => {
+          if (!resp.success && (resp.error.code === 'messaging/registration-token-not-registered' || resp.error.code === 'messaging/invalid-registration-token')) {
+            invalidTokens.push(tokens[idx]);
+          }
+        });
+        if (invalidTokens.length > 0) {
+          await NotificationToken.deleteMany({ token: { $in: invalidTokens } });
+          pushLog('system', `🧹 Cleaned up ${invalidTokens.length} invalid FCM tokens`);
+        }
+      }
+
+      return { success: true, successCount, failureCount };
+    } catch (err) {
+      pushLog('error', `❌ Push notification failed: ${err.message}`);
+      return { success: false, reason: err.message };
+    }
+  }
+
+  /* ─── AI INTERACTION ALERT ─── */
+  async notifyAdminAIInsight({ type, clientContext, previewText }) {
+    const title = type === 'inquiry' ? '🎯 High-Intent Inquiry Drafted' : '🤖 AI Concierge Interaction';
+    const body = `${clientContext}: ${previewText.substring(0, 60)}...`;
+    
+    // Log it locally so it shows in the live stream
+    pushLog(type === 'inquiry' ? 'lead' : 'inquiry', `AI Alert: User drafted ${type} for ${clientContext}`);
+    
+    // Send push notification to all admins
+    return this.sendPushNotification({
+      title,
+      body,
+      link: '/admin/comms'
+    });
   }
 
   /* ─── AUTOMATED LEAD RESPONSE ─── */
@@ -139,20 +213,16 @@ class AutomationService {
   }
 
   /* ─── REAL-TIME STATE ─── */
-  getStatus() {
+  async getStatus() {
+    const tokenCount = await NotificationToken.countDocuments();
     return {
-      email: { enabled: this.emailEnabled, provider: 'Brevo (Free 300/day)', fromAddress: process.env.BREVO_SMTP_LOGIN || process.env.SMTP_USER || null },
       whatsapp: { enabled: this.whatsappEnabled, connected: this.whatsappReady, pendingQR: !!this.whatsappQR, qr: this.whatsappQR },
+      fcm: { enabled: !!fcm, tokenCount },
       recentLogs: LOG_BUFFER.slice(0, 20),
     };
   }
 
   getLogBuffer() { return LOG_BUFFER; }
-
-  /* ─── BRANDED EMAIL HTML ─── */
-  _wrapEmailHTML(body) {
-    return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{font-family:'Georgia',serif;background:#0a0a15;color:#e0e0e0;margin:0;padding:0}.container{max-width:600px;margin:0 auto;padding:40px 30px}.header{border-bottom:2px solid #d4af37;padding-bottom:20px;margin-bottom:30px}.logo{font-size:24px;font-weight:900;color:#d4af37;letter-spacing:.1em}.sub{font-size:11px;color:#888;letter-spacing:.2em;text-transform:uppercase}.body-text{line-height:1.7;color:#ccc;font-size:15px;white-space:pre-wrap}.footer{margin-top:40px;padding-top:20px;border-top:1px solid #222;font-size:11px;color:#555;text-align:center}.cta{display:inline-block;margin:20px 0;padding:12px 28px;background:#d4af37;color:#000;font-weight:700;text-decoration:none;border-radius:6px}</style></head><body><div class="container"><div class="header"><div class="logo">SNAP ADDA</div><div class="sub">Premium Real Estate · Andhra Pradesh</div></div><div class="body-text">${body.replace(/\n/g, '<br>')}</div><a href="https://snapadda.com" class="cta">Browse Properties</a><div class="footer">SnapAdda Real Estate | Andhra Pradesh, India</div></div></body></html>`;
-  }
 }
 
 export const automationService = new AutomationService();

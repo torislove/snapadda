@@ -50,8 +50,36 @@ router.get('/health', (req, res) => {
 });
 
 // POST /api/media/upload
-router.post('/upload', (req, res) => {
-  console.log('--- MEDIA UPLOAD REQUEST INCOMING ---');
+router.post('/upload', async (req, res) => {
+  // Check if it's base64 payload
+  if (req.headers['content-type'] && req.headers['content-type'].includes('application/json')) {
+    try {
+      const { files } = req.body;
+      if (!files || !Array.isArray(files) || files.length === 0) {
+        return res.status(400).json({ status: 'error', message: 'No files provided' });
+      }
+
+      const uploadPromises = files.map(fileStr => {
+        return cloudinary.uploader.upload(fileStr, {
+          folder: 'snapadda/properties',
+          resource_type: 'auto'
+        });
+      });
+
+      const results = await Promise.all(uploadPromises);
+      const urls = results.map(r => r.secure_url);
+
+      return res.json({
+        status: 'success',
+        data: urls
+      });
+    } catch (error) {
+      console.error('B64 UPLOAD ERROR:', error);
+      return res.status(500).json({ status: 'error', message: 'Failed to upload media via base64' });
+    }
+  }
+
+  // Fallback to multer for multipart/form-data
   upload.array('files', 20)(req, res, (err) => {
     if (err instanceof multer.MulterError) {
       console.error('MULTER_SPECIFIC_ERROR:', err.code, err.message);
@@ -71,24 +99,13 @@ router.post('/upload', (req, res) => {
     }
 
     try {
-      console.log('--- PROCESSING UPLOADED FILES ---');
       console.log('FILES_FOUND:', req.files?.length || 0);
 
       if (!req.files || req.files.length === 0) {
-        console.error('UPLOAD_ERROR: No files in request body');
         return res.status(400).json({ status: 'error', message: 'No files were uploaded. Please select images.' });
       }
 
-      const urls = req.files.map(file => {
-        // Cloudinary storage usually puts the URL in 'path' or 'secure_url'
-        const url = file.path || file.secure_url || file.url;
-        console.log('FILE_PROCESSED:', file.originalname, '->', url);
-        return url;
-      });
-
-      console.log('UPLOAD_SUCCESS:', urls.length, 'assets uploaded to Cloudinary');
-      console.log('--- MEDIA UPLOAD END ---');
-
+      const urls = req.files.map(file => file.path || file.secure_url || file.url);
       res.json({
         status: 'success',
         data: urls

@@ -116,6 +116,10 @@ const AdminSettings = () => {
   const [newQuestionType, setNewQuestionType] = useState<'options' | 'text'>('options');
   const [newQuestionOptions, setNewQuestionOptions] = useState('');
   const [questionsStatus, setQuestionsStatus] = useState<SaveStatus>('idle');
+  
+  // Automation state
+  const [fcmVapid, setFcmVapid] = useState('');
+  const [automationStatus, setAutomationStatus] = useState<SaveStatus>('idle');
 
   // Appearance state (Royal Overhaul)
   const [bgUrl, setBgUrl] = useState('');
@@ -135,7 +139,9 @@ const AdminSettings = () => {
   const [seoRobots, setSeoRobots] = useState('index, follow');
   const [seoStatus, setSeoStatus] = useState<SaveStatus>('idle');
 
-  const [activeSection, setActiveSection] = useState<'appearance' | 'hero' | 'seo' | 'profile' | 'password' | 'support' | 'whatsapp' | 'questions' | 'danger'>('appearance');
+  const [activeSection, setActiveSection] = useState<
+    'appearance' | 'hero' | 'seo' | 'profile' | 'password' | 'support' | 'whatsapp' | 'questions' | 'automation' | 'danger'
+  >('appearance');
 
   // Hero section state
   const [heroEyebrow, setHeroEyebrow] = useState('');
@@ -166,10 +172,11 @@ const AdminSettings = () => {
           fetchSetting('hero_content'),
           fetchSetting('site_stats'),
           fetchSetting('seo'),
-          fetchSetting('onboarding_questions')
+          fetchSetting('onboarding_questions'),
+          fetchSetting('automation_settings')
         ]);
 
-        const [wa, app, sup, hero, stats, seo, quest] = results.map(r => r.status === 'fulfilled' ? r.value : null);
+        const [wa, app, sup, hero, stats, seo, quest, auto] = results.map(r => r.status === 'fulfilled' ? r.value : null);
 
         if (wa?.data) { setWaNumber(wa.data.number || ''); setWaMessage(wa.data.message || ''); }
         if (app?.data) {
@@ -204,6 +211,9 @@ const AdminSettings = () => {
           setSeoRobots(seo.data.robots || 'index, follow');
         }
         if (quest?.data && Array.isArray(quest.data) && quest.data.length > 0) setOnboardingQuestions(quest.data);
+        if (auto?.data) {
+          setFcmVapid(auto.data.fcmVapid || '');
+        }
         
       } finally {
         setIsDataLoading(false);
@@ -429,6 +439,21 @@ const AdminSettings = () => {
     }
   };
 
+  const handleAutomationSave = async (ev: React.FormEvent) => {
+    ev.preventDefault();
+    setAutomationStatus('saving');
+    try {
+      await saveSetting('automation_settings', { fcmVapid });
+      setAutomationStatus('success');
+      showToast('Automation keys updated!');
+      setTimeout(() => setAutomationStatus('idle'), 3000);
+    } catch {
+      setAutomationStatus('error');
+      showToast('Failed to save automation settings', 'error');
+      setTimeout(() => setAutomationStatus('idle'), 4000);
+    }
+  };
+
   /* ── Styles ── */
   const card = (accent: string) => ({
     background: 'var(--bg-glass)', border: '1px solid rgba(255,255,255,0.07)',
@@ -502,6 +527,7 @@ const AdminSettings = () => {
           { key: 'support', label: 'Support' },
           { key: 'whatsapp', label: 'WhatsApp' },
           { key: 'questions', label: 'Questions' },
+          { key: 'automation', label: 'Automation' },
           { key: 'danger', label: 'Danger Zone' }
         ].map(section => {
           const isActive = activeSection === section.key;
@@ -943,6 +969,29 @@ const AdminSettings = () => {
           <button type="submit" disabled={waStatus === 'saving'} className="btn btn-cyan" style={{ alignSelf:'flex-start' }}>Save Settings</button>
         </form>
       </div>
+      )}
+
+      {activeSection === 'automation' && (
+        <div style={card('var(--gold)')}>
+          {cardHeader(<KeyRound size={17}/>, 'System Keys', 'Configure core system credentials for production.', 'var(--gold-dim)', 'var(--gold)')}
+          <form onSubmit={handleAutomationSave} style={{ padding:'1.5rem', display:'flex', flexDirection:'column', gap:'1.25rem' }}>
+            <div style={{ padding:'1rem', background:'rgba(34,217,224,0.04)', border:'1px solid rgba(34,217,224,0.15)', borderRadius:'12px' }}>
+              <p style={{ margin:0, fontSize:'0.75rem', color:'var(--cyan)', lineHeight:1.4 }}>
+                <strong>System Note:</strong> Email automation has been decommissioned in favor of real-time WhatsApp Chat. These keys manage push notifications and core system events.
+              </p>
+            </div>
+            <div>
+              <label style={lbl}>Firebase VAPID Key</label>
+              {inputWrap(<Sparkles size={14}/>, <input type="text" value={fcmVapid} onChange={e => setFcmVapid(e.target.value)} style={inp} placeholder="Generate in Firebase Console" />)}
+            </div>
+            <p style={{ fontSize:'0.65rem', color:'var(--text-muted)', margin:'-0.5rem 0 0.5rem 0' }}>The VAPID key is required for secure web push notifications to your browser.</p>
+            
+            <StatusAlert status={automationStatus} successMsg="System keys saved!" errorMsg="Failed to save keys." />
+            <button type="submit" disabled={automationStatus === 'saving'} className="btn btn-gold" style={{ alignSelf:'flex-start' }}>
+              {automationStatus === 'saving' ? 'Saving...' : 'Update System Keys'}
+            </button>
+          </form>
+        </div>
       )}
 
       {activeSection === 'danger' && (

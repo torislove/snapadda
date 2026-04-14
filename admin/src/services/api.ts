@@ -61,11 +61,21 @@ export const deleteCity = async (id: string) => {
   return res.json();
 };
 
-/* ─────────────── Media ─────────────── */
 export const uploadMedia = async (files: File[]) => {
-  const formData = new FormData();
-  files.forEach(f => formData.append('files', f));
-  const res = await fetch(`${API_URL}/media/upload`, { method: 'POST', headers: getAuthHeaders(true), body: formData });
+  const toBase64 = (file: File): Promise<string> => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = error => reject(error);
+  });
+  
+  const base64Files = await Promise.all(files.map(f => toBase64(f)));
+  
+  const res = await fetch(`${API_URL}/media/upload`, { 
+    method: 'POST', 
+    headers: getAuthHeaders(false),
+    body: JSON.stringify({ files: base64Files }) 
+  });
   if (!res.ok) throw new Error('Failed to upload media');
   return res.json();
 };
