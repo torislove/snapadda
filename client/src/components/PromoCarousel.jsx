@@ -1,104 +1,179 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Timer, ExternalLink, ArrowRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Timer, ExternalLink, ArrowRight, Zap } from 'lucide-react';
 import { fetchPromotions } from '../services/api';
 
+/**
+ * Cloudinary Transformation Utility
+ * Ensures promotional banners are optimized for speed and device width.
+ */
+const optimizeImage = (url, width = 800) => {
+  if (!url || !url.includes('cloudinary')) return url;
+  // Insert transformation parameters: q_auto (quality), f_auto (format), w_800 (width)
+  return url.replace('/upload/', `/upload/q_auto,f_auto,w_${width}/`);
+};
+
+const isVideoUrl = (url) => {
+  if (!url) return false;
+  const videoExtensions = ['.mp4', '.webm', '.ogg', '.mov', '.quicktime'];
+  return videoExtensions.some(ext => url.toLowerCase().includes(ext)) || url.includes('video/upload');
+};
+
 const FALLBACK = [
-  { id: 'f1', type: 'ad', title: 'Grand Villa Launch — Amaravati', subtitle: 'Exclusive presale pricing. CRDA approved.', image: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80', actionText: 'View Details', cardColor: 'dark' },
-  { id: 'f2', type: 'ad', title: 'Flat 12% Off Brokerage', subtitle: 'Limited time offer on all luxury 3BHK apartments in Vijayawada.', image: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=800&q=80', actionText: 'Claim Offer', cardColor: 'gold', countdownActive: true },
-  { id: 'f3', type: 'update', title: 'New: Virtual 3D Tours Live', subtitle: 'Tour premium properties from anywhere in the world.', actionText: 'Try Now', cardColor: 'teal' },
-  { id: 'f4', type: 'ad', title: 'Premium Farmland in Guntur', subtitle: 'RERA certified agriculture plots starting ₹18L.', image: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=800&q=80', actionText: 'Explore Now', cardColor: 'green' },
+  { id: 'f1', type: 'ad', title: 'Elite Gated Community — Vijayawada', subtitle: 'Launch offers live. CRDA & RERA certified.', image: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80', actionText: 'Explore Now', cardColor: 'gold' },
+  { id: 'f2', type: 'ad', title: '0% Registration Charges', subtitle: 'Limited slots available for selected premium plots in Amaravati.', image: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1200&q=80', actionText: 'Claim Offer', cardColor: 'dark', countdownActive: true, expiryDate: new Date(Date.now() + 86400000 * 2) },
 ];
 
-const BG = { dark: 'linear-gradient(135deg,rgba(7,7,15,0.92),rgba(18,18,42,0.85))', gold: 'linear-gradient(135deg,rgba(80,50,5,0.88),rgba(25,20,5,0.9))', teal: 'linear-gradient(135deg,rgba(5,50,60,0.88),rgba(5,20,30,0.9))', green: 'linear-gradient(135deg,rgba(5,45,20,0.88),rgba(5,20,10,0.9))' };
-const ACCENT = { dark: 'rgba(232,184,75,0.6)', gold: '#e8b84b', teal: '#0fa3b1', green: '#27c97d' };
+const BG = { 
+  dark: 'linear-gradient(135deg,rgba(7,7,12,0.95),rgba(15,15,35,0.85))', 
+  gold: 'linear-gradient(135deg,rgba(40,30,5,0.95),rgba(10,10,2,0.9))' 
+};
+const ACCENT = { dark: '#e8b84b', gold: '#f5c842' };
 
-function getCountdown(date) {
-  if (!date) return null;
-  const diff = new Date(date).getTime() - Date.now();
-  if (diff <= 0) return null;
-  const d = Math.floor(diff / 86400000), h = Math.floor(diff % 86400000 / 3600000), m = Math.floor(diff % 3600000 / 60000);
-  return d > 0 ? `${d}d ${h}h left` : `${h}h ${m}m left`;
-}
+const Slide = memo(({ slide, index, accent, bg, theme, countdown, onNext, onPrev }) => (
+  <motion.div
+    initial={{ opacity: 0, scale: 0.95 }}
+    animate={{ opacity: 1, scale: 1 }}
+    exit={{ opacity: 0, scale: 1.05 }}
+    drag="x"
+    dragConstraints={{ left: 0, right: 0 }}
+    onDragEnd={(e, info) => {
+      if (info.offset.x > 50) onPrev();
+      else if (info.offset.x < -50) onNext();
+    }}
+    style={{ 
+      position: 'relative', minHeight: '280px', borderRadius: '32px', 
+      border: `1px solid ${accent}44`, overflow: 'hidden', display: 'flex', alignItems: 'stretch',
+      cursor: 'grab', boxShadow: `0 20px 40px ${accent}15`
+    }}
+    whileTap={{ cursor: 'grabbing' }}
+    viewport={{ once: true }}
+  >
+    {slide.image && (
+      <>
+        {isVideoUrl(slide.image) ? (
+          <video 
+            src={slide.image} 
+            autoPlay muted loop playsInline 
+            style={{ position: 'absolute', inset: 0, zIndex: 0, width: '100%', height: '100%', objectFit: 'cover', filter: 'brightness(0.7)' }} 
+          />
+        ) : (
+          <motion.div 
+            animate={{ scale: [1, 1.1, 1] }}
+            transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
+            style={{ position: 'absolute', inset: 0, zIndex: 0, backgroundImage: `url(${optimizeImage(slide.image, 1200)})`, backgroundSize: 'cover', backgroundPosition: 'center', filter: 'brightness(0.7)' }} 
+          />
+        )}
+      </>
+    )}
+    <div style={{ position: 'absolute', inset: 0, zIndex: 1, background: 'linear-gradient(225deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.9) 100%)' }} />
+    <div style={{ position: 'absolute', right: '-20px', bottom: '-20px', opacity: 0.05, fontSize: '8rem', fontWeight: 900, color: accent, zIndex: 1, pointerEvents: 'none', userSelect: 'none' }}>EXCLUSIVE</div>
+
+    <div style={{ position: 'relative', zIndex: 10, width: '100%', padding: '2.5rem 3rem', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '1.25rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', flexWrap: 'wrap' }}>
+        <motion.span 
+          animate={{ boxShadow: [`0 0 0px ${accent}00`, `0 0 15px ${accent}66`, `0 0 0px ${accent}00`] }}
+          transition={{ duration: 2, repeat: Infinity }}
+          style={{ padding: '6px 16px', borderRadius: '40px', background: `${accent}20`, border: `1px solid ${accent}66`, fontSize: '0.7rem', fontWeight: 950, textTransform: 'uppercase', color: accent, display: 'flex', alignItems: 'center', gap: '6px' }}
+        >
+          <Zap size={12} fill={accent} /> {slide.type || 'LUXURY SELECTION'}
+        </motion.span>
+        {countdown && (
+          <span style={{ fontSize: '0.75rem', color: '#ff4b4b', fontWeight: 900, background: 'rgba(255,75,75,0.1)', padding: '6px 16px', borderRadius: '40px', border: '1px solid rgba(255,75,75,0.3)', backdropFilter: 'blur(10px)' }}>
+            ⏱ {countdown}
+          </span>
+        )}
+      </div>
+
+      <div style={{ maxWidth: '650px' }}>
+        <h3 style={{ fontSize: 'clamp(1.5rem, 5vw, 2.4rem)', fontWeight: 950, color: 'white', marginBottom: '0.75rem', lineHeight: 1.05, letterSpacing: '-0.03em', textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>
+          {slide.title || slide.headline}
+        </h3>
+        <p style={{ fontSize: 'clamp(0.9rem, 2.5vw, 1.1rem)', color: 'rgba(255,255,255,0.85)', lineHeight: 1.6, marginBottom: '1.75rem', maxWidth: '500px' }}>
+          {slide.subtitle || slide.subheadline}
+        </p>
+        
+        <motion.a 
+          whileHover={{ scale: 1.05, x: 5 }}
+          whileTap={{ scale: 0.95 }}
+          href={slide.actionUrl || slide.ctaUrl || '#'} 
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: '10px', padding: '14px 36px',
+            background: `linear-gradient(135deg, ${accent}, #fff)`, color: '#07070f', borderRadius: '40px',
+            fontSize: '1rem', fontWeight: 900, textDecoration: 'none', boxShadow: `0 10px 20px ${accent}44`
+          }}>
+          {slide.actionText || slide.ctaText} <ArrowRight size={18} />
+        </motion.a>
+      </div>
+    </div>
+  </motion.div>
+));
 
 export default function PromoCarousel({ promotions }) {
   const [index, setIndex] = useState(0);
   const [hovered, setHovered] = useState(false);
   const timer = useRef(null);
-  const touchStart = useRef(0);
 
   const slides = (Array.isArray(promotions) && promotions.length > 0) ? promotions : FALLBACK;
 
-  const next = useCallback(() => setIndex(i => (i + 1) % Math.max(slides.length, 1)), [slides.length]);
-  const prev = () => setIndex(i => (i - 1 + slides.length) % slides.length);
+  const next = useCallback(() => setIndex(i => (i + 1) % slides.length), [slides.length]);
+  const prev = useCallback(() => setIndex(i => (i - 1 + slides.length) % slides.length), [slides.length]);
 
   useEffect(() => {
     if (hovered || slides.length <= 1) return;
-    timer.current = setInterval(next, 4500);
+    timer.current = setInterval(next, 5000);
     return () => clearInterval(timer.current);
   }, [next, hovered, slides.length]);
 
-  const slide = slides[index] || FALLBACK[0];
-  const theme = slide.cardColor || 'dark';
+  const slide = slides[index];
+  const theme = slide?.cardColor === 'gold-gradient' ? 'gold' : 'dark';
   const accent = ACCENT[theme] || ACCENT.dark;
   const bg = BG[theme] || BG.dark;
-  const countdown = getCountdown(slide.expiryDate);
+
+  const getCountdown = (date) => {
+    if (!date) return null;
+    const diff = new Date(date).getTime() - Date.now();
+    if (diff <= 0) return null;
+    const d = Math.floor(diff / 86400000), h = Math.floor(diff % 86400000 / 3600000);
+    return d > 0 ? `${d}d ${h}h Left` : `${h}h Left`;
+  };
 
   return (
-    <div style={{ position: 'relative', borderRadius: 'var(--r-xl)', overflow: 'hidden', userSelect: 'none' }}
-      onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
-      onTouchStart={e => { touchStart.current = e.touches[0].clientX; }}
-      onTouchEnd={e => { const dx = touchStart.current - e.changedTouches[0].clientX; if (Math.abs(dx) > 40) dx > 0 ? next() : prev(); }}>
-
+    <div 
+      style={{ position: 'relative', borderRadius: '28px', overflow: 'hidden' }}
+      onMouseEnter={() => setHovered(true)} 
+      onMouseLeave={() => setHovered(false)}
+    >
       <AnimatePresence mode="wait">
-        <motion.div key={slide._id || slide.id}
-          initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -40 }} transition={{ duration: 0.4, ease: 'easeOut' }}
-          style={{ position: 'relative', minHeight: '190px', borderRadius: 'var(--r-xl)', border: `1px solid ${accent}30`, overflow: 'hidden', display: 'flex', alignItems: 'stretch' }}>
-
-          {slide.image && <div style={{ position: 'absolute', inset: 0, zIndex: 0, backgroundImage: `url(${slide.image})`, backgroundSize: 'cover', backgroundPosition: 'center' }} />}
-          <div style={{ position: 'absolute', inset: 0, zIndex: 1, background: bg }} />
-          <div style={{ position: 'absolute', inset: 0, zIndex: 2, background: 'linear-gradient(to top,rgba(7,7,15,0.8) 0%,transparent 60%)' }} />
-          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '1px', zIndex: 5, background: `linear-gradient(90deg,transparent,${accent}80,transparent)` }} />
-
-          <div style={{ position: 'relative', zIndex: 10, width: '100%', padding: '1.5rem 1.75rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                <span style={{ padding: '3px 10px', borderRadius: '99px', background: `${accent}18`, border: `1px solid ${accent}40`, fontSize: '0.65rem', fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: accent }}>
-                  {slide.type === 'festival' ? '🎉 Event' : slide.type === 'update' ? '⚡ New Feature' : '🏡 Promotion'}
-                </span>
-                {countdown && <span style={{ display: 'flex', alignItems: 'center', gap: '3px', padding: '3px 10px', borderRadius: '99px', background: 'rgba(240,93,94,0.15)', border: '1px solid rgba(240,93,94,0.3)', fontSize: '0.65rem', fontWeight: 700, color: '#f05d5e' }}><Timer size={10} /> {countdown}</span>}
-              </div>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', flexShrink: 0 }}>
-                {String(index + 1).padStart(2, '0')} / {String(slides.length).padStart(2, '0')}
-              </span>
-            </div>
-
-            <div>
-              <h3 style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(1.1rem,3vw,1.6rem)', fontWeight: 700, color: 'white', marginBottom: '0.4rem', lineHeight: 1.2 }}>{slide.headline || slide.title}</h3>
-              {(slide.subheadline || slide.subtitle) && <p style={{ fontSize: '0.87rem', color: 'rgba(255,255,255,0.65)', lineHeight: 1.5, marginBottom: '1.1rem', maxWidth: '500px' }}>{slide.subheadline || slide.subtitle}</p>}
-              {(slide.ctaText || slide.actionText) && (
-                <a href={slide.ctaUrl || slide.actionUrl || '#'} target={slide.ctaUrl ? '_blank' : '_self'} rel="noreferrer"
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 1.25rem', background: `linear-gradient(135deg,${accent},${accent}cc)`, color: theme === 'gold' ? '#07070f' : 'white', borderRadius: 'var(--r-full)', fontSize: '0.82rem', fontWeight: 700, textDecoration: 'none', transition: 'all 0.25s' }}>
-                  {slide.ctaText || slide.actionText}
-                  {slide.ctaUrl ? <ExternalLink size={12} /> : <ArrowRight size={12} />}
-                </a>
-              )}
-            </div>
-          </div>
-        </motion.div>
+        <Slide 
+          key={slide?._id || index}
+          slide={slide} 
+          index={index} 
+          accent={accent} 
+          bg={bg} 
+          theme={theme}
+          countdown={getCountdown(slide.expiryDate || slide.endDate)}
+          onNext={next}
+          onPrev={prev}
+        />
       </AnimatePresence>
 
       {slides.length > 1 && (
-        <>
-          <button onClick={prev} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', zIndex: 20, width: '34px', height: '34px', borderRadius: '50%', background: 'rgba(7,7,15,0.7)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(10px)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><ChevronLeft size={16} /></button>
-          <button onClick={next} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', zIndex: 20, width: '34px', height: '34px', borderRadius: '50%', background: 'rgba(7,7,15,0.7)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(10px)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><ChevronRight size={16} /></button>
-          <div style={{ position: 'absolute', bottom: '12px', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '5px', zIndex: 20 }}>
-            {slides.map((_, i) => (
-              <button key={i} onClick={() => setIndex(i)} style={{ width: i === index ? '20px' : '6px', height: '6px', borderRadius: '99px', background: i === index ? accent : 'rgba(255,255,255,0.25)', border: 'none', cursor: 'pointer', transition: 'all 0.3s ease', padding: 0 }} />
-            ))}
-          </div>
-        </>
+        <div style={{ position: 'absolute', bottom: '20px', left: '20px', display: 'flex', gap: '8px', zIndex: 20 }}>
+          {slides.map((_, i) => (
+            <button 
+              key={i} 
+              onClick={() => setIndex(i)}
+              style={{ 
+                width: i === index ? '30px' : '8px', height: '8px', borderRadius: '10px',
+                background: i === index ? accent : 'rgba(255,255,255,0.2)', border: 'none',
+                cursor: 'pointer', transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)' 
+              }} 
+            />
+          ))}
+        </div>
       )}
     </div>
   );
 }
+

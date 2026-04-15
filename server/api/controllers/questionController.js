@@ -39,7 +39,8 @@ export const getAllQuestions = async (req, res) => {
       .sort({ createdAt: -1 });
     res.status(200).json({ status: 'success', data: questions });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('GET_ALL_QUESTIONS_ERROR:', error);
+    res.status(500).json({ status: 'error', message: error.message });
   }
 };
 
@@ -52,7 +53,8 @@ export const getPropertyFAQs = async (req, res) => {
       .sort({ answeredAt: -1 });
     res.status(200).json({ status: 'success', data: faqs });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('GET_PROPERTY_FAQS_ERROR:', error);
+    res.status(500).json({ status: 'error', message: error.message });
   }
 };
 
@@ -84,7 +86,8 @@ export const getUserQuestions = async (req, res) => {
       .sort({ createdAt: -1 });
     res.status(200).json({ status: 'success', data: questions });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('GET_USER_QUESTIONS_ERROR:', error);
+    res.status(500).json({ status: 'error', message: error.message });
   }
 };
 

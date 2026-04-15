@@ -9,21 +9,9 @@ const client = new OAuth2Client(GOOGLE_CLIENT_ID);
 
 export const googleAuth = async (req, res) => {
   try {
-    const { token } = req.body;
-    console.log(`[AUTH] Incoming request from ${req.headers.origin} for user email: ${req.body.payload?.email}`);
-    
-    // In strict production, we verify the token using Google library:
-    /*
-    const ticket = await client.verifyIdToken({
-      idToken: token,
-      audience: GOOGLE_CLIENT_ID,
-    });
-    const payload = ticket.getPayload();
-    */
-    
-    // For demonstration if jwt-decode passes payload directly from frontend (if real ID missing):
-    const payload = req.body.payload; 
-    
+    const { phone, whatsapp } = req.body;
+    const payload = req.body.payload;
+
     if (!payload || !payload.email) {
       return res.status(400).json({ message: 'Invalid payload' });
     }
@@ -34,25 +22,27 @@ export const googleAuth = async (req, res) => {
     let user = await User.findOne({ email });
 
     if (!user) {
-      // Create new user profile
       user = new User({
-        googleId,
-        email,
-        name,
-        avatar: picture,
+        googleId, email, name, avatar: picture,
         role: 'client',
-        onboardingCompleted: false
+        // If phone was passed at login time, mark onboarding complete immediately
+        phone: phone || '',
+        whatsapp: whatsapp || '',
+        onboardingCompleted: !!(phone),
       });
-      await user.save();
+    } else {
+      // Update contact if provided
+      if (phone) {
+        user.phone = phone;
+        user.whatsapp = whatsapp || phone;
+        user.onboardingCompleted = true;
+      }
     }
 
-    // Return the user object (In a full prod app we'd sign a JWT here)
-    res.status(200).json({ 
-      status: 'success', 
-      user 
-    });
+    await user.save();
+    res.status(200).json({ status: 'success', user });
   } catch (error) {
-    console.error("Google Auth Error:", error);
+    console.error('Google Auth Error:', error);
     res.status(500).json({ status: 'error', message: error.message });
   }
 };
@@ -65,25 +55,25 @@ export const updatePreferences = async (req, res) => {
     const user = await User.findById(id);
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    // Standard fields we expect
+    // Direct contact fields
+    if (incomingData.phone) user.phone = incomingData.phone;
+    if (incomingData.whatsapp) user.whatsapp = incomingData.whatsapp;
+
+    // Standard preference fields
     const standardKeys = ['propertyType', 'budget', 'locations', 'purpose', 'additionalNotes'];
-    
-    // Distribute incoming data into standard fields or extraAnswers Map
     Object.keys(incomingData).forEach(key => {
       if (standardKeys.includes(key)) {
         if (!user.preferences) user.preferences = {};
         user.preferences[key] = incomingData[key];
-      } else {
-        // Ensure preferences and extraAnswers is initialized as a Map if it's missing
+      } else if (!['phone', 'whatsapp'].includes(key)) {
         if (!user.preferences) user.preferences = {};
         if (!user.preferences.extraAnswers) user.preferences.extraAnswers = new Map();
         user.preferences.extraAnswers.set(key, String(incomingData[key]));
       }
     });
-    
+
     user.onboardingCompleted = true;
     user.markModified('preferences');
-
     await user.save();
     res.status(200).json({ status: 'success', user });
   } catch (error) {

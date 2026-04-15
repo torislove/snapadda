@@ -38,11 +38,20 @@ export const useNotifications = () => {
 
     const unsubscribe = onMessage(messaging, (payload) => {
       console.log('Message received in foreground: ', payload);
-      // You could show a toast here using your app's toast system
-      new Notification(payload.notification.title, {
-        body: payload.notification.body,
-        icon: '/logo192.png'
-      });
+      
+      // Safety guard for malformed or data-only notifications
+      if (payload && payload.notification && payload.notification.title) {
+        new Notification(payload.notification.title, {
+          body: payload.notification.body || '',
+          icon: '/logo192.png'
+        });
+      } else if (payload && payload.data && payload.data.title) {
+        // Fallback for data-only messages that include title in 'data'
+        new Notification(payload.data.title, {
+          body: payload.data.body || '',
+          icon: '/logo192.png'
+        });
+      }
     });
 
     return () => unsubscribe();

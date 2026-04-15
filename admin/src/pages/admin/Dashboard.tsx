@@ -83,11 +83,11 @@ const MetricCard = ({ title, value, icon: Icon, color, sub, trend, link, index }
         </div>
 
         <div>
-          <div style={{ fontSize: '2rem', fontWeight: 800, color: 'white', marginBottom: '0.25rem', fontFamily: 'var(--font-heading)' }}>
+          <div style={{ fontSize: '2.5rem', fontWeight: 900, color: 'white', marginBottom: '0.25rem', fontFamily: 'var(--font-heading)', letterSpacing: '-0.03em' }}>
             <AnimatedNumber target={value} />
           </div>
-          <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>{title}</div>
-          {sub && <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{sub}</div>}
+          <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'rgba(255,255,255,0.7)', marginBottom: '0.25rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{title}</div>
+          {sub && <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 500 }}>{sub}</div>}
         </div>
       </div>
     </Link>
@@ -269,18 +269,18 @@ const AdminDashboard = () => {
         <div>
           <motion.div 
             initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}
-            style={{ fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--violet)', marginBottom: '0.5rem', fontFamily: 'var(--font-mono)' }}
+            style={{ fontSize: '0.8rem', fontWeight: 900, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--gold)', marginBottom: '0.75rem', fontFamily: 'var(--font-mono)' }}
           >
-            ✦ EXECUTIVE COMMAND
+            ✦ STRATEGIC COMMAND HUB
           </motion.div>
           <motion.h1 
             initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-            style={{ lineHeight: 1.2, fontWeight: 800, background: 'linear-gradient(135deg, #fff 0%, #9b59f5 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: '0.5rem', fontFamily: 'var(--font-heading)', letterSpacing: '-0.02em' }}
+            style={{ fontSize: '2.75rem', lineHeight: 1.1, fontWeight: 900, background: 'linear-gradient(135deg, #fff 30%, var(--gold) 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: '0.75rem', fontFamily: 'var(--font-heading)', letterSpacing: '-0.04em' }}
           >
-            {greeting}, Admin
+            {greeting}, snapadda_admin
           </motion.h1>
-          <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', maxWidth: '400px' }}>
-            System pulse is optimal. Here's a summary of your estate operations.
+          <p style={{ fontSize: '1rem', color: 'var(--text-muted)', maxWidth: '500px', lineHeight: 1.6 }}>
+            Market dynamics are currently <strong style={{ color: 'var(--emerald)' }}>Positive (+8.4%)</strong>. All estate systems are operational and performing at peak efficiency.
           </p>
         </div>
         <Link to="/admin/properties" style={{ width: 'auto' }}>

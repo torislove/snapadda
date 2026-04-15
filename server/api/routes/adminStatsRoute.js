@@ -2,6 +2,7 @@ import express from 'express';
 import Property from '../models/Property.js';
 import Lead from '../models/Lead.js';
 import Inquiry from '../models/Inquiry.js';
+import User from '../models/User.js';
 
 const router = express.Router();
 
@@ -34,6 +35,25 @@ router.get('/stats', async (req, res) => {
     const totalLikes = engagementStats.length > 0 ? engagementStats[0].totalLikes : 0;
     const totalShares = engagementStats.length > 0 ? engagementStats[0].totalShares : 0;
 
+    // --- SNAPADDA CONVERGENCE: Market Intelligence ---
+    
+    // 1. Search Location Heatmap (Based on User Activity Logs)
+    const searchHeatmap = await User.aggregate([
+      { $unwind: "$activityLog" },
+      { $match: { "activityLog.type": "SEARCH" } },
+      { $group: { _id: "$activityLog.payload.city", count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+      { $limit: 10 }
+    ]);
+
+    // 2. User Intent Stream (Last 10 Actions across Platform)
+    const recentActivity = await User.aggregate([
+      { $unwind: "$activityLog" },
+      { $sort: { "activityLog.timestamp": -1 } },
+      { $limit: 10 },
+      { $project: { name: 1, email: 1, action: "$activityLog" } }
+    ]);
+
     res.status(200).json({
       status: 'success',
       data: {
@@ -47,6 +67,10 @@ router.get('/stats', async (req, res) => {
         totalShares,
         recentProperties,
         recentInquiries,
+        marketIntelligence: {
+          heatmap: searchHeatmap,
+          activityStream: recentActivity
+        }
       }
     });
   } catch (error) {

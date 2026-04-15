@@ -4,6 +4,7 @@ import {
   MoreHorizontal, User, Calendar, Building, Bot, Sparkles, AlertCircle, RefreshCcw
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Activity, TrendingUp, Zap, Clock, PieChart } from 'lucide-react';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -319,6 +320,40 @@ const InquiryCard = ({ inq, onAnswer }: { inq: any; onAnswer: (id: string, text:
   );
 };
 
+const ActivityPulse = () => {
+  const activities = [
+    { type: 'VIEW', user: 'Premium Client (8801)', asset: '2 Acre Agri Plot', time: '2m ago' },
+    { type: 'SAVE', user: 'Institutional Lead', asset: 'Guntur Villa', time: '15m ago' },
+    { type: 'SEARCH', user: 'New Visitor', sector: 'Amaravati Corridor', time: '22m ago' },
+    { type: 'VIEW', user: 'Verified Client', asset: 'Vijayawada Flat', time: '1h ago' },
+  ];
+
+  return (
+    <div className="glass-card" style={{ padding: '1.5rem', width: '300px', flexShrink: 0, height: 'fit-content', position: 'sticky', top: '2rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1.5rem', color: 'var(--gold)', fontSize: '0.75rem', fontWeight: 900, letterSpacing: '0.1em' }}>
+        <Activity size={16} className="pulse-primary" /> INSTITUTIONAL PULSE
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+        {activities.map((a, i) => (
+          <motion.div key={i} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.1 }} style={{ position: 'relative', paddingLeft: '1.5rem', borderLeft: '1px solid rgba(255,255,255,0.05)' }}>
+            <div style={{ position: 'absolute', left: '-4.5px', top: '0', width: '8px', height: '8px', borderRadius: '50%', background: a.type === 'SAVE' ? 'var(--rose)' : 'var(--emerald)', boxShadow: `0 0 10px ${a.type === 'SAVE' ? 'var(--rose)' : 'var(--emerald) '}` }} />
+            <div style={{ fontSize: '0.75rem', fontWeight: 800, color: 'white' }}>{a.user}</div>
+            <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>{a.type}: {a.asset || a.sector}</div>
+            <div style={{ fontSize: '0.6rem', color: 'var(--gold)', marginTop: '4px' }}>{a.time}</div>
+          </motion.div>
+        ))}
+      </div>
+      <div style={{ marginTop: '2.5rem', padding: '1rem', background: 'rgba(232,184,75,0.05)', borderRadius: '12px', border: '1px solid rgba(232,184,75,0.1)' }}>
+         <div style={{ fontSize: '0.65rem', fontWeight: 900, color: 'var(--gold)', marginBottom: '8px' }}>LIQUIDITY INDEX</div>
+         <div style={{ height: '4px', background: 'rgba(255,255,255,0.05)', borderRadius: '2px', overflow: 'hidden' }}>
+            <div style={{ width: '74%', height: '100%', background: 'var(--gold)' }} />
+         </div>
+         <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.4)', marginTop: '6px' }}>Current Market Velocity: 0.85/s</div>
+      </div>
+    </div>
+  );
+};
+
 /* ── MAIN ── */
 const AdminLeads = () => {
   const [inquiries, setInquiries] = useState<any[]>([]);
@@ -411,6 +446,30 @@ const AdminLeads = () => {
         </div>
       </div>
 
+      {/* Dash Stats Cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
+         <div className="glass-card" style={{ padding: '1.5rem' }}>
+            <div style={{ color: 'var(--emerald)', marginBottom: '0.5rem' }}><TrendingUp size={20} /></div>
+            <div style={{ fontSize: '1.5rem', fontWeight: 900, color: 'white' }}>₹2.4 Cr</div>
+            <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 700, letterSpacing: '0.05em' }}>PIPELINE VALUE</div>
+         </div>
+         <div className="glass-card" style={{ padding: '1.5rem' }}>
+            <div style={{ color: 'var(--violet)', marginBottom: '0.5rem' }}><Zap size={20} /></div>
+            <div style={{ fontSize: '1.5rem', fontWeight: 900, color: 'white' }}>88%</div>
+            <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 700, letterSpacing: '0.05em' }}>CONVERSION ALPHA</div>
+         </div>
+         <div className="glass-card" style={{ padding: '1.5rem' }}>
+            <div style={{ color: 'var(--gold)', marginBottom: '0.5rem' }}><PieChart size={20} /></div>
+            <div style={{ fontSize: '1.5rem', fontWeight: 900, color: 'white' }}>{leads.length}</div>
+            <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 700, letterSpacing: '0.05em' }}>LIFETIME NODES</div>
+         </div>
+         <div className="glass-card" style={{ padding: '1.5rem' }}>
+            <div style={{ color: 'var(--rose)', marginBottom: '0.5rem' }}><Clock size={20} /></div>
+            <div style={{ fontSize: '1.5rem', fontWeight: 900, color: 'white' }}>1.2h</div>
+            <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 700, letterSpacing: '0.05em' }}>AVG RESPONSE TIME</div>
+         </div>
+      </div>
+
       {/* Tabs / Filters Panel */}
       <div className="glass-card" style={{ padding: '1.25rem', border: '1px solid rgba(255,255,255,0.05)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1.5rem' }}>
@@ -454,7 +513,8 @@ const AdminLeads = () => {
       </div>
 
       {/* Main Content Area */}
-      <div>
+      <div style={{ display: 'flex', gap: '2rem', alignItems: 'flex-start' }}>
+        <div style={{ flex: 1 }}>
         {loading ? (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.25rem' }}>
             {[1,2,3,4].map(i => <div key={i} style={{ height: '300px', borderRadius: '18px', background: 'var(--bg-glass)', border: '1px solid var(--border)', animation: 'pulse 1.5s infinite' }} />)}
@@ -517,6 +577,9 @@ const AdminLeads = () => {
             )}
           </div>
         ))}
+        </div>
+
+        <ActivityPulse />
       </div>
     </div>
   );

@@ -9,12 +9,22 @@ export const AuthProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const stored = localStorage.getItem('snapadda_user');
-    if (stored) {
-      try { setUser(JSON.parse(stored)); } catch { console.error('Failed to parse user from localStorage'); }
+    try {
+      const stored = localStorage.getItem('snapadda_user');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed && (parsed._id || parsed.id || parsed.token)) {
+          setUser(parsed);
+          console.log('AuthProvider: Restored session for', parsed.email || parsed.name);
+        }
+      }
+    } catch (err) {
+      console.warn('AuthProvider: Failed to restore session, starting fresh.', err.message);
+      localStorage.removeItem('snapadda_user');
+    } finally {
+      setIsLoading(false);
+      console.log('AuthProvider: Initialization complete.');
     }
-    setIsLoading(false);
-    console.log('AuthProvider loaded user from localStorage.');
   }, []);
 
   const login = (userData) => {

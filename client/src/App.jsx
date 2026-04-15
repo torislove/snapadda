@@ -1,13 +1,16 @@
-import { Suspense, lazy } from 'react';
+import { Suspense, lazy, useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { LazyMotion, domAnimation, motion, AnimatePresence } from 'framer-motion';
-import { useAuth } from './contexts/AuthContext';
+import { LazyMotion, domAnimation, AnimatePresence } from 'framer-motion';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Header from './components/Header';
+import GlobalLoader from './components/GlobalLoader';
+import FloatingOffers from './components/FloatingOffers';
 import { useNotifications } from './hooks/useNotifications';
 
 // Global HUD components - Symmetrically aligned
 const UnitConverter = lazy(() => import('./components/UnitConverter'));
 const AIConcierge = lazy(() => import('./components/AIConcierge'));
+const ComparisonHud = lazy(() => import('./components/ComparisonHud'));
 
 // Page components
 const Home = lazy(() => import('./pages/Home'));
@@ -43,7 +46,7 @@ function ProtectedRoute({ children }) {
 
   if (isLoading) return <EliteLoader />;
   if (!user) return <Navigate to="/login" replace state={{ from: location }} />;
-  if (user.role !== 'client') return <Navigate to="/dashboard" replace />;
+  if (user.role !== 'client') return <Navigate to="/" replace />;
   if (!user.onboardingCompleted && location.pathname !== '/onboarding') return <Navigate to="/onboarding" replace />;
   return children;
 }
@@ -76,18 +79,32 @@ function AppContent() {
       <Suspense fallback={null}>
         {/* Global HUD Elements Restored and Symmetrically Positioned */}
         <UnitConverter />
-        <AIConcierge />
+        <ComparisonHud />
+        <FloatingOffers />
       </Suspense>
     </>
   );
 }
 
 export default function App() {
+  const [isAppLoading, setIsAppLoading] = useState(true);
+
+  useEffect(() => {
+    // Initial Load Sequence
+    const timer = setTimeout(() => setIsAppLoading(false), 2000);
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
-    <LazyMotion features={domAnimation}>
-      <BrowserRouter>
-        <AppContent />
-      </BrowserRouter>
-    </LazyMotion>
+    <>
+      <AnimatePresence>
+        {isAppLoading && <GlobalLoader key="loader" />}
+      </AnimatePresence>
+      <LazyMotion features={domAnimation}>
+        <BrowserRouter>
+          <AppContent />
+        </BrowserRouter>
+      </LazyMotion>
+    </>
   );
 }

@@ -31,8 +31,26 @@ app.use(helmet({
 app.use(compression());
 
 // Handle CORS early and consistently
+// Handle CORS early and consistently
+const allowedOrigins = [
+  'https://snapadda-7a6e6.web.app',
+  'https://snapadda-7a6e6.firebaseapp.com',
+  'https://snapaddaadmin.web.app',
+  'http://localhost:3000',
+  'http://localhost:5173',
+  'http://localhost:5174'
+];
+
 app.use(cors({
-  origin: '*', // For Firebase functions, its often easier to start with * or env-based origin
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV !== 'production') {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   credentials: true
@@ -151,6 +169,7 @@ import promotionRoutes from './routes/promotionRoutes.js';
 import testimonialRoutes from './routes/testimonialRoutes.js';
 import questionRoutes from './routes/questionRoutes.js';
 import automationRoutes from './routes/automationRoutes.js';
+import activityRoutes from './routes/activityRoutes.js';
 
 import { automationService } from './modules/automationService.js';
 
@@ -173,6 +192,7 @@ apiRouter.use('/promotions', promotionRoutes);
 apiRouter.use('/testimonials', testimonialRoutes);
 apiRouter.use('/questions', questionRoutes);
 apiRouter.use('/automation', automationRoutes);
+apiRouter.use('/activity', activityRoutes);
 
 // Attach the unified router to both prefixed and root paths
 app.use('/api', apiRouter);
@@ -205,11 +225,11 @@ app.use((req, res) => {
 
 // Export for Firebase Functions
 export const api = onRequest({ 
-  cors: true,
   memory: "1GiB",
   timeoutSeconds: 60,
   minInstances: 0,
   maxInstances: 10,
+  // We handle CORS manually in Express middleware above
 }, app);
 
 // Local Development Fallback

@@ -57,7 +57,12 @@ try {
     
     foreach ($path in @("admin/.env", "client/.env", "server/.env")) {
         Write-Host "   Updating $path..." -ForegroundColor Gray
-        Set-EnvVar $path "VITE_API_URL" $PROD_API_URL
+        
+        # Performance & Consistency: Use relative paths for Hosting->Functions connectivity
+        $currentApi = $PROD_API_URL
+        if ($path -match "client") { $currentApi = "/api" }
+        
+        Set-EnvVar $path "VITE_API_URL" $currentApi
         
         foreach ($key in $FIREBASE_PROD.Keys) {
             Set-EnvVar $path $key $FIREBASE_PROD[$key]

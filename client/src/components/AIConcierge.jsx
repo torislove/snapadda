@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useLocation } from 'react-router-dom';
 import { aiService } from '../services/aiService';
 import { notifyAIInteraction } from '../services/api';
+import { useTranslation } from 'react-i18next';
 
 export default function AIConcierge() {
   const [isOpen, setIsOpen] = useState(false);
@@ -11,6 +12,7 @@ export default function AIConcierge() {
   const [progress, setProgress] = useState(0);
   const [input, setInput] = useState('');
   const [response, setResponse] = useState('');
+  const { t } = useTranslation();
   const location = useLocation();
 
   const handleInitialize = async () => {
@@ -95,7 +97,7 @@ export default function AIConcierge() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <Bot size={18} color="var(--gold)" />
-                <span style={{ fontWeight: 800, fontSize: '0.75rem', color: '#fff', letterSpacing: '0.15em' }}>SNAPADDA_AI</span>
+                <span style={{ fontWeight: 800, fontSize: '0.75rem', color: '#fff', letterSpacing: '0.15em' }}>{t('ai.title', 'SNAPADDA_AI')}</span>
               </div>
               <button onClick={() => setIsOpen(false)} style={{ background: 'none', border: 'none', color: 'var(--txt-muted)', cursor: 'pointer' }}>
                 <X size={18} />
@@ -105,7 +107,7 @@ export default function AIConcierge() {
             {aiService.status !== 'ready' ? (
               <div style={{ textAlign: 'center', padding: '1rem 0' }}>
                 <div style={{ color: 'var(--txt-muted)', fontSize: '0.8rem', marginBottom: '1.5rem' }}>
-                  {loading ? 'CALIBRATING INTELLIGENCE...' : 'Initialize the elite acquisition assistant.'}
+                  {loading ? t('ai.loading', 'CALIBRATING INTELLIGENCE...') : t('ai.init', 'Initialize the elite acquisition assistant.')}
                 </div>
                 <button 
                   onClick={handleInitialize} 
@@ -113,7 +115,7 @@ export default function AIConcierge() {
                   className="btn-3d" 
                   style={{ width: '100%', fontSize: '0.75rem' }}
                 >
-                  {loading ? `LOADING ${progress}%` : 'ACTIVATE AI CORE'}
+                  {loading ? `${t('nav.loading', 'LOADING')} ${progress}%` : t('ai.activate', 'ACTIVATE AI CORE')}
                 </button>
               </div>
             ) : (
@@ -126,17 +128,17 @@ export default function AIConcierge() {
                     color: response ? '#fff' : 'var(--txt-muted)', border: '1px solid rgba(255,255,255,0.05)'
                   }}
                 >
-                  {loading ? 'Processing context...' : (response || 'Ask for a property analysis or professional draft...')}
+                  {loading ? t('ai.processing', 'Processing context...') : (response || t('ai.placeholder', 'Ask for a property analysis or professional draft...'))}
                 </div>
 
                 {/* Quick Actions */}
                 {!response && !loading && (
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                         <button onClick={() => handleGenerate('Draft a professional property inquiry')} style={{ background: 'rgba(155,89,245,0.1)', border: '1px solid rgba(155,89,245,0.2)', color: '#fff', padding: '8px', borderRadius: '10px', fontSize: '0.65rem', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
-                            <FileText size={12} /> DRAFT INQUIRY
+                            <FileText size={12} /> {t('ai.draftInquiry', 'DRAFT INQUIRY')}
                         </button>
                         <button onClick={() => handleGenerate('Give me 3 pros and cons for this area')} style={{ background: 'rgba(16,217,140,0.1)', border: '1px solid rgba(16,217,140,0.2)', color: '#fff', padding: '8px', borderRadius: '10px', fontSize: '0.65rem', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
-                            <BarChart size={12} /> ANALYSIS
+                            <BarChart size={12} /> {t('ai.analysis', 'ANALYSIS')}
                         </button>
                     </div>
                 )}
@@ -146,7 +148,7 @@ export default function AIConcierge() {
                     type="text" value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleGenerate()}
-                    placeholder="Message assistant..."
+                    placeholder={t('ai.entry', 'Message assistant...')}
                     style={{ flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '12px', color: '#fff', fontSize: '0.85rem', outline: 'none' }}
                   />
                   <button 

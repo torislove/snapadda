@@ -28,10 +28,17 @@ const TYPE_CONFIG: Record<string, { label: string; badgeColor: string; badge: st
   update:   { label: 'Update',      badgeColor: '#22d9e0', badge: 'NEW UPDATE'     },
 };
 
+const isVideoUrl = (url?: string) => {
+  if (!url) return false;
+  const videoExtensions = ['.mp4', '.webm', '.ogg', '.mov', '.quicktime'];
+  return videoExtensions.some(ext => url.toLowerCase().includes(ext)) || url.includes('video/upload');
+};
+
 const EMPTY_FORM = {
   type: 'ad', title: '', subtitle: '', actionText: '', actionUrl: '',
   size: '1x1', countdownActive: false, cardColor: 'glass-dark',
   image: '', priority: 0, targetLocation: 'All', startDate: '', endDate: '',
+  displaySegment: 'both', linkedPropertyId: '',
 };
 
 /* ── Mini Live Preview ── */
@@ -43,7 +50,15 @@ const MiniPreview = ({ form }: { form: typeof EMPTY_FORM }) => (
   }}>
     {form.image && (
       <>
-        <div style={{ position:'absolute', inset:0, backgroundImage:`url(${form.image})`, backgroundSize:'cover', backgroundPosition:'center' }} />
+        {isVideoUrl(form.image) ? (
+          <video 
+            src={form.image} 
+            autoPlay muted loop playsInline 
+            style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'cover' }} 
+          />
+        ) : (
+          <div style={{ position:'absolute', inset:0, backgroundImage:`url(${form.image})`, backgroundSize:'cover', backgroundPosition:'center' }} />
+        )}
         <div style={{ position:'absolute', inset:0, background: getThemeBg(form.cardColor), opacity:0.7, mixBlendMode:'multiply' }} />
         <div style={{ position:'absolute', inset:0, background:'linear-gradient(to top, rgba(0,0,0,0.85), transparent)' }} />
       </>
@@ -76,7 +91,7 @@ const MiniPreview = ({ form }: { form: typeof EMPTY_FORM }) => (
 
 /* ── Promotion Card in Grid ── */
 const PromoCard = ({
-  promo, onToggle, onDelete, onDragStart, onDragOver, onDrop, isDragging
+  promo, onToggle, onDelete, onEdit, onDragStart, onDragOver, onDrop, isDragging
 }: any) => {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const cfg = TYPE_CONFIG[promo.type] || TYPE_CONFIG.ad;
@@ -103,7 +118,15 @@ const PromoCard = ({
       }}>
         {promo.image && (
           <>
-            <div style={{ position:'absolute', inset:0, backgroundImage:`url(${promo.image})`, backgroundSize:'cover', backgroundPosition:'center' }} />
+            {isVideoUrl(promo.image) ? (
+              <video 
+                src={promo.image} 
+                autoPlay muted loop playsInline
+                style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'cover' }} 
+              />
+            ) : (
+              <div style={{ position:'absolute', inset:0, backgroundImage:`url(${promo.image})`, backgroundSize:'cover', backgroundPosition:'center' }} />
+            )}
             <div style={{ position:'absolute', inset:0, background: getThemeBg(promo.cardColor), opacity:0.65, mixBlendMode:'multiply' }} />
             <div style={{ position:'absolute', inset:0, background:'linear-gradient(to top, rgba(0,0,0,0.7), transparent)' }} />
           </>
@@ -177,6 +200,17 @@ const PromoCard = ({
           >
             {promo.isActive ? <><Eye size={12} /> Live</> : <><EyeOff size={12} /> Hidden</>}
           </button>
+          <button
+            onClick={() => onEdit(promo)}
+            style={{
+              padding: '0.45rem 0.65rem', fontSize: '0.75rem', fontWeight: 600,
+              borderRadius: '10px', cursor: 'pointer', border: '1px solid rgba(255,255,255,0.1)',
+              background: 'rgba(255,255,255,0.05)', color: 'var(--text-secondary)',
+              transition: 'all 0.2s ease',
+            }}
+          >
+            Edit
+          </button>
           {confirmDelete ? (
             <button
               onClick={() => { onDelete(promo._id); setConfirmDelete(false); }}
@@ -209,6 +243,176 @@ const PromoCard = ({
   );
 };
 
+
+/* ── Input styles ── */
+const inputCls: React.CSSProperties = {
+  width:'100%', background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.09)',
+  color:'#f0eeff', borderRadius:'10px', padding:'0.6rem 0.9rem', fontSize:'0.85rem',
+  outline:'none',
+};
+
+/* ── Step Content ── */
+const StepContent = ({ activeStep, formData, setFormData, handleMediaChange }: { 
+  activeStep: number; 
+  formData: any; 
+  setFormData: any; 
+  handleMediaChange: any; 
+}) => {
+  const labelStyle: React.CSSProperties = { display:'block', fontSize:'0.68rem', fontWeight:700, letterSpacing:'0.1em', textTransform:'uppercase', color:'var(--text-muted)', marginBottom:'0.45rem' };
+  const gapStyle: React.CSSProperties = { display:'flex', flexDirection:'column', gap:'1rem' };
+
+  switch (activeStep) {
+    case 0:
+      return (
+        <div style={gapStyle}>
+          <div>
+            <label style={labelStyle}>Card Type</label>
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'0.5rem' }}>
+              {Object.entries(TYPE_CONFIG).map(([k, v]) => (
+                <button key={k} type="button"
+                  onClick={() => setFormData((p: any) => ({ ...p, type: k }))}
+                  style={{
+                    padding:'0.6rem 0.4rem', borderRadius:'10px', cursor:'pointer', fontSize:'0.76rem', fontWeight:600,
+                    border: formData.type === k ? `1.5px solid ${v.badgeColor}` : '1px solid rgba(255,255,255,0.08)',
+                    background: formData.type === k ? `${v.badgeColor}12` : 'rgba(255,255,255,0.03)',
+                    color: formData.type === k ? v.badgeColor : 'var(--text-muted)',
+                    transition:'all 0.2s ease',
+                  }}
+                >{v.label}</button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label style={labelStyle}>Headline *</label>
+            <input required type="text" value={formData.title} onChange={e => setFormData((p: any) => ({...p, title: e.target.value}))} style={inputCls} placeholder="e.g. Grand Villa Launch" />
+          </div>
+          <div>
+            <label style={labelStyle}>Subtitle</label>
+            <textarea rows={2} value={formData.subtitle} onChange={e => setFormData((p: any) => ({...p, subtitle: e.target.value}))} style={{ ...inputCls, resize:'none' }} placeholder="Exclusive presale starts now." />
+          </div>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.75rem' }}>
+            <div>
+              <label style={labelStyle}>CTA Text</label>
+              <input type="text" value={formData.actionText} onChange={e => setFormData((p: any) => ({...p, actionText: e.target.value}))} style={inputCls} placeholder="View Details" />
+            </div>
+            <div>
+              <label style={labelStyle}>CTA URL</label>
+              <input type="text" value={formData.actionUrl} onChange={e => setFormData((p: any) => ({...p, actionUrl: e.target.value}))} style={inputCls} placeholder="/properties/..." />
+            </div>
+          </div>
+          <label style={{ display:'flex', alignItems:'center', gap:'10px', cursor:'pointer' }}>
+            <div
+              onClick={() => setFormData((p: any) => ({...p, countdownActive: !p.countdownActive}))}
+              style={{
+                width:'38px', height:'20px', borderRadius:'99px', position:'relative',
+                background: formData.countdownActive ? 'var(--rose)' : 'rgba(255,255,255,0.1)',
+                transition:'background 0.2s', cursor:'pointer', flexShrink:0,
+              }}
+            >
+              <div style={{
+                position:'absolute', top:'2px', width:'16px', height:'16px', borderRadius:'50%', background:'white',
+                left: formData.countdownActive ? '20px' : '2px', transition:'left 0.2s',
+              }} />
+            </div>
+            <span style={{ fontSize:'0.83rem', color:'var(--text-secondary)' }}>Enable <strong style={{ color:'var(--rose)' }}>"Limited Time"</strong> badge</span>
+          </label>
+        </div>
+      );
+
+    case 1:
+      return (
+        <div style={gapStyle}>
+          <div>
+            <label style={labelStyle}>Color Theme</label>
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(5,1fr)', gap:'0.5rem' }}>
+              {COLOR_PRESETS.map(c => (
+                <button key={c.id} type="button" title={c.label}
+                  onClick={() => setFormData((p: any) => ({...p, cardColor: c.id}))}
+                  style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'5px', background:'none', border:'none', cursor:'pointer' }}
+                >
+                  <div style={{
+                    width:'100%', aspectRatio:'1', borderRadius:'10px',
+                    background: c.bg,
+                    border: formData.cardColor === c.id ? `2.5px solid ${c.accent}` : '2px solid transparent',
+                    boxShadow: formData.cardColor === c.id ? `0 0 12px ${c.accent}55` : 'none',
+                    transition:'all 0.2s',
+                  }} />
+                  <span style={{ fontSize:'0.6rem', color: formData.cardColor === c.id ? c.accent : 'var(--text-muted)' }}>{c.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label style={labelStyle}>Banner Image</label>
+            <MediaManager 
+              existingUrls={formData.image ? [formData.image] : []}
+              maxFiles={1}
+              onImagesChange={handleMediaChange}
+            />
+          </div>
+        </div>
+      );
+
+    case 2:
+      return (
+        <div style={gapStyle}>
+          <div>
+            <label style={labelStyle}>Target Location</label>
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'0.4rem' }}>
+              {['All', 'Amaravati', 'Vijayawada', 'Guntur', 'Visakhapatnam', 'Mangalagiri'].map(loc => (
+                <button key={loc} type="button" onClick={() => setFormData((p: any) => ({...p, targetLocation: loc}))}
+                  style={{
+                    padding:'0.5rem 0.4rem', borderRadius:'8px', cursor:'pointer', fontSize:'0.75rem', fontWeight:600,
+                    border: formData.targetLocation === loc ? '1.5px solid var(--cyan)' : '1px solid rgba(255,255,255,0.08)',
+                    background: formData.targetLocation === loc ? 'var(--cyan-dim)' : 'rgba(255,255,255,0.02)',
+                    color: formData.targetLocation === loc ? 'var(--cyan)' : 'var(--text-muted)',
+                    transition:'all 0.15s',
+                  }}
+                >{loc === 'All' ? '🌐 All' : loc}</button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label style={labelStyle}>Display Priority (lower = shown first)</label>
+            <div style={{ display:'flex', alignItems:'center', gap:'1rem' }}>
+              <input type="range" min={0} max={10} value={formData.priority}
+                onChange={e => setFormData((p: any) => ({...p, priority: parseInt(e.target.value)}))}
+                style={{ flex:1, accentColor:'var(--gold)' }} />
+              <span style={{ color:'var(--gold)', fontWeight:700, fontFamily:'var(--font-mono)', minWidth:'20px', textAlign:'center' }}>{formData.priority}</span>
+            </div>
+          </div>
+        </div>
+      );
+
+    case 3:
+      return (
+        <div style={gapStyle}>
+          <div>
+            <label style={labelStyle}>Campaign Start Date</label>
+            <input type="datetime-local" value={formData.startDate} onChange={e => setFormData((p: any) => ({...p, startDate: e.target.value}))} style={inputCls} />
+            <p style={{ fontSize:'0.68rem', color:'var(--text-muted)', marginTop:'4px' }}>Leave blank to go live immediately.</p>
+          </div>
+          <div>
+            <label style={labelStyle}>Campaign Expiry Date</label>
+            <input type="datetime-local" value={formData.endDate} onChange={e => setFormData((p: any) => ({...p, endDate: e.target.value}))} style={inputCls} />
+            <p style={{ fontSize:'0.68rem', color:'var(--text-muted)', marginTop:'4px' }}>Leave blank to run indefinitely.</p>
+          </div>
+          <div style={{
+            background:'rgba(245,200,66,0.05)', border:'1px solid rgba(245,200,66,0.15)',
+            borderRadius:'10px', padding:'0.85rem', display:'flex', gap:'0.5rem',
+          }}>
+            <AlertCircle size={14} style={{ color:'var(--gold)', flexShrink:0, marginTop:'1px' }} />
+            <p style={{ fontSize:'0.75rem', color:'rgba(245,200,66,0.7)', lineHeight:1.5 }}>
+              Campaigns auto-deactivate after the expiry date. The banner stops appearing to clients automatically.
+            </p>
+          </div>
+        </div>
+      );
+
+    default: return null;
+  }
+};
+
 /* ═══════════════════════════════════════════ MAIN COMPONENT ═══════════════════════════════════════════ */
 export const Promotions = () => {
   const [promotions, setPromotions] = useState<any[]>([]);
@@ -218,6 +422,7 @@ export const Promotions = () => {
   const [formData, setFormData] = useState<any>({ ...EMPTY_FORM });
   const [activeStep, setActiveStep] = useState(0);
   const [dragSrcIdx, setDragSrcIdx] = useState<number | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
   const dragOverIdxRef = useRef<number | null>(null);
 
@@ -257,15 +462,46 @@ export const Promotions = () => {
           finalImageUrl = res.data[0];
         }
       }
-      await createPromotion({ ...formData, image: finalImageUrl });
+      
+      const payload = { ...formData, image: finalImageUrl };
+      if (editingId) {
+        await updatePromotion(editingId, payload);
+        showToast('Campaign updated! ✨');
+      } else {
+        await createPromotion(payload);
+        showToast('Campaign launched! 🚀');
+      }
+      
       setIsModalOpen(false);
+      setEditingId(null);
       setFormData({ ...EMPTY_FORM });
       setNewImageFiles([]);
       setActiveStep(0);
       load();
-      showToast('Campaign launched! 🚀');
-    } catch { showToast('Failed to create campaign', 'error'); }
+    } catch { showToast(editingId ? 'Failed to update' : 'Failed to create', 'error'); }
     finally { setIsSubmitting(false); }
+  };
+
+  const handleEdit = (promo: any) => {
+    setEditingId(promo._id);
+    setFormData({
+      type: promo.type || 'ad',
+      title: promo.title || '',
+      subtitle: promo.subtitle || '',
+      actionText: promo.actionText || '',
+      actionUrl: promo.actionUrl || '',
+      size: promo.size || '1x1',
+      countdownActive: !!promo.countdownActive,
+      cardColor: promo.cardColor || 'glass-dark',
+      image: promo.image || '',
+      priority: promo.priority || 0,
+      targetLocation: promo.targetLocation || 'All',
+      startDate: promo.startDate ? new Date(promo.startDate).toISOString().slice(0, 16) : '',
+      endDate: promo.endDate ? new Date(promo.endDate).toISOString().slice(0, 16) : '',
+      displaySegment: promo.displaySegment || 'both',
+    });
+    setActiveStep(0);
+    setIsModalOpen(true);
   };
 
   const handleToggle = async (id: string, current: boolean) => {
@@ -303,170 +539,6 @@ export const Promotions = () => {
     } catch { showToast('Reorder failed', 'error'); }
   };
 
-  /* ── Input styles ── */
-  const inputCls: React.CSSProperties = {
-    width:'100%', background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.09)',
-    color:'#f0eeff', borderRadius:'10px', padding:'0.6rem 0.9rem', fontSize:'0.85rem',
-    outline:'none',
-  };
-
-  /* ── Step Content ── */
-  const StepContent = () => {
-    const labelStyle: React.CSSProperties = { display:'block', fontSize:'0.68rem', fontWeight:700, letterSpacing:'0.1em', textTransform:'uppercase', color:'var(--text-muted)', marginBottom:'0.45rem' };
-    const gapStyle: React.CSSProperties = { display:'flex', flexDirection:'column', gap:'1rem' };
-
-    switch (activeStep) {
-      case 0:
-        return (
-          <div style={gapStyle}>
-            <div>
-              <label style={labelStyle}>Card Type</label>
-              <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'0.5rem' }}>
-                {Object.entries(TYPE_CONFIG).map(([k, v]) => (
-                  <button key={k} type="button"
-                    onClick={() => setFormData((p: any) => ({ ...p, type: k }))}
-                    style={{
-                      padding:'0.6rem 0.4rem', borderRadius:'10px', cursor:'pointer', fontSize:'0.76rem', fontWeight:600,
-                      border: formData.type === k ? `1.5px solid ${v.badgeColor}` : '1px solid rgba(255,255,255,0.08)',
-                      background: formData.type === k ? `${v.badgeColor}12` : 'rgba(255,255,255,0.03)',
-                      color: formData.type === k ? v.badgeColor : 'var(--text-muted)',
-                      transition:'all 0.2s ease',
-                    }}
-                  >{v.label}</button>
-                ))}
-              </div>
-            </div>
-            <div>
-              <label style={labelStyle}>Headline *</label>
-              <input required type="text" value={formData.title} onChange={e => setFormData((p: any) => ({...p, title: e.target.value}))} style={inputCls} placeholder="e.g. Grand Villa Launch" />
-            </div>
-            <div>
-              <label style={labelStyle}>Subtitle</label>
-              <textarea rows={2} value={formData.subtitle} onChange={e => setFormData((p: any) => ({...p, subtitle: e.target.value}))} style={{ ...inputCls, resize:'none' }} placeholder="Exclusive presale starts now." />
-            </div>
-            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.75rem' }}>
-              <div>
-                <label style={labelStyle}>CTA Text</label>
-                <input type="text" value={formData.actionText} onChange={e => setFormData((p: any) => ({...p, actionText: e.target.value}))} style={inputCls} placeholder="View Details" />
-              </div>
-              <div>
-                <label style={labelStyle}>CTA URL</label>
-                <input type="text" value={formData.actionUrl} onChange={e => setFormData((p: any) => ({...p, actionUrl: e.target.value}))} style={inputCls} placeholder="/properties/..." />
-              </div>
-            </div>
-            <label style={{ display:'flex', alignItems:'center', gap:'10px', cursor:'pointer' }}>
-              <div
-                onClick={() => setFormData((p: any) => ({...p, countdownActive: !p.countdownActive}))}
-                style={{
-                  width:'38px', height:'20px', borderRadius:'99px', position:'relative',
-                  background: formData.countdownActive ? 'var(--rose)' : 'rgba(255,255,255,0.1)',
-                  transition:'background 0.2s', cursor:'pointer', flexShrink:0,
-                }}
-              >
-                <div style={{
-                  position:'absolute', top:'2px', width:'16px', height:'16px', borderRadius:'50%', background:'white',
-                  left: formData.countdownActive ? '20px' : '2px', transition:'left 0.2s',
-                }} />
-              </div>
-              <span style={{ fontSize:'0.83rem', color:'var(--text-secondary)' }}>Enable <strong style={{ color:'var(--rose)' }}>"Limited Time"</strong> badge</span>
-            </label>
-          </div>
-        );
-
-      case 1:
-        return (
-          <div style={gapStyle}>
-            <div>
-              <label style={labelStyle}>Color Theme</label>
-              <div style={{ display:'grid', gridTemplateColumns:'repeat(5,1fr)', gap:'0.5rem' }}>
-                {COLOR_PRESETS.map(c => (
-                  <button key={c.id} type="button" title={c.label}
-                    onClick={() => setFormData((p: any) => ({...p, cardColor: c.id}))}
-                    style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'5px', background:'none', border:'none', cursor:'pointer' }}
-                  >
-                    <div style={{
-                      width:'100%', aspectRatio:'1', borderRadius:'10px',
-                      background: c.bg,
-                      border: formData.cardColor === c.id ? `2.5px solid ${c.accent}` : '2px solid transparent',
-                      boxShadow: formData.cardColor === c.id ? `0 0 12px ${c.accent}55` : 'none',
-                      transition:'all 0.2s',
-                    }} />
-                    <span style={{ fontSize:'0.6rem', color: formData.cardColor === c.id ? c.accent : 'var(--text-muted)' }}>{c.label}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div>
-              <label style={labelStyle}>Banner Image</label>
-              <MediaManager 
-                existingUrls={formData.image ? [formData.image] : []}
-                maxFiles={1}
-                onImagesChange={handleMediaChange}
-              />
-            </div>
-          </div>
-        );
-
-      case 2:
-        return (
-          <div style={gapStyle}>
-            <div>
-              <label style={labelStyle}>Target Location</label>
-              <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'0.4rem' }}>
-                {['All', 'Amaravati', 'Vijayawada', 'Guntur', 'Visakhapatnam', 'Mangalagiri'].map(loc => (
-                  <button key={loc} type="button" onClick={() => setFormData((p: any) => ({...p, targetLocation: loc}))}
-                    style={{
-                      padding:'0.5rem 0.4rem', borderRadius:'8px', cursor:'pointer', fontSize:'0.75rem', fontWeight:600,
-                      border: formData.targetLocation === loc ? '1.5px solid var(--cyan)' : '1px solid rgba(255,255,255,0.08)',
-                      background: formData.targetLocation === loc ? 'var(--cyan-dim)' : 'rgba(255,255,255,0.02)',
-                      color: formData.targetLocation === loc ? 'var(--cyan)' : 'var(--text-muted)',
-                      transition:'all 0.15s',
-                    }}
-                  >{loc === 'All' ? '🌐 All' : loc}</button>
-                ))}
-              </div>
-            </div>
-            <div>
-              <label style={labelStyle}>Display Priority (lower = shown first)</label>
-              <div style={{ display:'flex', alignItems:'center', gap:'1rem' }}>
-                <input type="range" min={0} max={10} value={formData.priority}
-                  onChange={e => setFormData((p: any) => ({...p, priority: parseInt(e.target.value)}))}
-                  style={{ flex:1, accentColor:'var(--gold)' }} />
-                <span style={{ color:'var(--gold)', fontWeight:700, fontFamily:'var(--font-mono)', minWidth:'20px', textAlign:'center' }}>{formData.priority}</span>
-              </div>
-            </div>
-          </div>
-        );
-
-      case 3:
-        return (
-          <div style={gapStyle}>
-            <div>
-              <label style={labelStyle}>Campaign Start Date</label>
-              <input type="datetime-local" value={formData.startDate} onChange={e => setFormData((p: any) => ({...p, startDate: e.target.value}))} style={inputCls} />
-              <p style={{ fontSize:'0.68rem', color:'var(--text-muted)', marginTop:'4px' }}>Leave blank to go live immediately.</p>
-            </div>
-            <div>
-              <label style={labelStyle}>Campaign Expiry Date</label>
-              <input type="datetime-local" value={formData.endDate} onChange={e => setFormData((p: any) => ({...p, endDate: e.target.value}))} style={inputCls} />
-              <p style={{ fontSize:'0.68rem', color:'var(--text-muted)', marginTop:'4px' }}>Leave blank to run indefinitely.</p>
-            </div>
-            <div style={{
-              background:'rgba(245,200,66,0.05)', border:'1px solid rgba(245,200,66,0.15)',
-              borderRadius:'10px', padding:'0.85rem', display:'flex', gap:'0.5rem',
-            }}>
-              <AlertCircle size={14} style={{ color:'var(--gold)', flexShrink:0, marginTop:'1px' }} />
-              <p style={{ fontSize:'0.75rem', color:'rgba(245,200,66,0.7)', lineHeight:1.5 }}>
-                Campaigns auto-deactivate after the expiry date. The banner stops appearing to clients automatically.
-              </p>
-            </div>
-          </div>
-        );
-
-      default: return null;
-    }
-  };
-
   /* ═══════════════════ RENDER ═══════════════════ */
   return (
     <div style={{ minHeight:'100%', display:'flex', flexDirection:'column', gap:'1.5rem', position:'relative' }}>
@@ -500,7 +572,7 @@ export const Promotions = () => {
           </p>
         </div>
         <button
-          onClick={() => { setIsModalOpen(true); setActiveStep(0); setFormData({ ...EMPTY_FORM }); }}
+          onClick={() => { setIsModalOpen(true); setEditingId(null); setActiveStep(0); setFormData({ ...EMPTY_FORM }); }}
           className="btn btn-gold"
         >
           <Plus size={15} /> New Promotion
@@ -530,6 +602,7 @@ export const Promotions = () => {
               isDragging={dragSrcIdx === idx}
               onToggle={handleToggle}
               onDelete={handleDelete}
+              onEdit={handleEdit}
               onDragStart={() => handleDragStart(idx)}
               onDragOver={() => handleDragOver(idx)}
               onDrop={handleDrop}
@@ -559,11 +632,11 @@ export const Promotions = () => {
                   <Sparkles size={16} style={{ color:'var(--gold)' }} />
                 </div>
                 <div>
-                  <div style={{ color:'var(--text-primary)', fontWeight:700, fontSize:'1rem', lineHeight:1 }}>Create Campaign</div>
+                  <div style={{ color:'var(--text-primary)', fontWeight:700, fontSize:'1rem', lineHeight:1 }}>{editingId ? 'Edit Campaign' : 'Create Campaign'}</div>
                   <div style={{ color:'var(--text-muted)', fontSize:'0.72rem', marginTop:'2px' }}>Live preview updates as you type</div>
                 </div>
               </div>
-              <button onClick={() => setIsModalOpen(false)} style={{ color:'var(--text-muted)', cursor:'pointer', padding:'6px', borderRadius:'8px', display:'flex' }}>
+              <button onClick={() => { setIsModalOpen(false); setEditingId(null); }} style={{ color:'var(--text-muted)', cursor:'pointer', padding:'6px', borderRadius:'8px', display:'flex' }}>
                 <X size={18} />
               </button>
             </div>
@@ -596,7 +669,29 @@ export const Promotions = () => {
                       {['Set the text and actions for this banner.','Choose the visual style and upload an image.','Control who sees this and where.','Set a go-live date and auto-expiry.'][activeStep]}
                     </p>
                   </div>
-                  <StepContent />
+                  <StepContent 
+  activeStep={activeStep} 
+  formData={formData} 
+  setFormData={setFormData}
+  handleMediaChange={handleMediaChange}
+/>
+
+                  <div style={{ marginTop: '1.5rem', padding: '1rem', background: 'rgba(255,255,255,0.03)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.06)' }}>
+                    <label style={{ display:'block', fontSize:'0.68rem', fontWeight:700, letterSpacing:'0.1em', textTransform:'uppercase', color:'var(--gold)', marginBottom:'0.75rem' }}>Campaign Targeting Tier</label>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      {['hero', 'floating', 'both'].map(seg => (
+                        <button key={seg} type="button" onClick={() => setFormData((p: any) => ({ ...p, displaySegment: seg }))}
+                          style={{
+                            flex: 1, padding: '0.6rem', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 600, textTransform: 'capitalize',
+                            border: formData.displaySegment === seg ? '1.5px solid var(--gold)' : '1px solid rgba(255,255,255,0.08)',
+                            background: formData.displaySegment === seg ? 'rgba(232,184,75,0.1)' : 'transparent',
+                            color: formData.displaySegment === seg ? 'var(--gold)' : 'var(--text-muted)',
+                            cursor: 'pointer'
+                          }}
+                        >{seg}</button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
                 {/* Right: Live preview */}
                 <div style={{ padding:'1.5rem 1.75rem', background:'rgba(0,0,0,0.2)' }}>
@@ -635,7 +730,7 @@ export const Promotions = () => {
                     <button type="button" onClick={() => setActiveStep(s => s + 1)} className="btn btn-gold btn-sm" disabled={!formData.title}>Next →</button>
                   ) : (
                     <button type="submit" className="btn btn-gold" disabled={isSubmitting || !formData.title}>
-                      {isSubmitting ? <><Loader2 size={14} style={{ animation:'spin 1s linear infinite' }} /> Launching...</> : <><Zap size={14} /> Launch Campaign</>}
+                      {isSubmitting ? <><Loader2 size={14} style={{ animation:'spin 1s linear infinite' }} /> Processing...</> : <><Zap size={14} /> {editingId ? 'Save Changes' : 'Launch Campaign'}</>}
                     </button>
                   )}
                 </div>

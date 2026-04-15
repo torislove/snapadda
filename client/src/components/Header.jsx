@@ -124,25 +124,25 @@ export default function Header() {
       <nav className="mobile-bottom-nav">
         <Link to="/" className={`bot-nav-item ${location.pathname === '/' && location.hash === '' ? 'active' : ''}`}>
           <Home size={22} />
-          <span>Home</span>
+          <span>{t('nav.home', 'Home')}</span>
         </Link>
         <a href="/#properties" className={`bot-nav-item ${location.hash === '#properties' ? 'active' : ''}`}>
           <Search size={22} />
-          <span>Explore</span>
+          <span>{t('nav.properties', 'Explore')}</span>
         </a>
         <a href="/#contact" className={`bot-nav-item ${location.hash === '#contact' ? 'active' : ''}`}>
           <Phone size={22} />
-          <span>Contact</span>
+          <span>{t('nav.contact', 'Contact')}</span>
         </a>
         {user ? (
           <Link to="/dashboard" className={`bot-nav-item ${location.pathname === '/dashboard' ? 'active' : ''}`}>
             <LayoutDashboard size={22} />
-            <span>Dash</span>
+            <span>{t('nav.dashboard', 'Dash')}</span>
           </Link>
         ) : (
           <Link to="/login" className={`bot-nav-item ${location.pathname === '/login' ? 'active' : ''}`}>
             <User size={22} />
-            <span>Login</span>
+            <span>{t('nav.signIn', 'Login')}</span>
           </Link>
         )}
       </nav>

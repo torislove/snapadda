@@ -10,15 +10,17 @@ import { fetchProperties } from '../services/api';
 import PropertyCard from '../components/PropertyCard';
 import { SkeletonPropertyCard } from '../components/SkeletonLoaders';
 import { parseSmartSearch, getFuzzySuggestions, loadAndhraData } from '../services/SearchParser';
+import RadarPortal from '../components/RadarPortal';
+import { Radar as RadarIcon } from 'lucide-react';
 
 const PROPERTY_TYPES = [
   { label: 'All Types', value: '', icon: <Filter size={14}/> },
   { label: 'Apartment', value: 'Apartment', icon: <Building2 size={14}/> },
   { label: 'Villa', value: 'Villa', icon: <HomeIcon size={14}/> },
   { label: 'Independent House', value: 'Independent House', icon: <HomeIcon size={14}/> },
-  { label: 'Residential Plot', value: 'Residential Plot', icon: <Square size={14}/> },
+  { label: 'Residential Plot / Gajalu', value: 'Residential Plot', icon: <Square size={14}/> },
   { label: 'Commercial Plot', value: 'Commercial Plot', icon: <Square size={14}/> },
-  { label: 'Agricultural Land', value: 'Agricultural Land', icon: <Leaf size={14}/> },
+  { label: 'Agri Land / Acres', value: 'Agricultural Land', icon: <Leaf size={14}/> },
   { label: 'Farmhouse', value: 'Farmhouse', icon: <Trees size={14}/> },
   { label: 'Commercial Space', value: 'Commercial Space', icon: <Building2 size={14}/> },
 ];
@@ -49,6 +51,7 @@ export default function SearchResults() {
   const [meta, setMeta] = useState({ total: 0, totalPages: 1, page: 1 });
   const [showMobileFilter, setShowMobileFilter] = useState(false);
   const [showAutocomplete, setShowAutocomplete] = useState(false);
+  const [isRadarOpen, setIsRadarOpen] = useState(false);
   const searchRef = useRef(null);
 
   // Read all filters from URL
@@ -208,12 +211,12 @@ export default function SearchResults() {
 
       {/* Purpose */}
       <div>
-        <label className="sr-filter-label">Purpose</label>
+        <label className="sr-filter-label">I want to...</label>
         <div style={{ display: 'flex', gap: '8px' }}>
           {['', 'Sale', 'Rent', 'Lease'].map(p => (
             <button key={p} onClick={() => { setPurpose(p); setPage(1); }}
-              style={{ flex: 1, padding: '8px', borderRadius: '8px', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer', border: purpose === p ? '1px solid var(--gold)' : '1px solid rgba(255,255,255,0.1)', background: purpose === p ? 'rgba(232,184,75,0.15)' : 'rgba(255,255,255,0.04)', color: purpose === p ? 'var(--gold)' : 'rgba(255,255,255,0.7)', transition: 'all 0.15s' }}>
-              {p || 'Any'}
+              style={{ flex: 1, padding: '8px', borderRadius: '8px', fontSize: '0.72rem', fontWeight: 800, cursor: 'pointer', border: purpose === p ? '1px solid var(--gold)' : '1px solid rgba(255,255,255,0.1)', background: purpose === p ? 'rgba(232,184,75,0.15)' : 'rgba(255,255,255,0.04)', color: purpose === p ? 'var(--gold)' : 'rgba(255,255,255,0.7)', transition: 'all 0.15s' }}>
+              {p || 'Buy / Rent'}
             </button>
           ))}
         </div>
@@ -319,6 +322,11 @@ export default function SearchResults() {
               style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.8)', padding: '7px 10px', borderRadius: '8px', fontSize: '0.75rem', cursor: 'pointer', outline: 'none' }}>
               {SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
+            {/* Radar button */}
+            <button onClick={() => setIsRadarOpen(true)} className="btn-3d"
+              style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', background: 'rgba(232,184,75,0.1)', color: 'var(--gold)', border: '1px solid var(--gold)', borderRadius: '10px', fontSize: '0.75rem', fontWeight: 900, cursor: 'pointer' }}>
+              <RadarIcon size={14} className="pulse-primary" /> RADAR
+            </button>
             {/* Filter button (mobile) */}
             <button onClick={() => setShowMobileFilter(true)} className="sr-mobile-filter-btn"
               style={{ display: 'none', alignItems: 'center', gap: '6px', padding: '7px 14px', background: 'var(--gold)', color: '#000', border: 'none', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer' }}>
@@ -369,11 +377,23 @@ export default function SearchResults() {
             </div>
           ) : properties.length > 0 ? (
             <>
-              <div className="properties-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem' }}>
+              <motion.div 
+                className="properties-grid" 
+                style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem' }}
+                initial="hidden"
+                animate="visible"
+                variants={{
+                  hidden: { opacity: 0 },
+                  visible: {
+                    opacity: 1,
+                    transition: { staggerChildren: 0.1 }
+                  }
+                }}
+              >
                 {properties.map((p) => (
                   <PropertyCard key={p._id || p.id} {...p} />
                 ))}
-              </div>
+              </motion.div>
 
               {/* Pagination / Infinite Scroll Node */}
               {meta.totalPages > 1 && (
@@ -434,6 +454,13 @@ export default function SearchResults() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <RadarPortal 
+        properties={properties} 
+        city={city || keyword} 
+        isOpen={isRadarOpen} 
+        onClose={() => setIsRadarOpen(false)} 
+      />
 
       <style>{`
         .sr-filter-label { color: rgba(255,255,255,0.5); font-size: 0.62rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; display: block; margin-bottom: 8px; }

@@ -4,7 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Heart, Share2, Eye, Phone, MessageSquare, ShieldCheck, Flame,
   MapPin, Building2, User, Leaf, BedDouble, Bath, Square,
-  Compass, IndianRupee, CheckCircle2, Award, TreePine, ArrowRight, Home as HomeIcon
+  Compass, IndianRupee, CheckCircle2, Award, TreePine, ArrowRight, Home as HomeIcon,
+  SlidersHorizontal
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { likeProperty, shareProperty } from '../services/api';
@@ -13,8 +14,9 @@ import {
   formatSnapAddaPrice, 
   formatLandSize,
   smartAreaConverter,
-  calcPricePerCent
+  calcPricePerUnit
 } from '../utils/priceUtils';
+import { logUserActivity, ACTIONS } from '../services/activityTracker';
 
 const Toast = memo(({ msg, onDone }) => {
   return (
@@ -38,7 +40,8 @@ const PropertyCard = memo(({
   listerType = 'Individual Owner', googleMapsLink = '',
   createdAt, likeCount: initialLikeCount = 0, initialLiked = false,
   isGated, cornerProperty, constructionStatus,
-  supportPhone = '+919346793364', supportWA = '919346793364'
+  supportPhone = '+919346793364', supportWA = '919346793364',
+  status: propStatus = 'Active', pricePerSqYd
 }) => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -71,7 +74,6 @@ const PropertyCard = memo(({
   const typeStyle = getTypeStyle(type);
 
   // Agri / Land logic
-  const pricePerCent = pricePerAcre ? calcPricePerCent(pricePerAcre) : 0;
   const agriTotalValue = (pricePerAcre && totalAcres) ? Math.round(Number(pricePerAcre) * Number(totalAcres)) : 0;
   
   // Gajam / Sq.Yard Logic
@@ -81,9 +83,27 @@ const PropertyCard = memo(({
   // Effective display price
   const displayPrice = (isAgri && agriTotalValue > 0) ? agriTotalValue : price;
 
-  // Realtime Price Per Sq Yd logic for clients
-  const pricePerSqYd = (isPlot && displayPrice && displaySqYards) ? Math.round(Number(displayPrice) / Number(displaySqYards)).toLocaleString('en-IN') : null;
+  // Senior Data Analyst: Asset Intelligence (Investment IQ)
+  const cityAvgPrice = {
+    'Vijayawada': 6500,
+    'Guntur': 4500,
+    'Amaravati': 8000,
+    'Visakhapatnam': 9500,
+    'Kakinada': 3500
+  };
 
+  const getInvestmentIQ = () => {
+    if (!pricePerSqYd || !cityAvgPrice[location]) return null;
+    const currentPrice = Number(String(pricePerSqYd).replace(/,/g, ''));
+    const avg = cityAvgPrice[location];
+    const discount = ((avg - currentPrice) / avg) * 100;
+    
+    if (discount > 15) return { label: t('iq.highGrowth', '🌟 High Growth Local'), detail: `${Math.round(discount)}% Value Gap`, color: 'var(--emerald)' };
+    if (isVerified && isFeatured) return { label: t('iq.eliteYield', '💎 Institutional Grade'), detail: 'Primary Asset', color: 'var(--gold)' };
+    return null;
+  };
+
+  const iq = getInvestmentIQ();
   const [toast, setToast] = useState('');
 
   const handleLike = useCallback((e) => {
@@ -94,6 +114,10 @@ const PropertyCard = memo(({
 
   const handleShare = useCallback((e) => {
     e.preventDefault(); e.stopPropagation();
+    if (!user) {
+      navigate('/login', { state: { from: `/property/${propertyId}` } });
+      return;
+    }
     const url = `${window.location.origin}/property/${propertyId}`;
     const shareText = `Check out this ${type} in ${location} on SnapAdda.\n\nPrice: ${formatSnapAddaPrice(displayPrice)}\n\nView details:`;
     
@@ -106,7 +130,7 @@ const PropertyCard = memo(({
     } else {
       navigator.clipboard.writeText(`${shareText} ${url}`).then(() => setToast('🔗 Details copied!'));
     }
-  }, [propertyId, title, type, location, displayPrice]);
+  }, [user, propertyId, title, type, location, displayPrice, navigate]);
 
   const property_image = image || images?.[0] || gallery?.[0];
 
@@ -114,16 +138,25 @@ const PropertyCard = memo(({
     <>
       <AnimatePresence>{toast && <Toast msg={toast} onDone={() => setToast('')} />}</AnimatePresence>
       <motion.article
-        initial={{ opacity: 0, y: 30 }}
-        whileInView={{ opacity: 1, y: 0 }}
+        initial={{ opacity: 0, y: 30, scale: 0.98 }}
+        whileInView={{ opacity: 1, y: 0, scale: 1 }}
+        whileHover={{ y: -8, transition: { type: 'spring', stiffness: 400, damping: 25 } }}
         viewport={{ once: true, margin: "-50px" }}
         transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+        style={{ height: '100%' }}
       >
         <div 
           className="property-card elite-card shadow-lg" 
           onClick={(e) => { 
             // Only navigate if we aren't clicking a social button or action button
-            if (!e.defaultPrevented) navigate(`/property/${propertyId}`);
+            if (!e.defaultPrevented) {
+              if (!user) {
+                navigate('/login', { state: { from: `/property/${propertyId}` } });
+              } else {
+                logUserActivity(ACTIONS.PROPERTY_VIEW, { propertyId, title, location }, user?._id);
+                navigate(`/property/${propertyId}`);
+              }
+            }
           }}
           style={{ cursor: 'pointer' }}
         >
@@ -135,12 +168,18 @@ const PropertyCard = memo(({
               {images && images.length > 0 ? (
                 images.slice(0, 5).map((img, idx) => (
                   <div key={idx} style={{ position: 'relative', flex: '0 0 100%', scrollSnapAlign: 'start', height: '100%' }}>
-                    <img src={img} alt={`${title} ${idx+1}`} className="property-image" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <motion.img 
+                      layoutId={`prop-image-${propertyId}`}
+                      src={img} alt={`${title} ${idx+1}`} className="property-image" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                    />
                   </div>
                 ))
               ) : property_image ? (
                 <div style={{ flex: '0 0 100%', scrollSnapAlign: 'start', height: '100%' }}>
-                  <img src={property_image} alt={title} className="property-image" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <motion.img 
+                    layoutId={`prop-image-${propertyId}`}
+                    src={property_image} alt={title} className="property-image" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                  />
                 </div>
               ) : (
                 <div className="property-no-image" style={{ flex: '0 0 100%', height: '100%' }}><Building2 size={40} opacity={0.2}/></div>
@@ -158,12 +197,26 @@ const PropertyCard = memo(({
             {/* Senior Analyst: FOMO Pulse Viewer */}
             <div style={{ position: 'absolute', top: '10px', left: '10px', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(10px)', color: 'white', padding: '4px 10px', borderRadius: '20px', fontSize: '0.65rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '6px', zIndex: 10 }}>
                <div style={{ width: '6px', height: '6px', background: 'var(--rose)', borderRadius: '50%' }} className="pulse-primary" />
-               {liveViewers} viewing
+               {liveViewers} {t('card.viewing', 'viewing')}
             </div>
             
             <div className="pc-social-group">
-              <button className="pc-social-btn glass-premium" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleLike(e); }} title="Like">
-                <Heart size={16} fill={initialLiked ? "var(--rose)" : "none"} color={initialLiked ? "var(--rose)" : "white"} />
+              <button 
+                className="pc-social-btn glass-premium" 
+                onClick={(e) => {
+                  e.preventDefault(); e.stopPropagation();
+                  window.dispatchEvent(new CustomEvent('toggle-compare', { detail: { id: propertyId, title, image: property_image, type, price: displayPrice } }));
+                }}
+                title="Compare"
+                style={{ color: 'white' }}
+              >
+                <SlidersHorizontal size={15} />
+              </button>
+              <button className="pc-social-btn glass-premium" onClick={(e) => handleLike(e)} title="Like">
+                <Heart size={15} fill={initialLiked ? "var(--rose)" : "none"} color={initialLiked ? "var(--rose)" : "white"} />
+              </button>
+              <button className="pc-social-btn glass-premium" onClick={(e) => handleShare(e)} title="Share" style={{ color: 'white' }}>
+                <Share2 size={15} />
               </button>
             </div>
 
@@ -171,15 +224,28 @@ const PropertyCard = memo(({
             <div className="pc-floating-price" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
               <div>
                 <span className="price-main">{formatSnapAddaPrice(displayPrice)}</span>
-                {isAgri && <span className="price-suffix">Total</span>}
+                {isAgri && <span className="price-suffix"> Total</span>}
               </div>
-              {pricePerSqYd && <span style={{ fontSize: '0.65rem', fontWeight: 600, color: 'rgba(255,255,255,0.85)', background: 'rgba(0,0,0,0.4)', padding: '2px 6px', borderRadius: '4px', marginTop: '2px' }}>₹{pricePerSqYd} / Sq Yd</span>}
+              {isPlot && pricePerSqYd && <span style={{ fontSize: '0.62rem', fontWeight: 800, color: 'rgba(255,255,255,0.9)', background: 'rgba(212,175,55,0.2)', border: '1px solid rgba(212,175,55,0.3)', padding: '2px 8px', borderRadius: '4px', marginTop: '4px', textTransform: 'uppercase' }}>₹{pricePerSqYd} / SqYd (Gajam)</span>}
+              {isAgri && pricePerAcre && <span style={{ fontSize: '0.62rem', fontWeight: 800, color: 'rgba(255,255,255,0.9)', background: 'rgba(16,217,140,0.15)', border: '1px solid rgba(16,217,140,0.3)', padding: '2px 8px', borderRadius: '4px', marginTop: '4px', textTransform: 'uppercase' }}>{formatSnapAddaPrice(pricePerAcre)} / Acre</span>}
             </div>
 
-            {/* Labels combined with Scarcity */}
-            <div className="pc-status-labels" style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-end', top: '10px', right: '10px', position: 'absolute' }}>
-               {isHotAsset && <span className="pc-label" style={{ background: 'var(--rose)', color: 'white', fontSize: '0.6rem', padding: '2px 8px', borderRadius: '4px', fontWeight: 800, boxShadow: '0 4px 10px rgba(240,93,94,0.4)', textTransform: 'uppercase' }}>🔥 Hot Asset</span>}
-               {isVerified && <span className="pc-label verified">VERIFIED</span>}
+             {/* Labels combined with Scarcity */}
+            <div className="pc-status-labels" style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'flex-end', top: '10px', right: '10px', position: 'absolute' }}>
+               {iq && <span className="pc-label iq-badge" style={{ background: 'rgba(0,0,0,0.8)', color: iq.color, border: `1px solid ${iq.color}`, backdropFilter: 'blur(10px)', fontSize: '0.6rem', padding: '3px 8px', borderRadius: '6px', fontWeight: 900, boxShadow: `0 4px 15px ${iq.color}44` }}>{iq.label}</span>}
+               {isHotAsset && (propStatus || 'Active') !== 'Sold' && <span className="pc-label" style={{ background: 'var(--rose)', color: 'white', fontSize: '0.6rem', padding: '2px 8px', borderRadius: '4px', fontWeight: 800, boxShadow: '0 4px 10px rgba(240,93,94,0.4)', textTransform: 'uppercase' }}>🔥 {t('card.hot', 'Hot Asset')}</span>}
+               {isVerified && (
+                 <motion.span 
+                   initial={{ scale: 0.8 }}
+                   animate={{ scale: [1, 1.05, 1] }}
+                   transition={{ repeat: Infinity, duration: 3 }}
+                   className="pc-label verified" 
+                   style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'linear-gradient(135deg, #e8b84b, #b9933a)', color: '#07070f', fontWeight: 900, boxShadow: '0 4px 12px rgba(232,184,75,0.4)' }}
+                 >
+                   <ShieldCheck size={10} /> {t('card.verified', 'SNAPADDA VERIFIED')}
+                 </motion.span>
+               )}
+               {(propStatus || 'Active') === 'Sold' && <span className="pc-label" style={{ background: 'var(--emerald)', color: 'white', fontSize: '0.6rem', padding: '2px 8px', borderRadius: '4px', fontWeight: 900, boxShadow: '0 4px 15px rgba(16,217,140,0.4)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{t('card.sold', 'SOLD OUT')}</span>}
             </div>
           </div>
 
@@ -198,30 +264,39 @@ const PropertyCard = memo(({
             <div className="pc-specs-grid">
                {isResidential && (bhk || beds) && (
                  <div className="spec-item">
-                   <HomeIcon size={14} /> <span>{bhk || beds} BHK</span>
+                   <HomeIcon size={14} /> <span>{bhk || beds} BHK Unit</span>
                  </div>
                )}
                {isAgri && (
                  <div className="spec-item">
-                   <Leaf size={14} /> <span>{totalAcres ? formatLandSize(totalAcres) : `${areaSize} Cents`}</span>
+                   <Leaf size={14} /> <span>{totalAcres ? formatLandSize(totalAcres, false) : `${areaSize} Acres`}</span>
                  </div>
                )}
                {isPlot && (
                  <div className="spec-item">
-                   <Square size={14} /> <span>{displaySqYards ? `${displaySqYards} SqYds` : `${areaSize} ${measurementUnit}`}</span>
+                   <Square size={14} /> <span>{displaySqYards ? `${displaySqYards} Sq. Yards` : `${areaSize} ${measurementUnit}`}</span>
                  </div>
                )}
                {facing && (
                  <div className="spec-item">
-                   <Compass size={14} /> <span>{facing}</span>
+                   <Compass size={14} /> <span>Facing: {facing}</span>
+                 </div>
+               )}
+               {authority && (
+                 <div className="spec-item" style={{ color: 'var(--emerald)' }}>
+                   <Award size={14} /> <span>{authority} Approved</span>
                  </div>
                )}
             </div>
 
             {/* Elite Action Bar: Minimalist CTAs for Compressed Card */}
             <div className="pc-elite-actions" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto', gap: '8px' }}>
-              <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); navigate(`/property/${propertyId}`); }} className="pc-btn pc-btn-view btn-3d" style={{ padding: '0.4rem', fontSize: '0.65rem' }}>
-                <Eye size={13} style={{ marginRight: '4px' }}/> VIEW
+              <button onClick={(e) => { 
+                e.preventDefault(); e.stopPropagation(); 
+                if (!user) { navigate('/login', { state: { from: `/property/${propertyId}` } }); }
+                else { navigate(`/property/${propertyId}`); }
+              }} className="pc-btn pc-btn-view btn-3d" style={{ padding: '0.5rem', fontSize: '0.7rem' }}>
+                <Eye size={13} style={{ marginRight: '4px' }}/> {t('card.details', 'VIEW')}
               </button>
               
               <div style={{ display: 'flex', gap: '6px' }}>

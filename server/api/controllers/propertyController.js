@@ -49,9 +49,17 @@ export const getProperties = async (req, res) => {
       type, city, facing, approval, minPrice, maxPrice, search,
       verified, bhk, furnishing, constructionStatus, franchiseId,
       purpose, district, vastu, isGated, subType,
-      sort = 'newest', page = 1, limit = 100
+      sort = 'newest', page = 1, limit = 100, status
     } = req.query;
-    let filter = { status: 'Active' };
+    let filter = {};
+
+    // Standardize status filter
+    if (status) {
+      if (status !== 'all') filter.status = status;
+      // if 'all', we don't add status to filter, retrieving everything
+    } else {
+      filter.status = 'Active'; // Safe default for client consumption
+    }
 
     if (type && type !== 'all') {
       if (type === 'Plot') filter.type = { $in: ['Residential Plot', 'Commercial Plot'] };
@@ -113,7 +121,8 @@ export const getProperties = async (req, res) => {
       meta: { total, page: pageNum, limit: limitNum, totalPages: Math.ceil(total / limitNum), hasNextPage: pageNum < Math.ceil(total / limitNum), hasPrevPage: pageNum > 1 }
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('GET_PROPERTIES_ERROR:', error);
+    res.status(500).json({ status: 'error', message: error.message });
   }
 };
 
@@ -157,7 +166,8 @@ export const getNearbyProperties = async (req, res) => {
 
     res.status(200).json({ status: 'success', data: enriched, meta: { total: enriched.length, radiusKm, nearbyCities: cityNames } });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('GET_NEARBY_PROPERTIES_ERROR:', error);
+    res.status(500).json({ status: 'error', message: error.message });
   }
 };
 
@@ -200,7 +210,8 @@ export const getPropertyById = async (req, res) => {
     if (!property) return res.status(404).json({ message: 'Property not found' });
     res.status(200).json({ status: 'success', data: property });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('GET_PROPERTY_BY_ID_ERROR:', error);
+    res.status(500).json({ status: 'error', message: error.message });
   }
 };
 
@@ -215,7 +226,8 @@ export const updateProperty = async (req, res) => {
     
     res.status(200).json({ status: 'success', data: property });
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    console.error('UPDATE_PROPERTY_ERROR:', error);
+    res.status(400).json({ status: 'error', message: error.message });
   }
 };
 
@@ -230,7 +242,8 @@ export const deleteProperty = async (req, res) => {
     
     res.status(200).json({ status: 'success', message: 'Property deleted successfully' });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('DELETE_PROPERTY_ERROR:', error);
+    res.status(500).json({ status: 'error', message: error.message });
   }
 };
 

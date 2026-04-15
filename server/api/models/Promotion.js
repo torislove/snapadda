@@ -61,6 +61,16 @@ const promotionSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
+  displaySegment: {
+    type: String,
+    enum: ['hero', 'floating', 'both'],
+    default: 'both'
+  },
+  linkedPropertyId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Property',
+    default: null
+  },
   createdAt: {
     type: Date,
     default: Date.now

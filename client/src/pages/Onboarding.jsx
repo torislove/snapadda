@@ -1,263 +1,191 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { Link, useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Home, IndianRupee, MapPin, Target, ChevronRight, ChevronLeft, 
-  CheckCircle2, Sparkles, HelpCircle, Activity, ShieldCheck, 
-  Cpu, Zap, Layers 
-} from 'lucide-react';
-import { fetchSetting } from '../services/api';
-import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { Phone, MessageSquare, ShieldCheck, ArrowRight, CheckCircle2 } from 'lucide-react';
 import Logo from '../components/Logo';
 
 /**
- * SnapAdda Elite Onboarding
- * Real-time, Admin-Controlled, Quiet Luxury UX
+ * SnapAdda Onboarding — Phone & WhatsApp only, no questions.
  */
 export default function Onboarding() {
-  const { t } = useTranslation();
   const { user, completeOnboarding } = useAuth();
   const navigate = useNavigate();
-  
-  const [step, setStep] = useState(0); 
-  const [loading, setLoading] = useState(true);
-  const [questions, setQuestions] = useState([]);
-  const [formData, setFormData] = useState({});
+  const [phone, setPhone] = useState('');
+  const [whatsapp, setWhatsapp] = useState('');
+  const [sameAsPhone, setSameAsPhone] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isFinished, setIsFinished] = useState(false);
+  const [error, setError] = useState('');
 
-  // --- Real-time Question Sync from Server ---
+  // If already completed, bounce home
   useEffect(() => {
-    fetchSetting('onboarding_questions')
-      .then(res => {
-        const active = (Array.isArray(res) ? res : [])
-          .filter(q => q && q.enabled)
-          .sort((a, b) => (Number(a.displayOrder) || 0) - (Number(b.displayOrder) || 0));
-        
-        setQuestions(active);
-        
-        // Sync form keys without wiping existing answers
-        setFormData(prev => {
-          const next = { ...prev };
-          active.forEach(q => {
-            if (q.key && next[q.key] === undefined) {
-              next[q.key] = '';
-            }
-          });
-          return next;
-        });
-      })
-      .catch(err => console.error('Onboarding Sync Failure:', err))
-      .finally(() => setLoading(false));
-  }, []);
+    if (user?.onboardingCompleted) navigate('/', { replace: true });
+  }, [user, navigate]);
 
-  // Stability: Redirect if already qualified
-  useEffect(() => { 
-    if (user?.onboardingCompleted && !isFinished) {
-      const t = setTimeout(() => navigate('/'), 2000);
-      return () => clearTimeout(t);
+  // Sync WhatsApp with phone when checkbox ticked
+  useEffect(() => {
+    if (sameAsPhone) setWhatsapp(phone);
+  }, [sameAsPhone, phone]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!phone.trim() || phone.replace(/\D/g, '').length < 10) {
+      setError('Please enter a valid 10-digit mobile number.');
+      return;
     }
-  }, [user, navigate, isFinished]);
-
-  const handleNext = () => setStep(s => Math.min(s + 1, questions.length + 1));
-  const handleBack = () => setStep(s => Math.max(s - 1, 0));
-
-  const handleFinish = async () => {
     setIsSubmitting(true);
+    setError('');
     try {
-      await completeOnboarding(formData);
-      setIsFinished(true);
-      setStep(questions.length + 1);
-    } catch (e) {
-      console.error('Qualification sync failure:', e);
+      await completeOnboarding({ phone: phone.trim(), whatsapp: sameAsPhone ? phone.trim() : whatsapp.trim() });
+      navigate('/', { replace: true });
+    } catch {
+      setError('Could not save. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const getIcon = (key) => {
-    const props = { size: 28, strokeWidth: 1.5 };
-    switch(key) {
-      case 'propertyType': return <Home {...props} />;
-      case 'budget': return <IndianRupee {...props} />;
-      case 'purpose': return <Target {...props} />;
-      case 'locations': return <MapPin {...props} />;
-      default: return <Sparkles {...props} />;
-    }
-  };
-
-  if (loading) return (
-    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#05050a', gap: '2rem' }}>
-      <Logo size={60} />
-      <div style={{ display: 'flex', gap: '8px' }}>
-        {[0, 1, 2].map(i => (
-          <motion.div key={i} animate={{ opacity: [0.3, 1, 0.3] }} transition={{ repeat: Infinity, duration: 1, delay: i * 0.2 }}
-            style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--gold)' }} />
-        ))}
-      </div>
-    </div>
-  );
-
-  const currentQuestion = step > 0 && step <= questions.length ? questions[step - 1] : null;
-  const isLastQuestion = step === questions.length;
-  const isFinalStep = step === questions.length + 1;
-
   return (
-    <div style={{ 
-      minHeight: '100vh', width: '100%', background: '#05050a', position: 'relative', 
-      display: 'flex', flexDirection: 'column', overflow: 'hidden' 
+    <div style={{
+      minHeight: '100vh', width: '100%',
+      background: '#05050a', display: 'flex',
+      flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      padding: '1.5rem', position: 'relative', overflow: 'hidden'
     }}>
-      {/* Dynamic Background */}
-      <div style={{ position: 'absolute', inset: 0, opacity: 0.4, pointerEvents: 'none' }}>
-        <div style={{ position: 'absolute', top: '10%', right: '10%', width: '40vw', height: '40vw', background: 'radial-gradient(circle, #064e3b11 0%, transparent 70%)', filter: 'blur(100px)' }} />
-        <div style={{ position: 'absolute', bottom: '10%', left: '10%', width: '40vw', height: '40vw', background: 'radial-gradient(circle, #e8b84b09 0%, transparent 70%)', filter: 'blur(100px)' }} />
-      </div>
+      {/* Ambient glows */}
+      <div style={{ position: 'absolute', top: '20%', right: '10%', width: '35vw', height: '35vw', background: 'radial-gradient(circle, rgba(212,175,55,0.07) 0%, transparent 70%)', filter: 'blur(80px)', pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', bottom: '15%', left: '5%', width: '30vw', height: '30vw', background: 'radial-gradient(circle, rgba(39,201,125,0.06) 0%, transparent 70%)', filter: 'blur(80px)', pointerEvents: 'none' }} />
 
-      <header style={{ padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative', zIndex: 100 }}>
-        <Link to="/" style={{ textDecoration: 'none' }}><Logo size={32} showText /></Link>
-        <div style={{ fontSize: '0.65rem', color: 'var(--gold)', letterSpacing: '0.4em', fontWeight: 900 }}>SECURE_PROTOCOL // {isFinalStep ? 'QUALIFIED' : `STEP_${step}`}</div>
-      </header>
+      <motion.div
+        initial={{ opacity: 0, y: 32 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+        style={{
+          width: '100%', maxWidth: '440px',
+          background: 'rgba(10,12,22,0.6)',
+          backdropFilter: 'blur(30px)',
+          border: '1px solid rgba(212,175,55,0.18)',
+          borderRadius: '28px',
+          padding: 'clamp(2rem, 5vw, 3rem)',
+          boxShadow: '0 40px 100px rgba(0,0,0,0.6)',
+          position: 'relative', zIndex: 10
+        }}
+      >
+        {/* Logo */}
+        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+          <Logo size={52} showText={false} />
+          <h1 style={{ fontSize: '1.75rem', fontWeight: 900, color: '#fff', marginTop: '1.25rem', letterSpacing: '-0.03em' }}>
+            One last step
+          </h1>
+          <p style={{ color: 'rgba(255,255,255,0.5)', marginTop: '0.6rem', fontSize: '0.95rem', lineHeight: 1.6 }}>
+            Enter your contact so our agent can reach you instantly.
+          </p>
+        </div>
 
-      <main style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem', position: 'relative', zIndex: 10 }}>
-        <motion.div 
-          layout
-          style={{ 
-            width: '100%', maxWidth: '480px', background: 'rgba(255,255,255,0.02)', 
-            backdropFilter: 'blur(20px)', borderRadius: '32px', border: '1px solid rgba(212,175,55,0.1)',
-            padding: '2.5rem', boxShadow: '0 40px 100px rgba(0,0,0,0.5)', position: 'relative'
-          }}
-        >
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={step}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            >
-              {step === 0 && (
-                <div style={{ textAlign: 'center' }}>
-                  <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} style={{ marginBottom: '2rem', color: 'var(--gold)' }}><Zap size={48} strokeWidth={1} /></motion.div>
-                  <h2 style={{ fontSize: '2.2rem', fontWeight: 950, color: '#fff', marginBottom: '1rem', fontFamily: 'var(--font-serif)', letterSpacing: '-0.02em' }}>
-                    {t('onboarding.welcomeTitle', 'Elite Access')}
-                  </h2>
-                  <p style={{ color: 'var(--txt-secondary)', lineHeight: 1.6, marginBottom: '2.5rem', fontSize: '1rem' }}>
-                    Welcome to the specialized acquisition portal. To align with our premium inventory, we require your investment parameters.
-                  </p>
-                  <button onClick={handleNext} className="btn-3d" style={{ width: '100%', padding: '1.2rem', borderRadius: '20px', fontSize: '1rem' }}>
-                    {t('onboarding.getStarted', 'Initialize Profile')} <ChevronRight size={18} style={{ marginLeft: '10px' }} />
-                  </button>
-                </div>
-              )}
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          {/* Mobile Number */}
+          <div>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.75rem', fontWeight: 700, color: 'rgba(255,255,255,0.55)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '10px' }}>
+              <Phone size={14} color="var(--gold)" /> Mobile Number
+            </label>
+            <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '14px', overflow: 'hidden', transition: 'border-color 0.2s' }}>
+              <span style={{ padding: '0 14px', color: 'rgba(255,255,255,0.4)', fontSize: '0.9rem', fontWeight: 700, borderRight: '1px solid rgba(255,255,255,0.08)', height: '52px', display: 'flex', alignItems: 'center' }}>+91</span>
+              <input
+                type="tel"
+                inputMode="numeric"
+                maxLength={10}
+                placeholder="98XXXXXXXX"
+                value={phone}
+                onChange={e => setPhone(e.target.value.replace(/\D/g, ''))}
+                onFocus={e => e.target.parentElement.style.borderColor = 'rgba(212,175,55,0.6)'}
+                onBlur={e => e.target.parentElement.style.borderColor = 'rgba(255,255,255,0.12)'}
+                style={{
+                  flex: 1, background: 'transparent', border: 'none', outline: 'none',
+                  color: 'white', fontSize: '1rem', fontWeight: 600, padding: '0 16px',
+                  height: '52px', letterSpacing: '0.06em'
+                }}
+              />
+            </div>
+          </div>
 
-              {currentQuestion && (
-                <div>
-                   <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
-                      <div style={{ background: 'rgba(212,175,55,0.1)', color: 'var(--gold)', padding: '14px', borderRadius: '18px' }}>
-                        {getIcon(currentQuestion.key)}
-                      </div>
-                      <div style={{ fontSize: '0.65rem', fontWeight: 900, color: 'var(--gold)', letterSpacing: '0.2em' }}>ACQUISITION_PARAMETER</div>
-                   </div>
-                   
-                   <h3 style={{ fontSize: '1.75rem', fontWeight: 950, color: '#fff', marginBottom: '2rem', lineHeight: 1.2 }}>
-                     {t(`onboarding.q.${currentQuestion.key}`, currentQuestion.title)}
-                   </h3>
+          {/* WhatsApp */}
+          <div>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.75rem', fontWeight: 700, color: 'rgba(255,255,255,0.55)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '10px' }}>
+              <MessageSquare size={14} color="#25D366" /> WhatsApp Number
+            </label>
+            <div style={{ display: 'flex', alignItems: 'center', background: sameAsPhone ? 'rgba(37,211,102,0.04)' : 'rgba(255,255,255,0.04)', border: `1px solid ${sameAsPhone ? 'rgba(37,211,102,0.25)' : 'rgba(255,255,255,0.12)'}`, borderRadius: '14px', overflow: 'hidden', transition: 'all 0.2s' }}>
+              <span style={{ padding: '0 14px', color: 'rgba(255,255,255,0.4)', fontSize: '0.9rem', fontWeight: 700, borderRight: '1px solid rgba(255,255,255,0.08)', height: '52px', display: 'flex', alignItems: 'center' }}>+91</span>
+              <input
+                type="tel"
+                inputMode="numeric"
+                maxLength={10}
+                placeholder="WhatsApp number"
+                value={sameAsPhone ? phone : whatsapp}
+                onChange={e => { setSameAsPhone(false); setWhatsapp(e.target.value.replace(/\D/g, '')); }}
+                onFocus={e => !sameAsPhone && (e.target.parentElement.style.borderColor = 'rgba(37,211,102,0.5)')}
+                onBlur={e => !sameAsPhone && (e.target.parentElement.style.borderColor = 'rgba(255,255,255,0.12)')}
+                disabled={sameAsPhone}
+                style={{
+                  flex: 1, background: 'transparent', border: 'none', outline: 'none',
+                  color: 'white', fontSize: '1rem', fontWeight: 600, padding: '0 16px',
+                  height: '52px', letterSpacing: '0.06em', opacity: sameAsPhone ? 0.6 : 1
+                }}
+              />
+            </div>
+            {/* Same as mobile checkbox */}
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '10px', cursor: 'pointer' }}>
+              <div
+                onClick={() => setSameAsPhone(v => !v)}
+                style={{
+                  width: '18px', height: '18px', borderRadius: '5px',
+                  background: sameAsPhone ? '#25D366' : 'rgba(255,255,255,0.08)',
+                  border: `1px solid ${sameAsPhone ? '#25D366' : 'rgba(255,255,255,0.2)'}`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  transition: 'all 0.2s', flexShrink: 0
+                }}
+              >
+                {sameAsPhone && <CheckCircle2 size={12} color="#fff" />}
+              </div>
+              <span style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.5)', userSelect: 'none' }}
+                onClick={() => setSameAsPhone(v => !v)}>
+                Same as mobile number
+              </span>
+            </label>
+          </div>
 
-                   {currentQuestion.type === 'options' ? (
-                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                       {(currentQuestion.options || []).map(opt => {
-                         const active = formData[currentQuestion.key] === opt;
-                         return (
-                           <motion.button 
-                             key={opt}
-                             whileHover={{ x: 5, backgroundColor: 'rgba(255,255,255,0.05)' }}
-                             whileTap={{ scale: 0.98 }}
-                             onClick={() => setFormData({...formData, [currentQuestion.key]: opt})}
-                             style={{ 
-                               width: '100%', padding: '1.2rem', borderRadius: '20px', textAlign: 'left',
-                               background: active ? 'rgba(212,175,55,0.1)' : 'rgba(255,255,255,0.03)',
-                               border: active ? '1px solid var(--gold)' : '1px solid rgba(255,255,255,0.08)',
-                               color: active ? 'var(--gold)' : '#fff', fontWeight: 700, cursor: 'pointer',
-                               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                               transition: '0.3s cubic-bezier(0.4, 0, 0.2, 1)'
-                             }}
-                           >
-                             <span>{opt}</span>
-                             {active && <CheckCircle2 size={18} />}
-                           </motion.button>
-                         );
-                       })}
-                     </div>
-                   ) : (
-                     <textarea 
-                       placeholder="Detail your requirements..."
-                       value={formData[currentQuestion.key] || ''}
-                       onChange={(e) => setFormData({...formData, [currentQuestion.key]: e.target.value})}
-                       style={{ 
-                         width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.12)', 
-                         borderRadius: '24px', padding: '1.5rem', color: '#fff', outline: 'none', resize: 'none', height: '160px',
-                         fontSize: '1rem', transition: '0.3s border-color'
-                       }}
-                       onFocus={(e) => e.target.style.borderColor = 'var(--gold)'}
-                       onBlur={(e) => e.target.style.borderColor = 'rgba(255,255,255,0.12)'}
-                     />
-                   )}
-                </div>
-              )}
-
-              {isFinalStep && (
-                <div style={{ textAlign: 'center' }}>
-                  <motion.div animate={{ rotate: 360 }} transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
-                    style={{ margin: '0 auto 2rem', color: 'var(--gold)', display: 'flex', justifyContent: 'center' }}><Layers size={60} strokeWidth={1} /></motion.div>
-                  <h2 style={{ fontSize: '2.2rem', fontWeight: 950, color: 'var(--emerald)', marginBottom: '1rem', fontFamily: 'var(--font-serif)' }}>
-                    {t('onboarding.finishTitle', 'Credential Verified')}
-                  </h2>
-                  <p style={{ color: 'var(--txt-secondary)', lineHeight: 1.6, marginBottom: '2.5rem' }}>
-                    Your investment profile is now synchronized. You are authorized to access our premium verified inventory across Andhra Pradesh.
-                  </p>
-                  <button className="btn-3d btn-3d-emerald" onClick={() => navigate('/')} style={{ width: '100%', padding: '1.2rem', borderRadius: '20px' }}>
-                    Enter Portal <ChevronRight size={18} style={{ marginLeft: '10px' }} />
-                  </button>
-                </div>
-              )}
-            </motion.div>
-          </AnimatePresence>
-
-          {/* Navigation Controls */}
-          {step > 0 && !isFinalStep && (
-            <div style={{ marginTop: '3rem', display: 'flex', gap: '1rem' }}>
-              <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={handleBack} 
-                style={{ flex: 1, padding: '1.2rem', borderRadius: '20px', background: 'rgba(255,255,255,0.05)', border: 'none', color: '#fff', cursor: 'pointer' }}>
-                <ChevronLeft size={20} />
-              </motion.button>
-              
-              {!isLastQuestion ? (
-                <button className="btn-3d" onClick={handleNext} disabled={!formData[currentQuestion?.key]} style={{ flex: 4, opacity: !formData[currentQuestion?.key] ? 0.5 : 1 }}>
-                  Continue <ChevronRight size={18} style={{ marginLeft: '10px' }} />
-                </button>
-              ) : (
-                <button className="btn-3d btn-3d-emerald" onClick={handleFinish} disabled={isSubmitting || !formData[currentQuestion?.key]} style={{ flex: 4, opacity: (isSubmitting || !formData[currentQuestion?.key]) ? 0.5 : 1 }}>
-                  {isSubmitting ? 'SECURE_SYNCING...' : 'Synchronize Profile'} <ChevronRight size={18} style={{ marginLeft: '10px' }} />
-                </button>
-              )}
+          {/* Error */}
+          {error && (
+            <div style={{ background: 'rgba(240,93,94,0.1)', border: '1px solid rgba(240,93,94,0.3)', borderRadius: '12px', padding: '0.75rem 1rem', fontSize: '0.85rem', color: '#f87171' }}>
+              {error}
             </div>
           )}
-        </motion.div>
-      </main>
 
-      <footer style={{ padding: '2rem', textAlign: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '30px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', opacity: 0.3 }}>
-            <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: 'var(--gold)' }} />
-            <span style={{ fontSize: '0.6rem', letterSpacing: '0.3em', fontWeight: 900 }}>REALTIME_SYNC</span>
+          {/* Submit */}
+          <motion.button
+            type="submit"
+            whileTap={{ scale: 0.97 }}
+            disabled={isSubmitting}
+            style={{
+              width: '100%', padding: '1rem', borderRadius: '16px',
+              background: 'linear-gradient(135deg, var(--gold) 0%, #d4a017 100%)',
+              border: 'none', color: '#0a0c14', fontWeight: 900,
+              fontSize: '0.95rem', cursor: 'pointer', letterSpacing: '0.05em',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
+              opacity: isSubmitting ? 0.7 : 1, boxShadow: '0 8px 24px rgba(212,175,55,0.35)',
+              marginTop: '0.5rem'
+            }}
+          >
+            {isSubmitting ? 'Saving...' : 'Start Browsing Properties'}
+            {!isSubmitting && <ArrowRight size={18} />}
+          </motion.button>
+
+          {/* Trust signals */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginTop: '0.5rem' }}>
+            <ShieldCheck size={14} color="var(--emerald)" />
+            <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.35)' }}>Your number is private and never shared</span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', opacity: 0.3 }}>
-            <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: 'var(--emerald)' }} />
-            <span style={{ fontSize: '0.6rem', letterSpacing: '0.3em', fontWeight: 900 }}>ENCRYPTED</span>
-          </div>
-        </div>
-      </footer>
+        </form>
+      </motion.div>
     </div>
   );
 }

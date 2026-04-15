@@ -11,6 +11,14 @@ const userSchema = new mongoose.Schema({
     required: true,
     unique: true
   },
+  phone: {
+    type: String,
+    default: ''
+  },
+  whatsapp: {
+    type: String,
+    default: ''
+  },
   password: {
     type: String, // Only required for Admin auth via DB
     required: false
@@ -63,7 +71,17 @@ const userSchema = new mongoose.Schema({
   favorites: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Property'
+  }],
+  activityLog: [{
+    type: { type: String }, // SEARCH, VIEW, FILTER
+    payload: { type: Object },
+    context: { type: String },
+    timestamp: { type: Date, default: Date.now }
   }]
 }, { timestamps: true });
+
+// Performance Indexes
+userSchema.index({ role: 1 });
+userSchema.index({ createdAt: -1 });
 
 export default mongoose.model('User', userSchema);

@@ -40,11 +40,16 @@ export const authGoogle = async (payload) => {
 export const getFavorites = async (userId) => {
   try {
     const res = await fetch(`${API_BASE}/users/${userId}/favorites`);
-    if (!res.ok) throw new Error('Failed to fetch favorites');
-    return (await res.json()).data || [];
+    if (!res.ok) return [];
+    try {
+      const json = await res.json();
+      return json.data || (Array.isArray(json) ? json : []);
+    } catch {
+      return [];
+    }
   } catch (e) {
-    console.error('API Error:', e);
-    throw e;
+    console.error('API Error (getFavorites):', e);
+    return [];
   }
 };
 
@@ -78,7 +83,7 @@ export const fetchNearbyProperties = async (lat, lng) => {
 
 export const fetchProperty = async (id) => {
   try {
-    const res = await fetch(`${API_BASE}/properties/${id}`);
+    const res = await safeFetch(`${API_BASE}/properties/${id}`);
     if (!res.ok) throw new Error(`Failed to fetch property: ${res.status}`);
     return await res.json();
   } catch (e) {
@@ -102,14 +107,19 @@ export const submitLead = async (data) => {
   }
 };
 
-export const fetchPromotions = async () => {
+export const fetchPromotions = async (query = '') => {
   try {
-    const res = await fetch(`${API_BASE}/promotions`);
-    if (!res.ok) throw new Error('Failed to fetch promotions');
-    return (await res.json()).data || [];
+    const res = await safeFetch(`${API_BASE}/promotions${query ? '?' + query : ''}`);
+    if (!res.ok) return [];
+    try {
+      const json = await res.json();
+      return json.data || (Array.isArray(json) ? json : []);
+    } catch {
+      return [];
+    }
   } catch (e) {
-    console.error('API Error:', e);
-    throw e;
+    console.error('API Error (fetchPromotions):', e);
+    return [];
   }
 };
 
@@ -161,7 +171,7 @@ const SETTING_DEFAULTS = {
 
 export const fetchSetting = async (key) => {
   try {
-    const res = await fetch(`${API_BASE}/settings/${key}`);
+    const res = await safeFetch(`${API_BASE}/settings/${key}`);
     const isArrayType = key === 'onboarding_questions' || key === 'site_stats';
     const defaultVal = SETTING_DEFAULTS[key] || (isArrayType ? [] : {});
 
@@ -215,10 +225,15 @@ export const likeProperty = async (propertyId, userId) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId }),
     });
-    if (!res.ok) throw new Error('Failed to like property');
-    return await res.json();
+    const contentType = res.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Failed to like property');
+      return data;
+    }
+    throw new Error(`Server returned ${res.status} (Non-JSON)`);
   } catch (e) {
-    console.error('API Error:', e);
+    console.error('API Error (likeProperty):', e);
     throw e;
   }
 };
@@ -278,10 +293,15 @@ export const askQuestion = async (payload) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
-    if (!res.ok) throw new Error('Failed to submit question');
-    return await res.json();
+    const contentType = res.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Failed to submit question');
+      return data;
+    }
+    throw new Error(`Server returned ${res.status} (Non-JSON)`);
   } catch (e) {
-    console.error('API Error:', e);
+    console.error('API Error (askQuestion):', e);
     throw e;
   }
 };

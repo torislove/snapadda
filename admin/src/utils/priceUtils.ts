@@ -9,11 +9,7 @@ export const GAJAM_CONSTANTS = {
   CENT_TO_GAJAM: 48.4,
   GAJAM_TO_SQFT: 9,
   GUNTA_TO_GAJAM: 121,
-  SQ_YARD_TO_GAJAM: 1, // Standardizing Sq. Yard as Gajam
-  ACRE_LABEL: 'Acre',
-  CENT_LABEL: 'Cent',
-  GAJAM_LABEL: 'Sq. Yard (Gajam)',
-  GUNTA_LABEL: 'Gunta'
+  SQ_YARD_TO_GAJAM: 1 // Standardizing Sq. Yard as Gajam
 };
 
 /**
@@ -29,7 +25,7 @@ export const calcPricePerCent = (pricePerAcre: any): number => {
 
 /**
  * Primary client-facing price formatter — Indian Numbering System
- * Standard: ₹ 1,50,00,000/- or ₹ 1.5 Cr/-
+ * Standard: ₹ 1,50,0,000/- or ₹ 1.5 Cr/-
  */
 export const formatSnapAddaPrice = (price: any, compact = true): string => {
   if (price === null || price === undefined || price === '' || isNaN(Number(price))) return '₹ 0/-';
@@ -86,23 +82,7 @@ export const formatLandSize = (totalAcres: any, forceAcresOnly = true): string =
   const { acres, cents } = decomposeAcres(totalAcres);
   if (acres === 0) return `${cents} Cents`;
   if (cents === 0) return `${acres} ${acres === 1 ? 'Acre' : 'Acres'}`;
-  return `${acres} Ac ${cents} Cents`;
-};
-
-/**
- * Calculate Price per unit (e.g. Price per Sq.Yard or Price per Cent)
- */
-export const calcPricePerUnit = (totalPrice: number, size: number, unit: string) => {
-  const p = Number(totalPrice) || 0;
-  const s = Number(size) || 0;
-  if (!p || !s) return 0;
-  
-  const lowUnit = unit?.toLowerCase() || '';
-  if (lowUnit.includes('yard') || lowUnit.includes('gajam')) return Math.round(p / s);
-  if (lowUnit.includes('cent')) return Math.round(p / s);
-  if (lowUnit.includes('acre')) return Math.round(p / s);
-  
-  return Math.round(p / s);
+  return `${acres} ${acres === 1 ? 'Acre' : 'Acres'} ${cents} Cents`;
 };
 
 /**

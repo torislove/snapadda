@@ -61,10 +61,11 @@ router.post('/upload', async (req, res) => {
       }
 
       const uploadPromises = files.map(fileStr => {
+        const isVideo = fileStr.includes('video/') || fileStr.includes('mp4') || fileStr.includes('webm');
         return cloudinary.uploader.upload(fileStr, {
           folder: 'snapadda/properties',
           resource_type: 'auto',
-          transformation: [
+          transformation: isVideo ? [] : [
             { width: 800, crop: "limit" },
             { fetch_format: "auto", quality: "auto" }
           ]

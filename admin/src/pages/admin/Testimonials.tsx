@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import {
-  fetchTestimonials, createTestimonial,
+  fetchTestimonials, createTestimonial, updateTestimonial,
   deleteTestimonial, uploadMedia
 } from '../../services/api';
 import {
   Plus, Trash2, Loader2, X,
-  Zap, CheckCircle, AlertCircle, Quote, Star
+  Zap, CheckCircle, AlertCircle, Quote, Star, Edit3
 } from 'lucide-react';
 
 /* ── Color map ── */
@@ -21,7 +21,7 @@ const EMPTY_FORM = {
 };
 
 const TestimonialCard = ({
-  testimonial, onDelete
+  testimonial, onDelete, onEdit
 }: any) => {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const colorObj = COLOR_PRESETS.find(c => c.id === testimonial.color) || COLOR_PRESETS[0];
@@ -65,6 +65,17 @@ const TestimonialCard = ({
           </div>
 
           <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button
+              onClick={() => onEdit(testimonial)}
+              style={{
+                flex: 1, padding: '0.45rem', fontSize: '0.75rem', fontWeight: 600,
+                borderRadius: '10px', cursor: 'pointer', border: '1px solid rgba(255,255,255,0.1)',
+                background: 'rgba(255,255,255,0.05)', color: '#f0eeff',
+                transition: 'all 0.2s ease', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px'
+              }}
+            >
+              <Edit3 size={13} /> Edit
+            </button>
             {confirmDelete ? (
               <button
                 onClick={() => { onDelete(testimonial._id); setConfirmDelete(false); }}
@@ -102,6 +113,7 @@ export const Testimonials = () => {
   const [testimonials, setTestimonials] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [formData, setFormData] = useState<any>({ ...EMPTY_FORM });
@@ -137,13 +149,32 @@ export const Testimonials = () => {
     if (!formData.name || !formData.text) return;
     setIsSubmitting(true);
     try {
-      await createTestimonial(formData);
+      if (editingId) {
+        await updateTestimonial(editingId, formData);
+        showToast('Testimonial updated! ✨');
+      } else {
+        await createTestimonial(formData);
+        showToast('Testimonial added! ✨');
+      }
       setIsModalOpen(false);
+      setEditingId(null);
       setFormData({ ...EMPTY_FORM });
       load();
-      showToast('Testimonial added! ✨');
-    } catch { showToast('Failed to create testimonial', 'error'); }
+    } catch { showToast(editingId ? 'Failed to update' : 'Failed to create', 'error'); }
     finally { setIsSubmitting(false); }
+  };
+
+  const handleEdit = (t: any) => {
+    setEditingId(t._id);
+    setFormData({
+      name: t.name || '',
+      location: t.location || '',
+      text: t.text || '',
+      rating: t.rating || 5,
+      image: t.image || '',
+      color: t.color || '#6b4226',
+    });
+    setIsModalOpen(true);
   };
 
   const handleDelete = async (id: string) => {
@@ -192,7 +223,7 @@ export const Testimonials = () => {
           </p>
         </div>
         <button
-          onClick={() => { setIsModalOpen(true); setFormData({ ...EMPTY_FORM }); }}
+          onClick={() => { setIsModalOpen(true); setEditingId(null); setFormData({ ...EMPTY_FORM }); }}
           className="btn" style={{ background: 'var(--orange)', color: 'white', border: 'none' }}
         >
           <Plus size={15} /> Add Testimonial
@@ -216,6 +247,7 @@ export const Testimonials = () => {
               key={testimonial._id}
               testimonial={testimonial}
               onDelete={handleDelete}
+              onEdit={handleEdit}
             />
           ))}
         </div>
@@ -237,9 +269,9 @@ export const Testimonials = () => {
             <div style={{ padding:'1.5rem', borderBottom:'1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                 <Quote style={{ color: 'var(--orange)' }} size={20} />
-                <h2 style={{ fontSize: '1.2rem', margin: 0 }}>New Testimonial</h2>
+                <h2 style={{ fontSize: '1.2rem', margin: 0 }}>{editingId ? 'Edit Testimonial' : 'New Testimonial'}</h2>
               </div>
-              <button onClick={() => setIsModalOpen(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><X size={18}/></button>
+              <button onClick={() => { setIsModalOpen(false); setEditingId(null); }} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><X size={18}/></button>
             </div>
 
             <form onSubmit={handleSubmit} style={{ padding:'1.5rem', display:'flex', flexDirection:'column', gap:'1.25rem' }}>
@@ -290,7 +322,7 @@ export const Testimonials = () => {
 
               <div style={{ display:'flex', justifyContent:'flex-end', marginTop: '1rem' }}>
                 <button type="submit" className="btn" style={{ background: 'var(--orange)', color: 'white', border: 'none' }} disabled={isSubmitting || uploadingImage || !formData.name || !formData.text}>
-                  {isSubmitting ? <><Loader2 size={14} style={{ animation:'spin 1s linear infinite' }} /> Saving...</> : <><Zap size={14} /> Add Testimonial</>}
+                  {isSubmitting ? <><Loader2 size={14} style={{ animation:'spin 1s linear infinite' }} /> Saving...</> : <><Zap size={14} /> {editingId ? 'Save Changes' : 'Add Testimonial'}</>}
                 </button>
               </div>
             </form>

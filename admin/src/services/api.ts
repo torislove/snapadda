@@ -9,8 +9,9 @@ const getAuthHeaders = (isFormData = false) => {
 };
 
 /* ─────────────── Properties ─────────────── */
-export const fetchProperties = async () => {
-  const res = await fetch(`${API_URL}/properties`, { headers: getAuthHeaders() });
+export const fetchProperties = async (params?: any) => {
+  const query = params ? '?' + new URLSearchParams(params).toString() : '';
+  const res = await fetch(`${API_URL}/properties${query}`, { headers: getAuthHeaders() });
   if (!res.ok) throw new Error('Failed to fetch properties');
   return res.json();
 };

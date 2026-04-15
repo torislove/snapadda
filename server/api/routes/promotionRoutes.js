@@ -1,9 +1,9 @@
 import express from 'express';
-import { getPromotions, createPromotion, updatePromotion, deletePromotion, reorderPromotions } from '../controllers/promotionController.js';
+import { getAllPromotions, createPromotion, updatePromotion, deletePromotion, reorderPromotions } from '../controllers/promotionController.js';
 
 const router = express.Router();
 
-router.get('/', getPromotions);
+router.get('/', getAllPromotions);
 router.post('/', createPromotion);
 router.put('/reorder', reorderPromotions);   // must be before /:id
 router.put('/:id', updatePromotion);

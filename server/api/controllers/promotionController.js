@@ -76,10 +76,17 @@ const removePromotionFromFirebase = async (id) => {
 };
 
 // Get promotions — supports ?all=true for admin view (all), default = active only for client
-export const getPromotions = async (req, res) => {
+export const getAllPromotions = async (req, res) => {
   try {
-    const query = req.query.all === 'true' ? {} : { isActive: true };
-    const promotions = await Promotion.find(query).sort({ displayOrder: 1, createdAt: -1 });
+    const { segment } = req.query;
+    const filter = {};
+    if (segment) {
+      filter.$or = [
+        { displaySegment: segment },
+        { displaySegment: 'both' }
+      ];
+    }
+    const promotions = await Promotion.find(filter).sort({ displayOrder: 1, priority: 1 });
     res.status(200).json({ status: 'success', data: promotions });
   } catch (error) {
     res.status(500).json({ status: 'error', message: error.message });

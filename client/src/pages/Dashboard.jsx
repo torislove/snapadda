@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, Heart, User, Settings, LogOut, Star, MapPin, ShieldCheck, Phone, RefreshCw, MessageSquare } from 'lucide-react';
+import { Home, Heart, User, Settings, LogOut, Star, MapPin, ShieldCheck, Phone, RefreshCw, MessageSquare, Sparkles } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { getFavorites, fetchUserQuestions } from '../services/api';
 import PropertyCard from '../components/PropertyCard';
@@ -57,9 +57,12 @@ function DashboardHome({ user, stats, recent, setModalOpen }) {
             </div>
             <div style={{ height: '220px', width: '100%' }}>
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={[
+                <AreaChart data={(stats?.engagementCount || stats?.inquiriesCount) ? [
                   { name: 'Mon', views: 4 }, { name: 'Tue', views: 12 }, { name: 'Wed', views: 8 },
                   { name: 'Thu', views: 18 }, { name: 'Fri', views: 14 }, { name: 'Sat', views: 25 }, { name: 'Sun', views: 20 }
+                ] : [
+                  { name: 'Mon', views: 0 }, { name: 'Tue', views: 0 }, { name: 'Wed', views: 0 },
+                  { name: 'Thu', views: 0 }, { name: 'Fri', views: 0 }, { name: 'Sat', views: 0 }, { name: 'Sun', views: 0 }
                 ]}>
                   <defs>
                     <linearGradient id="colorViewsNew" x1="0" y1="0" x2="0" y2="1">
@@ -84,16 +87,16 @@ function DashboardHome({ user, stats, recent, setModalOpen }) {
             </h3>
             {recent && recent.length > 0 ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                {recent.map((p, i) => (
+                {recent.filter(p => p && (p._id || p.id)).map((p, i) => (
                   <Link key={i} to={`/property/${p._id || p.id}`} style={{ textDecoration: 'none', display: 'flex', gap: '1rem', alignItems: 'center', padding: '0.75rem', borderRadius: '16px', background: 'rgba(255,255,255,0.02)', transition: 'transform 0.2s' }} 
                     onMouseEnter={e => e.currentTarget.style.transform = 'translateX(5px)'} onMouseLeave={e => e.currentTarget.style.transform = 'translateX(0)'}>
-                    <img src={p.image || (p.images && p.images[0])} style={{ width: '50px', height: '50px', borderRadius: '10px', objectFit: 'cover' }} />
+                    <img src={(p.image || (p.images && p.images[0])) || '/placeholder-prop.jpg'} style={{ width: '50px', height: '50px', borderRadius: '10px', objectFit: 'cover' }} alt={p.title || 'Property'} />
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'white', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.title}</div>
-                      <div style={{ fontSize: '0.72rem', color: 'var(--txt-muted)' }}>{p.location}</div>
+                      <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'white', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.title || 'Property Asset'}</div>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--txt-muted)' }}>{p.location || 'Andhra Pradesh'}</div>
                     </div>
                     <div style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--gold)' }}>
-                      Rs.{Number(p.price || 0) >= 10000000 ? (Number(p.price || 0) / 10000000).toFixed(2) + ' Cr' : (Number(p.price || 0) / 100000).toFixed(2) + ' L'}
+                      {p.price ? (Number(p.price) >= 10000000 ? (Number(p.price) / 10000000).toFixed(2) + ' Cr' : (Number(p.price) / 100000).toFixed(2) + ' L') : 'Ask'}
                     </div>
                   </Link>
                 ))}
@@ -132,7 +135,7 @@ function Favorites({ saved, loading }) {
       <h2 style={{ marginBottom: '1.5rem' }}>{t('dashboard.saved')}</h2>
       {saved.length > 0 ? (
         <div className="properties-grid">
-          {saved.map(p => <PropertyCard key={p._id || p.id} {...p} />)}
+          {saved.filter(p => p).map(p => <PropertyCard key={p._id || p.id} {...p} />)}
         </div>
       ) : (
         <div className="empty-state">
@@ -192,9 +195,15 @@ export default function Dashboard() {
   const [stats, setStats] = useState({ favoritesCount: 0, citiesCount: 3, inquiriesCount: 0, engagementCount: 0 });
 
   useEffect(() => {
-    // Load recent from localStorage
-    const storedRecent = JSON.parse(localStorage.getItem('snapadda_recent_viewed') || '[]');
-    setRecent(storedRecent);
+    // Load recent from localStorage with safety
+    try {
+      const storedRecent = JSON.parse(localStorage.getItem('snapadda_recent_viewed') || '[]');
+      setRecent(Array.isArray(storedRecent) ? storedRecent : []);
+    } catch (err) {
+      console.warn('Failed to parse recent history:', err);
+      setRecent([]);
+      localStorage.removeItem('snapadda_recent_viewed');
+    }
 
     if (!user?._id && !user?.id) return;
     
@@ -215,10 +224,18 @@ export default function Dashboard() {
 
     fetchUserQuestions(uid)
       .then(res => {
-        setQuestions(res || []);
-        setStats(prev => ({ ...prev, inquiriesCount: res.length, engagementCount: Math.floor(res.length * 2.5) + (user.verified ? 10 : 0) }));
+        const questionsArr = Array.isArray(res) ? res : [];
+        setQuestions(questionsArr);
+        setStats(prev => ({ 
+          ...prev, 
+          inquiriesCount: questionsArr.length, 
+          engagementCount: Math.floor(questionsArr.length * 2.5) + (user?.verified ? 10 : 0) 
+        }));
       })
-      .catch(console.error)
+      .catch(err => {
+        console.error('Questions fetch error:', err);
+        setQuestions([]);
+      })
       .finally(() => setQLoading(false));
   }, [user]);
 

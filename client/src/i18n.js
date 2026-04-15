@@ -282,6 +282,36 @@ const resources = {
         "clearAll": "CLEAR ALL",
         "any": "Any",
         "items": "All Items"
+      },
+      "radar": {
+        "title": "Discovery Radar",
+        "subtitle": "Regional Market Density Analysis",
+        "density": "Market Density",
+        "liquidity": "Liquidity Index",
+        "alpha": "Density Alpha",
+        "pips": "Active Asset Nodes"
+      },
+      "iq": {
+        "highGrowth": "🌟 High Growth",
+        "eliteYield": "💎 Elite Yield",
+        "valueAlpha": "Value Alpha",
+        "marketAvg": "Market Avg Comparison"
+      },
+      "ai": {
+        "title": "AI CONCIERGE",
+        "activate": "ACTIVATE AI CORE",
+        "loading": "CALIBRATING INTELLIGENCE...",
+        "init": "Initialize the elite acquisition assistant.",
+        "placeholder": "Ask our AI about analysis or professional drafts...",
+        "draftInquiry": "DRAFT INQUIRY",
+        "analysis": "ASSET ANALYSIS",
+        "processing": "Processing context...",
+        "entry": "Message assistant..."
+      },
+      "comparison": {
+        "title": "COMPARE ASSETS",
+        "launch": "LAUNCH COMPARISON RADAR",
+        "empty": "Select assets to begin institutional comparison."
       }
     }
   },
@@ -396,10 +426,10 @@ const resources = {
       },
       "card": {
         "verified": "ధృవీకరించబడింది",
-        "hot": "హాట్",
+        "hot": "హాట్ ఆస్తి",
         "featured": "ఫీచర్డ్",
         "new": "కొత్తది",
-        "details": "వివరాలు చూడండి",
+        "details": "వివరాలు",
         "contact": "ఏజెంట్‌ను సంప్రదించండి",
         "call": "కాల్ చేయండి",
         "callback": "కాల్ బ్యాక్",
@@ -417,7 +447,9 @@ const resources = {
         "config": "కాన్ఫిగరేషన్",
         "floor": "అంతస్తు",
         "status": "స్థితి",
-        "totalVal": "మొత్తం విలువ"
+        "totalVal": "మొత్తం విలువ",
+        "viewing": "చూస్తున్నారు",
+        "sold": "అమ్ముడైపోయింది"
       },
       "footer": {
         "quick": "త్వరిత లింకులు",
@@ -570,18 +602,54 @@ const resources = {
         "clearAll": "అన్నీ క్లియర్ చేయండి",
         "any": "ఏదైనా",
         "items": "అన్ని రకాలు"
+      },
+      "radar": {
+        "title": "డిస్కవరీ రాడార్",
+        "subtitle": "ప్రాంతీయ మార్కెట్ సాంద్రత విశ్లేషణ",
+        "density": "మార్కెట్ సాంద్రత",
+        "liquidity": "లిక్విడిటీ ఇండెక్స్",
+        "alpha": "సాంద్రత ఆల్ఫా",
+        "pips": "యాక్టివ్ అసెట్ నోడ్స్"
+      },
+      "iq": {
+        "highGrowth": "🌟 అధిక వృద్ధి",
+        "eliteYield": "💎 ఎలైట్ యీల్డ్",
+        "valueAlpha": "విలువ ఆల్ఫా",
+        "marketAvg": "మార్కెట్ సగటుతో పోలిక"
+      },
+      "ai": {
+        "title": "AI అసిస్టెంట్",
+        "activate": "AI కోర్ యాక్టివేట్ చేయండి",
+        "loading": "ఇంటెలిజెన్స్ కాలిబ్రేట్ అవుతోంది...",
+        "init": "ఎలైట్ అసిస్టెంట్‌ని ప్రారంభించండి.",
+        "placeholder": "విశ్లేషణ లేదా డ్రాఫ్ట్‌ల కోసం మా AIని అడగండి...",
+        "draftInquiry": "డ్రాఫ్ట్ ఎంక్వైరీ",
+        "analysis": "ఆస్తి విశ్లేషణ",
+        "processing": "సందర్భాన్ని ప్రాసెస్ చేస్తోంది...",
+        "entry": "అసిస్టెంట్‌కు సందేశం పంపండి..."
+      },
+      "comparison": {
+        "title": "ఆస్తులను పోల్చండి",
+        "launch": "కంపారిజన్ రాడార్ ప్రారంభించండి",
+        "empty": "విశ్లేషణ ప్రారంభించడానికి ఆస్తులను ఎంచుకోండి."
       }
     }
   }
 };
 
+const savedLng = localStorage.getItem('snapadda_lng') || "en";
+
 i18n
   .use(initReactI18next)
   .init({
     resources,
-    lng: "en",
+    lng: savedLng,
     fallbackLng: "en",
     interpolation: { escapeValue: false }
   });
+
+i18n.on('languageChanged', (lng) => {
+  localStorage.setItem('snapadda_lng', lng);
+});
 
 export default i18n;

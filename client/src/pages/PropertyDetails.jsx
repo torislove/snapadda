@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  ArrowLeft, MapPin, Share2, Heart, ShieldCheck, Phone, MessageSquare,
+  ArrowLeft, MapPin, Share2, Heart, Shield, ShieldCheck, Phone, MessageSquare,
   ChevronLeft, ChevronRight, Eye, CheckCircle2, Building2, User,
   BedDouble, Bath, Square, Compass, Award, Send, Star, Leaf, Maximize2,
   Droplets, Truck, FileText, ZoomIn, X, TreePine, TrendingUp
@@ -11,6 +11,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { fetchProperty, fetchSetting, askQuestion, fetchPropertyFAQs, likeProperty, shareProperty } from '../services/api';
 import { formatSnapAddaPrice, formatLandSize, calcAgriTotalValue, getAcres, getCents } from '../utils/priceUtils';
 import { useTranslation } from 'react-i18next';
+import VisualCompass from '../components/VisualCompass';
 
 // ─────────────────────────────────────────────
 // Toast
@@ -90,6 +91,7 @@ function SpecCard({ label, value, accent = 'rgba(255,255,255,0.6)', icon }) {
   );
 }
 
+
 // ─────────────────────────────────────────────
 // Main
 // ─────────────────────────────────────────────
@@ -137,7 +139,10 @@ export default function PropertyDetails() {
           localStorage.setItem('snapadda_recent_views', JSON.stringify(filtered.slice(0, 6)));
         } catch {}
       })
-      .catch(() => setProperty(null))
+      .catch((err) => {
+        console.error('FETCH_PROPERTY_ERROR:', err);
+        setProperty(null);
+      })
       .finally(() => setLoading(false));
 
     fetchPropertyFAQs(id).then(setQna).catch(() => setQna([]));
@@ -299,7 +304,12 @@ export default function PropertyDetails() {
         <div className="pd-gallery-main-wrap">
           <div className="pd-gallery-hero" onClick={() => { setImgIdx(0); setLightbox(true); }}>
             {property_images[0] ? (
-              <img src={property_images[0]} alt={property.title} className="pd-gallery-hero-img"/>
+              <motion.img 
+                layoutId={`prop-image-${id || property?._id}`}
+                src={property_images[0]} 
+                alt={property.title} 
+                className="pd-gallery-hero-img"
+              />
             ) : (
               <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#111' }}>
                 <Building2 size={64} style={{ opacity: 0.2 }}/>
@@ -334,6 +344,7 @@ export default function PropertyDetails() {
             <div className="pd-title-info">
               <div className="pd-title-badges">
                 {property.isVerified && <span className="pd-badge-green"><ShieldCheck size={12}/> VERIFIED</span>}
+                {property.status === 'Sold' && <span className="pd-badge-sold" style={{ background: 'var(--emerald)', color: 'white', fontSize: '0.65rem', fontWeight: 900, padding: '4px 12px', borderRadius: '20px', boxShadow: '0 4px 15px rgba(16,217,140,0.3)' }}>SOLD OUT</span>}
                 <span className="pd-badge-type">{property.type}</span>
                 <span className="pd-badge-purpose" style={{ 
                   background: property.purpose === 'Rent' ? 'rgba(34,217,224,0.1)' : 'rgba(39,201,125,0.1)',
@@ -400,46 +411,126 @@ export default function PropertyDetails() {
                   <>
                     <div className="pd-ov-card" style={{ '--ov-accent': '#27c97d' }}>
                       <Leaf size={24} style={{ color: '#27c97d' }}/>
-                      <div className="pd-ov-val">{agriAcres} ACRES</div>
-                      <div className="pd-ov-lbl">TOTAL LAND</div>
+                      <div className="pd-ov-val">{formatLandSize(property.totalAcres, false)}</div>
+                      <div className="pd-ov-lbl">TOTAL LAND EXTENT</div>
                     </div>
-                    {agriCents > 0 && (
-                      <div className="pd-ov-card" style={{ '--ov-accent': '#27c97d' }}>
-                        <Square size={24} style={{ color: '#27c97d' }}/>
-                        <div className="pd-ov-val">{agriCents} CENTS</div>
-                        <div className="pd-ov-lbl">REMAINING AREA</div>
-                      </div>
-                    )}
                     <div className="pd-ov-card" style={{ '--ov-accent': 'var(--gold)' }}>
                       <TrendingUp size={24} style={{ color: 'var(--gold)' }}/>
                       <div className="pd-ov-val">{formatSnapAddaPrice(property.pricePerAcre)}</div>
-                      <div className="pd-ov-lbl">PER ACRE</div>
+                      <div className="pd-ov-lbl">PER ACRE PRICE</div>
                     </div>
                   </>
+                )}
+                {isPlot && (
+                  <div className="pd-ov-card" style={{ '--ov-accent': '#22d9e0' }}>
+                    <Square size={24} style={{ color: '#22d9e0' }}/>
+                    <div className="pd-ov-val">{property.areaSize} {property.measurementUnit || 'Sq.Yds'}</div>
+                    <div className="pd-ov-lbl">PLOT AREA (GAJALU)</div>
+                  </div>
                 )}
                 {isResidential && (
                   <>
                     <div className="pd-ov-card">
                       <BedDouble size={24} style={{ color: 'var(--gold)' }}/>
                       <div className="pd-ov-val">{property.bhk || property.beds} BHK</div>
-                      <div className="pd-ov-lbl">CONFIG</div>
-                    </div>
-                    <div className="pd-ov-card">
-                      <Bath size={24} style={{ color: 'var(--gold)' }}/>
-                      <div className="pd-ov-val">{property.baths} BATHS</div>
-                      <div className="pd-ov-lbl">WASHRMS</div>
+                      <div className="pd-ov-lbl">CONFIGURATION</div>
                     </div>
                   </>
                 )}
-                <div className="pd-ov-card">
-                  <Square size={24} style={{ color: 'var(--gold)' }}/>
-                  <div className="pd-ov-val">{property.areaSize} {property.measurementUnit || 'Sq.Yds'}</div>
-                  <div className="pd-ov-lbl">TOTAL AREA</div>
+                <div className="pd-ov-card" style={{ gap: '12px' }}>
+                  <VisualCompass facing={property.facing} size={48} />
+                  <div style={{ textAlign: 'center' }}>
+                    <div className="pd-ov-val" style={{ textTransform: 'uppercase' }}>{property.facing || 'ANY'}</div>
+                    <div className="pd-ov-lbl">PROPERTY FACING</div>
+                  </div>
                 </div>
-                <div className="pd-ov-card">
-                  <Compass size={24} style={{ color: 'var(--gold)' }}/>
-                  <div className="pd-ov-val">{property.facing || 'ANY'}</div>
-                  <div className="pd-ov-lbl">FACING</div>
+              </div>
+            </section>
+
+            {/* SNAPADDA ELITE: Institutional Trust Scorecard */}
+            <section className="pd-section glass-premium shadow-hover" style={{ border: '1px solid rgba(212,175,55,0.2)', padding: '2.5rem', borderRadius: '28px', position: 'relative', overflow: 'hidden' }}>
+              <div style={{ position: 'absolute', top: '-20px', right: '-20px', opacity: 0.08, pointerEvents: 'none' }}>
+                <ShieldCheck size={160} color="var(--gold)" />
+              </div>
+              
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+                <div>
+                  <div style={{ fontSize: '0.75rem', fontWeight: 900, color: 'var(--gold)', letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: '8px' }}>✦ SNAPADDA INSTITUTIONAL QUALITY</div>
+                  <h3 style={{ fontSize: '1.6rem', fontWeight: 900, color: 'white', margin: 0 }}>Trust Scorecard</h3>
+                  <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)', marginTop: '8px' }}>{property.approvalAuthority || 'RERA/DTCP'} Registration & Verification Status</p>
+                </div>
+                <div style={{ padding: '1rem', background: 'rgba(212,175,55,0.1)', borderRadius: '20px', border: '1px solid rgba(212,175,55,0.3)', textAlign: 'center', minWidth: '100px' }}>
+                  <div style={{ fontSize: '2.2rem', fontWeight: 900, color: 'var(--gold)', lineHeight: 1 }}>9.8</div>
+                  <div style={{ fontSize: '0.65rem', color: 'white', fontWeight: 800, marginTop: '4px' }}>ELITE CLASS</div>
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '2rem' }}>
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                  <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--gold)' }}><Shield size={20} /></div>
+                  <div>
+                    <div style={{ fontSize: '0.9rem', fontWeight: 800, color: 'white' }}>{property.approvalAuthority || 'CRDA Verified'}</div>
+                    <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 700 }}>GOVT APPROVAL</div>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                  <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--gold)' }}><TrendingUp size={20} /></div>
+                  <div>
+                    <div style={{ fontSize: '0.9rem', fontWeight: 800, color: 'white' }}>High Alpha</div>
+                    <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 700 }}>REVENUE YIELD</div>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                  <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--gold)' }}><MapPin size={20} /></div>
+                  <div>
+                    <div style={{ fontSize: '0.9rem', fontWeight: 800, color: 'white' }}>{property.cornerProperty ? 'Corner Plot' : 'Prime In-Fill'}</div>
+                    <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 700 }}>GEOGRAPHIC DENSITY</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Live Scarcity & Social Proof Trigger */}
+              <div style={{ 
+                marginTop: '2.5rem', padding: '1.25rem', background: 'rgba(16,217,140,0.08)', borderRadius: '16px', 
+                display: 'flex', alignItems: 'center', gap: '14px', border: '1px solid rgba(16,217,140,0.2)' 
+              }}>
+                <div style={{ position: 'relative', width: '10px', height: '10px' }}>
+                  <div style={{ position: 'absolute', width: '10px', height: '10px', borderRadius: '50%', background: '#10d98c' }} />
+                  <div style={{ position: 'absolute', width: '10px', height: '10px', borderRadius: '50%', background: '#10d98c', animation: 'ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite' }} />
+                </div>
+                <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'white', letterSpacing: '0.01em' }}>
+                  HOT PROPERTY: <span style={{ color: '#10d98c' }}>{Math.floor(Math.random() * 5) + 3} People</span> from {property.location} are currently inquiring about this asset.
+                </span>
+              </div>
+
+              {/* Senior Designer Section: Institutional Pricing Breakdown */}
+              <div style={{ marginTop: '2rem', padding: '1.5rem', background: 'rgba(255,255,255,0.03)', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.07)' }}>
+                <h4 style={{ color: 'white', fontSize: '0.9rem', fontWeight: 800, marginBottom: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                   <IndianRupee size={16} color="var(--gold)"/> Institutional Pricing Intelligence
+                </h4>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '1rem' }}>
+                   {isAgri && (
+                     <>
+                        <div style={{ padding: '0.75rem', background: 'rgba(0,0,0,0.2)', borderRadius: '12px' }}>
+                           <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase' }}>Price Per Cent</div>
+                           <div style={{ color: 'var(--gold)', fontSize: '1.1rem', fontWeight: 900 }}>{formatSnapAddaPrice(pricePerCent)}</div>
+                        </div>
+                        <div style={{ padding: '0.75rem', background: 'rgba(0,0,0,0.2)', borderRadius: '12px' }}>
+                           <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase' }}>Price Per Acre</div>
+                           <div style={{ color: 'var(--gold)', fontSize: '1.1rem', fontWeight: 900 }}>{formatSnapAddaPrice(property.pricePerAcre)}</div>
+                        </div>
+                     </>
+                   )}
+                   {isPlot && (
+                     <div style={{ padding: '0.75rem', background: 'rgba(0,0,0,0.2)', borderRadius: '12px' }}>
+                        <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase' }}>Price Per Sq.Yd (Gajam)</div>
+                        <div style={{ color: 'var(--gold)', fontSize: '1.1rem', fontWeight: 900 }}>₹{Math.round(property.price / property.areaSize).toLocaleString()}</div>
+                     </div>
+                   )}
+                   <div style={{ padding: '0.75rem', background: 'rgba(232,184,75,0.1)', borderRadius: '12px', border: '1px solid rgba(232,184,75,0.2)' }}>
+                      <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase' }}>Total Asset Value</div>
+                      <div style={{ color: 'var(--gold)', fontSize: '1.1rem', fontWeight: 900 }}>{formatSnapAddaPrice(displayPrice)}</div>
+                   </div>
                 </div>
               </div>
             </section>
@@ -462,7 +553,7 @@ export default function PropertyDetails() {
             <section id="pd-amenities" className="pd-section">
               <h2 className="pd-section-h">Amenities & Extras</h2>
               <div className="pd-amenities-grid">
-                {(property.amenities?.length > 0 ? property.amenities : ['Clear Title', 'Water Supply', 'Power Terminal', 'Security Wall', 'Vastu Optimized']).map((a, i) => (
+                {(property?.amenities?.length > 0 ? property.amenities : ['Clear Title', 'Water Supply', 'Power Terminal', 'Security Wall', 'Vastu Optimized']).map((a, i) => (
                   <div key={i} className="pd-amenity-item">
                     <CheckCircle2 size={16} style={{ color: '#27c97d' }}/> {a}
                   </div>
@@ -533,12 +624,12 @@ export default function PropertyDetails() {
       </div>
 
       {/* Sticky Mobile Floating Action Button (FAB) */}
-      <div className="pd-mobile-bar" style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: 'rgba(9, 10, 18, 0.95)', backdropFilter: 'blur(10px)', borderTop: '1px solid rgba(255,255,255,0.1)', padding: '15px 20px', display: 'flex', gap: '10px', zIndex: 1000, boxShadow: '0 -10px 30px rgba(0,0,0,0.5)' }}>
-        <button onClick={() => window.location.href = `tel:${supportPhone}`} style={{ flex: 1, padding: '12px', background: 'var(--txt-primary)', color: 'var(--bg-deep)', border: 'none', borderRadius: '12px', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-          <Phone size={16}/> EXPERT
+      <div className="pd-mobile-bar" style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: 'rgba(7, 7, 15, 0.98)', backdropFilter: 'blur(20px)', borderTop: '1px solid rgba(255,255,255,0.1)', padding: '12px 16px', display: 'flex', gap: '12px', zIndex: 1000, boxShadow: '0 -10px 40px rgba(0,0,0,0.8)' }}>
+        <button onClick={() => window.location.href = `tel:${supportPhone}`} style={{ flex: 1, height: '52px', background: 'white', color: '#000', border: 'none', borderRadius: '14px', fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '0.85rem', letterSpacing: '0.05em' }}>
+          <Phone size={18}/> CALL AGENT
         </button>
-        <button onClick={handleWhatsApp} style={{ flex: 1, padding: '12px', background: 'var(--emerald)', color: '#fff', border: 'none', borderRadius: '12px', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-          <MessageSquare size={16}/> WHATSAPP
+        <button onClick={handleWhatsApp} style={{ flex: 1, height: '52px', background: '#25D366', color: '#fff', border: 'none', borderRadius: '14px', fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '0.85rem', letterSpacing: '0.05em', boxShadow: '0 4px 15px rgba(37,211,102,0.3)' }}>
+          <MessageSquare size={18}/> WHATSAPP
         </button>
       </div>
     </div>

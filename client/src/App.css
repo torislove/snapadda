@@ -380,7 +380,7 @@ iframe {
 }
 @media (width<=480px) {
   .footer-grid {
-    grid-template-columns: 1fr !important;
+    grid-template-columns: repeat(2, 1fr) !important;
   }
   .stats-grid {
     grid-template-columns: 1fr 1fr !important;
@@ -4385,7 +4385,7 @@ iframe {
 }
 @media (max-width: 480px) {
   .properties-grid {
-    grid-template-columns: 1fr !important;
+    grid-template-columns: repeat(2, 1fr) !important;
   }
   .hero-title {
     font-size: 1.8rem !important;
@@ -4813,4 +4813,90 @@ iframe {
   0%   { box-shadow: 0 0 0 0 rgba(240,93,94,0.7); }
   70%  { box-shadow: 0 0 0 8px rgba(240,93,94,0); }
   100% { box-shadow: 0 0 0 0 rgba(240,93,94,0); }
+}
+
+/* 13. DISCOVERY RADAR & TELEMETRY */
+.radar-grid {
+  background-image: 
+    linear-gradient(rgba(232,184,75,0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(232,184,75,0.05) 1px, transparent 1px);
+  background-size: 50px 50px;
+  mask-image: radial-gradient(circle, black, transparent 80%);
+}
+
+.radar-pip {
+  filter: drop-shadow(0 0 8px var(--gold));
+  animation: pipPulse 2s infinite;
+}
+
+@keyframes pipPulse {
+  0%, 100% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.4); opacity: 1; }
+}
+
+.iq-badge {
+  animation: iqEntrance 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes iqEntrance {
+  from { transform: translateX(20px) scale(0.8); opacity: 0; }
+  to { transform: translateX(0) scale(1); opacity: 1; }
+}
+
+/* 14. LUXURY BUTTON OVERHAUL */
+.btn-3d {
+  position: relative;
+  transition: all 0.3s var(--ease-butter);
+  transform-style: preserve-3d;
+  overflow: hidden;
+}
+
+.btn-3d::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, rgba(255,255,255,0.1), transparent);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.btn-3d:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 8px 25px rgba(232,184,75,0.25);
+}
+
+.btn-3d:hover::after { opacity: 1; }
+
+.btn-3d:active { transform: translateY(1px) scale(0.98); }
+
+/* 15. INSTITUTIONAL SCROLLBAR */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(255,255,255,0.02);
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--gold-border);
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--gold);
+}
+
+/* 16. MOBILE HERO REFINEMENT */
+@media (max-width: 600px) {
+  .search-platform {
+    padding: 1.25rem !important;
+  }
+  .intent-cards {
+    gap: 0.5rem !important;
+  }
+  .intent-card span {
+    font-size: 0.65rem !important;
+  }
 }

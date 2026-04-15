@@ -7,6 +7,11 @@ const leadSchema = new mongoose.Schema({
   propertyId: { type: mongoose.Schema.Types.ObjectId, ref: 'Property' },
   message: String,
   status: { type: String, enum: ['New', 'Contacted', 'Qualified', 'Lost', 'Closed'], default: 'New' },
+  intentProfile: [{
+    type: String,
+    payload: Object,
+    timestamp: { type: Date, default: Date.now }
+  }],
   franchiseId: { type: String, default: null }
 }, {
   timestamps: true

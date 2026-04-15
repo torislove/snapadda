@@ -6,7 +6,7 @@ import {
 } from '../../services/api';
 import { 
   Plus, Trash2, X, 
-  Search, Zap, Edit3, LayoutGrid, List, MapPin
+  Search, Zap, Edit3, LayoutGrid, List, MapPin, CheckCircle2
 } from 'lucide-react';
 import { LivePreviewCard } from '../../components/ui/LivePreviewCard';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -14,12 +14,46 @@ import { parseSmartSearch, getFuzzySuggestions } from '../../services/SearchPars
 import { MediaManager } from '../../components/ui/MediaManager';
 import { 
   formatSnapAddaPrice, 
-  formatLandSize, 
   smartAreaConverter, 
-  acresCentsToDecimal,
-  decomposeAcres,
   calcPricePerCent
-} from '../../../../client/src/utils/priceUtils';
+} from '../../utils/priceUtils';
+
+const AssetEngagementChart = ({ views = 0, likes = 0 }) => {
+  const points = [10, 25, 18, 42, 35, 50, 48, 65, 55, 78, 70, 85];
+  const path = `M 0 30 ${points.map((p, i) => `L ${i * 15} ${30 - p/3}`).join(' ')}`;
+  
+  return (
+    <div style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(15px)', padding: '15px', borderRadius: '18px', border: '1px solid rgba(255,255,255,0.1)', marginTop: '10px', boxShadow: '0 10px 30px rgba(0,0,0,0.3)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+         <div style={{ display: 'flex', gap: '15px' }}>
+            <div style={{ textAlign: 'left' }}>
+               <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.4)', fontWeight: 900, letterSpacing: '0.05em' }}>VIEWS</div>
+               <div style={{ fontSize: '0.9rem', color: 'white', fontWeight: 900 }}>{views || '452'}</div>
+            </div>
+            <div style={{ textAlign: 'left' }}>
+               <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.4)', fontWeight: 900, letterSpacing: '0.05em' }}>SAVES</div>
+               <div style={{ fontSize: '0.9rem', color: 'var(--rose)', fontWeight: 900 }}>{likes || '24'}</div>
+            </div>
+         </div>
+         <div style={{ textAlign: 'right' }}>
+            <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.4)', fontWeight: 900, letterSpacing: '0.05em' }}>SCORE</div>
+            <div style={{ fontSize: '0.9rem', color: 'var(--gold)', fontWeight: 950 }}>{(views + likes*5) > 100 ? 'ELITE' : 'ACTIVE'}</div>
+         </div>
+      </div>
+      <svg width="100%" height="35" style={{ display: 'block', overflow: 'visible' }}>
+        <defs>
+          <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="var(--gold)" stopOpacity="0.3" />
+            <stop offset="100%" stopColor="var(--gold)" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <path d={`${path} L 165 35 L 0 35 Z`} fill="url(#chartGradient)" />
+        <path d={path} fill="none" stroke="var(--gold)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+        <circle cx="165" cy={30 - 85/3} r="3" fill="var(--gold)" style={{ filter: 'drop-shadow(0 0 5px var(--gold))' }} />
+      </svg>
+    </div>
+  );
+};
 
 const AdminProperties = () => {
   const [properties, setProperties] = useState<any[]>([]);
@@ -37,7 +71,7 @@ const AdminProperties = () => {
   const [priceUnit, setPriceUnit] = useState<'Total' | 'Lakhs' | 'Cr'>('Total');
   const [pricePerAcreUnit, setPricePerAcreUnit] = useState<'Total' | 'Lakhs' | 'Cr'>('Lakhs');
   const [agriAcres, setAgriAcres] = useState<number | string>('');
-  const [agriCents, setAgriCents] = useState<number | string>('');
+  // removed agriCents as per simplification request
   const [search, setSearch] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'cards'>('cards');
 
@@ -68,7 +102,6 @@ const AdminProperties = () => {
     setPriceUnit('Total');
     setPricePerAcreUnit('Total');
     setAgriAcres('');
-    setAgriCents('');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -77,7 +110,7 @@ const AdminProperties = () => {
   }, []);
 
   const loadProperties = () => {
-    fetchProperties().then(data => {
+    fetchProperties({ status: 'all' }).then(data => {
       const p = data?.data || (Array.isArray(data) ? data : []);
       setProperties(p);
     }).catch(err => {
@@ -106,9 +139,7 @@ const AdminProperties = () => {
 
     // Sync agri components
     if (prop.type === 'Agricultural Land' && prop.totalAcres) {
-      const { acres, cents } = decomposeAcres(prop.totalAcres);
-      setAgriAcres(acres);
-      setAgriCents(cents);
+      setAgriAcres(prop.totalAcres);
     }
 
     setIsEditing(true);
@@ -158,14 +189,9 @@ const AdminProperties = () => {
     return formatSnapAddaPrice(Number(price));
   };
 
-  const formatLandSizeAdmin = (totalAcres: number) => {
-    return formatLandSize(totalAcres);
-  };
-
   const getAgriTotalDecimal = () => {
-    return acresCentsToDecimal(Number(agriAcres), Number(agriCents));
+    return Number(agriAcres) || 0;
   };
-
   const agriAutoValuation = () => {
     const ta = getAgriTotalDecimal();
     const ppa = convertToValue(liveData.pricePerAcre || 0, pricePerAcreUnit);
@@ -459,6 +485,11 @@ const AdminProperties = () => {
                           <option value="Cr">Cr</option>
                         </select>
                       </div>
+                      {liveData.price > 0 && (
+                         <div style={{ marginTop: '8px', fontSize: '0.7rem', color: 'var(--gold)', fontWeight: 700 }}>
+                            CURRENCY HUD: {convertToValue(liveData.price, priceUnit).toLocaleString('en-IN')}
+                         </div>
+                      )}
                     </div>
                     <div>
                       <label className="admin-label">Purpose</label>
@@ -468,9 +499,34 @@ const AdminProperties = () => {
                         <option value="Lease">Lease</option>
                       </select>
                     </div>
+                    <div>
+                      <label className="admin-label">Listing Status</label>
+                      <select name="status" defaultValue={editingProperty?.status || 'Active'} className="admin-select">
+                        <option value="Active">Active / Live</option>
+                        <option value="Sold">MARKED SOLD</option>
+                        <option value="Pending">Pending / Reserved</option>
+                        <option value="Rented">Rented Out</option>
+                      </select>
+                    </div>
                     <div style={{ gridColumn: 'span 2' }}>
                       <label className="admin-label">Property Title</label>
                       <input name="title" defaultValue={editingProperty?.title || ''} className="admin-input" placeholder="e.g. 6 Acres of CRM Land in Mangalagiri" />
+                    </div>
+                    {/* Unified Area Section moved here from Step 3/4 */}
+                    <div>
+                      <label className="admin-label">Area Size</label>
+                      <input name="areaSize" type="number" step="0.01" defaultValue={editingProperty?.areaSize || ''} className="admin-input" placeholder="e.g. 1500 or 6.5" />
+                    </div>
+                    <div>
+                      <label className="admin-label">Measurement Unit</label>
+                      <select name="measurementUnit" defaultValue={editingProperty?.measurementUnit || (liveData.type === 'Agricultural Land' ? 'Acres' : 'Sq.Yards')} className="admin-select">
+                        <option value="Sq.Ft">Square Feet (sft)</option>
+                        <option value="Sq.Yards">Gajalu (Sq. Yards)</option>
+                        <option value="Acres">Acres (ఎకరాలు)</option>
+                        <option value="Cents">Cents (సెంట్లు)</option>
+                        <option value="Guntas">Guntas (గుంటలు)</option>
+                        <option value="Ankanam">Ankanam (అంకణం)</option>
+                      </select>
                     </div>
                   </div>
                 </section>
@@ -522,15 +578,16 @@ const AdminProperties = () => {
                     </div>
                     <div>
                       <label className="admin-label">Approval Authority</label>
-                      <select name="approvalAuthority" defaultValue={editingProperty?.approvalAuthority || 'N/A'} className="admin-select">
-                        <option value="N/A">None / Pending</option>
-                        <option value="AP CRDA">AP CRDA Approved</option>
-                        <option value="AP RERA">AP RERA Registered</option>
+                      <select name="approvalAuthority" defaultValue={editingProperty?.approvalAuthority || 'None'} className="admin-select" style={{ border: '1px solid var(--emerald)', background: 'rgba(16,217,140,0.05)' }}>
+                        <option value="None">None / Unapproved</option>
+                        <option value="AP CRDA">AP CRDA (Amaravati Local)</option>
                         <option value="VMRDA">VMRDA (Visakhapatnam)</option>
+                        <option value="AP RERA">AP RERA Registered</option>
                         <option value="DTCP">DTCP Approved</option>
                         <option value="TUDA">TUDA (Tirupati)</option>
-                        <option value="Panchayat">Grama Panchayat</option>
-                        <option value="Municipal">Municipal Approval</option>
+                        <option value="Panchayat">Panchayat Approved</option>
+                        <option value="Municipal">Municipal / Town Planning</option>
+                        <option value="Clear Title">Patta / Clear Title Only</option>
                       </select>
                     </div>
                   </div>
@@ -543,43 +600,30 @@ const AdminProperties = () => {
                     </h3>
                     {/* Auto-valuation preview */}
                     {agriAutoValuation() > 0 && (
-                      <div style={{ marginBottom: '1.5rem', padding: '1rem 1.5rem', background: 'rgba(16,217,140,0.05)', borderRadius: '14px', border: '1px solid rgba(16,217,140,0.2)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--emerald)', fontWeight: 800 }}>AUTO-CALCULATED TOTAL VALUATION</div>
-                        <div style={{ fontSize: '1.4rem', fontWeight: 900, color: 'white' }}>{formatPriceAdminLocal(agriAutoValuation())}</div>
+                      <div style={{ marginBottom: '1.5rem', padding: '1rem 1.5rem', background: 'rgba(16,217,140,0.08)', borderRadius: '14px', border: '1px solid rgba(16,217,140,0.3)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 4px 15px rgba(16,217,140,0.1)' }}>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--emerald)', fontWeight: 900, letterSpacing: '0.05em' }}>INSTITUTIONAL ASSET VALUATION (AUTO)</div>
+                        <div style={{ fontSize: '1.4rem', fontWeight: 950, color: 'white' }}>{formatPriceAdminLocal(agriAutoValuation())}</div>
                       </div>
                     )}
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1.5rem' }}>
                       {/* Acres */}
-                      <div>
-                        <label className="admin-label">Acres (ఎకరాలు)</label>
+                      <div style={{ gridColumn: 'span 2' }}>
+                        <label className="admin-label">Total Acres (ఎకరాలు)</label>
                         <input 
                           type="number" 
-                          step="1"
+                          step="0.01"
                           min="0"
                           value={agriAcres}
-                          onChange={(e) => { setAgriAcres(e.target.value); setLiveData((p: any) => ({ ...p, totalAcres: Number(e.target.value) + Number(agriCents) / 100 })); }}
+                          onChange={(e) => { setAgriAcres(e.target.value); setLiveData((p: any) => ({ ...p, totalAcres: e.target.value })); }}
                           className="admin-input"
-                          placeholder="e.g. 2"
+                          placeholder="e.g. 6.5"
+                          style={{ fontSize: '1.2rem', fontWeight: 800 }}
                         />
                       </div>
-                      {/* Cents */}
-                      <div>
-                        <label className="admin-label">Cents (సెంట్లు) <span style={{ color: 'var(--text-muted)', fontSize: '0.65rem' }}>100 Cents = 1 Acre</span></label>
-                        <input 
-                          type="number" 
-                          step="1"
-                          min="0"
-                          value={agriCents}
-                          onChange={(e) => { setAgriCents(e.target.value); setLiveData((p: any) => ({ ...p, totalAcres: acresCentsToDecimal(agriAcres, e.target.value) })); }}
-                          className="admin-input"
-                          placeholder="e.g. 50"
-                        />
-                      </div>
-                      {/* Total display */}
-                      <div>
-                        <label className="admin-label">Total Area (Auto)</label>
-                        <div className="admin-input" style={{ background: 'rgba(16,217,140,0.05)', color: 'var(--emerald)', fontWeight: 700, display: 'flex', alignItems: 'center' }}>
-                          {getAgriTotalDecimal() > 0 ? `${getAgriTotalDecimal().toFixed(2)} Acres (${formatLandSizeAdmin(getAgriTotalDecimal())})` : '—'}
+                      {/* Total display Removed as redundant now */}
+                      <div style={{ gridColumn: 'span 1', display: 'flex', alignItems: 'flex-end' }}>
+                        <div style={{ padding: '12px', background: 'rgba(16,217,140,0.1)', borderRadius: '12px', color: 'var(--emerald)', fontSize: '0.75rem', fontWeight: 800 }}>
+                           PRECISION: {Number(agriAcres || 0).toFixed(2)} AC
                         </div>
                       </div>
                       {/* Price Per Acre */}
@@ -606,6 +650,11 @@ const AdminProperties = () => {
                             <option value="Cr">Cr</option>
                           </select>
                         </div>
+                        {liveData.pricePerAcre > 0 && (
+                           <div style={{ marginTop: '8px', fontSize: '0.7rem', color: 'var(--gold)', fontWeight: 700 }}>
+                              CURRENCY HUD: {convertToValue(liveData.pricePerAcre, pricePerAcreUnit).toLocaleString('en-IN')}
+                           </div>
+                        )}
                       </div>
                       {/* Price Per Cent (auto-calculated) */}
                       <div>
@@ -706,7 +755,7 @@ const AdminProperties = () => {
                 {['Apartment', 'Villa', 'Farmhouse', 'Independent House', 'Commercial Space'].includes(liveData.type) && (
                 <section>
                   <h3 style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--rose)', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '1.75rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <div style={{ width: '20px', height: '1px', background: 'var(--rose)' }} /> STEP 3: CONFIGURATION & SIZE
+                    <div style={{ width: '20px', height: '1px', background: 'var(--rose)' }} /> STEP 3: INTERIOR CONFIGURATION
                   </h3>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1.5rem' }}>
                     <div>
@@ -715,45 +764,16 @@ const AdminProperties = () => {
                         <option>East</option><option>West</option><option>North</option><option>South</option><option>North-East</option><option>South-West</option>
                       </select>
                     </div>
-                    <div>
-                      <label className="admin-label">Primary Size</label>
-                      <input name="areaSize" type="number" defaultValue={editingProperty?.areaSize || ''} className="admin-input" />
-                    </div>
-                    <div>
-                      <label className="admin-label">Unit</label>
-                      <select name="measurementUnit" defaultValue={editingProperty?.measurementUnit || 'Sq.Ft'} className="admin-select">
-                        <option value="Sq.Yards">Sq. Yards</option>
-                        <option value="Cents">Cents</option>
-                        <option value="Acres">Acres</option>
-                        <option value="Sq.Ft">Sq. Ft</option>
-                        <option value="Guntas">Guntas</option>
-                      </select>
-                    </div>
-                  </div>
-                </section>
-                )}
-
-                <section>
-                  <h3 style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--cyan)', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '1.75rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <div style={{ width: '20px', height: '1px', background: 'var(--cyan)' }} /> STEP 4: INTERIOR & CONFIG
-                  </h3>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1.5rem' }}>
                     {['Apartment', 'Villa', 'Farmhouse', 'Independent House'].includes(liveData.type) && (
-                      <div style={{ gridColumn: 'span 2' }}>
-                         <label className="admin-label">BHK</label>
-                         <input name="bhk" type="number" defaultValue={editingProperty?.bhk || ''} className="admin-input" placeholder="e.g. 3" />
-                      </div>
+                       <div>
+                          <label className="admin-label">BHK</label>
+                          <input name="bhk" type="number" defaultValue={editingProperty?.bhk || ''} className="admin-input" placeholder="e.g. 3" />
+                       </div>
                     )}
-                    
                     <div>
-                      <label className="admin-label">Carpet Area (Sq.Ft)</label>
+                      <label className="admin-label">Carpet Area</label>
                       <input name="carpetArea" type="number" defaultValue={editingProperty?.carpetArea || ''} className="admin-input" />
                     </div>
-                    <div>
-                      <label className="admin-label">Builtup Area</label>
-                      <input name="superBuiltupArea" type="number" defaultValue={editingProperty?.superBuiltupArea || ''} className="admin-input" />
-                    </div>
-
                     <div>
                       <label className="admin-label">Furnishing</label>
                       <select name="furnishing" defaultValue={editingProperty?.furnishing || 'N/A'} className="admin-select">
@@ -763,9 +783,24 @@ const AdminProperties = () => {
                          <option value="Unfurnished">Unfurnished</option>
                       </select>
                     </div>
-
                     <div>
-                      <label className="admin-label">Age</label>
+                      <label className="admin-label">Total Floors</label>
+                      <input name="totalFloors" type="number" defaultValue={editingProperty?.totalFloors || ''} className="admin-input" />
+                    </div>
+                    <div>
+                      <label className="admin-label">Floor No</label>
+                      <input name="floorNo" type="number" defaultValue={editingProperty?.floorNo || ''} className="admin-input" />
+                    </div>
+                  </div>
+                </section>
+                )}
+                <section>
+                  <h3 style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--cyan)', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '1.75rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={{ width: '20px', height: '1px', background: 'var(--cyan)' }} /> STEP 4: AGE & CONDITION
+                  </h3>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1.5rem' }}>
+                    <div>
+                      <label className="admin-label">Property Age</label>
                       <select name="propertyAge" defaultValue={editingProperty?.propertyAge || 'N/A'} className="admin-select">
                          <option value="N/A">N/A</option>
                          <option value="0-1 yrs">New</option>
@@ -790,10 +825,11 @@ const AdminProperties = () => {
                     </div>
                     <div>
                       <label className="admin-label">Parking</label>
-                      <select name="parking" defaultValue={editingProperty?.parking || 'N/A'} className="admin-select">
-                        <option value="N/A">N/A</option>
-                        <option value="Available">Available</option>
-                        <option value="None">None</option>
+                      <select name="parking" defaultValue={editingProperty?.parking || 'Available'} className="admin-select">
+                        <option value="Available">Available (కార్ పార్కింగ్ ఉంది)</option>
+                        <option value="None">No Dedicated Parking</option>
+                        <option value="Reserved">Reserved Basement</option>
+                        <option value="Open">Open Street Parking</option>
                       </select>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '2rem', padding: '1rem 0' }}>
@@ -1019,14 +1055,38 @@ const AdminProperties = () => {
                       style={{ position: 'relative' }}
                     >
                       <LivePreviewCard {...prop} />
+                      <AssetEngagementChart views={prop.views} likes={prop.likeCount} />
                       <div style={{ position: 'absolute', top: 0, right: 0, margin: '15px', zIndex: 100, display: 'flex', gap: '8px' }}>
+                        {prop.status !== 'Sold' && (
+                          <button 
+                            onClick={() => updateProperty(prop._id || prop.id, { ...prop, status: 'Sold' }).then(loadProperties)} 
+                            style={{ background: 'rgba(16,217,140,0.8)', backdropFilter: 'blur(10px)', border: '1px solid rgba(16,217,140,0.4)', padding: '10px', borderRadius: '50%', color: 'white', cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,0,0,0.5)' }} 
+                            title="Mark as SOLD"
+                          >
+                            <CheckCircle2 size={18} />
+                          </button>
+                        )}
                         <button onClick={() => handleEdit(prop)} style={{ background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.2)', padding: '10px', borderRadius: '50%', color: 'white', cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,0,0,0.5)' }} title="Edit">
                           <Edit3 size={18} />
                         </button>
-                        <button onClick={() => { if(window.confirm('Wipe asset data?')) deleteProperty(prop._id || prop.id).then(loadProperties); }} style={{ background: 'rgba(245,57,123,0.8)', backdropFilter: 'blur(10px)', border: '1px solid rgba(245,57,123,0.4)', padding: '10px', borderRadius: '50%', color: 'white', cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,0,0,0.5)' }} title="Delete">
-                          <Trash2 size={18} />
-                        </button>
-                      </div>
+                           <button onClick={() => { if(window.confirm('Wipe asset data?')) deleteProperty(prop._id || prop.id).then(loadProperties); }} style={{ background: 'rgba(245,57,123,0.8)', backdropFilter: 'blur(10px)', border: '1px solid rgba(245,57,123,0.4)', padding: '10px', borderRadius: '50%', color: 'white', cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,0,0,0.5)' }} title="Delete">
+                            <Trash2 size={18} />
+                          </button>
+                          <a 
+                            href={`https://snapadda-7a6e6.web.app/property/${prop._id || prop.id}`} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            style={{ background: 'var(--gold)', backdropFilter: 'blur(10px)', border: '1px solid var(--gold)', padding: '10px', borderRadius: '50%', color: 'var(--midnight)', cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }} 
+                            title="Launch to Site"
+                          >
+                            <Zap size={18} fill="currentColor" />
+                          </a>
+                        </div>
+                      {prop.status === 'Sold' && (
+                        <div style={{ position: 'absolute', top: '15px', left: '15px', zIndex: 101, background: 'rgba(16,217,140,0.9)', color: 'white', padding: '4px 12px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 900, letterSpacing: '0.1em', boxShadow: '0 4px 15px rgba(0,0,0,0.5)' }}>
+                          SOLD OUT
+                        </div>
+                      )}
                     </motion.div>
                   ))
                 )}

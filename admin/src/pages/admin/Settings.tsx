@@ -71,6 +71,24 @@ const StatusAlert = ({ status, successMsg, errorMsg }: { status: SaveStatus; suc
   return null;
 };
 
+
+const cardHeader = (icon: React.ReactNode, title: string, sub: string, bg: string, color: string) => (
+  <div style={{ padding:'1.25rem 1.5rem', borderBottom:'1px solid rgba(255,255,255,0.05)', display:'flex', alignItems:'center', gap:'0.75rem' }}>
+    <div style={{ width:'36px', height:'36px', borderRadius:'10px', background:bg, display:'flex', alignItems:'center', justifyContent:'center', color }}>{icon}</div>
+    <div>
+      <h3 style={{ margin:0, fontFamily:'var(--font-body)', fontSize:'0.95rem', fontWeight:700, color:'var(--text-primary)' }}>{title}</h3>
+      <p style={{ margin:0, fontSize:'0.75rem', color:'var(--text-muted)' }}>{sub}</p>
+    </div>
+  </div>
+);
+
+const inputWrap = (icon: React.ReactNode, children: React.ReactNode) => (
+  <div style={{ position:'relative' }}>
+    <span style={{ position:'absolute', left:'12px', top:'50%', transform:'translateY(-50%)', color:'var(--text-muted)', display:'flex' }}>{icon}</span>
+    {children}
+  </div>
+);
+
 const AdminSettings = () => {
   const { adminUser, updateAdminUser } = useAdminAuth();
 
@@ -459,21 +477,6 @@ const AdminSettings = () => {
     background: 'var(--bg-glass)', border: '1px solid rgba(255,255,255,0.07)',
     borderTop: `3px solid ${accent}`, borderRadius: '18px', overflow: 'hidden' as const,
   });
-  const cardHeader = (icon: React.ReactNode, title: string, sub: string, bg: string, color: string) => (
-    <div style={{ padding:'1.25rem 1.5rem', borderBottom:'1px solid rgba(255,255,255,0.05)', display:'flex', alignItems:'center', gap:'0.75rem' }}>
-      <div style={{ width:'36px', height:'36px', borderRadius:'10px', background:bg, display:'flex', alignItems:'center', justifyContent:'center', color }}>{icon}</div>
-      <div>
-        <h3 style={{ margin:0, fontFamily:'var(--font-body)', fontSize:'0.95rem', fontWeight:700, color:'var(--text-primary)' }}>{title}</h3>
-        <p style={{ margin:0, fontSize:'0.75rem', color:'var(--text-muted)' }}>{sub}</p>
-      </div>
-    </div>
-  );
-  const inputWrap = (icon: React.ReactNode, children: React.ReactNode) => (
-    <div style={{ position:'relative' }}>
-      <span style={{ position:'absolute', left:'12px', top:'50%', transform:'translateY(-50%)', color:'var(--text-muted)', display:'flex' }}>{icon}</span>
-      {children}
-    </div>
-  );
   const inp: React.CSSProperties = {
     width:'100%', background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.09)',
     color:'var(--text-primary)', borderRadius:'10px', padding:'0.65rem 1rem 0.65rem 2.5rem',
