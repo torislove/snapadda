@@ -140,11 +140,10 @@ const PropertyCard = memo(({
     <>
       <AnimatePresence>{toast && <Toast msg={toast} onDone={() => setToast('')} />}</AnimatePresence>
       <motion.article
-        initial={{ opacity: 0, y: 30, scale: 0.98 }}
-        whileInView={{ opacity: 1, y: 0, scale: 1 }}
-        whileHover={{ y: -8, transition: { type: 'spring', stiffness: 400, damping: 25 } }}
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, margin: "-50px" }}
-        transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+        transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
         style={{ height: '100%' }}
       >
         <div 
@@ -170,16 +169,14 @@ const PropertyCard = memo(({
               {images && images.length > 0 ? (
                 images.slice(0, 5).map((img, idx) => (
                   <div key={idx} style={{ position: 'relative', flex: '0 0 100%', scrollSnapAlign: 'start', height: '100%' }}>
-                    <motion.img 
-                      layoutId={`prop-image-${propertyId}`}
+                    <img 
                       src={img} alt={`${title} ${idx+1}`} className="property-image" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
                     />
                   </div>
                 ))
               ) : property_image ? (
                 <div style={{ flex: '0 0 100%', scrollSnapAlign: 'start', height: '100%' }}>
-                  <motion.img 
-                    layoutId={`prop-image-${propertyId}`}
+                  <img 
                     src={property_image} alt={title} className="property-image" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
                   />
                 </div>

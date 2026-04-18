@@ -136,7 +136,7 @@ export default function PropertyDetails() {
 
         // Fetch Similar Properties logic re-integrated
         if (data?.category || data?.type) {
-          fetchSimilarProperties(data.category || data.type, id).then(s => setSimilar(s.data || []));
+          fetchSimilarProperties(data.category || data.type, id).then(s => setSimilar(s.data || [])).catch(() => {});
         }
 
         // Recent views
@@ -146,6 +146,9 @@ export default function PropertyDetails() {
           filtered.unshift({ _id: data._id, title: data.title, price: data.price, location: data.location, type: data.type, image: data.images?.[0] || data.image });
           localStorage.setItem('snapadda_recent_views', JSON.stringify(filtered.slice(0, 6)));
         } catch {}
+
+        // Update page title
+        document.title = `${data.title} | ${data.type} in ${data.location} | SnapAdda`;
       })
       .catch((err) => {
         console.error('FETCH_PROPERTY_ERROR:', err);
@@ -155,12 +158,7 @@ export default function PropertyDetails() {
 
     fetchPropertyFAQs(id).then(setQna).catch(() => setQna([]));
     fetchSetting('support_info').then(setSupportInfo).catch(console.error);
-    
-    // Sync Metadata for Search/Social
-    if (property) {
-      document.title = `${property.title} | ${property.type} in ${property.location} | SnapAdda`;
-    }
-  }, [id, property]);
+  }, [id]);
 
   const property_images = property?.images?.length
     ? property.images

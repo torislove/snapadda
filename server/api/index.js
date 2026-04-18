@@ -119,31 +119,42 @@ if (cloud_name && api_key && api_secret) {
   cloudinary.config({ cloud_name, api_key, api_secret });
 }
 
-// 2. Optimized MongoDB Connection (Pre-connected for lower latency)
-let isConnected = false;
+// 2. Optimized MongoDB Connection for Serverless
+let cachedDb = null;
+
 const connectDB = async () => {
-  if (isConnected) return;
+  if (cachedDb) {
+    return cachedDb;
+  }
+
   const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/snapadda';
+  
   try {
-    await mongoose.connect(MONGODB_URI, {
+    cachedDb = await mongoose.connect(MONGODB_URI, {
       serverSelectionTimeoutMS: 5000,
       socketTimeoutMS: 45000,
+      maxPoolSize: 10 // Limit pool size for serverless
     });
-    isConnected = true;
     console.log('AUTO_INIT: MongoDB connection established');
+    return cachedDb;
   } catch (err) {
+    cachedDb = null;
     console.error('CRITICAL: MongoDB connection error:', err.message);
+    throw err;
   }
 };
 
-// Immediate connection attempt (non-blocking)
+// Immediate connection attempt (non-blocking for cold starts)
 connectDB().catch(console.error);
-
 
 // Middleware to ensure DB connection (Safety check)
 app.use(async (req, res, next) => {
-  if (!isConnected) await connectDB();
-  next();
+  try {
+    await connectDB();
+    next();
+  } catch (err) {
+    res.status(503).json({ status: 'error', message: 'Database connection failed' });
+  }
 });
 
 
