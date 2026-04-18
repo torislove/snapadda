@@ -166,9 +166,10 @@ export default function PropertyDetails() {
     ? property.images
     : [property?.image, ...(property?.gallery || [])].filter(Boolean);
 
-  const isAgri = property?.type === 'Agricultural Land';
-  const isPlot = property?.type?.includes('Plot');
+  const isAgri = (property?.type || '').toLowerCase().includes('agri');
+  const isPlot = (property?.type || '').toLowerCase().includes('plot');
   const isResidential = ['Apartment', 'Villa', 'Independent House', 'Farmhouse'].includes(property?.type);
+  const isIndustrial = (property?.type || '').toLowerCase().includes('industrial');
 
   const agriAcres = getAcres(property?.totalAcres);
   const agriCents = getCents(property?.totalAcres);

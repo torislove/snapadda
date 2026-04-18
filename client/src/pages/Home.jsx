@@ -104,8 +104,9 @@ const BUDGET_OPTIONS = (t) => [
 const PROPERTY_TYPES = (t) => [
   { label: 'Apartment', value: 'Apartment', icon: <Building2 size={24} /> },
   { label: 'Villa', value: 'Villa', icon: <HomeIcon size={24} /> },
-  { label: 'Plot', value: 'Residential Plot', icon: <Square size={24} /> },
-  { label: 'Agriculture', value: 'Agricultural Land', icon: <Leaf size={24} /> },
+  { label: 'CRDA / Open Plots', value: 'Residential Plot', icon: <Square size={24} /> },
+  { label: 'Agri Land (Acres)', value: 'Agricultural Land', icon: <Leaf size={24} /> },
+  { label: 'Commercial Space', value: 'Commercial Space', icon: <Building2 size={24} /> },
 ];
 
 const WHY_CARDS = (t) => [

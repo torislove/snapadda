@@ -17,10 +17,12 @@ const PROPERTY_TYPES = [
   { label: 'Villa', value: 'Villa', icon: <HomeIcon size={14}/> },
   { label: 'Independent House', value: 'Independent House', icon: <HomeIcon size={14}/> },
   { label: 'Residential Plot / Gajalu', value: 'Residential Plot', icon: <Square size={14}/> },
-  { label: 'Commercial Plot', value: 'Commercial Plot', icon: <Square size={14}/> },
+  { label: 'CRDA / Open Plots', value: 'CRDA Plot', icon: <Award size={14}/> },
   { label: 'Agri Land / Acres', value: 'Agricultural Land', icon: <Leaf size={14}/> },
+  { label: 'Commercial Plot', value: 'Commercial Plot', icon: <Square size={14}/> },
   { label: 'Farmhouse', value: 'Farmhouse', icon: <Trees size={14}/> },
   { label: 'Commercial Space', value: 'Commercial Space', icon: <Building2 size={14}/> },
+  { label: 'Industrial / Warehouse', value: 'Industrial', icon: <Maximize2 size={14}/> },
 ];
 
 const SORT_OPTIONS = [

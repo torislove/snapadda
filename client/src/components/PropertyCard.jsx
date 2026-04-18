@@ -69,6 +69,8 @@ const PropertyCard = memo(({
     if (low.includes('plot')) return { icon: <Square size={12}/>, accent: '#22d9e0' };
     if (low.includes('agri')) return { icon: <Leaf size={12}/>, accent: '#10d98c' };
     if (low.includes('house')) return { icon: <HomeIcon size={12}/>, accent: '#ff8c42' };
+    if (low.includes('commercial')) return { icon: <Building2 size={12}/>, accent: '#22d9e0' };
+    if (low.includes('industrial') || low.includes('warehouse')) return { icon: <Maximize2 size={12}/>, accent: '#f5397b' };
     return { icon: <Building2 size={12}/>, accent: '#fff' };
   };
   const typeStyle = getTypeStyle(type);
@@ -283,8 +285,8 @@ const PropertyCard = memo(({
                  </div>
                )}
                {authority && (
-                 <div className="spec-item" style={{ color: 'var(--emerald)' }}>
-                   <Award size={14} /> <span>{authority} Approved</span>
+                 <div className="spec-item" style={{ color: authority.includes('CRDA') ? 'var(--gold)' : 'var(--emerald)', fontWeight: 800 }}>
+                   <Award size={14} /> <span>{authority} {authority.includes('Approved') ? '' : 'Approved'}</span>
                  </div>
                )}
             </div>
