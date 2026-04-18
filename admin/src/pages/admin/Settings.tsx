@@ -348,8 +348,13 @@ const AdminSettings = () => {
         whatsapp: waNumber // This syncs the number to the global support record
       });
       setSupportStatus('success');
+      showToast('Contact information saved!');
       setTimeout(() => setSupportStatus('idle'), 3000);
-    } catch { setSupportStatus('error'); setTimeout(() => setSupportStatus('idle'), 4000); }
+    } catch { 
+      setSupportStatus('error'); 
+      showToast('Failed to save contact info', 'error');
+      setTimeout(() => setSupportStatus('idle'), 4000); 
+    }
   };
 
   const handleSeoSave = async (ev: React.FormEvent) => {
@@ -365,8 +370,13 @@ const AdminSettings = () => {
         robots: seoRobots
       });
       setSeoStatus('success');
+      showToast('SEO settings updated!');
       setTimeout(() => setSeoStatus('idle'), 3000);
-    } catch { setSeoStatus('error'); setTimeout(() => setSeoStatus('idle'), 4000); }
+    } catch { 
+      setSeoStatus('error'); 
+      showToast('Failed to save SEO', 'error');
+      setTimeout(() => setSeoStatus('idle'), 4000); 
+    }
   };
 
   const handleHeroSave = async (ev: React.FormEvent) => {
@@ -383,8 +393,13 @@ const AdminSettings = () => {
         cta2Url: heroCTA2Url
       });
       setHeroStatus('success');
+      showToast('Homepage hero content live!');
       setTimeout(() => setHeroStatus('idle'), 3000);
-    } catch { setHeroStatus('error'); setTimeout(() => setHeroStatus('idle'), 4000); }
+    } catch { 
+      setHeroStatus('error'); 
+      showToast('Failed to save hero content', 'error');
+      setTimeout(() => setHeroStatus('idle'), 4000); 
+    }
   };
 
   const handleStatsSave = async () => {
@@ -392,8 +407,13 @@ const AdminSettings = () => {
     try {
       await saveSetting('site_stats', siteStats);
       setStatsStatus('success');
+      showToast('Counter stats updated!');
       setTimeout(() => setStatsStatus('idle'), 3000);
-    } catch { setStatsStatus('error'); setTimeout(() => setStatsStatus('idle'), 4000); }
+    } catch { 
+      setStatsStatus('error'); 
+      showToast('Failed to save stats', 'error');
+      setTimeout(() => setStatsStatus('idle'), 4000); 
+    }
   };
 
   const updateStat = (index: number, field: string, val: string) => {
@@ -450,9 +470,11 @@ const AdminSettings = () => {
     try {
       await saveSetting('onboarding_questions', onboardingQuestions);
       setQuestionsStatus('success');
+      showToast('Onboarding questions synchronized!');
       setTimeout(() => setQuestionsStatus('idle'), 3000);
     } catch {
       setQuestionsStatus('error');
+      showToast('Failed to save questions', 'error');
       setTimeout(() => setQuestionsStatus('idle'), 4000);
     }
   };

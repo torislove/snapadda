@@ -119,41 +119,72 @@ if (cloud_name && api_key && api_secret) {
   cloudinary.config({ cloud_name, api_key, api_secret });
 }
 
-// 2. Optimized MongoDB Connection for Serverless
-let cachedDb = null;
+// 2. Optimized MongoDB Connection for Serverless (with auto-reconnect)
+let connectionPromise = null;
 
 const connectDB = async () => {
-  if (cachedDb) {
-    return cachedDb;
-  }
+  // If already connected, return immediately
+  if (mongoose.connection.readyState === 1) return;
+  // If a connection is in progress, wait for it
+  if (connectionPromise) return connectionPromise;
 
   const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/snapadda';
   
-  try {
-    cachedDb = await mongoose.connect(MONGODB_URI, {
-      serverSelectionTimeoutMS: 5000,
-      socketTimeoutMS: 45000,
-      maxPoolSize: 10 // Limit pool size for serverless
-    });
+  connectionPromise = mongoose.connect(MONGODB_URI, {
+    serverSelectionTimeoutMS: 3000,
+    socketTimeoutMS: 45000,
+    maxPoolSize: 10,
+  }).then(() => {
     console.log('AUTO_INIT: MongoDB connection established');
-    return cachedDb;
-  } catch (err) {
-    cachedDb = null;
+    connectionPromise = null; // Reset so reconnect can happen
+  }).catch((err) => {
+    connectionPromise = null;
     console.error('CRITICAL: MongoDB connection error:', err.message);
     throw err;
-  }
+  });
+
+  return connectionPromise;
 };
+
+// Auto-reconnect on disconnect
+mongoose.connection.on('disconnected', () => {
+  console.warn('MONGO_DISCONNECTED: Attempting reconnect...');
+  connectionPromise = null;
+  connectDB().catch(console.error);
+});
 
 // Immediate connection attempt (non-blocking for cold starts)
 connectDB().catch(console.error);
 
-// Middleware to ensure DB connection (Safety check)
+// Middleware to ensure DB connection before any route
 app.use(async (req, res, next) => {
+  // Skip DB check for health/warmup endpoints
+  if (req.path === '/health' || req.path === '/api/health' || req.path === '/api/warmup' || req.path === '/warmup') {
+    return next();
+  }
   try {
     await connectDB();
     next();
   } catch (err) {
-    res.status(503).json({ status: 'error', message: 'Database connection failed' });
+    res.status(503).json({ status: 'error', message: 'Database temporarily unavailable. Please retry.' });
+  }
+});
+
+// Warmup endpoint — call this before login to pre-warm the DB connection
+app.get('/api/warmup', async (req, res) => {
+  try {
+    await connectDB();
+    res.json({ status: 'warm', db: mongoose.connection.readyState === 1 ? 'connected' : 'connecting', ts: Date.now() });
+  } catch (err) {
+    res.status(503).json({ status: 'cold', error: err.message });
+  }
+});
+app.get('/warmup', async (req, res) => {
+  try {
+    await connectDB();
+    res.json({ status: 'warm', db: mongoose.connection.readyState === 1 ? 'connected' : 'connecting' });
+  } catch (err) {
+    res.status(503).json({ status: 'cold' });
   }
 });
 
@@ -233,7 +264,7 @@ app.use((req, res) => {
 export const api = onRequest({ 
   memory: "1GiB",
   timeoutSeconds: 60,
-  minInstances: 0,
+  minInstances: 1,  // Keep at least 1 warm instance to eliminate cold-start login delay
   maxInstances: 10,
   // We handle CORS manually in Express middleware above
 }, app);

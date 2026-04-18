@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAdminAuth } from '../../contexts/AdminAuthContext';
 import { KeyRound, Mail, Loader2, Eye, EyeOff, ShieldCheck } from 'lucide-react';
@@ -19,6 +19,12 @@ const AdminLogin = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+
+  // Pre-warm API on mount to eliminate cold-start login delay
+  useEffect(() => {
+    const apiBase = API_URL.replace(/\/+$/, '');
+    fetch(`${apiBase}/warmup`, { method: 'GET', cache: 'no-store' }).catch(() => {});
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();

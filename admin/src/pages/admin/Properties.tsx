@@ -482,26 +482,50 @@ const AdminProperties = () => {
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
                     <div>
                       <label className="admin-label">Property Type</label>
-                      <select name="type" defaultValue={editingProperty?.type || 'Apartment'} className="admin-select">
+                      <select name="type" defaultValue={editingProperty?.type || 'Apartment'} className="admin-select"
+                        onChange={(e) => setLiveData((p: any) => ({ ...p, type: e.target.value }))}
+                      >
                         <optgroup label="Residential">
-                          <option>Apartment</option>
-                          <option>Independent House</option>
-                          <option>Villa</option>
-                          <option>Residential Plot</option>
+                          <option value="Apartment">Apartment / Flat</option>
+                          <option value="Independent House">Independent House</option>
+                          <option value="Villa">Villa / Duplex</option>
+                          <option value="Gated Community Plot">Gated Community Plot</option>
+                          <option value="Residential Plot">Residential Plot</option>
+                        </optgroup>
+                        <optgroup label="Special / CRDA">
+                          <option value="CRDA Approved Plot">CRDA Approved Plot</option>
+                          <option value="Open Plot">Open Plot</option>
+                          <option value="Layout Plot">Layout Plot</option>
                         </optgroup>
                         <optgroup label="Commercial">
-                          <option>Commercial Plot</option>
-                          <option>Commercial Space</option>
+                          <option value="Commercial Plot">Commercial Plot</option>
+                          <option value="Commercial Space">Commercial Space</option>
+                          <option value="Office Space">Office Space</option>
+                          <option value="Showroom">Showroom / Retail</option>
                         </optgroup>
                         <optgroup label="Agricultural">
-                          <option>Agricultural Land</option>
-                          <option>Farmhouse</option>
+                          <option value="Agricultural Land">Agricultural Land (Farm)</option>
+                          <option value="Farmhouse">Farmhouse / Farm Villa</option>
+                        </optgroup>
+                        <optgroup label="Industrial">
+                          <option value="Industrial Shed">Industrial Shed</option>
+                          <option value="Warehouse">Warehouse / Godown</option>
+                          <option value="Factory">Factory / Unit</option>
                         </optgroup>
                       </select>
                     </div>
                     <div>
                       <label className="admin-label">City / Area</label>
-                      <input name="location" defaultValue={editingProperty?.location || ''} className="admin-input" placeholder="e.g. Mangalagiri" />
+                      <input name="location" defaultValue={editingProperty?.location || ''} className="admin-input" placeholder="e.g. Mangalagiri, Vijayawada" />
+                    </div>
+                    <div>
+                      <label className="admin-label">District (AP)</label>
+                      <select name="district" defaultValue={editingProperty?.district || ''} className="admin-select">
+                        <option value="">Select District</option>
+                        {['Anantapur','Bapatla','Chittoor','East Godavari','Eluru','Guntur','Kadapa','Kakinada','Krishna','Kurnool','Nandyal','Nellore','Palnadu','Parvathipuram Manyam','Prakasam','Rajahmundry','Srikakulam','Sri Potti Sriramulu Nellore','Tirupati','Visakhapatnam','Vizianagaram','West Godavari'].map(d => (
+                          <option key={d} value={d}>{d}</option>
+                        ))}
+                      </select>
                     </div>
                     <div>
                       <label className="admin-label">Price</label>
@@ -619,16 +643,21 @@ const AdminProperties = () => {
                     </div>
                     <div>
                       <label className="admin-label">Approval Authority</label>
-                      <select name="approvalAuthority" defaultValue={editingProperty?.approvalAuthority || 'None'} className="admin-select" style={{ border: '1px solid var(--emerald)', background: 'rgba(16,217,140,0.05)' }}>
-                        <option value="None">None / Unapproved</option>
+                      <select name="approvalAuthority" defaultValue={editingProperty?.approvalAuthority || 'N/A'} className="admin-select" style={{ border: '1px solid var(--emerald)', background: 'rgba(16,217,140,0.05)' }}>
+                        <option value="N/A">N/A / Not Applicable</option>
+                        <option value="CRDA">CRDA (Capital Region)</option>
                         <option value="AP CRDA">AP CRDA (Amaravati Local)</option>
                         <option value="VMRDA">VMRDA (Visakhapatnam)</option>
-                        <option value="AP RERA">AP RERA Registered</option>
                         <option value="DTCP">DTCP Approved</option>
+                        <option value="HMDA">HMDA</option>
+                        <option value="AP RERA">AP RERA Registered</option>
                         <option value="TUDA">TUDA (Tirupati)</option>
-                        <option value="Panchayat">Panchayat Approved</option>
+                        <option value="APIIC">APIIC (Industrial)</option>
+                        <option value="Revenue">Revenue Layout</option>
+                        <option value="Gram Panchayat">Gram Panchayat</option>
                         <option value="Municipal">Municipal / Town Planning</option>
                         <option value="Clear Title">Patta / Clear Title Only</option>
+                        <option value="SEZ">SEZ Zone</option>
                       </select>
                     </div>
                   </div>
@@ -860,17 +889,20 @@ const AdminProperties = () => {
                         <option value="Open">Open Street Parking</option>
                       </select>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '2rem', padding: '1rem 0' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '2rem', padding: '1rem 0', flexWrap: 'wrap' }}>
                         <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: 'white' }}>
-                          <input name="vastuCompliant" type="checkbox" defaultChecked={editingProperty?.vastuCompliant} /> Vastu
+                          <input name="vastuCompliant" type="checkbox" defaultChecked={editingProperty?.vastuCompliant} /> Vastu Compliant
                         </label>
-                        {['Residential Plot', 'Commercial Plot', 'Agricultural Land'].includes(liveData.type) && (
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: 'white' }}>
+                          <input name="isGated" type="checkbox" defaultChecked={editingProperty?.isGated} /> Gated Community
+                        </label>
+                        {['Residential Plot', 'Commercial Plot', 'Agricultural Land', 'CRDA Approved Plot', 'Open Plot', 'Layout Plot'].includes(liveData.type) && (
                           <>
                             <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: 'white' }}>
-                              <input name="cornerProperty" type="checkbox" defaultChecked={editingProperty?.cornerProperty} /> Corner
+                              <input name="cornerProperty" type="checkbox" defaultChecked={editingProperty?.cornerProperty} /> Corner Plot
                             </label>
                             <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: 'white' }}>
-                              <input name="boundaryWall" type="checkbox" defaultChecked={editingProperty?.boundaryWall} /> Wall
+                              <input name="boundaryWall" type="checkbox" defaultChecked={editingProperty?.boundaryWall} /> Boundary Wall
                             </label>
                           </>
                         )}

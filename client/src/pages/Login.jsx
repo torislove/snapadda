@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GoogleLogin } from '@react-oauth/google';
@@ -21,6 +21,15 @@ export default function Login() {
   const [contactError, setContactError] = useState('');
   const [loginError, setLoginError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [serverReady, setServerReady] = useState(false);
+
+  // Pre-warm the API connection on page load to eliminate cold-start delay on login
+  useEffect(() => {
+    const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+    fetch(`${apiBase.replace(/\/+$/, '')}/warmup`, { method: 'GET', cache: 'no-store' })
+      .then(() => setServerReady(true))
+      .catch(() => setServerReady(true)); // Don't block on warmup failure
+  }, []);
 
   const handleContactNext = (e) => {
     e.preventDefault();

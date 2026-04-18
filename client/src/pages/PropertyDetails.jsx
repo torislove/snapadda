@@ -164,10 +164,10 @@ export default function PropertyDetails() {
     ? property.images
     : [property?.image, ...(property?.gallery || [])].filter(Boolean);
 
-  const isAgri = (property?.type || '').toLowerCase().includes('agri');
-  const isPlot = (property?.type || '').toLowerCase().includes('plot');
-  const isResidential = ['Apartment', 'Villa', 'Independent House', 'Farmhouse'].includes(property?.type);
-  const isIndustrial = (property?.type || '').toLowerCase().includes('industrial');
+  const isAgri = ['agricultural land', 'farmhouse'].some(t => (property?.type || '').toLowerCase().includes(t));
+  const isPlot = ['plot', 'crda', 'layout'].some(t => (property?.type || '').toLowerCase().includes(t));
+  const isResidential = ['Apartment', 'Villa', 'Independent House', 'Farmhouse', 'Villa / Duplex', 'Apartment / Flat'].some(t => (property?.type || '').includes(t));
+  const isIndustrial = ['industrial', 'warehouse', 'factory'].some(t => (property?.type || '').toLowerCase().includes(t));
 
   const agriAcres = getAcres(property?.totalAcres);
   const agriCents = getCents(property?.totalAcres);
@@ -256,18 +256,26 @@ export default function PropertyDetails() {
 
   const generateDesc = (p) => {
     if (p.description && p.description.length > 50) return p.description;
-    let d = `This ${(p.type || 'property').toLowerCase()} is located in the growing area of ${p.location || 'Andhra Pradesh'}. `;
+    const loc = p.location || 'Andhra Pradesh';
+    const dist = p.district ? ` in ${p.district} district` : '';
+    let d = `This ${(p.type || 'property').toLowerCase()} is located in the growing area of ${loc}${dist}. `;
+    
+    if (p.approvalAuthority && p.approvalAuthority !== 'N/A' && p.approvalAuthority !== 'None') {
+      d += `This asset is ${p.approvalAuthority} approved, ensuring institutional-grade security. `;
+    }
+
     if (isAgri) {
       d += `Spanning ${formatLandSize(p.totalAcres)} of land, it presents a strong investment with a valuation of ${formatSnapAddaPrice(agriTotalValue || p.price || 0)}. `;
       if (p.waterSource && p.waterSource !== 'N/A') d += `Water source: ${String(p.waterSource)}. `;
       if (p.roadType && p.roadType !== 'N/A') d += `Road access: ${String(p.roadType)}. `;
     } else if (isPlot) {
-      d += `Measuring ${p.areaSize || 0} ${p.measurementUnit || 'Sq.Yds'}, this ${p.isGated ? 'gated ' : ''}plot is ideal for development. `;
+      d += `Measuring ${p.areaSize || 0} ${p.measurementUnit || 'Sq.Yards'}, this ${p.isGated ? 'gated ' : ''}plot is ideal for immediate development. `;
     } else if (isResidential) {
-      if (p.bhk) d += `A ${p.bhk} BHK ${p.furnishing && p.furnishing !== 'N/A' ? String(p.furnishing).toLowerCase() + ' ' : ''}unit with modern interiors. `;
+      if (p.bhk) d += `A ${p.bhk} BHK ${p.furnishing && p.furnishing !== 'N/A' ? String(p.furnishing).toLowerCase() + ' ' : ''}unit with premium finishes. `;
     }
-    if (p.facing && p.facing !== 'Any') d += `${p.facing}-facing orientation ensures natural light and Vastu compliance. `;
-    d += `Contact SnapAdda for a site visit!`;
+    
+    if (p.facing && p.facing !== 'Any') d += `The ${p.facing}-facing orientation ensures natural light and Vastu compliance. `;
+    d += `Professional consultation and site visits available via SnapAdda.`;
     return d;
   };
 
@@ -430,9 +438,9 @@ export default function PropertyDetails() {
                 )}
                 {isPlot && (
                   <div className="pd-ov-card" style={{ '--ov-accent': '#22d9e0' }}>
-                    <Square size={24} style={{ color: '#22d9e0' }}/>
+                    <Square size={24} style={{ color: '#22d9e0' }} />
                     <div className="pd-ov-val">{property.areaSize} {property.measurementUnit || 'Sq.Yds'}</div>
-                    <div className="pd-ov-lbl">PLOT AREA (GAJALU)</div>
+                    <div className="pd-ov-lbl">TOTAL LAND AREA</div>
                   </div>
                 )}
                 {isResidential && (
@@ -646,21 +654,7 @@ export default function PropertyDetails() {
         </section>
       )}
 
-      {/* Similar Listings Section */}
-      {similar.length > 0 && (
-        <section className="section-wrap" style={{ background: 'rgba(255,255,255,0.02)', padding: '4rem 0' }}>
-          <div className="container">
-            <div className="section-head" style={{ marginBottom: '3rem' }}>
-              <div className="section-eyebrow">ELITE RECOMMENDATIONS</div>
-              <h2 className="section-title">Similar Elite Assets</h2>
-              <p className="section-subtitle">Specially curated properties based on your current asset selection.</p>
-            </div>
-            <div className="properties-grid">
-              {similar.slice(0, 3).map(p => <PropertyCard key={p._id} {...p} />)}
-            </div>
-          </div>
-        </section>
-      )}
+
 
       {/* Sticky Mobile Floating Action Button (FAB) */}
       <div className="pd-mobile-bar" style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: 'rgba(7, 7, 15, 0.98)', backdropFilter: 'blur(20px)', borderTop: '1px solid rgba(255,255,255,0.1)', padding: '12px 16px', display: 'flex', gap: '12px', zIndex: 1000, boxShadow: '0 -10px 40px rgba(0,0,0,0.8)' }}>

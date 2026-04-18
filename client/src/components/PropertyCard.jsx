@@ -54,23 +54,26 @@ const PropertyCard = memo(({
 
 
   // Flags & Constants
-  const isAgri = (type || '').toLowerCase().includes('agri');
-  const isPlot = (type || '').toLowerCase().includes('plot');
+  const isAgri = ['agricultural land', 'farmhouse'].some(t => (type || '').toLowerCase().includes(t.toLowerCase()));
+  const isPlot = ['plot', 'open plot', 'layout plot', 'crda'].some(t => (type || '').toLowerCase().includes(t.toLowerCase()));
+  const isCRDA = (type || '').toLowerCase().includes('crda');
+  const isIndustrial = ['industrial', 'warehouse', 'factory'].some(t => (type || '').toLowerCase().includes(t.toLowerCase()));
   const isResidential = ['apartment', 'villa', 'independent house'].some(t => (type || '').toLowerCase().includes(t));
   const isNew = createdAt ? (new Date() - new Date(createdAt)) < (7 * 24 * 60 * 60 * 1000) : false;
   const isVastuFacing = ['east', 'north', 'northeast'].some(f => (facing || '').toLowerCase().includes(f));
   const authority = approvalAuthority || approval;
 
-  // Icon & Style Mapping
+  // Icon & Style Mapping (extended for all AP types)
   const getTypeStyle = (t) => {
     const low = (t || '').toLowerCase();
-    if (low.includes('apt') || low.includes('apartment')) return { icon: <Building2 size={12}/>, accent: '#9b59f5' };
+    if (low.includes('apartment')) return { icon: <Building2 size={12}/>, accent: '#9b59f5' };
     if (low.includes('villa')) return { icon: <HomeIcon size={12}/>, accent: '#e8b84b' };
-    if (low.includes('plot')) return { icon: <Square size={12}/>, accent: '#22d9e0' };
-    if (low.includes('agri')) return { icon: <Leaf size={12}/>, accent: '#10d98c' };
+    if (low.includes('crda')) return { icon: <Square size={12}/>, accent: '#e8b84b' };
+    if (low.includes('plot') || low.includes('layout')) return { icon: <Square size={12}/>, accent: '#22d9e0' };
+    if (low.includes('agri') || low.includes('farm')) return { icon: <Leaf size={12}/>, accent: '#10d98c' };
     if (low.includes('house')) return { icon: <HomeIcon size={12}/>, accent: '#ff8c42' };
-    if (low.includes('commercial')) return { icon: <Building2 size={12}/>, accent: '#22d9e0' };
-    if (low.includes('industrial') || low.includes('warehouse')) return { icon: <Maximize2 size={12}/>, accent: '#f5397b' };
+    if (low.includes('commercial') || low.includes('showroom') || low.includes('office')) return { icon: <Building2 size={12}/>, accent: '#22d9e0' };
+    if (low.includes('industrial') || low.includes('warehouse') || low.includes('factory')) return { icon: <Maximize2 size={12}/>, accent: '#f5397b' };
     return { icon: <Building2 size={12}/>, accent: '#fff' };
   };
   const typeStyle = getTypeStyle(type);
@@ -78,12 +81,36 @@ const PropertyCard = memo(({
   // Agri / Land logic
   const agriTotalValue = (pricePerAcre && totalAcres) ? Math.round(Number(pricePerAcre) * Number(totalAcres)) : 0;
   
-  // Gajam / Sq.Yard Logic
+  // Area display logic — handles all property types
+  const getAreaDisplay = () => {
+    const unit = (measurementUnit || '').toLowerCase();
+    const size = areaSize || 0;
+    if (isAgri) {
+      if (totalAcres > 0) return `${Number(totalAcres).toFixed(2)} Acres`;
+      if (size > 0) return `${size} ${measurementUnit || 'Acres'}`;
+      return null;
+    }
+    if (isPlot || isCRDA) {
+      if (size > 0) {
+        if (unit.includes('yard') || unit.includes('gajam')) return `${size} Sq.Yards (Gaj.)`;
+        if (unit.includes('cent')) return `${size} Cents`;
+        if (unit.includes('guntas')) return `${size} Guntas`;
+        return `${size} ${measurementUnit || 'Sq.Ft'}`;
+      }
+      return null;
+    }
+    if (isIndustrial && size > 0) return `${size.toLocaleString()} ${measurementUnit || 'Sq.Ft'}`;
+    if (size > 0) return `${size.toLocaleString()} sq.ft`;
+    return null;
+  };
+  const areaDisplay = getAreaDisplay();
+
+  // Gajam / Sq.Yard Logic (legacy compat)
   const gajamInfo = smartAreaConverter(areaSize || 0, (measurementUnit?.toLowerCase()?.includes('yard') ? 'sq.yards' : measurementUnit?.toLowerCase()) || 'gajam');
   const displaySqYards = (isPlot && (measurementUnit?.toLowerCase()?.includes('yard') || !measurementUnit)) ? gajamInfo.gajam : null;
 
   // Effective display price
-  const displayPrice = (isAgri && agriTotalValue > 0) ? agriTotalValue : price;
+  const displayPrice = (isAgri && agriTotalValue > 0) ? agriTotalValue : (price > 0 ? price : null);
 
   // Senior Data Analyst: Asset Intelligence (Investment IQ)
   const cityAvgPrice = {
@@ -222,11 +249,13 @@ const PropertyCard = memo(({
             {/* Price Tag: Professional Elite Look */}
             <div className="pc-floating-price" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
               <div>
-                <span className="price-main">{formatSnapAddaPrice(displayPrice)}</span>
-                {isAgri && <span className="price-suffix"> Total</span>}
+                <span className="price-main">
+                  {displayPrice ? formatSnapAddaPrice(displayPrice) : 'Price on Request'}
+                </span>
+                {isAgri && agriTotalValue > 0 && <span className="price-suffix"> Total</span>}
               </div>
               {isPlot && pricePerSqYd && <span style={{ fontSize: '0.62rem', fontWeight: 800, color: 'rgba(255,255,255,0.9)', background: 'rgba(212,175,55,0.2)', border: '1px solid rgba(212,175,55,0.3)', padding: '2px 8px', borderRadius: '4px', marginTop: '4px', textTransform: 'uppercase' }}>₹{pricePerSqYd} / SqYd (Gajam)</span>}
-              {isAgri && pricePerAcre && <span style={{ fontSize: '0.62rem', fontWeight: 800, color: 'rgba(255,255,255,0.9)', background: 'rgba(16,217,140,0.15)', border: '1px solid rgba(16,217,140,0.3)', padding: '2px 8px', borderRadius: '4px', marginTop: '4px', textTransform: 'uppercase' }}>{formatSnapAddaPrice(pricePerAcre)} / Acre</span>}
+              {isAgri && pricePerAcre > 0 && <span style={{ fontSize: '0.62rem', fontWeight: 800, color: 'rgba(255,255,255,0.9)', background: 'rgba(16,217,140,0.15)', border: '1px solid rgba(16,217,140,0.3)', padding: '2px 8px', borderRadius: '4px', marginTop: '4px', textTransform: 'uppercase' }}>{formatSnapAddaPrice(pricePerAcre)} / Acre</span>}
             </div>
 
              {/* Labels combined with Scarcity */}
@@ -261,29 +290,25 @@ const PropertyCard = memo(({
 
             {/* Features Row */}
             <div className="pc-specs-grid">
-               {isResidential && (bhk || beds) && (
+               {isResidential && (bhk || beds) ? (
                  <div className="spec-item">
-                   <HomeIcon size={14} /> <span>{bhk || beds} BHK Unit</span>
+                   <HomeIcon size={14} /> <span>{bhk || beds} BHK</span>
+                 </div>
+               ) : null}
+               {/* Area display for all types */}
+               {areaDisplay && (
+                 <div className="spec-item">
+                   {isAgri ? <Leaf size={14}/> : <Square size={14}/>} <span>{areaDisplay}</span>
                  </div>
                )}
-               {isAgri && (
+               {facing && facing !== 'Any' && (
                  <div className="spec-item">
-                   <Leaf size={14} /> <span>{totalAcres ? formatLandSize(totalAcres, false) : `${areaSize} Acres`}</span>
+                   <Compass size={14} /> <span>{facing}</span>
                  </div>
                )}
-               {isPlot && (
-                 <div className="spec-item">
-                   <Square size={14} /> <span>{displaySqYards ? `${displaySqYards} Sq. Yards` : `${areaSize} ${measurementUnit}`}</span>
-                 </div>
-               )}
-               {facing && (
-                 <div className="spec-item">
-                   <Compass size={14} /> <span>Facing: {facing}</span>
-                 </div>
-               )}
-               {authority && (
-                 <div className="spec-item" style={{ color: authority.includes('CRDA') ? 'var(--gold)' : 'var(--emerald)', fontWeight: 800 }}>
-                   <Award size={14} /> <span>{authority} {authority.includes('Approved') ? '' : 'Approved'}</span>
+               {authority && authority !== 'N/A' && authority !== 'None' && (
+                 <div className="spec-item" style={{ color: isCRDA || authority.includes('CRDA') ? 'var(--gold)' : 'var(--emerald)', fontWeight: 800 }}>
+                   <Award size={14} /> <span>{authority}</span>
                  </div>
                )}
             </div>

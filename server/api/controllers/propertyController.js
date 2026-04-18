@@ -9,21 +9,40 @@ const syncToFirebase = async (property) => {
     if (!property || !db) return;
     const ref = db.ref(`properties/${property._id || property.id}`);
     
-    // Only mirror essential data for the client portal to keep RTDB light
+    // Mirror all fields needed by client portal cards + detail page
     const syncData = {
       id: (property._id || property.id).toString(),
       title: property.title,
       price: property.price,
+      priceDisplay: property.priceDisplay || '',
+      pricePerUnit: property.pricePerUnit || 0,
       location: property.location,
+      district: property.district || '',
       type: property.type,
+      purpose: property.purpose || 'Sale',
+      subType: property.subType || '',
       images: property.images || [],
       videos: property.videos || [],
       videoUrl: property.videoUrl || '',
       image: property.image || (property.images?.length > 0 ? property.images[0] : ''),
       status: property.status || 'Active',
+      verificationStatus: property.verificationStatus || 'Draft',
       isVerified: property.isVerified || false,
       isFeatured: property.isFeatured || false,
       bhk: property.bhk || 0,
+      beds: property.beds || 0,
+      baths: property.baths || 0,
+      areaSize: property.areaSize || 0,
+      measurementUnit: property.measurementUnit || 'SqFt',
+      approvalAuthority: property.approvalAuthority || 'N/A',
+      facing: property.facing || 'Any',
+      furnishing: property.furnishing || 'N/A',
+      constructionStatus: property.constructionStatus || 'N/A',
+      isGated: property.isGated || false,
+      vastuCompliant: property.vastuCompliant || false,
+      listerType: property.listerType || 'Individual Owner',
+      amenities: property.amenities || [],
+      customFeatures: property.customFeatures || [],
       updatedAt: new Date().toISOString()
     };
 
@@ -188,19 +207,61 @@ export const getNearbyProperties = async (req, res) => {
 export const createProperty = async (req, res) => {
   try {
     let propertyData = { ...req.body };
-    
-    // Auto-generate about section if empty
+
+    // Parse numeric fields from form strings
+    const numericFields = ['price', 'pricePerUnit', 'pricePerAcre', 'totalAcres', 'areaSize', 'bhk', 'beds', 'baths', 'totalFloors', 'floorNo', 'carpetArea', 'superBuiltupArea'];
+    numericFields.forEach(f => {
+      if (propertyData[f] !== undefined && propertyData[f] !== '') {
+        propertyData[f] = Number(propertyData[f]) || 0;
+      }
+    });
+
+    // Parse boolean fields
+    const boolFields = ['isVerified', 'isFeatured', 'vastuCompliant', 'isGated', 'cornerProperty', 'boundaryWall'];
+    boolFields.forEach(f => {
+      if (propertyData[f] !== undefined) {
+        propertyData[f] = propertyData[f] === true || propertyData[f] === 'true';
+      }
+    });
+
+    // Parse customFeatures if sent as JSON string
+    if (typeof propertyData.customFeatures === 'string') {
+      try { propertyData.customFeatures = JSON.parse(propertyData.customFeatures); } catch { propertyData.customFeatures = []; }
+    }
+
+    // Parse amenities if sent as JSON string
+    if (typeof propertyData.amenities === 'string') {
+      try { propertyData.amenities = JSON.parse(propertyData.amenities); } catch { propertyData.amenities = []; }
+    }
+
+    // Apply smart defaults based on property type
+    const landTypes = ['Agricultural Land', 'CRDA Approved Plot', 'Open Plot', 'Farmhouse'];
+    const industrialTypes = ['Industrial Shed', 'Warehouse'];
+    if (landTypes.includes(propertyData.type)) {
+      propertyData.measurementUnit = propertyData.measurementUnit || 'Acres';
+      propertyData.bhk = 0;
+      propertyData.furnishing = 'N/A';
+    } else if (industrialTypes.includes(propertyData.type)) {
+      propertyData.measurementUnit = propertyData.measurementUnit || 'SqFt';
+      propertyData.bhk = 0;
+    } else {
+      propertyData.measurementUnit = propertyData.measurementUnit || 'SqFt';
+    }
+
+    // Auto-set verificationStatus based on isVerified flag
+    if (!propertyData.verificationStatus) {
+      propertyData.verificationStatus = propertyData.isVerified ? 'Verified' : 'Under Review';
+    }
+
+    // Auto-generate description if empty
     if (!propertyData.description || propertyData.description.trim() === '') {
       const { type, purpose, bhk, furnishing, facing, totalFloors, parking, location, district, constructionStatus } = propertyData;
-      
       let generatedDesc = `A premium ${type || 'property'} located in the prime area of ${location || 'Andhra Pradesh'}${district ? ', ' + district : ''}. `;
       if (bhk > 0) generatedDesc += `This ${bhk} BHK property is highly sought-after and available for ${purpose || 'Sale'}. `;
       if (furnishing && furnishing !== 'N/A') generatedDesc += `It comes ${furnishing} and is in ${constructionStatus || 'excellent'} condition. `;
       if (facing && facing !== 'Any') generatedDesc += `As a ${facing}-facing property, it ensures natural light and great ventilation. `;
       if (parking && parking !== 'None' && parking !== 'N/A') generatedDesc += `It includes ${parking} parking space for convenience. `;
-      
       generatedDesc += `Ideal for families looking for a modern lifestyle in a well-connected neighborhood. Contact us for more details and a site visit!`;
-      
       propertyData.description = generatedDesc;
     }
 
@@ -212,6 +273,7 @@ export const createProperty = async (req, res) => {
     
     res.status(201).json({ status: 'success', data: newProperty });
   } catch (error) {
+    console.error('CREATE_PROPERTY_ERROR:', error);
     res.status(400).json({ status: 'error', message: error.message });
   }
 };
