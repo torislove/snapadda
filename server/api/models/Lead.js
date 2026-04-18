@@ -12,6 +12,9 @@ const leadSchema = new mongoose.Schema({
     payload: Object,
     timestamp: { type: Date, default: Date.now }
   }],
+  assignedTo: { type: String, default: 'Super Admin' },
+  district: { type: String, default: '' }, 
+  followUpFlag: { type: Boolean, default: false },
   franchiseId: { type: String, default: null }
 }, {
   timestamps: true

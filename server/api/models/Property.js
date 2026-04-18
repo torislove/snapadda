@@ -64,6 +64,7 @@ const propertySchema = new mongoose.Schema({
   videoUrl: { type: String }, // Primary walkthrough video
   
   status: { type: String, enum: ['Active', 'Pending', 'Sold', 'Rented'], default: 'Active' },
+  verificationStatus: { type: String, enum: ['Draft', 'Under Review', 'Verified', 'Rejected'], default: 'Draft' },
   isVerified: { type: Boolean, default: false },
   isFeatured: { type: Boolean, default: false },
   franchiseId: { type: String, default: null },

@@ -17,11 +17,13 @@ const syncToFirebase = async (property) => {
       location: property.location,
       type: property.type,
       images: property.images || [],
+      videos: property.videos || [],
+      videoUrl: property.videoUrl || '',
       image: property.image || (property.images?.length > 0 ? property.images[0] : ''),
       status: property.status || 'Active',
       isVerified: property.isVerified || false,
       isFeatured: property.isFeatured || false,
-      bhk: property.bhk,
+      bhk: property.bhk || 0,
       updatedAt: new Date().toISOString()
     };
 
@@ -56,9 +58,10 @@ export const getProperties = async (req, res) => {
     // Standardize status filter
     if (status) {
       if (status !== 'all') filter.status = status;
-      // if 'all', we don't add status to filter, retrieving everything
     } else {
-      filter.status = 'Active'; // Safe default for client consumption
+      filter.status = 'Active'; 
+      // Institutional Privacy: Hide only Rejected properties from public search for now
+      filter.verificationStatus = { $nin: ['Rejected'] };
     }
 
     if (type && type !== 'all') {
@@ -93,12 +96,22 @@ export const getProperties = async (req, res) => {
     }
 
     if (search) {
-      // Use text index if searching for words, otherwise fallback to indexed field regex
+      // AP Locality Intelligence: Multi-token fuzzy search across specific regional pivots
+      const safeSearch = typeof search === 'string' ? search : String(search);
+      const tokens = safeSearch.split(/\s+/).filter(t => t.length > 2);
+      const regexes = tokens.map(t => new RegExp(t, 'i'));
+
       filter.$or = [
-        { $text: { $search: search } },
-        { location: { $regex: search, $options: 'i' } },
-        { district: { $regex: search, $options: 'i' } }
+        { $text: { $search: safeSearch } },
+        { location: { $regex: safeSearch, $options: 'i' } },
+        { district: { $regex: search, $options: 'i' } },
+        { title: { $regex: search, $options: 'i' } }
       ];
+
+      if (tokens.length > 0) {
+        filter.$or.push({ location: { $in: regexes } });
+        filter.$or.push({ district: { $in: regexes } });
+      }
     }
 
     let sortObj = { createdAt: -1 };

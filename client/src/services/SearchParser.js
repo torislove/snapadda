@@ -30,6 +30,18 @@ const PRICE_UNITS = {
   'crore': 10000000,
   'crores': 10000000,
   'cr': 10000000,
+  'thousand': 1000,
+  'k': 1000,
+};
+
+const AREA_UNITS = {
+  'gajam': 'Gajam',
+  'gajalu': 'Gajam',
+  'sq yards': 'Gajam',
+  'cent': 'Cents',
+  'cents': 'Cents',
+  'acre': 'Acres',
+  'acres': 'Acres',
 };
 
 const getLevenshteinDistance = (a, b) => {
@@ -62,6 +74,8 @@ export const parseSmartSearch = (query) => {
     minPrice: null,
     maxPrice: null,
     bhk: null,
+    areaSize: null,
+    measurementUnit: null,
     detectedLocation: null,
   };
 
@@ -110,6 +124,15 @@ export const parseSmartSearch = (query) => {
     const plainNumRegex = /\b(\d{5,})\b/g;
     const numMatch = plainNumRegex.exec(q);
     if (numMatch) result.maxPrice = parseInt(numMatch[1]);
+  }
+
+  // 6. Detect Area Measurements (Gajam, Cents, Acres)
+  const areaRegex = /(\d+(\.\d+)?)\s*(gajam|gajalu|cents?|acres?|sq yards)/gi;
+  const areaMatch = areaRegex.exec(q);
+  if (areaMatch) {
+    result.areaSize = parseFloat(areaMatch[1]);
+    const unit = areaMatch[3].toLowerCase();
+    result.measurementUnit = AREA_UNITS[unit] || unit;
   }
 
   // 5. Detect Location (Fuzzy)

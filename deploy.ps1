@@ -7,15 +7,15 @@ Write-Host "==========================================================" -Foregro
 $PROD_API_URL = "https://snapadda-7a6e6.web.app/api"
 
 $FIREBASE_PROD = @{
-    "VITE_FIREBASE_API_KEY" = "AIzaSyAQX18dK6_wumA5bKEhPnKeckOIfC-SOR0"
-    "VITE_FIREBASE_AUTH_DOMAIN" = "snapadda-7a6e6.firebaseapp.com"
-    "VITE_FIREBASE_PROJECT_ID" = "snapadda-7a6e6"
-    "VITE_FIREBASE_STORAGE_BUCKET" = "snapadda-7a6e6.firebasestorage.app"
+    "VITE_FIREBASE_API_KEY"             = "AIzaSyAQX18dK6_wumA5bKEhPnKeckOIfC-SOR0"
+    "VITE_FIREBASE_AUTH_DOMAIN"         = "snapadda-7a6e6.firebaseapp.com"
+    "VITE_FIREBASE_PROJECT_ID"          = "snapadda-7a6e6"
+    "VITE_FIREBASE_STORAGE_BUCKET"      = "snapadda-7a6e6.firebasestorage.app"
     "VITE_FIREBASE_MESSAGING_SENDER_ID" = "227172321059"
-    "VITE_FIREBASE_APP_ID" = "1:227172321059:web:7fe7097f7937739c0f6e96"
-    "VITE_FIREBASE_MEASUREMENT_ID" = "G-EPKYKL1SPN"
-    "VITE_RTDB_URL" = "https://snapadda-7a6e6-default-rtdb.firebaseio.com"
-    "VITE_GOOGLE_CLIENT_ID" = "227172321059-3ss62q0vtlsh0rh3u2vs2g0f1uf594mc.apps.googleusercontent.com"
+    "VITE_FIREBASE_APP_ID"              = "1:227172321059:web:7fe7097f7937739c0f6e96"
+    "VITE_FIREBASE_MEASUREMENT_ID"      = "G-EPKYKL1SPN"
+    "VITE_RTDB_URL"                     = "https://snapadda-7a6e6-default-rtdb.firebaseio.com"
+    "VITE_GOOGLE_CLIENT_ID"             = "227172321059-3ss62q0vtlsh0rh3u2vs2g0f1uf594mc.apps.googleusercontent.com"
 }
 
 # Function to Robustly Set Env Var in .env files
@@ -30,7 +30,8 @@ function Set-EnvVar($path, $key, $value) {
         if ($line -match "^$($key)=") {
             $newContent += "$($key)=`"$($value)`""
             $found = $true
-        } else {
+        }
+        else {
             if ($line.Trim() -ne "") { $newContent += $line }
         }
     }
@@ -77,43 +78,49 @@ try {
             Set-EnvVar $path "DB_FIREBASE_URL" $FIREBASE_PROD["VITE_RTDB_URL"]
         }
         
-        # FINAL SANITIZATION: Remove reserved keys
-        Clear-EnvReservedKey $path
     }
 
-    # 2. Build Client Portal
-    Write-Host "`n[2/6] Building Client Portal..." -ForegroundColor Yellow
+    # 2. Pre-flight Logic Validation
+    Write-Host "`n[2/7] Running Institutional Logic Audit..." -ForegroundColor Yellow
+    Set-Location client
+    node verify-logic.js
+    if ($LASTEXITCODE -ne 0) { throw "Mission-Critical Logic Audit FAILED. Aborting deployment for safety." }
+    Set-Location ..
+
+    # 3. Build Client Portal
+    Write-Host "`n[3/7] Building Client Portal..." -ForegroundColor Yellow
     Set-Location client
     if (Test-Path "dist") { Remove-Item -Recurse -Force "dist" }
     npm run build
     if ($LASTEXITCODE -ne 0) { throw "Client build failed" }
     Set-Location ..
 
-    # 3. Build Admin Panel
-    Write-Host "`n[3/6] Building Admin Panel..." -ForegroundColor Yellow
+    # 4. Build Admin Panel
+    Write-Host "`n[4/7] Building Admin Panel..." -ForegroundColor Yellow
     Set-Location admin
     if (Test-Path "dist") { Remove-Item -Recurse -Force "dist" }
     npm run build
     if ($LASTEXITCODE -ne 0) { throw "Admin build failed" }
     Set-Location ..
 
-    # 4. Map Firebase Hosting Targets
-    Write-Host "`n[4/6] Mapping Hosting Targets..." -ForegroundColor Yellow
+    # 5. Map Firebase Hosting Targets
+    Write-Host "`n[5/7] Mapping Hosting Targets..." -ForegroundColor Yellow
     firebase target:apply hosting client snapadda-7a6e6
     firebase target:apply hosting admin snapaddaadmin
 
-    # 5. Deploy Everything (Hosting + Functions)
-    Write-Host "`n[5/6] Deploying Hosting and Functions..." -ForegroundColor Yellow
+    # 6. Deploy Everything (Hosting + Functions)
+    Write-Host "`n[6/7] Deploying Hosting and Functions..." -ForegroundColor Yellow
     firebase deploy --only "hosting:client,hosting:admin,functions"
 
     if ($LASTEXITCODE -ne 0) { throw "Firebase deploy failed" }
     
-    # 6. Post-Deployment Verification
-    Write-Host "`n[6/6] Running Infrastructure Heartbeat..." -ForegroundColor Yellow
+    # 7. Post-Deployment Verification
+    Write-Host "`n[7/7] Running Infrastructure Heartbeat..." -ForegroundColor Yellow
     Start-Sleep -Seconds 5
     Invoke-WebRequest -Uri "$PROD_API_URL/health" -UseBasicParsing | Out-Null
     Write-Host "   ✅ API Gateway Reachable" -ForegroundColor Gray
-} catch {
+}
+catch {
     Write-Error "Deployment failed: $_"
     exit 1
 }

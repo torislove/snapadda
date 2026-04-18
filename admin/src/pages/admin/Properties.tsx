@@ -17,6 +17,7 @@ import {
   smartAreaConverter, 
   calcPricePerCent
 } from '../../utils/priceUtils';
+import { adminAIService } from '../../services/aiService';
 
 const AssetEngagementChart = ({ views = 0, likes = 0 }) => {
   const points = [10, 25, 18, 42, 35, 50, 48, 65, 55, 78, 70, 85];
@@ -51,6 +52,34 @@ const AssetEngagementChart = ({ views = 0, likes = 0 }) => {
         <path d={path} fill="none" stroke="var(--gold)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
         <circle cx="165" cy={30 - 85/3} r="3" fill="var(--gold)" style={{ filter: 'drop-shadow(0 0 5px var(--gold))' }} />
       </svg>
+    </div>
+  );
+};
+
+const ListingHealthScore = ({ prop }: { prop: any }) => {
+  const calcHealth = () => {
+    let score = 0;
+    if ((prop.description || '').length > 100) score += 20;
+    if ((prop.images || []).length >= 3) score += 30;
+    if (prop.approvalAuthority) score += 25;
+    if ((prop.customFeatures || []).length >= 1) score += 25;
+    return score;
+  };
+  const health = calcHealth();
+  const color = health > 80 ? 'var(--emerald)' : health > 50 ? 'var(--gold)' : 'var(--rose)';
+
+  return (
+    <div style={{ position: 'absolute', bottom: '15px', left: '15px', zIndex: 10, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(10px)', padding: '4px 10px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+         <div style={{ fontSize: '0.6rem', fontWeight: 900, color: 'rgba(255,255,255,0.5)', letterSpacing: '0.05em' }}>HEALTH</div>
+         <div style={{ width: '40px', height: '4px', background: 'rgba(255,255,255,0.1)', borderRadius: '2px', overflow: 'hidden' }}>
+            <div style={{ width: `${health}%`, height: '100%', background: color }} />
+         </div>
+         <div style={{ fontSize: '0.65rem', fontWeight: 900, color: color }}>{health}%</div>
+      </div>
+      <div style={{ fontSize: '0.6rem', fontWeight: 950, color: 'white', background: 'rgba(0,0,0,0.8)', padding: '2px 8px', borderRadius: '6px', alignSelf: 'flex-start', border: '1px solid rgba(255,255,255,0.1)', textTransform: 'uppercase' }}>
+         {prop.verificationStatus || 'Draft'}
+      </div>
     </div>
   );
 };
@@ -155,8 +184,7 @@ const AdminProperties = () => {
     
     setIsGeneratingAI(true);
     try {
-      // Import the service dynamically or use existing instance
-      const { adminAIService } = await import('../../services/aiService');
+      // Static import used: adminAIService
       
       const details = {
         title: liveData.title,
@@ -255,9 +283,22 @@ const AdminProperties = () => {
           propData.totalAcres = Number(propData.totalAcres) || 0;
         }
 
-        propData.images = uploadedUrls;
-        if (uploadedUrls.length > 0) propData.image = uploadedUrls[0];
+        const isVideoUrl = (url: string) => /\.(mp4|mov|webm|ogg)$/i.test(url) || url.includes('/video/');
+        const imagesList = uploadedUrls.filter(url => !isVideoUrl(url));
+        const videosList = uploadedUrls.filter(url => isVideoUrl(url));
+
+        propData.images = imagesList;
+        propData.videos = videosList;
+        propData.image = imagesList.length > 0 ? imagesList[0] : '';
+        propData.videoUrl = videosList.length > 0 ? videosList[0] : '';
         
+        // Handle Form Redundancy 
+        if (Array.isArray(propData.areaSize)) {
+           propData.areaSize = propData.areaSize.find((v: any) => v);
+        }
+        if (Array.isArray(propData.measurementUnit)) {
+           propData.measurementUnit = propData.measurementUnit.find((v: any) => v) || 'Sq.Yards';
+        }
         propData.areaSize = Number(propData.areaSize) || 0;
         propData.bhk = Number(propData.bhk) || 0;
         propData.carpetArea = Number(propData.carpetArea) || 0;
@@ -731,19 +772,6 @@ const AdminProperties = () => {
                       <div style={{ width: '20px', height: '1px', background: 'var(--cyan)' }} /> PLOT SPECIFIC DETAILS
                     </h3>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1.5rem' }}>
-                       <div>
-                        <label className="admin-label">Plot Dimensions</label>
-                        <input name="areaSize" type="number" defaultValue={editingProperty?.areaSize || ''} className="admin-input" placeholder="Total Area" />
-                      </div>
-                      <div>
-                        <label className="admin-label">Unit</label>
-                        <select name="measurementUnit" defaultValue={editingProperty?.measurementUnit || 'Sq.Yards'} className="admin-select">
-                          <option value="Sq.Yards">Sq. Yards</option>
-                          <option value="Cents">Cents</option>
-                          <option value="Acres">Acres</option>
-                          <option value="Guntas">Guntas</option>
-                        </select>
-                      </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                          <input type="checkbox" name="isGated" defaultChecked={editingProperty?.isGated} />
                          <label className="admin-label" style={{ marginBottom: 0 }}>Gated Community</label>
@@ -1055,6 +1083,7 @@ const AdminProperties = () => {
                       style={{ position: 'relative' }}
                     >
                       <LivePreviewCard {...prop} />
+                      <ListingHealthScore prop={prop} />
                       <AssetEngagementChart views={prop.views} likes={prop.likeCount} />
                       <div style={{ position: 'absolute', top: 0, right: 0, margin: '15px', zIndex: 100, display: 'flex', gap: '8px' }}>
                         {prop.status !== 'Sold' && (

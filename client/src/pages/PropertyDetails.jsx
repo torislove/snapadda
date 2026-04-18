@@ -5,10 +5,11 @@ import {
   ArrowLeft, MapPin, Share2, Heart, Shield, ShieldCheck, Phone, MessageSquare,
   ChevronLeft, ChevronRight, Eye, CheckCircle2, Building2, User,
   BedDouble, Bath, Square, Compass, Award, Send, Star, Leaf, Maximize2,
-  Droplets, Truck, FileText, ZoomIn, X, TreePine, TrendingUp
+  Droplets, Truck, FileText, ZoomIn, X, TreePine, TrendingUp, IndianRupee
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { fetchProperty, fetchSetting, askQuestion, fetchPropertyFAQs, likeProperty, shareProperty } from '../services/api';
+import { fetchProperty, fetchSetting, askQuestion, fetchPropertyFAQs, likeProperty, shareProperty, fetchSimilarProperties } from '../services/api';
+import PropertyCard from '../components/PropertyCard';
 import { formatSnapAddaPrice, formatLandSize, calcAgriTotalValue, getAcres, getCents } from '../utils/priceUtils';
 import { useTranslation } from 'react-i18next';
 import VisualCompass from '../components/VisualCompass';
@@ -110,6 +111,7 @@ export default function PropertyDetails() {
   const [likeCount, setLikeCount] = useState(0);
   const [imgIdx, setImgIdx] = useState(0);
   const [lightbox, setLightbox] = useState(false);
+  const [similar, setSimilar] = useState([]);
   const [toast, setToast] = useState('');
   const galleryRef = useRef(null);
 
@@ -131,6 +133,12 @@ export default function PropertyDetails() {
         setProperty(data);
         setLikeCount(data.likeCount || 0);
         setLiked(data.isLiked || false);
+
+        // Fetch Similar Properties logic re-integrated
+        if (data?.category || data?.type) {
+          fetchSimilarProperties(data.category || data.type, id).then(s => setSimilar(s.data || []));
+        }
+
         // Recent views
         try {
           const arr = JSON.parse(localStorage.getItem('snapadda_recent_views') || '[]');
@@ -152,7 +160,7 @@ export default function PropertyDetails() {
     if (property) {
       document.title = `${property.title} | ${property.type} in ${property.location} | SnapAdda`;
     }
-  }, [id]);
+  }, [id, property]);
 
   const property_images = property?.images?.length
     ? property.images
@@ -622,6 +630,38 @@ export default function PropertyDetails() {
           </aside>
         </div>
       </div>
+
+      {/* Similar Listings Section */}
+      {similar.length > 0 && (
+        <section className="section-wrap" style={{ background: 'rgba(255,255,255,0.02)', padding: '4rem 0' }}>
+          <div className="container">
+            <div className="section-head" style={{ marginBottom: '3rem' }}>
+              <div className="section-eyebrow">ELITE RECOMMENDATIONS</div>
+              <h2 className="section-title">Similar Elite Assets</h2>
+              <p className="section-subtitle">Specially curated properties based on your current asset selection.</p>
+            </div>
+            <div className="properties-grid">
+              {similar.slice(0, 3).map(p => <PropertyCard key={p._id} {...p} />)}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Similar Listings Section */}
+      {similar.length > 0 && (
+        <section className="section-wrap" style={{ background: 'rgba(255,255,255,0.02)', padding: '4rem 0' }}>
+          <div className="container">
+            <div className="section-head" style={{ marginBottom: '3rem' }}>
+              <div className="section-eyebrow">ELITE RECOMMENDATIONS</div>
+              <h2 className="section-title">Similar Elite Assets</h2>
+              <p className="section-subtitle">Specially curated properties based on your current asset selection.</p>
+            </div>
+            <div className="properties-grid">
+              {similar.slice(0, 3).map(p => <PropertyCard key={p._id} {...p} />)}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Sticky Mobile Floating Action Button (FAB) */}
       <div className="pd-mobile-bar" style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: 'rgba(7, 7, 15, 0.98)', backdropFilter: 'blur(20px)', borderTop: '1px solid rgba(255,255,255,0.1)', padding: '12px 16px', display: 'flex', gap: '12px', zIndex: 1000, boxShadow: '0 -10px 40px rgba(0,0,0,0.8)' }}>

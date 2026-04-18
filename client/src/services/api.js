@@ -92,6 +92,22 @@ export const fetchProperty = async (id) => {
   }
 };
 
+/**
+ * Compatibility alias for fetchProperty
+ */
+export const fetchPropertyById = fetchProperty;
+
+export const fetchSimilarProperties = async (category, excludeId) => {
+  try {
+    const res = await safeFetch(`${API_BASE}/properties?category=${category}&limit=4&exclude=${excludeId}`);
+    if (!res.ok) throw new Error('Failed to fetch similar properties');
+    return await res.json();
+  } catch (e) {
+    console.error('API Error:', e);
+    return { status: 'success', data: [] }; // Fallback to empty list instead of crashing
+  }
+};
+
 export const submitLead = async (data) => {
   try {
     const res = await fetch(`${API_BASE}/leads`, {

@@ -11,7 +11,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { fetchProperties, fetchCities, fetchTestimonials, fetchSetting } from '../services/api';
 import PropertyCard from '../components/PropertyCard';
 import ContactModal from '../components/ContactModal';
-import RegionalHeatmap from '../components/RegionalHeatmap';
+import ClientReviews from '../components/ClientReviews';
 import { logUserActivity, ACTIONS } from '../services/activityTracker';
 import FilterSidebar from '../components/FilterSidebar';
 import PromoCarousel from '../components/PromoCarousel';
@@ -632,7 +632,7 @@ export default function Home() {
         </AnimatePresence>
 
         <div className="container" style={{ marginTop: '2rem' }}>
-          <RegionalHeatmap />
+          <ClientReviews />
         </div>
 
         <section id="properties" className="section-wrap" style={{ paddingTop: '0.5rem' }}>

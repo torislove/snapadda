@@ -7,7 +7,6 @@ import { getFavorites, fetchUserQuestions } from '../services/api';
 import PropertyCard from '../components/PropertyCard';
 import Logo from '../components/Logo';
 import ContactModal from '../components/ContactModal';
-import AiInsights from '../components/AiInsights';
 import { useTranslation } from 'react-i18next';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
@@ -149,10 +148,6 @@ function Favorites({ saved, loading }) {
   );
 }
 
-// Intelligence/AI Hub tab
-function IntelligenceHub({ user, savedCount }) {
-  return <AiInsights user={user} savedCount={savedCount} />;
-}
 
 // Profile tab
 function Profile({ user }) {
@@ -242,7 +237,6 @@ export default function Dashboard() {
   const TABS = [
     { key: 'home', label: 'Overview', icon: <ShieldCheck size={18} /> },
     { key: 'favorites', label: 'Saved Assets', icon: <Heart size={18} /> },
-    { key: 'intelligence', label: 'AI Intelligence', icon: <Sparkles size={18} /> },
     { key: 'profile', label: 'Executive Info', icon: <User size={18} /> },
   ];
 
@@ -299,7 +293,6 @@ export default function Dashboard() {
           <motion.div key={activeTab} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} transition={{ duration: 0.2 }}>
             {activeTab === 'home' && <DashboardHome user={user} stats={stats} recent={recent} setModalOpen={setModalOpen} />}
             {activeTab === 'favorites' && <Favorites saved={saved} loading={loading} />}
-            {activeTab === 'intelligence' && <IntelligenceHub user={user} savedCount={saved.length} />}
             {activeTab === 'profile' && <Profile user={user} logout={logout} />}
           </motion.div>
         </AnimatePresence>

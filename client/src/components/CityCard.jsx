@@ -25,8 +25,14 @@ export default function CityCard({ city, count, cityPhoto, isActive, onClick, in
 
   return (
     <motion.div
-      className={`city-card${isActive ? ' active' : ''}`}
-      style={{ rotateX, rotateY, transformStyle: 'preserve-3d', perspective: '600px' }}
+      className={`city-card premium-bezel-less-card ${isActive ? ' active' : ''}`}
+      style={{ 
+        rotateX, 
+        rotateY, 
+        transformStyle: 'preserve-3d', 
+        perspective: '1000px',
+        height: '100%' 
+      }}
       onMouseMove={e => {
         const r = e.currentTarget.getBoundingClientRect();
         x.set((e.clientX - r.left) / r.width - 0.5);
@@ -35,29 +41,22 @@ export default function CityCard({ city, count, cityPhoto, isActive, onClick, in
       onMouseLeave={() => { x.set(0); y.set(0); setHovered(false); }}
       onMouseEnter={() => setHovered(true)}
       onClick={onClick}
-      whileTap={{ scale: 0.97 }}
+      whileTap={{ scale: 0.96 }}
     >
       <div
         className="city-card-bg"
         style={{
           backgroundImage: cityPhoto
-            ? `linear-gradient(to bottom, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.72) 100%), url(${cityPhoto})`
+            ? `linear-gradient(to bottom, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.85) 100%), url(${cityPhoto})`
             : fallbackGradient,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
-          transform: hovered ? 'scale(1.08)' : 'scale(1)',
-          transition: 'transform 0.5s ease',
+          transform: hovered ? 'scale(1.1)' : 'scale(1)',
+          transition: 'transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)',
         }}
       />
-      {/* Gradient overlay ensuring text contrast */}
-      <div style={{
-        position: 'absolute',
-        inset: 0,
-        background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.2) 60%, transparent 100%)',
-        zIndex: 1,
-        borderRadius: 'inherit',
-      }} />
-      <div className="city-card-content" style={{ position: 'relative', zIndex: 2, padding: '1.25rem' }}>
+      {/* Dynamic HUD for Native App feel */}
+      <div className="city-card-info" style={{ position: 'absolute', bottom: '15px', left: '15px', right: '15px', zIndex: 2 }}>
         <div className="city-card-name" style={{ 
           color: '#fff', 
           fontWeight: 900, 

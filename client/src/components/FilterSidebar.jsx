@@ -6,7 +6,8 @@ import { useTranslation } from 'react-i18next';
 const DEFAULT_FILTERS = {
   bhk: '', minPrice: '', maxPrice: '', facing: 'Any', furnishing: 'N/A',
   constructionStatus: 'N/A', verified: false, approval: 'All',
-  propertyType: 'All', keyword: '', vastu: false, listerType: 'All'
+  propertyType: 'All', keyword: '', vastu: false, listerType: 'All',
+  highwayFrontage: false
 };
 
 export default function FilterSidebar({ isOpen, onClose, filters, setFilters, onApply }) {
@@ -152,6 +153,8 @@ export default function FilterSidebar({ isOpen, onClose, filters, setFilters, on
                       <option value="Residential Plot">{t('types.plot')}</option>
                       <option value="Commercial Plot">Comm. Plot</option>
                       <option value="Agricultural Land">{t('types.agriculture')}</option>
+                      <option value="Industrial Land">Industrial Land</option>
+                      <option value="Gated Community">Gated Community</option>
                     </select>
                   </div>
                   <div>
@@ -224,6 +227,13 @@ export default function FilterSidebar({ isOpen, onClose, filters, setFilters, on
                     type="button"
                   >
                     ⭐ {t('filter.elite')}
+                  </button>
+                  <button
+                    style={toggleStyle(filters.highwayFrontage)}
+                    onClick={() => set('highwayFrontage', !filters.highwayFrontage)}
+                    type="button"
+                  >
+                    🛣️ HIGHWAY FRONT
                   </button>
                 </div>
               </div>

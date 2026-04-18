@@ -1,7 +1,7 @@
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+﻿@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
 
 :root {
-  /* ── Deep Dark Base ── */
+  /* â”€â”€ Deep Dark Base â”€â”€ */
   --bg-primary:    #030308; /* Deeper Black */
   --bg-secondary:  #080812;
   --bg-tertiary:   #0d0d1a;
@@ -9,12 +9,12 @@
   --bg-glass-heavy:rgba(255,255,255,0.04);
   --bg-glass-hover:rgba(255,255,255,0.06);
 
-  /* ── Text ── */
+  /* â”€â”€ Text â”€â”€ */
   --text-primary:   #f0eeff;
   --text-secondary: #9d99c4;
   --text-muted:     #4e4a72;
 
-  /* ── Accent Palette ── */
+  /* â”€â”€ Accent Palette â”€â”€ */
   --gold:        #f5c842;
   --gold-dim:    rgba(245,200,66,0.12);
   --gold-glow:   0 0 24px rgba(245,200,66,0.25);
@@ -38,7 +38,7 @@
   --orange:      #ff8c42;
   --orange-dim:  rgba(255,140,66,0.1);
 
-  /* ── Legacy Compat (used by older pages) ── */
+  /* â”€â”€ Legacy Compat (used by older pages) â”€â”€ */
   --accent-gold:       var(--gold);
   --accent-gold-hover: #f8d96a;
   --accent-gold-dim:   var(--gold-dim);
@@ -49,16 +49,16 @@
   --success: #10d98c;
   --warning: #ff8c42;
 
-  /* ── Borders ── */
+  /* â”€â”€ Borders â”€â”€ */
   --border:       rgba(255,255,255,0.07);
   --border-light: rgba(255,255,255,0.12);
 
-  /* ── Typography ── */
+  /* â”€â”€ Typography â”€â”€ */
   --font-heading:  'Cormorant Garamond', serif;
   --font-body:     'Plus Jakarta Sans', sans-serif;
   --font-mono:     'Space Grotesk', sans-serif;
 
-  /* ── Spacing ── */
+  /* â”€â”€ Spacing â”€â”€ */
   --spacing-xs:  0.25rem;
   --spacing-sm:  0.5rem;
   --spacing-md:  1rem;
@@ -66,28 +66,28 @@
   --spacing-xl:  2rem;
   --spacing-xxl: 3rem;
 
-  /* ── Radii ── */
+  /* â”€â”€ Radii â”€â”€ */
   --radius-sm:   8px;
   --radius-md:   14px;
   --radius-lg:   20px;
   --radius-xl:   28px;
   --radius-full: 9999px;
 
-  /* ── Shadows ── */
+  /* â”€â”€ Shadows â”€â”€ */
   --shadow-sm: 0 1px 4px rgba(0,0,0,0.6);
   --shadow-md: 0 4px 16px rgba(0,0,0,0.7);
   --shadow-lg: 0 16px 48px rgba(0,0,0,0.8);
   --shadow-gold:   0 0 24px rgba(245,200,66,0.2);
   --shadow-violet: 0 0 24px rgba(155,89,245,0.25);
 
-  /* ── Transitions ── */
+  /* â”€â”€ Transitions â”€â”€ */
   --transition-fast:   0.15s ease;
   --transition-normal: 0.3s cubic-bezier(0.4,0,0.2,1);
   --transition-slow:   0.5s cubic-bezier(0.4,0,0.2,1);
   --transition-spring: 0.4s cubic-bezier(0.34,1.56,0.64,1);
 }
 
-/* ── Reset & Base ── */
+/* â”€â”€ Reset & Base â”€â”€ */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 html { scroll-behavior: smooth; }
@@ -123,7 +123,7 @@ body::before {
   100% { transform: translate(5%, 5%) scale(1.1); }
 }
 
-/* ── Headings (Calligraphic) ── */
+/* â”€â”€ Headings (Calligraphic) â”€â”€ */
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-heading);
   font-weight: 600;
@@ -146,13 +146,13 @@ a:hover { color: var(--gold); }
 
 button { font-family: var(--font-body); cursor: pointer; border: none; background: none; }
 
-/* ── Scrollbar Styling ── */
+/* â”€â”€ Scrollbar Styling â”€â”€ */
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(155,89,245,0.3); border-radius: 99px; }
 ::-webkit-scrollbar-thumb:hover { background: rgba(155,89,245,0.5); }
 
-/* ── Form Inputs Global ── */
+/* â”€â”€ Form Inputs Global â”€â”€ */
 input, textarea, select {
   font-family: var(--font-body);
   background: var(--bg-glass);
@@ -171,7 +171,7 @@ input:focus, textarea:focus, select:focus {
 input::placeholder, textarea::placeholder { color: var(--text-muted); }
 select option { background: var(--bg-secondary); color: var(--text-primary); }
 
-/* ── Utilities ── */
+/* â”€â”€ Utilities â”€â”€ */
 .text-gold    { color: var(--gold); }
 .bg-gold      { background: var(--gold); }
 .text-muted   { color: var(--text-muted); }
@@ -183,7 +183,7 @@ select option { background: var(--bg-secondary); color: var(--text-primary); }
 .table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
 .table-responsive table { min-width: 800px; }
 
-/* ── Animations ── */
+/* â”€â”€ Animations â”€â”€ */
 @keyframes fadeInUp {
   from { opacity: 0; transform: translateY(16px); }
   to   { opacity: 1; transform: translateY(0); }
@@ -218,7 +218,7 @@ select option { background: var(--bg-secondary); color: var(--text-primary); }
 .animate-float      { animation: float 3s ease-in-out infinite; }
 .animate-count-up   { animation: count-up 0.6s var(--transition-spring) forwards; }
 
-/* ── Glass Card (reusable) ── */
+/* â”€â”€ Glass Card (reusable) â”€â”€ */
 .glass-card {
   background: var(--bg-glass);
   border: 1px solid var(--border);
@@ -244,7 +244,7 @@ select option { background: var(--bg-secondary); color: var(--text-primary); }
   transform: translateY(-2px);
 }
 
-/* ── Premium Button Base ── */
+/* â”€â”€ Premium Button Base â”€â”€ */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -315,7 +315,7 @@ select option { background: var(--bg-secondary); color: var(--text-primary); }
 .btn-sm { padding: 0.4rem 0.9rem; font-size: 0.78rem; border-radius: var(--radius-sm); }
 .btn-lg { padding: 0.85rem 2rem; font-size: 0.95rem; }
 
-/* ── Badge ── */
+/* â”€â”€ Badge â”€â”€ */
 .badge {
   display: inline-flex;
   align-items: center;
@@ -334,7 +334,7 @@ select option { background: var(--bg-secondary); color: var(--text-primary); }
 .badge-emerald { background: var(--emerald-dim); color: var(--emerald); border: 1px solid rgba(16,217,140,0.2); }
 .badge-orange  { background: var(--orange-dim);  color: var(--orange);  border: 1px solid rgba(255,140,66,0.2); }
 
-/* ── Table Base ── */
+/* â”€â”€ Table Base â”€â”€ */
 .admin-table {
   width: 100%;
   border-collapse: collapse;
@@ -364,7 +364,7 @@ select option { background: var(--bg-secondary); color: var(--text-primary); }
   background: var(--bg-glass);
 }
 
-/* ── Search Input Special ── */
+/* â”€â”€ Search Input Special â”€â”€ */
 .search-input-wrap {
   position: relative;
   display: flex;
@@ -389,7 +389,7 @@ select option { background: var(--bg-secondary); color: var(--text-primary); }
   box-shadow: 0 0 0 3px rgba(155,89,245,0.12);
 }
 
-/* ── Status Pill ── */
+/* â”€â”€ Status Pill â”€â”€ */
 .status-dot {
   width: 6px; height: 6px;
   border-radius: 50%;
@@ -397,7 +397,7 @@ select option { background: var(--bg-secondary); color: var(--text-primary); }
   margin-right: 6px;
 }
 
-/* ── Stat Number ── */
+/* â”€â”€ Stat Number â”€â”€ */
 .stat-number {
   font-family: var(--font-mono);
   font-size: 2.4rem;
@@ -406,7 +406,7 @@ select option { background: var(--bg-secondary); color: var(--text-primary); }
   line-height: 1;
 }
 
-/* ════════════════ GLOBAL ADMIN RESPONSIVE RULES ════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• GLOBAL ADMIN RESPONSIVE RULES â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 /* Prevent horizontal overflow everywhere */
 html, body { overflow-x: hidden; }
@@ -419,7 +419,7 @@ img, video, iframe { max-width: 100%; }
   padding-right: max(1.25rem, env(safe-area-inset-right));
 }
 
-/* ── Tablet (≤1024px) ── */
+/* â”€â”€ Tablet (â‰¤1024px) â”€â”€ */
 @media (max-width: 1024px) {
   .admin-page-content { padding: 1.25rem !important; }
   .admin-topbar       { padding: 0 1.25rem !important; }
@@ -429,7 +429,7 @@ img, video, iframe { max-width: 100%; }
   .table-responsive table  { min-width: 700px; }
 }
 
-/* ── Mobile (≤768px) ── */
+/* â”€â”€ Mobile (â‰¤768px) â”€â”€ */
 @media (max-width: 768px) {
   html, body, #root, .admin-container, .admin-main {
     width: 100% !important;
@@ -477,7 +477,7 @@ img, video, iframe { max-width: 100%; }
   .stat-number { font-size: 1.8rem; }
 }
 
-/* ── Small phones (≤480px) ── */
+/* â”€â”€ Small phones (â‰¤480px) â”€â”€ */
 @media (max-width: 480px) {
   .admin-page-content  { padding: 1rem !important; }
   .admin-metrics-grid  { grid-template-columns: 1fr !important; }
@@ -485,13 +485,13 @@ img, video, iframe { max-width: 100%; }
   h1 { font-size: 1.45rem; }
 }
 
-/* ── Ultra-wide (≥1440px): cap max-width ── */
+/* â”€â”€ Ultra-wide (â‰¥1440px): cap max-width â”€â”€ */
 @media (min-width: 1440px) {
   .admin-page-content { max-width: 1480px !important; margin: 0 auto; }
 }
 
 /* -------------------------------------------------------
-   ADMIN PANEL � TOUCH-FIRST CARD ARCHITECTURE
+   ADMIN PANEL — TOUCH-FIRST CARD ARCHITECTURE
    --------------------------------------------------- */
 
 /* 1. Touch targets min 48px */
@@ -512,7 +512,7 @@ img, video, iframe { max-width: 100%; }
 .admin-list-card-meta { font-size: 0.72rem; color: var(--text-muted); display: flex; flex-wrap: wrap; gap: 8px; }
 .admin-list-card-actions { display: flex; gap: 8px; flex-shrink: 0; align-items: center; }
 
-/* 3. Admin Properties Grid � Responsive LivePreviewCard */
+/* 3. Admin Properties Grid — Responsive LivePreviewCard */
 @media (min-width: 1280px) {
   .admin-properties-grid { grid-template-columns: repeat(4, 1fr) !important; }
 }

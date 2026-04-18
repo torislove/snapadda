@@ -90,13 +90,8 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'success', message: 'Root health check reached' });
 });
 
-app.get('/api/health', (req, res) => {
-  res.status(200).json({ 
-    status: 'success', 
-    message: 'SnapAdda Master API is now consolidated',
-    time: new Date().toISOString()
-  });
-});
+// consolidated health check below
+
 
 // Alternative media health check
 app.get('/media-health', (req, res) => {

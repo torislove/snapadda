@@ -9,7 +9,6 @@ import { useNotifications } from './hooks/useNotifications';
 
 // Global HUD components - Symmetrically aligned
 const UnitConverter = lazy(() => import('./components/UnitConverter'));
-const AIConcierge = lazy(() => import('./components/AIConcierge'));
 const ComparisonHud = lazy(() => import('./components/ComparisonHud'));
 
 // Page components

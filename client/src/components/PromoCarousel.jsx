@@ -37,9 +37,11 @@ const Slide = memo(({ slide, index, accent, bg, theme, countdown, onNext, onPrev
     exit={{ opacity: 0, scale: 1.05 }}
     drag="x"
     dragConstraints={{ left: 0, right: 0 }}
+    dragElastic={0.2}
+    dragMomentum={false}
     onDragEnd={(e, info) => {
-      if (info.offset.x > 50) onPrev();
-      else if (info.offset.x < -50) onNext();
+      if (info.offset.x > 80) onPrev();
+      else if (info.offset.x < -80) onNext();
     }}
     style={{ 
       position: 'relative', minHeight: '280px', borderRadius: '32px', 

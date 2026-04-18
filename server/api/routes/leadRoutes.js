@@ -1,4 +1,5 @@
 import express from 'express';
+import mongoose from 'mongoose';
 import Lead from '../models/Lead.js';
 import { automationService } from '../modules/automationService.js';
 
@@ -11,16 +12,20 @@ router.post('/', async (req, res) => {
   try {
     const { name, phone, email, propertyId, message, franchiseId } = req.body;
     
-    if (!name || !phone) {
-      return res.status(400).json({ status: 'fail', message: 'Name and phone are required' });
+    // Auto-Routing: Fetch property to determine district
+    let district = '';
+    if (propertyId) {
+      const prop = await mongoose.model('Property').findById(propertyId);
+      if (prop) district = prop.district;
     }
-    
+
     const newLead = new Lead({
       name,
       phone,
       email,
       propertyId,
       message,
+      district, // Auto-assigned from property
       franchiseId
     });
     
@@ -57,12 +62,14 @@ router.get('/', async (req, res) => {
 // @access  Admin
 router.put('/:id', async (req, res) => {
   try {
-    const { status } = req.body;
+    const { status, followUpFlag, district } = req.body;
     
     const lead = await Lead.findById(req.params.id);
     if (!lead) return res.status(404).json({ message: 'Lead not found' });
     
     if (status !== undefined) lead.status = status;
+    if (followUpFlag !== undefined) lead.followUpFlag = followUpFlag;
+    if (district !== undefined) lead.district = district;
     
     await lead.save();
     res.status(200).json({ status: 'success', data: lead });

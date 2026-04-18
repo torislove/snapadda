@@ -7,6 +7,7 @@ import {
   Compass, TrendingUp, Sparkles, Cpu, Calculator
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { adminAIService } from '../../services/aiService';
 
 /* 
   ========================================================================================
@@ -157,7 +158,7 @@ export default function SystemGuide() {
     setAiLoading(true);
     setAiResult('');
     try {
-      const { adminAIService } = await import('../../services/aiService');
+      // Static import used: adminAIService
       const docContext = coreCards.map(c => `${c.title}: ${c.features.join(', ')}`).join('. ');
       const response = await adminAIService.generate(
         `System Doc Context: ${docContext}. User Question: ${aiInput}`,

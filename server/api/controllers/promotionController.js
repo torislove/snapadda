@@ -79,7 +79,9 @@ const removePromotionFromFirebase = async (id) => {
 export const getAllPromotions = async (req, res) => {
   try {
     const { segment } = req.query;
-    const filter = {};
+    const filter = { isActive: true };
+    if (req.query.all === 'true') delete filter.isActive; // Admin override
+    
     if (segment) {
       filter.$or = [
         { displaySegment: segment },

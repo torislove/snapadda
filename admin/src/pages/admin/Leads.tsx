@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { 
   MessageSquare, Search, ChevronDown, ChevronUp, Target, Send, 
-  MoreHorizontal, User, Calendar, Building, Bot, Sparkles, AlertCircle, RefreshCcw
+  MoreHorizontal, User, Calendar, Building, Bot, Sparkles, AlertCircle, RefreshCcw,
+  Star
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Activity, TrendingUp, Zap, Clock, PieChart } from 'lucide-react';
@@ -113,9 +114,50 @@ const LeadAIInsight = ({ text }: { text: string }) => {
   );
 };
 
+/* ── Lead Activity Timeline ── */
+const LeadTimeline = ({ lead }: { lead: any }) => {
+  const events = [
+    { type: 'CREATE', label: 'Lead Generated', time: lead.createdAt, icon: <Zap size={10} />, color: 'var(--violet)' },
+    ...(lead.status !== 'New' ? [{ type: 'STATUS', label: `Status → ${lead.status}`, time: lead.updatedAt, icon: <Activity size={10} />, color: 'var(--emerald)' }] : []),
+    ...(lead.intentProfile || []).map((p: any) => ({
+      type: 'INTENT',
+      label: p.type === 'VIEW' ? 'Viewed Property' : 'Refined Search',
+      time: p.timestamp,
+      icon: <Search size={10} />,
+      color: 'var(--gold)'
+    }))
+  ].sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+
+  return (
+    <div style={{ marginTop: '1rem', padding: '1rem', background: 'rgba(0,0,0,0.2)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+      <div style={{ fontSize: '0.65rem', fontWeight: 900, color: 'var(--text-muted)', marginBottom: '1rem', letterSpacing: '0.1em' }}>CONVERSION TIMELINE</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', position: 'relative' }}>
+        <div style={{ position: 'absolute', left: '7px', top: '5px', bottom: '5px', width: '1px', background: 'rgba(255,255,255,0.1)' }} />
+        {events.map((ev, i) => (
+          <div key={i} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', position: 'relative' }}>
+            <div style={{ width: '15px', height: '15px', borderRadius: '50%', background: ev.color, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'black', zIndex: 1, boxShadow: `0 0 8px ${ev.color}` }}>
+              {ev.icon}
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'white' }}>{ev.label}</div>
+              <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>{new Date(ev.time).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 /* ── Elite Kanban Lead Card ── */
-const LeadCard = ({ lead, onDelete, onStatusChange }: { lead: any; onDelete: (id: string) => Promise<void>; onStatusChange: (id: string, s: string) => Promise<void> }) => {
+const LeadCard = ({ lead, onDelete, onStatusChange, onFlag }: { 
+  lead: any; 
+  onDelete: (id: string) => Promise<void>; 
+  onStatusChange: (id: string, s: string) => Promise<void>;
+  onFlag: (id: string, flag: boolean) => Promise<void>;
+}) => {
   const [showActions, setShowActions] = useState(false);
+  const [showTimeline, setShowTimeline] = useState(false);
   const [updating, setUpdating] = useState(false);
 
   const handleStatusChange = async (newStatus: string) => {
@@ -135,14 +177,25 @@ const LeadCard = ({ lead, onDelete, onStatusChange }: { lead: any; onDelete: (id
       style={{
         padding: '1.25rem',
         marginBottom: '1rem',
-        cursor: 'grab',
         opacity: updating ? 0.6 : 1,
         borderLeft: `3px solid ${STATUS_CONFIG[lead.status]?.color || 'var(--violet)'}`
       }}
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
-        <div style={{ fontWeight: 700, color: 'white', fontSize: '0.9rem' }}>{lead.name}</div>
+        <div>
+          <div style={{ fontWeight: 700, color: 'white', fontSize: '0.9rem' }}>{lead.name}</div>
+          <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
+             <User size={10} style={{ color: 'var(--gold)' }}/> Assigned: {lead.assignedTo || 'Super Admin'}
+          </div>
+        </div>
         <div style={{ position: 'relative' }}>
+          <Star 
+            size={16} 
+            fill={lead.followUpFlag ? 'var(--gold)' : 'none'} 
+            color={lead.followUpFlag ? 'var(--gold)' : 'var(--text-muted)'} 
+            style={{ cursor: 'pointer', opacity: lead.followUpFlag ? 1 : 0.3 }}
+            onClick={(e) => { e.stopPropagation(); onFlag(lead._id, !lead.followUpFlag); }}
+          />
           <button 
             onClick={() => setShowActions(!showActions)}
             style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}
@@ -203,6 +256,15 @@ const LeadCard = ({ lead, onDelete, onStatusChange }: { lead: any; onDelete: (id
         <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', background: 'rgba(255,255,255,0.03)', padding: '0.5rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
           {lead.message || 'No specific inquiries.'}
         </div>
+        
+        <button 
+          onClick={(e) => { e.stopPropagation(); setShowTimeline(!showTimeline); }}
+          style={{ width: '100%', padding: '6px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.03)', color: 'var(--text-muted)', fontSize: '0.65rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+        >
+          <Clock size={12} /> {showTimeline ? 'HIDE TIMELINE' : 'VIEW JOURNEY'}
+        </button>
+
+        {showTimeline && <LeadTimeline lead={lead} />}
         
         {lead.message && <LeadAIInsight text={lead.message} />}
 
@@ -361,6 +423,7 @@ const AdminLeads = () => {
   const [activeTab, setActiveTab] = useState<'Inquiries' | 'Leads'>('Leads');
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [districtFilter, setDistrictFilter] = useState('All');
 
   useEffect(() => { 
     fetchAllData();
@@ -391,6 +454,16 @@ const AdminLeads = () => {
   const deleteLead = async (id: string) => {
     try {
       const res = await fetch(`${API_URL}/leads/${id}`, { method: 'DELETE' });
+      if (res.ok) await fetchLeads();
+    } catch (err) { console.error(err); }
+  };
+
+  const updateLeadFlag = async (id: string, flag: boolean) => {
+    try {
+      const res = await fetch(`${API_URL}/leads/${id}`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ followUpFlag: flag })
+      });
       if (res.ok) await fetchLeads();
     } catch (err) { console.error(err); }
   };
@@ -427,9 +500,10 @@ const AdminLeads = () => {
     return leads.filter(l => {
       const q = search.toLowerCase();
       const matchSearch = !q || (l.name || '').toLowerCase().includes(q) || (l.message || '').toLowerCase().includes(q) || (l.phone || '').includes(q);
-      return matchSearch;
+      const matchDistrict = districtFilter === 'All' || l.district === districtFilter;
+      return matchSearch && matchDistrict;
     });
-  }, [leads, search]);
+  }, [leads, search, districtFilter]);
 
   const pendingInqCount = inquiries.filter(i => !i.answer).length;
   const newLeadsCount = leads.filter(l => l.status === 'New').length;
@@ -507,6 +581,18 @@ const AdminLeads = () => {
                   style={{ fontSize: '0.9rem' }}
                 />
               </div>
+              <select 
+                value={districtFilter}
+                onChange={e => setDistrictFilter(e.target.value)}
+                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: '10px', padding: '0 1rem', fontSize: '0.8rem', fontWeight: 700, outline: 'none' }}
+              >
+                <option value="All">All Districts</option>
+                <option value="Vijayawada">Vijayawada</option>
+                <option value="Amaravati">Amaravati</option>
+                <option value="Visakhapatnam">Visakhapatnam</option>
+                <option value="Guntur">Guntur</option>
+                <option value="Tirupati">Tirupati</option>
+              </select>
               <button onClick={fetchAllData} className="btn btn-ghost" style={{ padding: '0 1rem', borderRadius: '10px' }}>Refresh</button>
           </div>
         </div>
@@ -552,9 +638,17 @@ const AdminLeads = () => {
                           <span style={{ fontSize: '0.75rem' }}>No {status} leads</span>
                         </div>
                       ) : (
-                        columnLeads.map(l => (
-                          <LeadCard key={l._id} lead={l} onDelete={deleteLead} onStatusChange={updateLeadStatus} />
-                        ))
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                          {filteredLeads.filter(l => (l.status || 'New') === status).map(lead => (
+                            <LeadCard 
+                              key={lead._id} 
+                              lead={lead} 
+                              onDelete={deleteLead} 
+                              onStatusChange={updateLeadStatus}
+                              onFlag={updateLeadFlag}
+                            />
+                          ))}
+                        </div>
                       )}
                     </AnimatePresence>
                   </div>
