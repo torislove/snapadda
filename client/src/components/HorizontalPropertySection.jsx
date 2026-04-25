@@ -1,0 +1,115 @@
+import React, { useRef } from 'react';
+import { motion } from 'framer-motion';
+import { ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
+import PropertyCard from './PropertyCard';
+import { useNavigate } from 'react-router-dom';
+
+const HorizontalPropertySection = ({ title, eyebrow, properties, type, loading }) => {
+  const scrollRef = useRef(null);
+  const navigate = useNavigate();
+
+  const scroll = (direction) => {
+    if (scrollRef.current) {
+      const { scrollLeft, clientWidth } = scrollRef.current;
+      const scrollTo = direction === 'left' ? scrollLeft - clientWidth * 0.8 : scrollLeft + clientWidth * 0.8;
+      scrollRef.current.scrollTo({ left: scrollTo, behavior: 'smooth' });
+    }
+  };
+
+  if (!loading && (!properties || properties.length === 0)) return null;
+
+  return (
+    <section className="horizontal-section-wrap" style={{ padding: '4rem 0', overflow: 'hidden' }}>
+      <div className="container">
+        <div className="section-head" style={{ marginBottom: '2.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+          <div>
+            <div className="section-eyebrow" style={{ color: 'var(--gold)', fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.2em', marginBottom: '8px' }}>
+              {eyebrow}
+            </div>
+            <h2 className="section-title" style={{ fontSize: '2.2rem', fontWeight: 900, color: 'white', margin: 0 }}>
+              {title}
+            </h2>
+          </div>
+          
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <button 
+              onClick={() => scroll('left')}
+              className="scroll-nav-btn glass-premium"
+              style={{ width: '48px', height: '48px', borderRadius: '50%', border: '1px solid rgba(255,255,255,0.1)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+            >
+              <ChevronLeft size={20} />
+            </button>
+            <button 
+              onClick={() => scroll('right')}
+              className="scroll-nav-btn glass-premium"
+              style={{ width: '48px', height: '48px', borderRadius: '50%', border: '1px solid rgba(255,255,255,0.1)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+            >
+              <ChevronRight size={20} />
+            </button>
+          </div>
+        </div>
+
+        <div 
+          ref={scrollRef}
+          style={{ 
+            display: 'flex', 
+            gap: '24px', 
+            overflowX: 'auto', 
+            paddingBottom: '2rem',
+            scrollSnapType: 'x mandatory',
+            msOverflowStyle: 'none',
+            scrollbarWidth: 'none',
+            paddingRight: '4rem'
+          }}
+          className="hide-scrollbar"
+        >
+          {loading ? (
+             [...Array(4)].map((_, i) => (
+                <div key={i} style={{ minWidth: '320px', height: '450px', background: 'rgba(255,255,255,0.03)', borderRadius: '24px', animate: 'pulse 2s infinite' }} />
+             ))
+          ) : (
+            properties.map((p) => (
+              <div key={p._id} style={{ minWidth: '320px', maxWidth: '320px', scrollSnapAlign: 'start' }}>
+                <PropertyCard {...p} />
+              </div>
+            ))
+          )}
+
+          {!loading && properties.length >= 5 && (
+            <div 
+              onClick={() => navigate('/search', { state: { typeFilter: type } })}
+              style={{ 
+                minWidth: '240px', 
+                height: '450px', 
+                background: 'rgba(212,175,55,0.05)', 
+                border: '2px dashed rgba(212,175,55,0.2)', 
+                borderRadius: '24px',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '1rem',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease'
+              }}
+              className="view-more-card"
+            >
+              <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'var(--gold)', color: 'black', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <ArrowRight size={28} />
+              </div>
+              <div style={{ color: 'var(--gold)', fontWeight: 900, fontSize: '0.9rem' }}>అన్నీ చూడండి (View All)</div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <style dangerouslySetInnerHTML={{ __html: `
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .view-more-card:hover { background: rgba(212,175,55,0.1) !important; transform: translateY(-5px); }
+        .scroll-nav-btn:hover { background: rgba(255,255,255,0.2) !important; color: var(--gold) !important; border-color: var(--gold) !important; }
+      `}} />
+    </section>
+  );
+};
+
+export default HorizontalPropertySection;

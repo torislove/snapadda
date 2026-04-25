@@ -102,3 +102,67 @@
     grid-template-columns: 1fr !important;
   }
 }
+/* High-End 3D Liquid Button Effects */
+.btn-3d-liquid {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+  transform: translateZ(0);
+}
+
+.btn-3d-liquid:hover {
+  transform: translateY(-4px) scale(1.02);
+  filter: brightness(1.1);
+  box-shadow: 0 15px 45px rgba(212, 175, 55, 0.3);
+}
+
+.btn-3d-liquid:active {
+  transform: translateY(-1px) scale(0.98);
+}
+
+/* Glassmorphism Sections */
+.glass-premium {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+.shadow-hover {
+  transition: all 0.3s ease;
+}
+
+.shadow-hover:hover {
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+  border-color: rgba(212, 175, 55, 0.3) !important;
+}
+
+/* Telugu Label Typography Enhancements */
+.te-label {
+  font-family: 'Inter', 'Noto Sans Telugu', sans-serif;
+  letter-spacing: 0.01em;
+  line-height: 1.6;
+}
+
+/* Custom badges for PropertyDetails */
+.pd-badge-gold {
+  background: rgba(212, 175, 55, 0.1);
+  color: #d4af37;
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.65rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.pd-badge-green {
+  background: rgba(16, 217, 140, 0.1);
+  color: #10d98c;
+  border: 1px solid rgba(16, 217, 140, 0.3);
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.65rem;
+  font-weight: 900;
+}

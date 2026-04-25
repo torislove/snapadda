@@ -637,7 +637,7 @@ const resources = {
   }
 };
 
-const savedLng = localStorage.getItem('snapadda_lng') || "en";
+const savedLng = localStorage.getItem('snapadda_lng') || "te";
 
 i18n
   .use(initReactI18next)

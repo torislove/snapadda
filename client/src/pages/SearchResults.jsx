@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -44,6 +45,7 @@ const BUDGET_PRESETS = [
 const PAGE_SIZE = 12;
 
 export default function SearchResults() {
+  const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const [properties, setProperties] = useState([]);
@@ -169,7 +171,7 @@ export default function SearchResults() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       {/* Search */}
       <div>
-        <label className="sr-filter-label">Keyword / Location</label>
+        <label className="sr-filter-label">{t('search.placeholder', 'Keyword / Location')}</label>
         <div style={{ position: 'relative' }}>
           <Search size={14} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--txt-muted)', pointerEvents: 'none' }}/>
           <input
@@ -197,7 +199,7 @@ export default function SearchResults() {
 
       {/* Property Type */}
       <div>
-        <label className="sr-filter-label">Property Type</label>
+        <label className="sr-filter-label">{t('filter.category', 'Property Type')}</label>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
           {PROPERTY_TYPES.map(t => (
             <button key={t.value} onClick={() => { setType(t.value); setPage(1); }}
@@ -223,7 +225,7 @@ export default function SearchResults() {
 
       {/* Budget */}
       <div>
-        <label className="sr-filter-label">Budget</label>
+        <label className="sr-filter-label">{t('filter.budgetMax', 'Budget')}</label>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '10px' }}>
           {BUDGET_PRESETS.map(b => {
             const active = minPrice === b.min && maxPrice === b.max;
@@ -249,7 +251,7 @@ export default function SearchResults() {
 
       {/* BHK */}
       <div>
-        <label className="sr-filter-label">BHK Configuration</label>
+        <label className="sr-filter-label">{t('card.config', 'BHK Configuration')}</label>
         <div style={{ display: 'flex', gap: '8px' }}>
           {['', '1', '2', '3', '4'].map(b => (
             <button key={b} onClick={() => { setBhk(b); setPage(1); }}
@@ -262,7 +264,7 @@ export default function SearchResults() {
 
       {/* Facing */}
       <div>
-        <label className="sr-filter-label">Facing</label>
+        <label className="sr-filter-label">{t('filter.facing', 'Facing')}</label>
         <select className="admin-select" value={facing} onChange={e => { setFacing(e.target.value); setPage(1); }} style={{ width: '100%', fontSize: '0.82rem' }}>
           <option value="">Any Direction</option>
           <option>East</option><option>North</option><option>West</option>
@@ -272,7 +274,7 @@ export default function SearchResults() {
 
       {/* Approval */}
       <div>
-        <label className="sr-filter-label">Approval Authority</label>
+        <label className="sr-filter-label">{t('filter.approval', 'Approval Authority')}</label>
         <select className="admin-select" value={approval} onChange={e => { setApproval(e.target.value); setPage(1); }} style={{ width: '100%', fontSize: '0.82rem' }}>
           <option value="">Any / All</option>
           <option>AP CRDA</option><option>AP RERA</option>
@@ -292,7 +294,7 @@ export default function SearchResults() {
       </div>
 
       <button onClick={resetAll} style={{ width: '100%', padding: '10px', borderRadius: '10px', background: 'rgba(245,57,123,0.08)', border: '1px solid rgba(245,57,123,0.2)', color: '#f5397b', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}>
-        <X size={12} style={{ marginRight: '6px' }}/> Clear All Filters
+        <X size={12} style={{ marginRight: '6px' }}/> {t('filter.clearAll', 'Clear All Filters')}
       </button>
     </div>
   );
@@ -441,7 +443,7 @@ export default function SearchResults() {
               {filterPanel}
               <div style={{ position: 'sticky', bottom: '-1.5rem', left: 0, right: 0, background: 'linear-gradient(to top, rgba(9,9,18,1) 50%, rgba(9,9,18,0))', padding: '1.5rem 0', marginTop: '1rem', zIndex: 10 }}>
                 <button onClick={() => setShowMobileFilter(false)} className="btn-3d-liquid" style={{ width: '100%', padding: '1.25rem', background: 'var(--gold)', color: 'var(--midnight)', border: 'none', borderRadius: '18px', fontWeight: 900, fontSize: '1rem', cursor: 'pointer', boxShadow: '0 12px 30px rgba(232,184,75,0.4)' }}>
-                  SHOW {meta.total} MATCHING ASSETS
+                  {t('filter.apply', 'APPLY FILTERS')} ({meta.total})
                 </button>
               </div>
             </motion.div>

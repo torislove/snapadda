@@ -21,15 +21,16 @@ import Logo from '../components/Logo';
 import { SkeletonCityCard, SkeletonPropertyCard } from '../components/SkeletonLoaders';
 import { parseSmartSearch, getFuzzySuggestions, loadAndhraData } from '../services/SearchParser';
 import { useSEO } from '../utils/useSEO';
+import HorizontalPropertySection from '../components/HorizontalPropertySection';
 
 // ─── Recently Sold Live Ticker ─────────────────────────────────────────────
 const SOLD_FEED = [
-  { emoji: '🏡', text: 'A Residential Plot in Guntur just reserved', time: '2m ago', price: '₹18L' },
-  { emoji: '🌾', text: 'Agricultural Land in Krishna district sold', time: '5m ago', price: '₹45L' },
-  { emoji: '🏢', text: 'Commercial Space in Vijayawada booked', time: '12m ago', price: '₹1.2Cr' },
-  { emoji: '🏘️', text: 'Gated Community Villa in Amaravati reserved', time: '18m ago', price: '₹95L' },
-  { emoji: '📐', text: 'CRDA plot in Tadepalli acquired', time: '27m ago', price: '₹28L' },
-  { emoji: '🌳', text: 'Farmhouse in Nellore sold to Hyderabad investor', time: '35m ago', price: '₹2.1Cr' },
+  { emoji: '🏡', text: 'గుంటూరులో రెసిడెన్షియల్ ప్లాట్ ఇప్పుడే రిజర్వ్ చేయబడింది', time: '2నిమి క్రితం', price: '₹18L' },
+  { emoji: '🌾', text: 'కృష్ణా జిల్లాలో వ్యవసాయ భూమి అమ్ముడైపోయింది', time: '5నిమి క్రితం', price: '₹45L' },
+  { emoji: '🏢', text: 'విజయవాడలో కమర్షియల్ స్పేస్ బుక్ అయింది', time: '12నిమి క్రితం', price: '₹1.2Cr' },
+  { emoji: '🏘️', text: 'అమరావతిలో గేటెడ్ కమ్యూనిటీ విల్లా రిజర్వ్ చేయబడింది', time: '18నిమి క్రితం', price: '₹95L' },
+  { emoji: '📐', text: 'తాడేపల్లిలో CRDA ప్లాట్ కొనుగోలు చేయబడింది', time: '27నిమి క్రితం', price: '₹28L' },
+  { emoji: '🌳', text: 'నెల్లూరులో ఫామ్‌హౌస్ హైదరాబాద్ ఇన్వెస్టర్‌కు విక్రయించబడింది', time: '35నిమి క్రితం', price: '₹2.1Cr' },
 ];
 
 function RecentlySoldTicker() {
@@ -298,6 +299,12 @@ export default function Home() {
   const supportPhone = (supportInfo?.phone || '+919346793364').replace(/\s+/g, '');
   const supportWA = supportInfo?.whatsapp || '919346793364';
 
+  // Sectional Data Filters
+  const villas = useMemo(() => properties.filter(p => p.type === 'Villa' || p.type === 'Independent House').slice(0, 8), [properties]);
+  const apartments = useMemo(() => properties.filter(p => p.type === 'Apartment' || p.type === 'Apartment / Flat').slice(0, 8), [properties]);
+  const plots = useMemo(() => properties.filter(p => p.type === 'Plot' || p.type === 'Residential Plot' || p.type === 'CRDA / Open Plots').slice(0, 8), [properties]);
+  const agri = useMemo(() => properties.filter(p => p.type === 'Agricultural Land' || p.type === 'Farmhouse').slice(0, 8), [properties]);
+
   return (
     <div 
       className={`app-container ${appearance?.enable3D !== false ? 'scene-3d' : ''}`}
@@ -512,40 +519,38 @@ export default function Home() {
           <ClientReviews />
         </div>
 
-        <section id="properties" className="section-wrap" style={{ paddingTop: '0.5rem' }}>
-          <div className="container">
-            <div className="section-title-row">
-              <div>
-                <h2 style={{ fontSize: '1.35rem', marginBottom: '2px', color: '#ffffff' }}>
-                  {cityFilter ? `${t('properties.propsIn')} ${cityFilter}` : intent === 'Rent' ? t('properties.rentals') : intent === 'Plot' ? t('properties.plots') : t('properties.featured')}
-                </h2>
-                <p style={{ fontSize: '0.82rem', color: 'var(--txt-muted)' }}>{t('properties.showing')}</p>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <span className="result-count">{sortedProperties.length} {t('properties.found')}</span>
-                <select className="sort-select" value={sortBy} onChange={e => setSortBy(e.target.value)}>
-                  {SORT_OPTIONS(t).map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                </select>
-                {(filterCount > 0 || cityFilter || budget || typeFilter !== 'all') && (
-                  <button className="btn btn-glass btn-sm" onClick={resetFilters}><X size={12} /> {t('search.clear')}</button>
-                )}
-              </div>
-            </div>
+        <section id="properties" style={{ paddingTop: '2rem' }}>
+          <HorizontalPropertySection 
+            title="ఎలైట్ విల్లాలు (Elite Villas)" 
+            eyebrow="Luxury Living" 
+            properties={villas} 
+            type="Villa"
+            loading={loading}
+          />
+          
+          <HorizontalPropertySection 
+            title="మోడ్రన్ అపార్ట్‌మెంట్లు (Modern Apartments)" 
+            eyebrow="Urban Excellence" 
+            properties={apartments} 
+            type="Apartment"
+            loading={loading}
+          />
 
-            <div className="properties-grid">
-              {loading ? Array(3).fill(0).map((_, i) => <SkeletonPropertyCard key={i} />) : (sortedProperties && sortedProperties.length > 0) ? (
-                sortedProperties.slice(0, 9).map((p) => (
-                  <PropertyCard key={p._id || p.id} {...p} />
-                ))
-              ) : (
-                <div className="empty-state">
-                  <Search size={48} />
-                  <h3>{t('properties.none')}</h3>
-                  <button className="hero-btn hero-btn-primary" onClick={resetFilters}>{t('search.clear')}</button>
-                </div>
-              )}
-            </div>
-          </div>
+          <HorizontalPropertySection 
+            title="ప్రీమియం ప్లాట్లు (Premium Plots)" 
+            eyebrow="Investment Ready" 
+            properties={plots} 
+            type="Plot"
+            loading={loading}
+          />
+
+          <HorizontalPropertySection 
+            title="వ్యవసాయ భూములు (Agricultural Land)" 
+            eyebrow="Natural Assets" 
+            properties={agri} 
+            type="Agriculture"
+            loading={loading}
+          />
         </section>
 
         <section className="stats-band">

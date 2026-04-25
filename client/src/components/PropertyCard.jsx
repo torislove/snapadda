@@ -16,6 +16,7 @@ import {
   smartAreaConverter,
   calcPricePerUnit
 } from '../utils/priceUtils';
+import tr from '../utils/teluguTranslations';
 import { logUserActivity, ACTIONS } from '../services/activityTracker';
 
 const Toast = memo(({ msg, onDone }) => {
@@ -41,8 +42,24 @@ const PropertyCard = memo(({
   createdAt, likeCount: initialLikeCount = 0, initialLiked = false,
   isGated, cornerProperty, constructionStatus,
   supportPhone = '+919346793364', supportWA = '919346793364',
-  status: propStatus = 'Active', pricePerSqYd
+  status: propStatus = 'Active', pricePerSqYd, address
 }) => {
+  const [activeImgIdx, setActiveImgIdx] = useState(0);
+  const hoverIntervalRef = useRef(null);
+
+  const startImageCycle = () => {
+    if (images && images.length > 1) {
+      hoverIntervalRef.current = setInterval(() => {
+        setActiveImgIdx(prev => (prev + 1) % Math.min(images.length, 5));
+      }, 1500);
+    }
+  };
+
+  const stopImageCycle = () => {
+    if (hoverIntervalRef.current) clearInterval(hoverIntervalRef.current);
+    setActiveImgIdx(0);
+  };
+
   const { user } = useAuth();
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -164,7 +181,19 @@ const PropertyCard = memo(({
     }
   }, [user, propertyId, title, type, location, displayPrice, navigate]);
 
-  const property_image = image || images?.[0] || gallery?.[0];
+  // Elite Image Priority logic: filter out placeholder/dummy URLs
+  const rawImages = [
+    ...(images || []),
+    ...(gallery || []),
+    image
+  ];
+  
+  const finalImages = rawImages
+    .filter(img => img && typeof img === 'string' && !img.includes('placeholder') && !img.includes('dummy'))
+    .slice(0, 5);
+    
+  const property_image = finalImages[0] || null;
+  const displayImages = finalImages.length > 0 ? finalImages : [property_image];
 
   return (
     <>
@@ -191,19 +220,43 @@ const PropertyCard = memo(({
         >
           {/* Elite Header: Image + Social Floating */}
           <div className="property-image-container" style={{ borderRadius: '24px 24px 0 0', overflow: 'hidden' }}>
-            <div className="pc-image-carousel">
-              {images && images.length > 0 ? (
-                images.slice(0, 3).map((img, idx) => (
-                  <img key={idx} src={img} alt={`${title} ${idx+1}`} className="property-image" loading="lazy" />
-                ))
+            <div className="pc-image-carousel" 
+              onMouseEnter={startImageCycle} 
+              onMouseLeave={stopImageCycle}
+              style={{ position: 'relative', width: '100%', height: '100%' }}
+            >
+              {displayImages.length > 0 ? (
+                <AnimatePresence mode="wait">
+                  <motion.img 
+                    key={activeImgIdx}
+                    initial={{ opacity: 0.6, scale: 1.05 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0.8, scale: 1.1 }}
+                    transition={{ duration: 0.8, ease: "easeOut" }}
+                    src={displayImages[activeImgIdx % displayImages.length]} 
+                    alt={`${title}`} 
+                    className="property-image" 
+                    loading="lazy" 
+                    style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                </AnimatePresence>
               ) : (
-                <img src={property_image} alt={title} className="property-image" loading="lazy" />
+                <div style={{ height: '100%', background: '#111', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Building2 size={48} opacity={0.2} />
+                </div>
               )}
             </div>
-            {images && images.length > 1 && (
+            {finalImages.length > 1 && (
               <div style={{ position: 'absolute', bottom: '10px', left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: '4px', zIndex: 10, pointerEvents: 'none' }}>
-                {images.slice(0, 5).map((_, idx) => (
-                  <div key={idx} style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'rgba(255,255,255,0.7)', boxShadow: '0 1px 3px rgba(0,0,0,0.5)' }} />
+                {finalImages.map((_, idx) => (
+                  <div key={idx} style={{ 
+                    width: activeImgIdx === idx ? '12px' : '6px', 
+                    height: '6px', 
+                    borderRadius: '3px', 
+                    background: activeImgIdx === idx ? 'var(--gold)' : 'rgba(255,255,255,0.7)', 
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.5)',
+                    transition: 'all 0.3s ease'
+                  }} />
                 ))}
               </div>
             )}
@@ -212,7 +265,7 @@ const PropertyCard = memo(({
             {/* Senior Analyst: FOMO Pulse Viewer */}
             <div style={{ position: 'absolute', top: '10px', left: '10px', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(10px)', color: 'white', padding: '4px 10px', borderRadius: '20px', fontSize: '0.65rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '6px', zIndex: 10 }}>
                <div style={{ width: '6px', height: '6px', background: 'var(--rose)', borderRadius: '50%' }} className="pulse-primary" />
-               {liveViewers} {t('card.viewing', 'viewing')}
+               {liveViewers} మంది చూస్తున్నారు
             </div>
             
             <div className="pc-social-group">
@@ -259,22 +312,31 @@ const PropertyCard = memo(({
                    className="pc-label verified" 
                    style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'linear-gradient(135deg, #e8b84b, #b9933a)', color: '#07070f', fontWeight: 900, boxShadow: '0 4px 12px rgba(232,184,75,0.4)' }}
                  >
-                   <ShieldCheck size={10} /> {t('card.verified', 'SNAPADDA VERIFIED')}
+                   <ShieldCheck size={10} /> వెరిఫైడ్
                  </motion.span>
                )}
-               {(propStatus || 'Active') === 'Sold' && <span className="pc-label" style={{ background: 'var(--emerald)', color: 'white', fontSize: '0.6rem', padding: '2px 8px', borderRadius: '4px', fontWeight: 900, boxShadow: '0 4px 15px rgba(16,217,140,0.4)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{t('card.sold', 'SOLD OUT')}</span>}
+               {(propStatus || 'Active') === 'Sold' && <span className="pc-label" style={{ background: 'var(--emerald)', color: 'white', fontSize: '0.6rem', padding: '2px 8px', borderRadius: '4px', fontWeight: 900, boxShadow: '0 4px 15px rgba(16,217,140,0.4)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>అమ్మబడినది</span>}
             </div>
           </div>
 
           <div className="property-content">
             <div className="pc-entity-type">
-              {typeStyle.icon} <span>{(type || 'Property').toUpperCase()}</span>
+              {typeStyle.icon} <span>{tr(type) || 'ప్రాపర్టీ'}</span>
+              {purpose && <span style={{ marginLeft: 'auto', fontSize: '0.6rem', fontWeight: 900, color: purpose === 'Rent' ? '#22d9e0' : '#27c97d', background: purpose === 'Rent' ? 'rgba(34,217,224,0.1)' : 'rgba(39,201,125,0.1)', padding: '2px 8px', borderRadius: '20px', border: `1px solid ${purpose === 'Rent' ? '#22d9e033' : '#27c97d33'}` }}>{tr(purpose === 'Rent' ? 'For Rent' : 'For Sale')}</span>}
             </div>
 
             <h3 className="pc-title-elite">{title}</h3>
             
             <div className="pc-location-elite">
-              <MapPin size={12} /> {location}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <MapPin size={12} /> {location}
+              </div>
+              {/* Added Address display as requested */}
+              {address && (
+                <div style={{ fontSize: '0.65rem', opacity: 0.6, marginTop: '2px', marginLeft: '16px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {address}
+                </div>
+              )}
             </div>
 
             {/* Features Row */}
@@ -284,7 +346,6 @@ const PropertyCard = memo(({
                    <HomeIcon size={14} /> <span>{bhk || beds} BHK</span>
                  </div>
                ) : null}
-               {/* Area display for all types */}
                {areaDisplay && (
                  <div className="spec-item">
                    {isAgri ? <Leaf size={14}/> : <Square size={14}/>} <span>{areaDisplay}</span>
@@ -292,7 +353,7 @@ const PropertyCard = memo(({
                )}
                {facing && facing !== 'Any' && (
                  <div className="spec-item">
-                   <Compass size={14} /> <span>{facing}</span>
+                   <Compass size={14} /> <span>{tr(facing)}</span>
                  </div>
                )}
                {authority && authority !== 'N/A' && authority !== 'None' && (
@@ -302,26 +363,27 @@ const PropertyCard = memo(({
                )}
             </div>
 
-            {/* Elite Action Bar: Minimalist CTAs for Compressed Card */}
+            {/* Elite Action Bar */}
             <div className="pc-elite-actions" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto', gap: '8px' }}>
               <button onClick={(e) => { 
                 e.preventDefault(); e.stopPropagation(); 
                 if (!user) { navigate('/login', { state: { from: `/property/${propertyId}` } }); }
                 else { navigate(`/property/${propertyId}`); }
               }} className="pc-btn pc-btn-view btn-3d-liquid" style={{ flex: 1, padding: '0.6rem', fontSize: '0.75rem' }}>
-                <Eye size={14} style={{ marginRight: '6px' }}/> {t('card.details', 'VIEW ASSET')}
+                <Eye size={14} style={{ marginRight: '6px' }}/> వివరాలు చూడండి
               </button>
               
               <div style={{ display: 'flex', gap: '8px' }}>
-                <a href={`tel:${supportPhone}`} onClick={(e) => e.stopPropagation()} className="pc-btn pc-btn-call glass-premium" style={{ width: '40px', height: '40px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '12px' }}>
+                <a href={`tel:${supportPhone}`} onClick={(e) => e.stopPropagation()} className="pc-btn pc-btn-call glass-premium" style={{ width: '40px', height: '40px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '12px' }} title="కాల్ చేయండి">
                   <Phone size={16}/>
                 </a>
                 <a 
-                  href={`https://wa.me/${supportWA}?text=Interested in: ${title}`} 
+                  href={`https://wa.me/${supportWA}?text=నమస్కారం! ఈ ప్రాపర్టీలో నాకు ఆసక్తి ఉంది: ${title}`} 
                   onClick={(e) => e.stopPropagation()}
                   target="_blank" rel="noopener noreferrer" 
                   className="pc-btn pc-btn-wa btn-3d-emerald"
                   style={{ width: '40px', height: '40px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', boxShadow: '0 5px 15px rgba(39,201,125,0.3)' }}
+                  title="వాట్సాప్"
                 >
                   <MessageSquare size={16}/>
                 </a>
