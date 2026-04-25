@@ -449,3 +449,11 @@
   50% { transform: scale(1.1); opacity: 1; }
   100% { transform: scale(1); opacity: 0.6; }
 }
+
+/* Mobile-First Adjustments (Google Accessibility Specs) */
+button, select, input.admin-input, select.admin-select, a {
+  min-height: 44px; /* Apple/Google 44px standard */
+}
+.admin-content, .admin-sidebar, .bento-grid {
+  -webkit-overflow-scrolling: touch;
+}

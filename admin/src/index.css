@@ -481,7 +481,37 @@ img, video, iframe { max-width: 100%; }
   /* Hide secondary topbar elements */
   .topbar-time, .topbar-status-text, .topbar-divider { display: none; }
 
+  /* Admin Topbar Safe Areas */
+  .admin-topbar {
+    padding-top: env(safe-area-inset-top);
+    height: calc(64px + env(safe-area-inset-top));
+  }
+  
+  .admin-page-content {
+    padding: 1.25rem !important;
+    padding-bottom: calc(2rem + env(safe-area-inset-bottom)) !important;
+  }
+
   .stat-number { font-size: 1.8rem; }
+  
+  /* FAB for mobile */
+  .admin-fab {
+    position: fixed;
+    bottom: calc(20px + env(safe-area-inset-bottom));
+    right: 20px;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: var(--gold);
+    color: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 20px rgba(232, 184, 75, 0.4);
+    z-index: 999;
+    border: none;
+    cursor: pointer;
+  }
 }
 
 /* â”€â”€ Small phones (â‰¤480px) â”€â”€ */

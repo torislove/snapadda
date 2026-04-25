@@ -304,6 +304,28 @@ export default function PropertyDetails() {
 
   return (
     <div className="pd-page">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "Product",
+        "name": property?.title || `${property?.type} in ${property?.location}`,
+        "image": property_images,
+        "description": property?.description || `Property in ${property?.location}`,
+        "brand": {
+          "@type": "Brand",
+          "name": "SnapAdda"
+        },
+        "offers": {
+          "@type": "Offer",
+          "url": window.location.href,
+          "priceCurrency": "INR",
+          "price": displayPrice || 0,
+          "availability": "https://schema.org/InStock",
+          "seller": {
+            "@type": "Organization",
+            "name": "SnapAdda Properties"
+          }
+        }
+      })}} />
       <AnimatePresence>{toast && <Toast msg={toast}/>}</AnimatePresence>
       <AnimatePresence>{lightbox && <LightBox images={property_images} startIdx={imgIdx} onClose={() => setLightbox(false)}/>}</AnimatePresence>
 
@@ -616,10 +638,15 @@ export default function PropertyDetails() {
                 <button onClick={() => window.location.href = `tel:${supportPhone}`} className="pd-btn-primary" style={{ width: '100%', background: '#05050a', color: 'white', border: 'none', padding: '1.25rem' }}>
                   <Phone size={20}/> CALL AGENT
                 </button>
-                <div style={{ textAlign: 'center', margin: '1rem 0', opacity: 0.5, fontSize: '0.75rem' }}>OR</div>
-                <button onClick={handleWhatsApp} className="pd-btn-wa" style={{ width: '100%', padding: '1.25rem' }}>
-                  <MessageSquare size={20}/> WHATSAPP CHAT
-                </button>
+                <div style={{ textAlign: 'center', margin: '0.75rem 0', opacity: 0.5, fontSize: '0.7rem', fontWeight: 800 }}>OR</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  <button onClick={handleWhatsApp} className="pd-btn-wa" style={{ width: '100%', padding: '1rem' }}>
+                    <MessageSquare size={18}/> WHATSAPP CHAT
+                  </button>
+                  <button onClick={() => navigate('/request-callback')} className="request-btn-submit" style={{ width: '100%', padding: '1rem', borderRadius: '14px', fontSize: '0.85rem' }}>
+                    <Send size={18}/> REQUEST CALLBACK
+                  </button>
+                </div>
                 <div className="pd-trust-row">
                   <div className="pd-trust-item"><ShieldCheck size={14}/> 100% VERIFIED BY SNAPADDA</div>
                   <div className="pd-trust-item"><Award size={14}/> PREMIUM LISTING STATUS</div>

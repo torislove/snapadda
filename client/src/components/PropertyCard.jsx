@@ -1,6 +1,6 @@
 import { useState, useRef, memo, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useSpring, useMotionValue, useTransform } from 'framer-motion';
 import {
   Heart, Share2, Eye, Phone, MessageSquare, ShieldCheck, Flame,
   MapPin, Building2, User, Leaf, BedDouble, Bath, Square,
@@ -134,6 +134,9 @@ const PropertyCard = memo(({
 
   const iq = getInvestmentIQ();
   const [toast, setToast] = useState('');
+  const cardRef = useRef(null);
+
+
 
   const handleLike = useCallback((e) => {
     e.preventDefault(); e.stopPropagation();
@@ -167,48 +170,34 @@ const PropertyCard = memo(({
     <>
       <AnimatePresence>{toast && <Toast msg={toast} onDone={() => setToast('')} />}</AnimatePresence>
       <motion.article
-        initial={{ opacity: 0, y: 20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: "-50px" }}
-        transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-        style={{ height: '100%' }}
+        ref={cardRef}
+        initial={{ opacity: 0, scale: 0.9 }}
+        whileInView={{ opacity: 1, scale: 1 }}
+        viewport={{ once: true }}
+        style={{ perspective: 1000, height: '100%' }}
       >
-        <div 
-          className="property-card elite-card shadow-lg" 
+        <motion.div 
+          className="property-card glass-elite" 
+          style={{ height: '100%', cursor: 'pointer' }}
           onClick={(e) => { 
-            // Only navigate if we aren't clicking a social button or action button
             if (!e.defaultPrevented) {
-              if (!user) {
-                navigate('/login', { state: { from: `/property/${propertyId}` } });
-              } else {
+              if (!user) navigate('/login', { state: { from: `/property/${propertyId}` } });
+              else {
                 logUserActivity(ACTIONS.PROPERTY_VIEW, { propertyId, title, location }, user?._id);
                 navigate(`/property/${propertyId}`);
               }
             }
           }}
-          style={{ cursor: 'pointer' }}
         >
-          
           {/* Elite Header: Image + Social Floating */}
-          <div className="property-image-container">
-            <div className="pc-image-carousel" style={{ display: 'flex', overflowX: 'auto', scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch', width: '100%', height: '100%', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-              <style>{`.pc-image-carousel::-webkit-scrollbar { display: none; }`}</style>
+          <div className="property-image-container" style={{ borderRadius: '24px 24px 0 0', overflow: 'hidden' }}>
+            <div className="pc-image-carousel">
               {images && images.length > 0 ? (
-                images.slice(0, 5).map((img, idx) => (
-                  <div key={idx} style={{ position: 'relative', flex: '0 0 100%', scrollSnapAlign: 'start', height: '100%' }}>
-                    <img 
-                      src={img} alt={`${title} ${idx+1}`} className="property-image" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
-                    />
-                  </div>
+                images.slice(0, 3).map((img, idx) => (
+                  <img key={idx} src={img} alt={`${title} ${idx+1}`} className="property-image" loading="lazy" />
                 ))
-              ) : property_image ? (
-                <div style={{ flex: '0 0 100%', scrollSnapAlign: 'start', height: '100%' }}>
-                  <img 
-                    src={property_image} alt={title} className="property-image" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
-                  />
-                </div>
               ) : (
-                <div className="property-no-image" style={{ flex: '0 0 100%', height: '100%' }}><Building2 size={40} opacity={0.2}/></div>
+                <img src={property_image} alt={title} className="property-image" loading="lazy" />
               )}
             </div>
             {images && images.length > 1 && (
@@ -339,7 +328,7 @@ const PropertyCard = memo(({
               </div>
             </div>
           </div>
-        </div>
+        </motion.div>
       </motion.article>
     </>
   );

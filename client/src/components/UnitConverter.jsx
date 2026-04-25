@@ -206,9 +206,31 @@ export default function UnitConverter() {
 
   return (
     <>
-      <motion.button onClick={() => { setIsOpen(!isOpen); setMode('menu'); }} className="unit-converter-trigger" initial={{ scale: 0, rotate: -90 }} animate={{ scale: 1, rotate: 0 }} whileHover={{ scale: 1.1, rotate: 5 }} whileTap={{ scale: 0.95 }}
+      <motion.button 
+        onClick={() => { setIsOpen(!isOpen); setMode('menu'); }} 
+        className="unit-converter-trigger" 
+        initial={{ scale: 0, rotate: -90 }} 
+        animate={{ scale: 1, rotate: 0 }} 
+        whileHover={{ scale: 1.1, rotate: 5 }} 
+        whileTap={{ scale: 0.95 }}
         aria-label={isOpen ? "Close utilities menu" : "Open property utilities menu"}
-        style={{ position: 'fixed', right: '24px', bottom: '24px', zIndex: 9999, width: '56px', height: '56px', borderRadius: '50%', background: 'linear-gradient(135deg, rgba(212,175,55,1), rgba(212,175,55,0.7))', color: '#000', border: '1px solid var(--gold-border)', boxShadow: '0 8px 32px rgba(0,0,0,0.5)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+        style={{ 
+          position: 'fixed', 
+          right: '24px', 
+          bottom: 'var(--cmd-bottom, 24px)', 
+          zIndex: 9999, 
+          width: '60px', 
+          height: '60px', 
+          borderRadius: '50%', 
+          background: 'linear-gradient(135deg, var(--gold) 0%, #b9933a 100%)', 
+          color: '#000', 
+          border: '2px solid rgba(255,255,255,0.2)', 
+          boxShadow: '0 10px 40px rgba(0,0,0,0.6)', 
+          cursor: 'pointer', 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center' 
+        }}
       >
         <LayoutGrid size={28} />
       </motion.button>

@@ -47,65 +47,71 @@ function DashboardHome({ user, stats, recent, setModalOpen }) {
           ))}
         </div>
         
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
-          {/* Main Chart */}
-          <div className="glass-heavy" style={{ padding: '2.5rem', borderRadius: '28px', border: '1px solid rgba(255,255,255,0.03)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-              <h3 style={{ fontSize: '1.2rem', fontWeight: 700, color: 'white' }}>Engagement Intelligence</h3>
-              <span style={{ fontSize: '0.65rem', color: 'var(--txt-muted)', fontWeight: 700, background: 'rgba(255,255,255,0.05)', padding: '4px 10px', borderRadius: '6px' }}>ROLLING 7 DAYS</span>
+        <div className="bento-grid" style={{ marginTop: '2.5rem' }}>
+          {/* Main Stat Card (Large Bento) */}
+          <div className="bento-item glass-elite" style={{ gridColumn: 'span 2', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 950 }}>Engagement Yield</h3>
+              <Sparkles size={18} style={{ color: 'var(--gold)' }} />
             </div>
             <div style={{ height: '220px', width: '100%' }}>
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={(stats?.engagementCount || stats?.inquiriesCount) ? [
+                <AreaChart data={[
                   { name: 'Mon', views: 4 }, { name: 'Tue', views: 12 }, { name: 'Wed', views: 8 },
                   { name: 'Thu', views: 18 }, { name: 'Fri', views: 14 }, { name: 'Sat', views: 25 }, { name: 'Sun', views: 20 }
-                ] : [
-                  { name: 'Mon', views: 0 }, { name: 'Tue', views: 0 }, { name: 'Wed', views: 0 },
-                  { name: 'Thu', views: 0 }, { name: 'Fri', views: 0 }, { name: 'Sat', views: 0 }, { name: 'Sun', views: 0 }
                 ]}>
                   <defs>
-                    <linearGradient id="colorViewsNew" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="var(--gold)" stopOpacity={0.3}/>
+                    <linearGradient id="yieldGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="var(--gold)" stopOpacity={0.4}/>
                       <stop offset="95%" stopColor="var(--gold)" stopOpacity={0}/>
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" vertical={false} />
-                  <XAxis dataKey="name" stroke="rgba(255,255,255,0.2)" fontSize={10} axisLine={false} tickLine={false} dy={10} />
-                  <YAxis hide />
-                  <Tooltip contentStyle={{ background: 'rgba(10,10,15,0.95)', border: '1px solid rgba(212,175,55,0.2)', borderRadius: '12px', fontSize: '12px' }} />
-                  <Area type="monotone" dataKey="views" stroke="var(--gold)" strokeWidth={3} fillOpacity={1} fill="url(#colorViewsNew)" />
+                  <Tooltip contentStyle={{ background: 'var(--midnight)', borderColor: 'var(--gold-royal-dim)', borderRadius: '12px' }} />
+                  <Area type="monotone" dataKey="views" stroke="var(--gold)" strokeWidth={3} fill="url(#yieldGrad)" />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
           </div>
 
-          {/* Recently Viewed */}
-          <div className="glass-heavy" style={{ padding: '2rem', borderRadius: '28px', border: '1px solid rgba(255,255,255,0.03)' }}>
-            <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <RefreshCw size={18} style={{ color: 'var(--gold)' }} /> Recently Tracked
+          {/* Quick Metrics */}
+          <div className="bento-item glass-elite" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+            <div style={{ fontSize: '2.5rem', fontWeight: 950, color: 'var(--gold)' }}>{stats.favoritesCount}</div>
+            <div style={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', opacity: 0.6 }}>Saved Assets</div>
+          </div>
+
+          <div className="bento-item glass-elite" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+            <div style={{ fontSize: '2.5rem', fontWeight: 950, color: 'var(--gold)' }}>{stats.inquiriesCount}</div>
+            <div style={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', opacity: 0.6 }}>Active Inquiries</div>
+          </div>
+
+          {/* Recently Viewed (Secondary Large Bento) */}
+          <div className="bento-item glass-elite" style={{ gridColumn: 'span 2' }}>
+            <h3 style={{ fontSize: '1.1rem', fontWeight: 900, marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <RefreshCw size={18} style={{ color: 'var(--gold)' }} /> Performance History
             </h3>
             {recent && recent.length > 0 ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                {recent.filter(p => p && (p._id || p.id)).map((p, i) => (
-                  <Link key={i} to={`/property/${p._id || p.id}`} style={{ textDecoration: 'none', display: 'flex', gap: '1rem', alignItems: 'center', padding: '0.75rem', borderRadius: '16px', background: 'rgba(255,255,255,0.02)', transition: 'transform 0.2s' }} 
-                    onMouseEnter={e => e.currentTarget.style.transform = 'translateX(5px)'} onMouseLeave={e => e.currentTarget.style.transform = 'translateX(0)'}>
-                    <img src={(p.image || (p.images && p.images[0])) || '/placeholder-prop.jpg'} style={{ width: '50px', height: '50px', borderRadius: '10px', objectFit: 'cover' }} alt={p.title || 'Property'} />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'white', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.title || 'Property Asset'}</div>
-                      <div style={{ fontSize: '0.72rem', color: 'var(--txt-muted)' }}>{p.location || 'Andhra Pradesh'}</div>
-                    </div>
-                    <div style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--gold)' }}>
-                      {p.price ? (Number(p.price) >= 10000000 ? (Number(p.price) / 10000000).toFixed(2) + ' Cr' : (Number(p.price) / 100000).toFixed(2) + ' L') : 'Ask'}
-                    </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+                {recent.slice(0, 4).map((p, i) => (
+                  <Link key={i} to={`/property/${p._id || p.id}`} style={{ textDecoration: 'none', padding: '1rem', borderRadius: '16px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                    <div style={{ fontSize: '0.8rem', fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.title}</div>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--gold)', marginTop: '4px' }}>Analyze Asset →</div>
                   </Link>
                 ))}
               </div>
             ) : (
-              <div style={{ padding: '2rem', textAlign: 'center', opacity: 0.5 }}>
-                <p style={{ fontSize: '0.85rem', marginBottom: '1rem' }}>No recent history detected.</p>
-                <Link to="/" style={{ color: 'var(--gold)', fontSize: '0.8rem', fontWeight: 700, textDecoration: 'none' }}>Start Exploring Assets</Link>
-              </div>
+              <p style={{ opacity: 0.5, fontSize: '0.85rem' }}>No recent asset movements detected.</p>
             )}
+          </div>
+
+          {/* Institutional Badge */}
+          <div className="bento-item glass-elite" style={{ gridColumn: 'span 2', background: 'linear-gradient(135deg, var(--midnight-royal) 0%, #1a1a2e 100%)', display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+            <div style={{ width: '60px', height: '60px', borderRadius: '15px', background: 'var(--gold-royal-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <ShieldCheck size={32} style={{ color: 'var(--gold)' }} />
+            </div>
+            <div>
+              <div style={{ fontWeight: 950, fontSize: '1.1rem' }}>Executive Verification</div>
+              <div style={{ fontSize: '0.8rem', opacity: 0.7 }}>Your profile is currently under institutional review.</div>
+            </div>
           </div>
         </div>
 

@@ -157,8 +157,14 @@ const AdminSettings = () => {
   const [seoRobots, setSeoRobots] = useState('index, follow');
   const [seoStatus, setSeoStatus] = useState<SaveStatus>('idle');
 
+  // Google Marketing state
+  const [ga4Id, setGa4Id] = useState('');
+  const [gtmId, setGtmId] = useState('');
+  const [googleBusinessLink, setGoogleBusinessLink] = useState('');
+  const [marketingStatus, setMarketingStatus] = useState<SaveStatus>('idle');
+
   const [activeSection, setActiveSection] = useState<
-    'appearance' | 'hero' | 'seo' | 'profile' | 'password' | 'support' | 'whatsapp' | 'questions' | 'automation' | 'danger'
+    'appearance' | 'hero' | 'seo' | 'marketing' | 'profile' | 'password' | 'support' | 'whatsapp' | 'questions' | 'automation' | 'danger'
   >('appearance');
 
   // Hero section state
@@ -191,10 +197,11 @@ const AdminSettings = () => {
           fetchSetting('site_stats'),
           fetchSetting('seo'),
           fetchSetting('onboarding_questions'),
-          fetchSetting('automation_settings')
+          fetchSetting('automation_settings'),
+          fetchSetting('marketing_settings')
         ]);
 
-        const [wa, app, sup, hero, stats, seo, quest, auto] = results.map(r => r.status === 'fulfilled' ? r.value : null);
+        const [wa, app, sup, hero, stats, seo, quest, auto, mkt] = results.map(r => r.status === 'fulfilled' ? r.value : null);
 
         if (wa?.data) { setWaNumber(wa.data.number || ''); setWaMessage(wa.data.message || ''); }
         if (app?.data) {
@@ -231,6 +238,11 @@ const AdminSettings = () => {
         if (quest?.data && Array.isArray(quest.data) && quest.data.length > 0) setOnboardingQuestions(quest.data);
         if (auto?.data) {
           setFcmVapid(auto.data.fcmVapid || '');
+        }
+        if (mkt?.data) {
+          setGa4Id(mkt.data.ga4Id || '');
+          setGtmId(mkt.data.gtmId || '');
+          setGoogleBusinessLink(mkt.data.googleBusinessLink || '');
         }
         
       } finally {
@@ -547,6 +559,7 @@ const AdminSettings = () => {
           { key: 'appearance', label: 'Appearance' },
           { key: 'hero', label: 'Hero & Home' },
           { key: 'seo', label: 'SEO' },
+          { key: 'marketing', label: 'Google Marketing' },
           { key: 'profile', label: 'Profile' },
           { key: 'password', label: 'Password' },
           { key: 'support', label: 'Support' },
@@ -786,6 +799,39 @@ const AdminSettings = () => {
             <StatusAlert status={seoStatus} successMsg="SEO settings saved!" errorMsg="Failed to save SEO settings." />
             <button type="submit" disabled={seoStatus === 'saving'} className="btn btn-emerald" style={{ alignSelf:'flex-start' }}>
               {seoStatus === 'saving' ? 'Saving...' : 'Save SEO Settings'}
+            </button>
+          </form>
+        </div>
+      )}
+
+      {activeSection === 'marketing' && (
+        <div style={card('var(--emerald)')}>
+          {cardHeader(<Activity size={17} />, 'Google Marketing Integrations', 'Link your Google tools to enable powerful platform tracking.', 'rgba(16,217,140,0.1)', 'var(--emerald)')}
+          <form onSubmit={async (e) => {
+            e.preventDefault();
+            setMarketingStatus('saving');
+            try {
+              await saveSetting('marketing_settings', { ga4Id, gtmId, googleBusinessLink });
+              setMarketingStatus('success');
+            } catch {
+              setMarketingStatus('error');
+            }
+          }} style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            <div>
+              <label style={lbl}>Google Analytics 4 ID (e.g., G-XXXXXXX)</label>
+              {inputWrap(<Activity size={14} />, <input type="text" value={ga4Id} onChange={e => setGa4Id(e.target.value)} style={inp} placeholder="G-XXXXXXX" />)}
+            </div>
+            <div>
+              <label style={lbl}>Google Tag Manager ID (e.g., GTM-XXXXXX)</label>
+              {inputWrap(<Activity size={14} />, <input type="text" value={gtmId} onChange={e => setGtmId(e.target.value)} style={inp} placeholder="GTM-XXXXXX" />)}
+            </div>
+            <div>
+              <label style={lbl}>Google Business Profile Link</label>
+              {inputWrap(<LinkIcon size={14} />, <input type="url" value={googleBusinessLink} onChange={e => setGoogleBusinessLink(e.target.value)} style={inp} placeholder="https://g.page/r/.../review" />)}
+            </div>
+            <StatusAlert status={marketingStatus} successMsg="Marketing IDs saved!" errorMsg="Failed to save Marketing settings." />
+            <button type="submit" disabled={marketingStatus === 'saving'} className="btn btn-emerald" style={{ alignSelf: 'flex-start' }}>
+              {marketingStatus === 'saving' ? 'Saving...' : 'Deploy Analytics'}
             </button>
           </form>
         </div>

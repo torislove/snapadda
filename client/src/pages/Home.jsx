@@ -52,7 +52,7 @@ function RecentlySoldTicker() {
       background: 'rgba(16,217,140,0.07)', border: '1px solid rgba(16,217,140,0.2)',
       borderRadius: '40px', padding: '8px 16px', width: 'fit-content', maxWidth: '100%',
       overflow: 'hidden', marginBottom: '1.5rem',
-      transition: 'opacity 0.3s ease', opacity: visible ? 1 : 0
+      transition: 'opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)', opacity: visible ? 1 : 0, transform: visible ? 'scale(1)' : 'scale(0.98)'
     }}>
       <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10d98c', flexShrink: 0, animation: 'pulseDot 1.4s ease-in-out infinite' }} />
       <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.85)', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -163,7 +163,7 @@ export default function Home() {
 
   // 3D search platform tilt
   const mx = useMotionValue(0), my = useMotionValue(0);
-  const smx = useSpring(mx), smy = useSpring(my);
+  const smx = useSpring(mx, { stiffness: 300, damping: 30 }), smy = useSpring(my, { stiffness: 300, damping: 30 });
   const rotateX = useTransform(smy, [-0.5, 0.5], ['6deg', '-6deg']);
   const rotateY = useTransform(smx, [-0.5, 0.5], ['-6deg', '6deg']);
 
@@ -345,7 +345,7 @@ export default function Home() {
                   </button>
                 ))}
               </div>
-              <div className="search-main-row">
+              <div className="search-main-row" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                 <div className="search-bar-wrap">
                   <Search size={18} className="s-icon" />
                   <input
@@ -378,154 +378,30 @@ export default function Home() {
                   {keyword && <button className="search-clear" onMouseDown={e => { e.preventDefault(); setKeyword(''); }}><X size={14} /></button>}
                 </div>
 
-                <AnimatePresence>
-                  {isSearchExpanded && (
-                    <motion.div 
-                      initial={{ height: 0, opacity: 0, marginTop: 0 }}
-                      animate={{ height: 'auto', opacity: 1, marginTop: '2rem' }}
-                      exit={{ height: 0, opacity: 0, marginTop: 0 }}
-                      transition={{ duration: 0.5, ease: [0.34, 1.56, 0.64, 1] }}
-                      style={{ overflow: 'hidden', width: '100%' }}
-                    >
-                      <div className="search-selects-row" style={{ flexDirection: 'column', gap: '1.25rem', width: '100%', alignItems: 'stretch' }}>
-                        {/* Property Type Selection */}
-                        <div className="type-select-card">
-                          <div style={{ fontSize: '0.85rem', color: 'var(--txt-primary)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '0.75rem' }}>
-                            <Building2 size={14} style={{ color: 'var(--gold)' }}/> Property Type
-                          </div>
-                          <div className="property-type-cards">
-                            {PROPERTY_TYPES(t).map(type => (
-                              <div 
-                                key={type.value} 
-                                className={`property-type-card ${advFilters.propertyType === type.value ? 'active' : ''}`}
-                                onClick={() => setAdvFilters(prev => ({ ...prev, propertyType: prev.propertyType === type.value ? 'All' : type.value }))}
-                              >
-                                {type.icon}
-                                <span>{type.label}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* City Cards Selection */}
-                        <div className="city-select-card">
-                          <div style={{ fontSize: '0.85rem', color: 'var(--txt-primary)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <MapPin size={14} style={{ color: 'var(--gold)' }}/> Search by Nearby City
-                          </div>
-                          <div className="hero-city-cards-scroller">
-                            <div className={`city-image-pill ${!cityFilter ? 'active' : ''}`} onClick={() => setCityFilter(null)}>
-                              <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, var(--midnight) 0%, rgba(212,175,55,0.4) 100%)', zIndex: 0 }}></div>
-                              <span>All AP</span>
-                            </div>
-                            {cities && Array.isArray(cities) && cities.map(c => (
-                              <div key={c._id || c.id} className={`city-image-pill ${cityFilter === c.name ? 'active' : ''}`} onClick={() => setCityFilter(c.name)}>
-                                {c.image && <img src={c.image} alt={c.name} />}
-                                <span>{c.name}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                        
-                        {/* Budget Slider */}
-                        <div className="budget-card">
-                          <div style={{ fontSize: '0.85rem', color: 'var(--txt-primary)', fontWeight: 700, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
-                            <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><IndianRupee size={14} style={{ color: 'var(--gold)' }}/> Max Investment</span>
-                            <span style={{ color: 'var(--gold)', background: 'var(--gold-dim)', padding: '2px 8px', borderRadius: '6px', fontSize: '0.9rem', fontWeight: 800, border: '1px solid var(--gold-border)' }}>
-                              {(!budget || budget === '999999999') ? 'Any Budget' : `Up to ₹${Number(budget) >= 10000000 ? (Number(budget)/10000000) + ' Cr' : (Number(budget)/100000) + ' Lakhs'}`}
-                            </span>
-                          </div>
-                          <div className="budget-slider-wrap">
-                            <input 
-                              type="range" 
-                              min="1000000" 
-                              max="50000000" 
-                              step="1000000" 
-                              className="budget-slider-premium"
-                              value={budget && budget !== '999999999' ? budget : 50000000} 
-                              onChange={e => setBudget(e.target.value === '50000000' ? '999999999' : e.target.value)} 
-                            />
-                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', color: 'var(--txt-muted)', fontWeight: 600, marginTop: '8px' }}>
-                              <span>₹10L</span>
-                              <span>₹50L</span>
-                              <span>₹1Cr</span>
-                              <span>₹2.5Cr</span>
-                              <span>₹5Cr+</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                <div className="search-action-row" style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1rem', flexWrap: 'wrap' }}>
-                  {!isSearchExpanded ? (
-                    <button className="search-go-btn btn-3d" 
-                      onClick={() => setIsSearchExpanded(true)} 
-                      style={{ width: 'auto', padding: '0.8rem 2rem', background: 'var(--gold)', color: 'var(--midnight)', fontWeight: 800 }}>
-                      <Zap size={18} style={{ marginRight: '8px' }} />
-                      Unleash Precision Filters
-                    </button>
-                  ) : (
-                    <>
-                    <button className="search-go-btn btn-3d" 
-                      onClick={() => {
-                        if (!user) {
-                          navigate('/login', { state: { from: '/search' } });
-                          return;
-                        }
-                        const params = new URLSearchParams();
-                        if (keyword) params.set('keyword', keyword);
-                        if (intent && intent !== 'Any') params.set('purpose', intent);
-                        if (budget && budget !== '999999999') params.set('maxPrice', budget);
-                        if (cityFilter) params.set('city', cityFilter);
-                        if (advFilters.propertyType && advFilters.propertyType !== 'All') params.set('type', advFilters.propertyType);
-                        if (advFilters.bhk) params.set('bhk', advFilters.bhk);
-                        if (advFilters.minPrice) params.set('minPrice', advFilters.minPrice);
-                        
-                        // Log Institutional Activity
-                        logUserActivity(ACTIONS.SEARCH, { keyword, city: cityFilter, budget, type: advFilters.propertyType }, user?._id);
-                        
-                        navigate(`/search?${params.toString()}`);
-                      }} 
-                      style={{ width: 'auto', padding: '0.8rem 2rem', background: 'var(--gold)', color: 'var(--midnight)', fontWeight: 800 }}>
-                      <Search size={18} style={{ marginRight: '8px' }} />
-                      Execute Search
-                    </button>
-                    <button className="search-filter-btn btn-glass" onClick={() => setIsSearchExpanded(false)} style={{ width: 'auto', padding: '0.8rem 1.5rem', background: 'rgba(255,255,255,0.05)', color: 'white', fontWeight: 600, border: '1px solid rgba(255,255,255,0.1)' }}>
-                      <X size={18} style={{ marginRight: '8px' }} />
-                      Collapse
-                    </button>
-                    </>
-                  )}
-                  <button className="search-filter-btn btn-glass" onClick={() => setFilterOpen(true)} style={{ width: 'auto', padding: '0.8rem 1.5rem', background: 'rgba(255,255,255,0.05)', color: 'white', fontWeight: 600, border: '1px solid rgba(255,255,255,0.1)' }}>
-                    <SlidersHorizontal size={18} style={{ marginRight: '8px' }} />
-                    Advanced
-                    {filterCount > 0 && <span className="filter-badge" style={{ position: 'relative', top: 0, right: 0, marginLeft: '8px', border: '1px solid var(--gold)' }}>{filterCount}</span>}
+                <div className="search-action-row" style={{ width: '100%' }}>
+                  <button className="search-go-btn btn-3d" 
+                    onClick={() => {
+                      if (!user) {
+                        navigate('/login', { state: { from: '/search' } });
+                        return;
+                      }
+                      const params = new URLSearchParams();
+                      if (keyword) params.set('keyword', keyword);
+                      if (intent && intent !== 'Any') params.set('purpose', intent);
+                      if (budget && budget !== '999999999') params.set('maxPrice', budget);
+                      if (cityFilter) params.set('city', cityFilter);
+                      
+                      // Log Institutional Activity
+                      logUserActivity(ACTIONS.SEARCH, { keyword, city: cityFilter, budget }, user?._id);
+                      
+                      navigate(`/search?${params.toString()}`);
+                    }} 
+                    style={{ width: '100%', padding: '1rem', background: 'var(--gold)', color: 'var(--midnight)', fontWeight: 900, fontSize: '1.1rem', borderRadius: '16px', boxShadow: '0 10px 30px rgba(232, 184, 75, 0.3)' }}>
+                    <Zap size={20} style={{ marginRight: '10px' }} />
+                    {t('hero.searchBtn', 'Search Estates')}
                   </button>
                 </div>
               </div>
-              
-              <AnimatePresence>
-                {isSearchExpanded && (
-                  <motion.div 
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className="search-quick-chips"
-                  >
-                    {['1 BHK', '2 BHK', '3 BHK', '4+ BHK'].map(b => (
-                      <button key={b} className={`quick-chip${advFilters.bhk === b.split(' ')[0] ? ' active' : ''}`} onClick={() => setAdvFilters(prev => ({ ...prev, bhk: prev.bhk === b.split(' ')[0] ? '' : b.split(' ')[0] }))}>{b}</button>
-                    ))}
-                    <div className="chip-divider" />
-                    {[['Under 50L', '', '5000000'], ['50L-1Cr', '5000000', '10000000'], ['1Cr-2Cr', '10000000', '20000000'], ['2Cr+', '20000000', '']].map(([label, min, max]) => {
-                      const active = advFilters.minPrice === min && advFilters.maxPrice === max;
-                      return <button key={label} className={`quick-chip${active ? ' active' : ''}`} onClick={() => setAdvFilters(prev => active ? { ...prev, minPrice: '', maxPrice: '' } : { ...prev, minPrice: min, maxPrice: max })}>₹{label}</button>;
-                    })}
-                    {filterCount > 0 && <button className="quick-chip clear-chip" onClick={resetFilters}><X size={12} /> Clear</button>}
-                  </motion.div>
-                )}
-              </AnimatePresence>
             </motion.div>
           </div>
         </section>
@@ -536,11 +412,11 @@ export default function Home() {
               <MapPin size={12} /> {heroContent?.eyebrow || t('hero.eyebrow')}
             </motion.div>
             <motion.h1 className="hero-title" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, delay: 0.1 }}>
-              {(heroContent?.title || '').split('|')[0] || t('hero.title1')}
+              {heroContent?.title?.split('|')[0] || t('hero.title1')}
               <span className="gold-line text-royal-gold" style={{ display: 'block' }}>
                 {typedWord}<span style={{ color: 'var(--gold)', opacity: 0.7 }}>|</span>
               </span>
-              {(heroContent?.title || '').split('|')[1] || t('hero.title2')}
+              {heroContent?.title?.split('|')[1] || t('hero.title2')}
             </motion.h1>
             <motion.p className="hero-subtitle" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2 }}>
               {heroContent?.subtitle || t('hero.subtitle')}
@@ -622,7 +498,7 @@ export default function Home() {
                 </div>
                 <div className="properties-grid">
                   {sortedProperties.slice(0, 9).map((p, i) => (
-                    <motion.div key={`nearby-${p._id}`} initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ delay: i * 0.05 }}>
+                    <motion.div key={`nearby-${p._id}`} initial={{ opacity: 0, y: 15 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-50px' }} transition={{ type: 'spring', stiffness: 260, damping: 20, delay: i * 0.05 }}>
                       <PropertyCard {...p} />
                     </motion.div>
                   ))}

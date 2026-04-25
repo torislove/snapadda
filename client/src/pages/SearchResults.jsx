@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search, SlidersHorizontal, X, MapPin, Filter, ChevronLeft, ChevronRight,
   ArrowLeft, Building2, Home as HomeIcon, Square, Leaf, Trees, IndianRupee,
-  ShieldCheck, Compass, AlertCircle, NavigationOff, Navigation2, Radar as RadarIcon
+  ShieldCheck, Compass, AlertCircle, NavigationOff, Navigation2, Radar as RadarIcon, Award, Maximize2
 } from 'lucide-react';
 import { fetchProperties } from '../services/api';
 import PropertyCard from '../components/PropertyCard';
@@ -380,7 +380,7 @@ export default function SearchResults() {
                   hidden: { opacity: 0 },
                   visible: {
                     opacity: 1,
-                    transition: { staggerChildren: 0.1 }
+                    transition: { staggerChildren: 0.05 }
                   }
                 }}
               >

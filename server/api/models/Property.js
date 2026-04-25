@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 
 const propertySchema = new mongoose.Schema({
-  title: { type: String, required: true },
+  title: { type: String, default: '' },
   description: String,
   price: { type: Number, default: 0 },
   priceDisplay: { type: String, default: '' }, // "₹ 85,00,000" or "₹ 1.2 Crore"

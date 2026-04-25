@@ -57,6 +57,9 @@ const NAV_ITEMS = [
   { to: '/admin/guide',      label: 'System Guide',     icon: BookOpen, exact: false, activeClass: 'active-settings', color: 'var(--emerald)' },
 ];
 
+import { StatusBar, Style } from '@capacitor/status-bar';
+import { SplashScreen } from '@capacitor/splash-screen';
+
 const AdminLayout = () => {
   const location = useLocation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -64,6 +67,17 @@ const AdminLayout = () => {
   const { adminLogout, adminUser } = useAdminAuth();
 
   useEffect(() => {
+    const initNative = async () => {
+      try {
+        if ((window as any).Capacitor) {
+          await StatusBar.setStyle({ style: Style.Dark });
+          await StatusBar.setBackgroundColor({ color: '#030308' });
+          await SplashScreen.hide();
+        }
+      } catch (e) { console.warn(e); }
+    };
+    initNative();
+
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
@@ -183,12 +197,7 @@ const AdminLayout = () => {
               {isSidebarOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
             <div className="topbar-left-group" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              <span className="topbar-title desktop-only">{getPageTitle()}</span>
-              {/* Mobile-Only Title */}
-              <span className="topbar-title mobile-only" style={{ display: 'none', fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                {getPageTitle()}
-              </span>
-              
+              <span className="topbar-title">{getPageTitle()}</span>
               {/* Command Search Shortcut UI */}
               <div className="command-search-bar desktop-only" style={{
                 display: 'flex', alignItems: 'center', gap: '8px',
@@ -209,11 +218,6 @@ const AdminLayout = () => {
               {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </span>
             <div className="topbar-divider" />
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <span className="topbar-status-dot" />
-              <span className="topbar-status-text">Server Online</span>
-            </div>
-            <div className="topbar-divider" />
             <img
               src={adminUser?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(adminUser?.name || 'Admin')}&background=9b59f5&color=fff&bold=true`}
               alt={adminUser?.name ? `${adminUser.name} Avatar` : 'Admin Avatar'}
@@ -226,6 +230,11 @@ const AdminLayout = () => {
         <div className="admin-page-content animate-fade-in">
           <Outlet />
         </div>
+
+        {/* Mobile Floating Action Button (FAB) for rapid property entry */}
+        <Link to="/admin/properties" className="admin-fab mobile-only">
+          <Building size={24} />
+        </Link>
       </main>
     </div>
   );

@@ -333,7 +333,7 @@ const AdminProperties = () => {
       } catch (saveErr: any) {
         console.error("Database Save Failure:", saveErr);
         const serverMsg = saveErr.response?.data?.message || saveErr.message;
-        alert(`PROPERTY SAVE FAILED: ${serverMsg}\n\nTIP: Ensure all required fields (Title, Price, Location) are filled correctly.`);
+        alert(`PROPERTY SAVE FAILED: ${serverMsg}\n\nTIP: Check the form inputs for formatting errors.`);
       }
     } finally {
       setIsUploading(false);
@@ -801,9 +801,8 @@ const AdminProperties = () => {
                       <div style={{ width: '20px', height: '1px', background: 'var(--cyan)' }} /> PLOT SPECIFIC DETAILS
                     </h3>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1.5rem' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                         <input type="checkbox" name="isGated" defaultChecked={editingProperty?.isGated} />
-                         <label className="admin-label" style={{ marginBottom: 0 }}>Gated Community</label>
+                      <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                        Use "Additional Details" section for checkboxes like Gated Community or Corner Plot.
                       </div>
                     </div>
                   </section>
