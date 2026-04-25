@@ -446,10 +446,10 @@ const AdminProperties = () => {
               whileHover={{ scale: 1.05, y: -2 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => setIsAdding(true)}
-              className="btn btn-violet" 
-              style={{ padding: '0.85rem 2rem', borderRadius: '14px', fontSize: '0.9rem', fontWeight: 800, boxShadow: '0 10px 20px rgba(155,89,245,0.2)' }}
+              className="btn btn-violet btn-3d-liquid" 
+              style={{ padding: '0.85rem 2.5rem', borderRadius: '14px', fontSize: '1rem', fontWeight: 900, boxShadow: '0 15px 35px rgba(155,89,245,0.3)', background: 'var(--violet)' }}
             >
-              <Plus size={18} /> ADD ANY PROPERTY
+              <Plus size={22} /> CREATE NEW ASSET
             </motion.button>
           </div>
         )}
@@ -463,9 +463,10 @@ const AdminProperties = () => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -30 }}
             className="admin-grid-1-2"
+            style={{ willChange: 'transform' }}
           >
             {/* Editor Console */}
-            <div className="glass-card" style={{ padding: '3rem', borderRadius: '28px', border: '1px solid rgba(255,255,255,0.08)' }}>
+            <div className="glass-card" style={{ padding: '3rem', borderRadius: '28px', border: '1px solid rgba(255,255,255,0.08)', transform: 'translateZ(0)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem' }}>
                 <h2 style={{ fontSize: '1.75rem', fontWeight: 800, color: 'white', fontFamily: 'var(--font-heading)' }}>
                   {isEditing ? 'Modify Property' : 'Add Property'}

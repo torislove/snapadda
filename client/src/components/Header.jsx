@@ -46,7 +46,9 @@ export default function Header() {
           WebkitBackdropFilter: 'blur(30px)',
           borderBottom: scrolled || mobileMenuOpen ? '1px solid rgba(212,175,55,0.25)' : '1px solid rgba(212,175,55,0.1)',
           boxShadow: scrolled ? '0 4px 30px rgba(0,0,0,0.4)' : 'none',
-          transition: 'all 0.3s ease',
+          transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+          zIndex: 9998,
+          transform: 'translateZ(0)', /* GPU acceleration to prevent flicker */
         }}
       >
         <div className="container nav-inner" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '100%', padding: '0 clamp(0.75rem, 4vw, 2rem)' }}>
@@ -84,24 +86,26 @@ export default function Header() {
             <button
               onClick={toggleLang}
               aria-label={i18n.language === 'en' ? 'Switch to Telugu' : 'Switch to English'}
+              className="btn-3d-liquid"
               style={{
-                background: 'rgba(212,175,55,0.1)',
-                border: '1px solid rgba(212,175,55,0.35)',
+                background: 'rgba(212,175,55,0.05)',
+                border: '1px solid rgba(212,175,55,0.3)',
                 color: 'var(--gold)',
-                padding: '0.35rem 0.6rem',
-                borderRadius: '8px',
+                padding: '0.4rem 0.75rem',
+                borderRadius: '10px',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '5px',
-                fontSize: '0.72rem',
-                fontWeight: 700,
-                minHeight: '36px',
+                gap: '6px',
+                fontSize: '0.75rem',
+                fontWeight: 800,
+                minHeight: '38px',
                 whiteSpace: 'nowrap',
+                boxShadow: scrolled ? '0 5px 15px rgba(0,0,0,0.3)' : 'none',
               }}
             >
-              <Globe size={13} />
-              <span className="desktop-only" style={{ display: 'inline' }}>{i18n.language === 'en' ? 'తెలుగు' : 'English'}</span>
+              <Globe size={14} />
+              <span className="desktop-only" style={{ display: 'inline' }}>{i18n.language === 'en' ? 'తెలుగు' : 'ENGLISH'}</span>
               <span className="mobile-only">{i18n.language === 'en' ? 'TE' : 'EN'}</span>
             </button>
 

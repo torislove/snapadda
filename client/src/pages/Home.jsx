@@ -328,7 +328,7 @@ export default function Home() {
             <motion.div
               ref={searchRef}
               className="search-platform glass-heavy search-glass-card"
-              style={{ rotateX, rotateY, transformStyle: 'preserve-3d' }}
+              style={{ rotateX, rotateY, transformStyle: 'preserve-3d', willChange: 'transform' }}
               onMouseMove={e => {
                 if (!searchRef.current) return;
                 const r = searchRef.current.getBoundingClientRect();
@@ -379,7 +379,7 @@ export default function Home() {
                 </div>
 
                 <div className="search-action-row" style={{ width: '100%' }}>
-                  <button className="search-go-btn btn-3d" 
+                  <button className="search-go-btn btn-3d-liquid" 
                     onClick={() => {
                       if (!user) {
                         navigate('/login', { state: { from: '/search' } });
@@ -396,9 +396,9 @@ export default function Home() {
                       
                       navigate(`/search?${params.toString()}`);
                     }} 
-                    style={{ width: '100%', padding: '1rem', background: 'var(--gold)', color: 'var(--midnight)', fontWeight: 900, fontSize: '1.1rem', borderRadius: '16px', boxShadow: '0 10px 30px rgba(232, 184, 75, 0.3)' }}>
-                    <Zap size={20} style={{ marginRight: '10px' }} />
-                    {t('hero.searchBtn', 'Search Estates')}
+                    style={{ width: '100%', padding: '1.25rem', background: 'var(--gold)', color: 'var(--midnight)', fontWeight: 900, fontSize: '1.1rem', borderRadius: '18px', boxShadow: '0 15px 35px rgba(232, 184, 75, 0.4)' }}>
+                    <Zap size={22} style={{ marginRight: '10px' }} />
+                    {t('hero.searchBtn', 'EXPLORE ELITE ESTATES')}
                   </button>
                 </div>
               </div>
@@ -575,11 +575,11 @@ export default function Home() {
                 <h2 style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>{t('cta.title')}</h2>
                 <p style={{ fontSize: '1.15rem', color: 'var(--txt-secondary)', marginBottom: '2.5rem' }}>{t('cta.subtitle')}</p>
                 <div className="cta-buttons" style={{ display: 'flex', gap: '1.25rem', flexWrap: 'wrap', justifyContent: 'center' }}>
-                  <a href={`tel:${supportPhone}`} className="hero-btn hero-btn-primary pulse-primary btn-3d" style={{ textDecoration: 'none', padding: '1.1rem 2.5rem', minWidth: '220px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Phone size={20} style={{ marginRight: '10px' }} /> CALL AGENT NOW
+                  <a href={`tel:${supportPhone}`} className="hero-btn hero-btn-primary pulse-primary btn-3d-liquid" style={{ textDecoration: 'none', padding: '1.25rem 3rem', minWidth: '240px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--gold)', color: 'var(--midnight)' }}>
+                    <Phone size={22} style={{ marginRight: '12px' }} /> CALL SENIOR AGENT
                   </a>
-                  <a href={`https://wa.me/${supportWA}?text=Hello, I am interested in property in Andhra.`} className="hero-btn hero-btn-whatsapp pulse-green btn-3d-emerald" style={{ textDecoration: 'none', padding: '1.1rem 2.5rem', minWidth: '220px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <MessageSquare size={20} style={{ marginRight: '10px' }} /> {t('cta.whatsapp')}
+                  <a href={`https://wa.me/${supportWA}?text=Hello, I am interested in property in Andhra.`} className="hero-btn hero-btn-whatsapp pulse-green btn-3d-emerald" style={{ textDecoration: 'none', padding: '1.25rem 3rem', minWidth: '240px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <MessageSquare size={22} style={{ marginRight: '12px' }} /> {t('cta.whatsapp')}
                   </a>
                 </div>
               </div>

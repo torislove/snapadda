@@ -104,23 +104,27 @@ const AdminCities = () => {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--spacing-xl)' }}>
         <h1>Andhra Regions & Cities</h1>
-        <Button size="sm" onClick={() => {
-          setIsAdding(!isAdding);
-          if (isEditing) {
-            setIsEditing(false);
-            setEditingCity(null);
-            setCurrentImageUrl('');
-            setNewImageFile(null);
-          }
-        }}>
-          {isAdding ? <X size={18} /> : <Plus size={18} />}
-          {isAdding ? ' Close' : ' Add New City'}
+        <Button 
+          className="btn-3d-liquid"
+          style={{ background: 'var(--violet)', color: 'white', borderRadius: '14px', padding: '0.8rem 1.5rem', fontWeight: 800, border: 'none', boxShadow: '0 10px 20px rgba(155,89,245,0.2)' }}
+          onClick={() => {
+            setIsAdding(!isAdding);
+            if (isEditing) {
+              setIsEditing(false);
+              setEditingCity(null);
+              setCurrentImageUrl('');
+              setNewImageFile(null);
+            }
+          }}
+        >
+          {isAdding ? <X size={20} /> : <Plus size={20} />}
+          {isAdding ? ' CLOSE CONSOLE' : ' ADD NEW REGION'}
         </Button>
       </div>
 
       {isAdding && (
-        <div style={{ backgroundColor: 'var(--bg-secondary)', padding: 'var(--spacing-xl)', borderRadius: 'var(--radius-md)', marginBottom: 'var(--spacing-xl)', border: '1px solid var(--border-subtle)' }}>
-          <h2 style={{ marginBottom: 'var(--spacing-md)' }}>{isEditing ? `Edit: ${editingCity?.name}` : 'Add New Region'}</h2>
+        <div className="glass-card" style={{ padding: '2.5rem', borderRadius: '28px', marginBottom: '2.5rem', border: '1px solid rgba(255,255,255,0.08)', transform: 'translateZ(0)' }}>
+          <h2 style={{ marginBottom: '2rem', fontSize: '1.5rem', fontWeight: 800 }}>{isEditing ? `Modify Region: ${editingCity?.name}` : 'Register Strategic Region'}</h2>
           <form onSubmit={handleAddSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--spacing-lg)' }}>
             <div>
               <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>City/Region Name</label>

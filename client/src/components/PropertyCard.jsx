@@ -308,22 +308,22 @@ const PropertyCard = memo(({
                 e.preventDefault(); e.stopPropagation(); 
                 if (!user) { navigate('/login', { state: { from: `/property/${propertyId}` } }); }
                 else { navigate(`/property/${propertyId}`); }
-              }} className="pc-btn pc-btn-view btn-3d" style={{ padding: '0.5rem', fontSize: '0.7rem' }}>
-                <Eye size={13} style={{ marginRight: '4px' }}/> {t('card.details', 'VIEW')}
+              }} className="pc-btn pc-btn-view btn-3d-liquid" style={{ flex: 1, padding: '0.6rem', fontSize: '0.75rem' }}>
+                <Eye size={14} style={{ marginRight: '6px' }}/> {t('card.details', 'VIEW ASSET')}
               </button>
               
-              <div style={{ display: 'flex', gap: '6px' }}>
-                <a href={`tel:${supportPhone}`} onClick={(e) => e.stopPropagation()} className="pc-btn pc-btn-call" style={{ padding: '0.4rem' }}>
-                  <Phone size={13}/>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <a href={`tel:${supportPhone}`} onClick={(e) => e.stopPropagation()} className="pc-btn pc-btn-call glass-premium" style={{ width: '40px', height: '40px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '12px' }}>
+                  <Phone size={16}/>
                 </a>
                 <a 
                   href={`https://wa.me/${supportWA}?text=Interested in: ${title}`} 
                   onClick={(e) => e.stopPropagation()}
                   target="_blank" rel="noopener noreferrer" 
                   className="pc-btn pc-btn-wa btn-3d-emerald"
-                  style={{ padding: '0.4rem', borderRadius: '50%' }}
+                  style={{ width: '40px', height: '40px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', boxShadow: '0 5px 15px rgba(39,201,125,0.3)' }}
                 >
-                  <MessageSquare size={13}/>
+                  <MessageSquare size={16}/>
                 </a>
               </div>
             </div>

@@ -24,15 +24,17 @@ const MobileNav = () => {
       className="mobile-only"
       style={{
       position: 'fixed', bottom: 0, left: 0, right: 0,
-      height: 'calc(65px + env(safe-area-inset-bottom))',
-      background: 'rgba(5, 5, 10, 0.95)',
-      backdropFilter: 'blur(20px)',
-      borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+      height: 'calc(65px + env(safe-area-inset-bottom, 0px))',
+      background: 'rgba(7, 7, 15, 0.9)',
+      backdropFilter: 'blur(25px) saturate(150%)',
+      WebkitBackdropFilter: 'blur(25px) saturate(150%)',
+      borderTop: '1px solid rgba(255, 255, 255, 0.12)',
       display: 'flex', justifyContent: 'space-around', alignItems: 'center',
-      paddingBottom: 'env(safe-area-inset-bottom)',
-      zIndex: 1000,
-      padding: '0 10px',
-      boxShadow: '0 -10px 30px rgba(0,0,0,0.5)',
+      paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+      zIndex: 9999, /* High z-index but below full-screen modals */
+      padding: '0 5px',
+      boxShadow: '0 -8px 32px rgba(0,0,0,0.6)',
+      transform: 'translateZ(0)', /* GPU Acceleration */
     }}>
       {navItems.map((item) => {
         const isActive = location.pathname === item.path || (item.id === 'profile' && location.pathname.startsWith('/dashboard'));

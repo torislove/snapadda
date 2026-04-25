@@ -426,11 +426,11 @@ export default function SearchResults() {
             onClick={() => setShowMobileFilter(false)}>
             <motion.div 
               initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
-              transition={{ type: 'spring', stiffness: 350, damping: 35 }}
-              drag="y" dragConstraints={{ top: 0 }} dragElastic={0.2}
-              onDragEnd={(e, info) => { if (info.offset.y > 100) setShowMobileFilter(false); }}
+              transition={{ type: 'spring', stiffness: 400, damping: 35 }}
+              drag="y" dragConstraints={{ top: 0 }} dragElastic={0.15}
+              onDragEnd={(e, info) => { if (info.offset.y > 120) setShowMobileFilter(false); }}
               onClick={e => e.stopPropagation()}
-              style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'rgba(9,9,18,0.98)', borderTop: '1px solid rgba(255,255,255,0.1)', borderRadius: '28px 28px 0 0', padding: '1.5rem', maxHeight: '90vh', overflowY: 'auto' }}>
+              style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'rgba(9,9,18,0.98)', borderTop: '1px solid rgba(255,255,255,0.15)', borderRadius: '32px 32px 0 0', padding: '1.5rem', maxHeight: '92vh', overflowY: 'auto', transform: 'translateZ(0)' }}>
               <div style={{ width: '40px', height: '4px', background: 'rgba(255,255,255,0.2)', borderRadius: '4px', margin: '0 auto 1.5rem auto' }} />
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                 <div style={{ fontWeight: 800, color: 'white', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -440,8 +440,8 @@ export default function SearchResults() {
               </div>
               {filterPanel}
               <div style={{ position: 'sticky', bottom: '-1.5rem', left: 0, right: 0, background: 'linear-gradient(to top, rgba(9,9,18,1) 50%, rgba(9,9,18,0))', padding: '1.5rem 0', marginTop: '1rem', zIndex: 10 }}>
-                <button onClick={() => setShowMobileFilter(false)} style={{ width: '100%', padding: '1.1rem', background: 'var(--gold)', color: '#000', border: 'none', borderRadius: '16px', fontWeight: 800, fontSize: '0.95rem', cursor: 'pointer', boxShadow: '0 8px 20px rgba(245,200,66,0.3)' }}>
-                  Show {meta.total} Matching Results
+                <button onClick={() => setShowMobileFilter(false)} className="btn-3d-liquid" style={{ width: '100%', padding: '1.25rem', background: 'var(--gold)', color: 'var(--midnight)', border: 'none', borderRadius: '18px', fontWeight: 900, fontSize: '1rem', cursor: 'pointer', boxShadow: '0 12px 30px rgba(232,184,75,0.4)' }}>
+                  SHOW {meta.total} MATCHING ASSETS
                 </button>
               </div>
             </motion.div>

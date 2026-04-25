@@ -522,25 +522,25 @@ const AdminLeads = () => {
 
       {/* Dash Stats Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
-         <div className="glass-card" style={{ padding: '1.5rem' }}>
-            <div style={{ color: 'var(--emerald)', marginBottom: '0.5rem' }}><TrendingUp size={20} /></div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 900, color: 'white' }}>₹2.4 Cr</div>
-            <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 700, letterSpacing: '0.05em' }}>PIPELINE VALUE</div>
+         <div className="glass-card" style={{ padding: '1.75rem', borderTop: '3px solid var(--emerald)' }}>
+            <div style={{ color: 'var(--emerald)', marginBottom: '0.75rem' }}><TrendingUp size={22} /></div>
+            <div style={{ fontSize: '1.75rem', fontWeight: 900, color: 'white', fontFamily: 'var(--font-heading)' }}>₹2.4 Cr</div>
+            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 800, letterSpacing: '0.1em' }}>PIPELINE ALPHA</div>
          </div>
-         <div className="glass-card" style={{ padding: '1.5rem' }}>
-            <div style={{ color: 'var(--violet)', marginBottom: '0.5rem' }}><Zap size={20} /></div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 900, color: 'white' }}>88%</div>
-            <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 700, letterSpacing: '0.05em' }}>CONVERSION ALPHA</div>
+         <div className="glass-card" style={{ padding: '1.75rem', borderTop: '3px solid var(--violet)' }}>
+            <div style={{ color: 'var(--violet)', marginBottom: '0.75rem' }}><Zap size={22} /></div>
+            <div style={{ fontSize: '1.75rem', fontWeight: 900, color: 'white', fontFamily: 'var(--font-heading)' }}>88%</div>
+            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 800, letterSpacing: '0.1em' }}>CONVERSION VELOCITY</div>
          </div>
-         <div className="glass-card" style={{ padding: '1.5rem' }}>
-            <div style={{ color: 'var(--gold)', marginBottom: '0.5rem' }}><PieChart size={20} /></div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 900, color: 'white' }}>{leads.length}</div>
-            <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 700, letterSpacing: '0.05em' }}>LIFETIME NODES</div>
+         <div className="glass-card" style={{ padding: '1.75rem', borderTop: '3px solid var(--gold)' }}>
+            <div style={{ color: 'var(--gold)', marginBottom: '0.75rem' }}><PieChart size={22} /></div>
+            <div style={{ fontSize: '1.75rem', fontWeight: 900, color: 'white', fontFamily: 'var(--font-heading)' }}>{leads.length}</div>
+            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 800, letterSpacing: '0.1em' }}>STRATEGIC NODES</div>
          </div>
-         <div className="glass-card" style={{ padding: '1.5rem' }}>
-            <div style={{ color: 'var(--rose)', marginBottom: '0.5rem' }}><Clock size={20} /></div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 900, color: 'white' }}>1.2h</div>
-            <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 700, letterSpacing: '0.05em' }}>AVG RESPONSE TIME</div>
+         <div className="glass-card" style={{ padding: '1.75rem', borderTop: '3px solid var(--rose)' }}>
+            <div style={{ color: 'var(--rose)', marginBottom: '0.75rem' }}><Clock size={22} /></div>
+            <div style={{ fontSize: '1.75rem', fontWeight: 900, color: 'white', fontFamily: 'var(--font-heading)' }}>1.2h</div>
+            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 800, letterSpacing: '0.1em' }}>SIGNAL LATENCY</div>
          </div>
       </div>
 
