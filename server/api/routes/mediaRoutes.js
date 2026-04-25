@@ -1,12 +1,12 @@
 import express from 'express';
-import multer from 'multer';
 import { v2 as cloudinary } from 'cloudinary';
-import { CloudinaryStorage } from 'multer-storage-cloudinary';
 import dotenv from 'dotenv';
+import Busboy from 'busboy';
+import path from 'path';
 
 dotenv.config();
 
-// Ensure Cloudinary is configured specifically for this route set
+// Ensure Cloudinary is configured
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
@@ -15,30 +15,27 @@ cloudinary.config({
 
 const router = express.Router();
 
-// Cloudinary Storage Config for Multer
-const storage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: async (req, file) => {
-    const isVideo = file.mimetype.startsWith('video/');
+// Helper to upload a buffer to Cloudinary
+const uploadToCloudinary = (buffer, mimetype, originalname) => {
+  return new Promise((resolve, reject) => {
+    const isVideo = mimetype.startsWith('video/');
     const folder = isVideo ? 'snapadda/videos' : 'snapadda/properties';
     
-    return {
-      folder: folder,
-      resource_type: 'auto',
-      allowed_formats: ['jpg', 'png', 'jpeg', 'webp', 'mp4', 'mov', 'heic', 'heif', 'bmp', 'pdf'],
-      public_id: `file_${Date.now()}_${Math.round(Math.random() * 1E9)}`,
-      transformation: isVideo ? [] : [{ width: 800, crop: "limit" }, { fetch_format: "auto", quality: "auto" }]
-    };
-  }
-});
-
-const upload = multer({ 
-  storage: storage,
-  limits: {
-    fileSize: 50 * 1024 * 1024, // Increased to 50MB for videos
-    files: 20
-  }
-});
+    const uploadStream = cloudinary.uploader.upload_stream(
+      {
+        folder: folder,
+        resource_type: 'auto',
+        public_id: `file_${Date.now()}_${Math.round(Math.random() * 1E9)}`,
+        transformation: isVideo ? [] : [{ width: 1280, crop: "limit" }, { fetch_format: "auto", quality: "auto" }]
+      },
+      (error, result) => {
+        if (error) reject(error);
+        else resolve(result.secure_url);
+      }
+    );
+    uploadStream.end(buffer);
+  });
+};
 
 // Health Check for Cloudinary Config
 router.get('/health', (req, res) => {
@@ -52,7 +49,9 @@ router.get('/health', (req, res) => {
 
 // POST /api/media/upload
 router.post('/upload', async (req, res) => {
-  // Check if it's base64 payload
+  console.log('UPLOAD_START: Method:', req.method, 'Content-Type:', req.headers['content-type']);
+
+  // Handle JSON (Base64) fallback - though we primarily use FormData now
   if (req.headers['content-type'] && req.headers['content-type'].includes('application/json')) {
     try {
       const { files } = req.body;
@@ -61,66 +60,70 @@ router.post('/upload', async (req, res) => {
       }
 
       const uploadPromises = files.map(fileStr => {
-        const isVideo = fileStr.includes('video/') || fileStr.includes('mp4') || fileStr.includes('webm');
+        const isVideo = fileStr.includes('video/') || fileStr.includes('mp4');
         return cloudinary.uploader.upload(fileStr, {
           folder: 'snapadda/properties',
           resource_type: 'auto',
-          transformation: isVideo ? [] : [
-            { width: 800, crop: "limit" },
-            { fetch_format: "auto", quality: "auto" }
-          ]
+          transformation: isVideo ? [] : [{ width: 1280, crop: "limit" }, { fetch_format: "auto", quality: "auto" }]
         });
       });
 
       const results = await Promise.all(uploadPromises);
-      const urls = results.map(r => r.secure_url);
-
-      return res.json({
-        status: 'success',
-        data: urls
-      });
+      return res.json({ status: 'success', data: results.map(r => r.secure_url) });
     } catch (error) {
       console.error('B64 UPLOAD ERROR:', error);
-      return res.status(500).json({ status: 'error', message: 'Failed to upload media via base64' });
+      return res.status(500).json({ status: 'error', message: 'Failed to upload base64 media' });
     }
   }
 
-  // Fallback to multer for multipart/form-data
-  upload.array('files', 20)(req, res, (err) => {
-    if (err instanceof multer.MulterError) {
-      console.error('MULTER_SPECIFIC_ERROR:', err.code, err.message);
-      let message = 'File upload failed: ' + err.message;
-      if (err.code === 'LIMIT_FILE_SIZE') message = 'File too large (Max 50MB)';
-      if (err.code === 'LIMIT_FILE_COUNT') message = 'Too many files (Max 20)';
-      return res.status(400).json({ status: 'error', message });
-    } else if (err) {
-      console.error('GENERIC_UPLOAD_ERROR:', err);
-      // Detailed error logging for Cloudinary failures
-      const errorMsg = err.message || (typeof err === 'string' ? err : 'Unknown failure');
-      return res.status(500).json({ 
-        status: 'error', 
-        message: 'Cloudinary server error: ' + errorMsg,
-        details: process.env.NODE_ENV !== 'production' ? err : undefined
+  // Handle Multipart (FormData) using Busboy (More resilient on Firebase/GCF)
+  try {
+    const busboy = Busboy({ headers: req.headers });
+    const uploadPromises = [];
+    
+    busboy.on('file', (fieldname, file, info) => {
+      const { filename, encoding, mimeType } = info;
+      console.log(`Processing file: ${filename}, ${mimeType}`);
+      
+      const chunks = [];
+      file.on('data', (data) => chunks.push(data));
+      file.on('end', () => {
+        const buffer = Buffer.concat(chunks);
+        uploadPromises.push(uploadToCloudinary(buffer, mimeType, filename));
       });
-    }
+    });
 
-    try {
-      console.log('FILES_FOUND:', req.files?.length || 0);
-
-      if (!req.files || req.files.length === 0) {
-        return res.status(400).json({ status: 'error', message: 'No files were uploaded. Please select images.' });
+    busboy.on('finish', async () => {
+      try {
+        const urls = await Promise.all(uploadPromises);
+        console.log('UPLOAD_COMPLETE: Files:', urls.length);
+        
+        if (urls.length === 0) {
+          return res.status(400).json({ status: 'error', message: 'No files were detected in the form' });
+        }
+        
+        res.json({ status: 'success', data: urls });
+      } catch (err) {
+        console.error('CLOUDINARY_BATCH_ERROR:', err);
+        res.status(500).json({ status: 'error', message: 'Cloudinary upload failed: ' + err.message });
       }
+    });
 
-      const urls = req.files.map(file => file.path || file.secure_url || file.url);
-      res.json({
-        status: 'success',
-        data: urls
-      });
-    } catch (criticalErr) {
-      console.error('CRITICAL_POST_UPLOAD_ERROR:', criticalErr);
-      res.status(500).json({ status: 'error', message: 'System error processing uploaded media' });
+    busboy.on('error', (err) => {
+      console.error('BUSBOY_ERROR:', err);
+      res.status(500).json({ status: 'error', message: 'Form parsing error: ' + err.message });
+    });
+
+    // If Firebase pre-parsed the body into rawBody, we must use that
+    if (req.rawBody) {
+      busboy.end(req.rawBody);
+    } else {
+      req.pipe(busboy);
     }
-  });
+  } catch (criticalErr) {
+    console.error('CRITICAL_UPLOAD_HANDLER_ERROR:', criticalErr);
+    res.status(500).json({ status: 'error', message: 'Media handler crash: ' + criticalErr.message });
+  }
 });
 
 export default router;

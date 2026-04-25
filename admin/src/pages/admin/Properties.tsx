@@ -177,8 +177,8 @@ const AdminProperties = () => {
   };
   
   const handleGenerateAIDescription = async () => {
-    if (!liveData.title || !liveData.location) {
-      alert("Please enter a Title and Location first to help the AI.");
+    if (!liveData.title) {
+      alert("Please enter a Title first to help the AI.");
       return;
     }
     

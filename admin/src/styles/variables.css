@@ -1,0 +1,101 @@
+:root {
+  /* ── Core Backgrounds (Deep Dark) ── */
+  --bg-primary:    #020205; /* Blacker Hole */
+  --bg-secondary:  #05060b;
+  --bg-tertiary:   #0a0b14;
+  --bg-glass:      rgba(255, 255, 255, 0.02);
+  --bg-glass-heavy:rgba(255, 255, 255, 0.045);
+  --bg-glass-hover:rgba(255, 255, 255, 0.07);
+
+  /* ── Legacy App.css Tokens ── */
+  --midnight:      #05050a;
+  --midnight-deep: #020205;
+  --glass:         rgba(255, 255, 255, 0.03);
+  --glass-border:  rgba(255, 255, 255, 0.1);
+
+  /* ── Text Palette ── */
+  --text-primary:   #ffffff;
+  --text-secondary: #a1a1aa;
+  --text-muted:     #52525b;
+  
+  /* App.css text aliases */
+  --txt-primary:    var(--text-primary);
+  --txt-secondary:  #c5beb5;
+  --txt-muted:      #7d756d;
+
+  /* ── Accent Palette ── */
+  --gold:           #f5c842;
+  --gold-light:     #fcd58e;
+  --gold-dim:       rgba(245, 200, 66, 0.12);
+  --gold-glow:      0 0 24px rgba(245, 200, 66, 0.25);
+  --gold-border:    rgba(232, 184, 75, 0.25);
+
+  --violet:         #9b59f5;
+  --violet-dim:     rgba(155, 89, 245, 0.12);
+  --violet-glow:    0 0 24px rgba(155, 89, 245, 0.3);
+
+  --cyan:           #22d9e0;
+  --cyan-dim:       rgba(34, 217, 224, 0.1);
+  --cyan-glow:      0 0 24px rgba(34, 217, 224, 0.25);
+
+  --rose:           #f5397b;
+  --rose-dim:       rgba(245, 57, 123, 0.1);
+  --rose-glow:      0 0 24px rgba(245, 57, 123, 0.25);
+
+  --emerald:        #10d98c;
+  --emerald-dim:    rgba(16, 217, 140, 0.1);
+  --emerald-glow:   0 0 24px rgba(16, 217, 140, 0.25);
+
+  --orange:         #ff8c42;
+  --orange-dim:     rgba(255, 140, 66, 0.1);
+
+  /* ── Layout & Grid ── */
+  --nav-h:          70px;
+  --sidebar-w:      260px;
+  --spacing-xs:     0.25rem;
+  --spacing-sm:     0.5rem;
+  --spacing-md:     1rem;
+  --spacing-lg:     1.5rem;
+  --spacing-xl:     2rem;
+  --spacing-xxl:    3rem;
+
+  /* ── Radii ── */
+  --radius-sm:      8px;
+  --radius-md:      14px;
+  --radius-lg:      20px;
+  --radius-xl:      28px;
+  --radius-full:    9999px;
+  
+  /* App.css aliases */
+  --r-md:           var(--radius-md);
+  --r-lg:           var(--radius-lg);
+
+  /* ── Typography ── */
+  --font-heading:   'Cormorant Garamond', serif;
+  --font-body:      'Plus Jakarta Sans', sans-serif;
+  --font-mono:      'Space Grotesk', sans-serif;
+
+  /* ── Shadows ── */
+  --shadow-sm:      0 1px 4px rgba(0,0,0,0.6);
+  --shadow-md:      0 4px 16px rgba(0,0,0,0.7);
+  --shadow-lg:      0 16px 48px rgba(0,0,0,0.8);
+  --shadow-gold:    0 0 24px rgba(245, 200, 66, 0.2);
+  --shadow-violet:  0 0 24px rgba(155, 89, 245, 0.25);
+
+  /* ── Transitions ── */
+  --transition-fast:   0.15s ease;
+  --transition-normal: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow:   0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-spring: 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-butter:       cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* ── System Helpers ── */
+  --border:            rgba(255, 255, 255, 0.07);
+  --border-light:      rgba(255, 255, 255, 0.12);
+  --border-subtle:     rgba(255, 255, 255, 0.07);
+  --border-focus:      rgba(155, 89, 245, 0.5);
+  --border-gold:       rgba(245, 200, 66, 0.3);
+  --error:             #f5397b;
+  --success:           #10d98c;
+  --warning:           #ff8c42;
+}

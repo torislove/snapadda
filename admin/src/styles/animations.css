@@ -1,0 +1,52 @@
+/* ── Keyframes ── */
+@keyframes bgDrift {
+  0% { transform: translate(-5%, -5%) scale(1); }
+  100% { transform: translate(5%, 5%) scale(1.1); }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInLeft {
+  from { opacity: 0; transform: translateX(-16px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(155, 89, 245, 0); }
+  50%       { box-shadow: 0 0 16px 4px rgba(155, 89, 245, 0.25); }
+}
+
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50%      { transform: translateY(-4px); }
+}
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes count-up {
+  from { opacity: 0; transform: scale(0.8); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* ── Animation Utility Classes ── */
+.animate-fade-in    { animation: fadeInUp 0.5s ease-out forwards; }
+.animate-fade-left  { animation: fadeInLeft 0.4s ease-out forwards; }
+.animate-float      { animation: float 3s ease-in-out infinite; }
+.animate-count-up   { animation: count-up 0.6s var(--transition-spring) forwards; }
+.animate-spin-slow  { animation: spin-slow 8s linear infinite; }
+.animate-shimmer    {
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}

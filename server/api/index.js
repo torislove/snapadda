@@ -263,7 +263,7 @@ app.use((req, res) => {
 // Export for Firebase Functions
 export const api = onRequest({ 
   memory: "1GiB",
-  timeoutSeconds: 60,
+  timeoutSeconds: 300,
   minInstances: 1,  // Keep at least 1 warm instance to eliminate cold-start login delay
   maxInstances: 10,
   // We handle CORS manually in Express middleware above

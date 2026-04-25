@@ -1,0 +1,283 @@
+/* Glass Effects */
+.glass-premium {
+  background: var(--bg-glass-mid);
+  backdrop-filter: blur(25px) saturate(180%);
+  -webkit-backdrop-filter: blur(25px) saturate(180%);
+  border: 1px solid var(--border-light);
+  box-shadow: inset 0 0 0 1px #ffffff0d;
+}
+
+.glass-heavy {
+  backdrop-filter: blur(30px) saturate(200%);
+  -webkit-backdrop-filter: blur(30px) saturate(200%);
+  background: rgba(5, 5, 10, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid rgba(255, 255, 255, 0.25);
+  border-left: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.1),
+    0 30px 60px rgba(0, 0, 0, 0.9);
+}
+
+.glass-royal {
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border-gold);
+  background: linear-gradient(135deg, #064e401a, #05050acc);
+}
+
+.glass-elite {
+  background: rgba(10, 12, 20, 0.75);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 
+    0 15px 35px rgba(0,0,0,0.5),
+    inset 0 0 0 1px rgba(255,255,255,0.05);
+  will-change: transform, opacity;
+  transform: translateZ(0); 
+}
+
+/* Buttons */
+.btn-3d {
+  border-radius: var(--r-md);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: all 0.3s var(--ease-3d);
+  background: var(--royal-gold);
+  color: var(--midnight-deep);
+  justify-content: center;
+  align-items: center;
+  padding: 0.8rem 2rem;
+  font-weight: 700;
+  display: inline-flex;
+  position: relative;
+  transform: translateY(0);
+  box-shadow:
+    0 4px #9e822a,
+    0 10px 20px #0000004d;
+}
+
+.btn-3d:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 6px #9e822a,
+    0 15px 25px #0006;
+}
+
+.btn-3d:active {
+  transform: translateY(4px);
+  box-shadow: 0 0 #9e822a;
+}
+
+.btn-3d-emerald {
+  background: var(--royal-emerald);
+  color: #fff;
+  box-shadow:
+    0 4px #04352b,
+    0 10px 20px #0000004d;
+}
+
+.btn-3d-emerald:hover {
+  box-shadow:
+    0 6px #04352b,
+    0 15px 25px #0006;
+}
+
+.btn-3d-liquid {
+  position: relative;
+  background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 100%);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-top: 1px solid rgba(255, 255, 255, 0.4);
+  border-left: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  padding: 12px 24px;
+  border-radius: 14px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+  box-shadow: 
+    0 10px 20px rgba(0,0,0,0.3),
+    inset 0 0 10px rgba(255,255,255,0.1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  overflow: hidden;
+}
+
+.btn-3d-liquid:hover {
+  transform: translateY(-3px) scale(1.02);
+  border-color: var(--gold);
+  box-shadow: 
+    0 15px 30px rgba(0,0,0,0.4),
+    0 0 15px var(--gold-dim);
+}
+
+.btn-3d-liquid::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
+  transform: rotate(45deg);
+  transition: 0.5s;
+  pointer-events: none;
+}
+
+.btn-3d-liquid:hover::after {
+  left: 100%;
+}
+
+.btn {
+  border-radius: var(--r-sm);
+  transition: all 0.3s;
+  justify-content: center;
+  align-items: center;
+  font-weight: 500;
+  line-height: 1;
+  text-decoration: none;
+  display: inline-flex;
+}
+
+.btn-sm {
+  padding: var(--sp-2) var(--sp-4);
+  font-size: 0.875rem;
+}
+
+.btn-md {
+  padding: 0.75rem var(--sp-6);
+  font-size: 1rem;
+}
+
+.btn-lg {
+  padding: 1rem var(--sp-8);
+  font-size: 1.125rem;
+}
+
+.btn-full {
+  width: 100%;
+}
+
+/* Property Cards */
+.property-card {
+  border-radius: var(--r-xl);
+  border: 1px solid var(--border-light);
+  background: var(--bg-card);
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  will-change: transform;
+  transition:
+    transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.3s,
+    border-color 0.3s;
+}
+
+.property-card:before {
+  content: "";
+  border-radius: inherit;
+  background: linear-gradient(135deg, white, transparent, var(--royal-gold))
+    border-box;
+  -webkit-mask-composite: xor;
+  opacity: 0.1;
+  border: 1px solid #0000;
+  transition: opacity 0.3s;
+  position: absolute;
+  inset: 0;
+  -webkit-mask-image: linear-gradient(#fff 0 0), linear-gradient(#fff 0 0);
+  mask-image: linear-gradient(#fff 0 0), linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  -webkit-mask-clip: padding-box, border-box;
+  mask-clip: padding-box, border-box;
+}
+
+.property-card:hover {
+  border-color: var(--gold-border, #e8b84b4d);
+  box-shadow:
+    0 20px 56px #0009,
+    0 0 0 1px #e8b84b1f;
+}
+
+.property-card:hover:before {
+  opacity: 0.4;
+}
+
+.property-image-container {
+  background: var(--midnight-2, #12122a);
+  height: 210px;
+  position: relative;
+  overflow: hidden;
+}
+
+.property-image {
+  object-fit: cover;
+  width: 100%;
+  height: 100%;
+  transition: transform 0.5s;
+}
+
+.property-card:hover .property-image {
+  transform: scale(1.06);
+}
+
+.property-price-tag {
+  font-family: var(--font-serif);
+  color: #fff;
+  letter-spacing: -0.01em;
+  background: #060818c7;
+  border: 1px solid #ffffff24;
+  border-radius: 18px;
+  padding: 0.6rem 0.95rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  position: absolute;
+  bottom: 14px;
+  left: 14px;
+  box-shadow: 0 18px 28px #00000047;
+}
+
+/* Badges */
+.badge {
+  color: #f3f2ef;
+  background: #ffffff0f;
+  border: 1px solid #ffffff29;
+  border-radius: 9999px;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  display: inline-flex;
+}
+
+.badge-verified {
+  color: #bbf5c4;
+  background: #25d36624;
+  border-color: #25d366;
+}
+
+.badge-hot {
+  color: #ffd0b2;
+  background: #ff785024;
+  border-color: #ff785052;
+}
+
+.badge-featured {
+  color: #ffe7a4;
+  background: #e8b84b24;
+  border-color: #e8b84b52;
+}
+
+.badge-new {
+  color: #cce6ff;
+  background: #3399ff24;
+  border-color: #3399ff52;
+}

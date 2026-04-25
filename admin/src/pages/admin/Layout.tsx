@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { Logo } from '../../components/ui/Logo';
 import { useAdminAuth } from '../../contexts/AdminAuthContext';
-import './Layout.css';
+// Styles imported via main entry point
 
 /* ── 2-click Logout Button ── */
 const LogoutButton = ({ onLogout }: { onLogout: () => void }) => {

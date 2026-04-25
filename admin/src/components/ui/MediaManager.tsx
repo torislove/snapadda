@@ -58,7 +58,7 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
       const newPreviews = allNewFiles.map(file => URL.createObjectURL(file));
       setPreviews(newPreviews);
       
-      onImagesChange(currentUrls, allNewFiles);
+      onImagesChange([...currentUrls, ...newPreviews], allNewFiles);
     } finally {
       setIsCompressing(false);
     }
@@ -67,7 +67,7 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
   const removeExisting = (url: string) => {
     const updated = currentUrls.filter(u => u !== url);
     setCurrentUrls(updated);
-    onImagesChange(updated, newFiles);
+    onImagesChange([...updated, ...previews], newFiles);
   };
 
   const removeNew = (index: number) => {
@@ -79,7 +79,7 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
     const updatedPreviews = previews.filter((_, i) => i !== index);
     setPreviews(updatedPreviews);
     
-    onImagesChange(currentUrls, updatedFiles);
+    onImagesChange([...currentUrls, ...updatedPreviews], updatedFiles);
   };
 
   return (

@@ -18,13 +18,19 @@ export const fetchProperties = async (params?: any) => {
 
 export const createProperty = async (data: any) => {
   const res = await fetch(`${API_URL}/properties`, { method: 'POST', headers: getAuthHeaders(), body: JSON.stringify(data) });
-  if (!res.ok) throw new Error('Failed to create property');
+  if (!res.ok) {
+    const errData = await res.json().catch(() => ({}));
+    throw new Error(errData.message || errData.details || 'Failed to create property');
+  }
   return res.json();
 };
 
 export const updateProperty = async (id: string, data: any) => {
   const res = await fetch(`${API_URL}/properties/${id}`, { method: 'PUT', headers: getAuthHeaders(), body: JSON.stringify(data) });
-  if (!res.ok) throw new Error('Failed to update property');
+  if (!res.ok) {
+    const errData = await res.json().catch(() => ({}));
+    throw new Error(errData.message || errData.details || 'Failed to update property');
+  }
   return res.json();
 };
 
@@ -62,22 +68,45 @@ export const deleteCity = async (id: string) => {
   return res.json();
 };
 
+import imageCompression from 'browser-image-compression';
+
 export const uploadMedia = async (files: File[]) => {
-  const toBase64 = (file: File): Promise<string> => new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = error => reject(error);
-  });
+  const formData = new FormData();
   
-  const base64Files = await Promise.all(files.map(f => toBase64(f)));
+  // Compress images before uploading
+  const processedFiles = await Promise.all(files.map(async (file) => {
+    if (file.type.startsWith('image/')) {
+      const options = {
+        maxSizeMB: 0.5,         // Max size 500KB
+        maxWidthOrHeight: 1280, // Max resolution 720p-ish (High enough for real estate)
+        useWebWorker: true,
+        initialQuality: 0.7
+      };
+      try {
+        console.log(`Compressing ${file.name}...`);
+        return await imageCompression(file, options);
+      } catch (err) {
+        console.error('Compression failed for:', file.name, err);
+        return file; // Fallback to original if compression fails
+      }
+    }
+    return file; // Videos and others stay as is
+  }));
+
+  processedFiles.forEach(file => {
+    formData.append('files', file);
+  });
   
   const res = await fetch(`${API_URL}/media/upload`, { 
     method: 'POST', 
-    headers: getAuthHeaders(false),
-    body: JSON.stringify({ files: base64Files }) 
+    headers: getAuthHeaders(true),
+    body: formData 
   });
-  if (!res.ok) throw new Error('Failed to upload media');
+  
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.message || 'Failed to upload media');
+  }
   return res.json();
 };
 

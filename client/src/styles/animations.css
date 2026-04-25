@@ -1,0 +1,100 @@
+@keyframes bgDrift {
+  0% { background-position: 0% 0%; }
+  100% { background-position: 100% 100%; }
+}
+
+@keyframes goldShimmer {
+  0% {
+    background-position: -200%;
+  }
+  to {
+    background-position: 200%;
+  }
+}
+
+@keyframes float {
+  0%,
+  to {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+@keyframes marquee-scroll {
+  0% {
+    transform: translate(0);
+  }
+  to {
+    transform: translate(-50%);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.animate-float {
+  animation: 6s ease-in-out infinite float;
+}
+
+.tilt-3d {
+  transform-style: preserve-3d;
+  transition:
+    transform var(--anim-slow),
+    box-shadow var(--anim-slow);
+}
+
+.tilt-3d:hover {
+  box-shadow: var(--shadow-3d);
+  transform: translateZ(25px) rotateX(2deg) rotateY(-2deg);
+}
+
+.card-3d {
+  transform-style: preserve-3d;
+  transition:
+    transform var(--anim-slow),
+    box-shadow var(--anim-slow);
+}
+
+.card-3d:hover {
+  box-shadow: var(--shadow-3d);
+  transform: translateZ(20px) rotateX(2deg) rotateY(-2deg);
+}
+
+.shimmer-3d {
+  position: relative;
+  overflow: hidden;
+}
+
+.shimmer-3d:after {
+  content: "";
+  pointer-events: none;
+  background: linear-gradient(135deg, #0000, #ffffff0d, #0000);
+  transition: transform 0.8s;
+  position: absolute;
+  inset: -100%;
+  transform: translate(-100%) rotate(45deg);
+}
+
+.shimmer-3d:hover:after {
+  transform: translate(100%) rotate(45deg);
+}
+
+.gold-shimmer-text {
+  background: linear-gradient(
+      90deg,
+      #fff 0%,
+      #f4d03f 40%,
+      #c5a059 50%,
+      #f4d03f 60%,
+      #fff 100%
+    )
+    0 0/200%;
+  -webkit-text-fill-color: transparent;
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation: 5s linear infinite goldShimmer;
+}

@@ -208,60 +208,76 @@ export const createProperty = async (req, res) => {
   try {
     let propertyData = { ...req.body };
 
-    // Parse numeric fields from form strings
-    const numericFields = ['price', 'pricePerUnit', 'pricePerAcre', 'totalAcres', 'areaSize', 'bhk', 'beds', 'baths', 'totalFloors', 'floorNo', 'carpetArea', 'superBuiltupArea'];
-    numericFields.forEach(f => {
-      if (propertyData[f] !== undefined && propertyData[f] !== '') {
-        propertyData[f] = Number(propertyData[f]) || 0;
+    // 1. CLEANUP: Ensure basic sanitization for incoming data
+    Object.keys(propertyData).forEach(key => {
+      if (propertyData[key] === null || propertyData[key] === undefined) {
+        delete propertyData[key];
       }
     });
 
-    // Parse boolean fields
+    // 2. NUMERIC SANITIZATION: Parse numeric fields from form strings
+    const numericFields = ['price', 'pricePerUnit', 'pricePerAcre', 'totalAcres', 'areaSize', 'bhk', 'beds', 'baths', 'totalFloors', 'floorNo', 'carpetArea', 'superBuiltupArea', 'roadWidth'];
+    numericFields.forEach(f => {
+      if (propertyData[f] !== undefined && propertyData[f] !== null && propertyData[f] !== '') {
+        propertyData[f] = Number(propertyData[f]);
+        if (isNaN(propertyData[f])) propertyData[f] = 0;
+      } else {
+        propertyData[f] = 0; // Default to 0 for any missing/empty numeric field
+      }
+    });
+
+    // 3. BOOLEAN PARSING
     const boolFields = ['isVerified', 'isFeatured', 'vastuCompliant', 'isGated', 'cornerProperty', 'boundaryWall'];
     boolFields.forEach(f => {
       if (propertyData[f] !== undefined) {
         propertyData[f] = propertyData[f] === true || propertyData[f] === 'true';
+      } else {
+        propertyData[f] = false;
       }
     });
 
-    // Parse customFeatures if sent as JSON string
-    if (typeof propertyData.customFeatures === 'string') {
+    // 4. ID SANITIZATION: Clean up potential ObjectId fields if they are empty strings
+    const idFields = ['cityId', 'franchiseId'];
+    idFields.forEach(f => {
+      if (propertyData[f] === '' || propertyData[f] === 'null' || propertyData[f] === 'undefined') {
+        delete propertyData[f];
+      }
+    });
+
+    // 4. JSON PARSING for complex fields
+    if (typeof propertyData.customFeatures === 'string' && propertyData.customFeatures.trim() !== '') {
       try { propertyData.customFeatures = JSON.parse(propertyData.customFeatures); } catch { propertyData.customFeatures = []; }
     }
-
-    // Parse amenities if sent as JSON string
-    if (typeof propertyData.amenities === 'string') {
+    if (typeof propertyData.amenities === 'string' && propertyData.amenities.trim() !== '') {
       try { propertyData.amenities = JSON.parse(propertyData.amenities); } catch { propertyData.amenities = []; }
     }
 
-    // Apply smart defaults based on property type
-    const landTypes = ['Agricultural Land', 'CRDA Approved Plot', 'Open Plot', 'Farmhouse'];
-    const industrialTypes = ['Industrial Shed', 'Warehouse'];
+    // 5. SMART DEFAULTS based on type
+    const landTypes = ['Agricultural Land', 'CRDA Approved Plot', 'Open Plot', 'Farmhouse', 'Residential Plot', 'Commercial Plot', 'Open Plot', 'Layout Plot'];
+    const industrialTypes = ['Industrial Shed', 'Warehouse', 'Factory / Unit'];
+    
     if (landTypes.includes(propertyData.type)) {
-      propertyData.measurementUnit = propertyData.measurementUnit || 'Acres';
-      propertyData.bhk = 0;
-      propertyData.furnishing = 'N/A';
+      propertyData.measurementUnit = propertyData.measurementUnit || (propertyData.type === 'Agricultural Land' ? 'Acres' : 'Sq.Yards');
+      propertyData.bhk = propertyData.bhk || 0;
+      propertyData.furnishing = propertyData.furnishing || 'N/A';
     } else if (industrialTypes.includes(propertyData.type)) {
       propertyData.measurementUnit = propertyData.measurementUnit || 'SqFt';
-      propertyData.bhk = 0;
-    } else {
-      propertyData.measurementUnit = propertyData.measurementUnit || 'SqFt';
+      propertyData.bhk = propertyData.bhk || 0;
     }
 
-    // Auto-set verificationStatus based on isVerified flag
+    // 6. VERIFICATION SYNC
     if (!propertyData.verificationStatus) {
       propertyData.verificationStatus = propertyData.isVerified ? 'Verified' : 'Under Review';
     }
 
-    // Auto-generate description if empty
+    // 7. AUTO DESCRIPTION (Institutional Grade)
     if (!propertyData.description || propertyData.description.trim() === '') {
-      const { type, purpose, bhk, furnishing, facing, totalFloors, parking, location, district, constructionStatus } = propertyData;
-      let generatedDesc = `A premium ${type || 'property'} located in the prime area of ${location || 'Andhra Pradesh'}${district ? ', ' + district : ''}. `;
-      if (bhk > 0) generatedDesc += `This ${bhk} BHK property is highly sought-after and available for ${purpose || 'Sale'}. `;
-      if (furnishing && furnishing !== 'N/A') generatedDesc += `It comes ${furnishing} and is in ${constructionStatus || 'excellent'} condition. `;
-      if (facing && facing !== 'Any') generatedDesc += `As a ${facing}-facing property, it ensures natural light and great ventilation. `;
-      if (parking && parking !== 'None' && parking !== 'N/A') generatedDesc += `It includes ${parking} parking space for convenience. `;
-      generatedDesc += `Ideal for families looking for a modern lifestyle in a well-connected neighborhood. Contact us for more details and a site visit!`;
+      const { type, purpose, bhk, furnishing, facing, location, district } = propertyData;
+      let generatedDesc = `A premium ${type || 'property'} located in ${location || 'Andhra Pradesh'}${district ? ', ' + district : ''}. `;
+      if (bhk > 0) generatedDesc += `This ${bhk} BHK asset is optimized for modern living and available for ${purpose || 'Sale'}. `;
+      if (furnishing && furnishing !== 'N/A') generatedDesc += `The property is ${furnishing} and maintained to high standards. `;
+      if (facing && facing !== 'Any') generatedDesc += `Strategically ${facing}-facing to maximize natural lighting and ventilation. `;
+      generatedDesc += `Ideal investment opportunity with high regional liquidity. Contact SnapAdda for a private site visit.`;
       propertyData.description = generatedDesc;
     }
 
@@ -274,7 +290,13 @@ export const createProperty = async (req, res) => {
     res.status(201).json({ status: 'success', data: newProperty });
   } catch (error) {
     console.error('CREATE_PROPERTY_ERROR:', error);
-    res.status(400).json({ status: 'error', message: error.message });
+    // Return detailed error if in dev, but always return status 400 for validation issues
+    res.status(400).json({ 
+      status: 'error', 
+      message: 'Property Validation Failed', 
+      details: error.message,
+      tip: 'Check if all numeric fields (Price, Area) are valid numbers and no special characters are in ID fields.'
+    });
   }
 };
 
@@ -293,7 +315,46 @@ export const getPropertyById = async (req, res) => {
 // Update a property
 export const updateProperty = async (req, res) => {
   try {
-    const property = await Property.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+    let updateData = { ...req.body };
+
+    // 1. CLEANUP: Ensure no empty strings for enum fields
+    const enumFields = [
+      'condition', 'furnishing', 'constructionStatus', 'propertyAge', 
+      'transactionType', 'parking', 'waterSupply', 'electricityStatus', 
+      'ownershipType', 'overlooking', 'status', 'verificationStatus'
+    ];
+    enumFields.forEach(f => {
+      if (updateData[f] === '' || updateData[f] === null) {
+        delete updateData[f];
+      }
+    });
+
+    // 2. NUMERIC SANITIZATION
+    const numericFields = ['price', 'pricePerUnit', 'pricePerAcre', 'totalAcres', 'areaSize', 'bhk', 'beds', 'baths', 'totalFloors', 'floorNo', 'carpetArea', 'superBuiltupArea', 'roadWidth'];
+    numericFields.forEach(f => {
+      if (updateData[f] !== undefined && updateData[f] !== null && updateData[f] !== '') {
+        updateData[f] = Number(updateData[f]);
+        if (isNaN(updateData[f])) delete updateData[f];
+      }
+    });
+
+    // 3. BOOLEAN PARSING
+    const boolFields = ['isVerified', 'isFeatured', 'vastuCompliant', 'isGated', 'cornerProperty', 'boundaryWall'];
+    boolFields.forEach(f => {
+      if (updateData[f] !== undefined) {
+        updateData[f] = updateData[f] === true || updateData[f] === 'true';
+      }
+    });
+
+    // 4. JSON PARSING
+    if (typeof updateData.customFeatures === 'string' && updateData.customFeatures.trim() !== '') {
+      try { updateData.customFeatures = JSON.parse(updateData.customFeatures); } catch { delete updateData.customFeatures; }
+    }
+    if (typeof updateData.amenities === 'string' && updateData.amenities.trim() !== '') {
+      try { updateData.amenities = JSON.parse(updateData.amenities); } catch { delete updateData.amenities; }
+    }
+
+    const property = await Property.findByIdAndUpdate(req.params.id, updateData, { new: true, runValidators: true });
     if (!property) return res.status(404).json({ message: 'Property not found' });
     
     // Sync to Firebase for real-time (Non-blocking)
@@ -302,7 +363,11 @@ export const updateProperty = async (req, res) => {
     res.status(200).json({ status: 'success', data: property });
   } catch (error) {
     console.error('UPDATE_PROPERTY_ERROR:', error);
-    res.status(400).json({ status: 'error', message: error.message });
+    res.status(400).json({ 
+      status: 'error', 
+      message: 'Failed to update property asset',
+      details: error.message 
+    });
   }
 };
 

@@ -1,0 +1,122 @@
+/* Hero Section */
+.hero-section {
+  padding: clamp(3rem, 8vw, 5.5rem) 0 clamp(2rem, 5vw, 3.5rem);
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-title {
+  font-family: var(--font-serif);
+  letter-spacing: -0.02em;
+  color: var(--txt-primary);
+  margin-bottom: 1rem;
+  font-size: clamp(2.2rem, 6vw, 4.2rem);
+  font-weight: 900;
+  line-height: 1.05;
+}
+
+.hero-subtitle {
+  color: var(--txt-secondary);
+  max-width: 540px;
+  margin-bottom: 2rem;
+  font-size: clamp(1rem, 2vw, 1.15rem);
+  line-height: 1.7;
+}
+
+.hero-ctas {
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 2.5rem;
+  display: flex;
+}
+
+/* Search Platform */
+.search-section {
+  perspective: 1200px;
+  padding: 0 0 3rem;
+  width: 100%;
+}
+
+.search-platform {
+  border-radius: var(--r-xl);
+  box-shadow: var(--shadow-3d);
+  padding: 1.5rem;
+  background: var(--bg-glass-mid);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border-light);
+}
+
+.search-tabs {
+  border-radius: var(--r-md);
+  background: #ffffff0a;
+  gap: 0.25rem;
+  margin-bottom: 1.25rem;
+  padding: 4px;
+  display: flex;
+}
+
+.search-tab {
+  border-radius: calc(var(--r-md) - 2px);
+  color: var(--txt-muted);
+  text-align: center;
+  cursor: pointer;
+  flex: 1;
+  padding: 0.6rem 1rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  transition: all 0.25s;
+}
+
+.search-tab.active {
+  background: var(--gold);
+  color: var(--midnight);
+  box-shadow: 0 2px 12px #e8b84b59;
+}
+
+.search-bar-input {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1.5px solid var(--border-light);
+  border-radius: var(--r-full);
+  width: 100%;
+  color: var(--txt-primary);
+  outline: none;
+  padding: 0.85rem 2.5rem 0.85rem 2.75rem;
+  font-size: 0.95rem;
+  transition: all 0.2s;
+}
+
+.search-bar-input:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px var(--gold-dim);
+}
+
+/* CTA Section */
+.cta-section {
+  padding: 3.5rem 0 4rem;
+}
+
+.cta-card {
+  -webkit-backdrop-filter: blur(26px);
+  backdrop-filter: blur(26px);
+  background: #0a1020e0;
+  border: 1px solid #ffffff24;
+  border-radius: var(--r-xl);
+  padding: 2.2rem;
+  box-shadow: 0 24px 50px #00000038;
+}
+
+/* CTA Buttons */
+.hero-btn-primary {
+  color: #07070f;
+  background: linear-gradient(135deg, #f5c842 0%, #d4a017 100%);
+  border-radius: 9999px;
+  padding: 0.9rem 2.2rem;
+  font-weight: 700;
+  box-shadow: 0 4px #9e6f0a;
+  transition: all 0.3s;
+}
+
+.hero-btn-primary:hover {
+  transform: translateY(-3px) scale(1.03);
+  box-shadow: 0 7px #9e6f0a;
+}

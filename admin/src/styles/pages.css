@@ -1,0 +1,126 @@
+/* ── Touch-First Card Architecture (Properties / Users Lists) ── */
+.admin-list-card {
+  background: rgba(10,12,20,0.8);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px;
+  padding: 1.25rem;
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  transition: border-color 0.2s ease;
+}
+
+.admin-list-card:hover {
+  border-color: rgba(245,200,66,0.3);
+}
+
+.admin-list-card-img {
+  width: 80px;
+  height: 80px;
+  border-radius: 10px;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: rgba(0,0,0,0.4);
+}
+
+.admin-list-card-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.admin-list-card-title {
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 4px;
+}
+
+.admin-list-card-meta {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.admin-list-card-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+  align-items: center;
+}
+
+/* ── Admin Properties Grid ── */
+@media (min-width: 1280px) {
+  .admin-properties-grid { grid-template-columns: repeat(4, 1fr) !important; }
+}
+@media (min-width: 960px) and (max-width: 1279px) {
+  .admin-properties-grid { grid-template-columns: repeat(3, 1fr) !important; }
+}
+@media (min-width: 600px) and (max-width: 959px) {
+  .admin-properties-grid { grid-template-columns: repeat(2, 1fr) !important; }
+}
+@media (max-width: 599px) {
+  .admin-properties-grid { grid-template-columns: 1fr !important; }
+}
+
+/* ── Glass Form Card ── */
+.admin-form-glass {
+  background: rgba(9,10,18,0.85);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(245,200,66,0.15);
+  border-radius: 20px;
+  padding: 2rem;
+}
+
+@media (max-width: 768px) {
+  .admin-form-glass {
+    padding: 1.25rem;
+    border-radius: 14px;
+  }
+}
+
+/* ── Floating Action Button (Mobile) ── */
+.admin-fab {
+  position: fixed;
+  bottom: calc(20px + env(safe-area-inset-bottom));
+  right: 20px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: var(--gold);
+  color: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 20px rgba(232, 184, 75, 0.4);
+  z-index: 999;
+  border: none;
+  cursor: pointer;
+}
+
+/* ── Helpers ── */
+.flex-row-mobile-stack {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 600px) {
+  .flex-row-mobile-stack {
+    flex-direction: column;
+    gap: 1rem !important;
+  }
+}
+
+.pc-card, .property-card {
+  -webkit-tap-highlight-color: transparent;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.pc-card:active, .property-card:active {
+  transform: scale(0.97);
+}

@@ -1,0 +1,138 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Sans:wght@400;500;700&display=swap');
+
+/* ── Reset & Base ── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+  overflow-x: hidden;
+}
+
+body {
+  font-family: var(--font-body);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background-attachment: fixed;
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(155, 89, 245, 0.08) 0%, transparent 70%),
+    radial-gradient(ellipse 60% 40% at 0% 100%, rgba(34, 217, 224, 0.05) 0%, transparent 70%),
+    radial-gradient(ellipse 60% 40% at 100% 100%, rgba(245, 200, 66, 0.03) 0%, transparent 70%);
+  position: relative;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle at 50% 50%, rgba(155, 89, 245, 0.02) 0%, transparent 100%);
+  animation: bgDrift 20s ease-in-out infinite alternate;
+  pointer-events: none;
+  z-index: -1;
+}
+
+#root {
+  width: 100%;
+}
+
+/* ── Typography ── */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+  margin-bottom: var(--spacing-sm);
+  color: var(--text-primary);
+}
+
+h1 { font-size: 2.2rem; font-weight: 700; }
+h2 { font-size: 1.6rem; }
+h3 { font-size: 1.2rem; }
+
+a {
+  color: var(--text-primary);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+a:hover {
+  color: var(--gold);
+}
+
+button {
+  font-family: var(--font-body);
+  cursor: pointer;
+  border: none;
+  background: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+img, video, iframe {
+  max-width: 100%;
+  display: block;
+}
+
+/* ── Scrollbar Styling ── */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(155, 89, 245, 0.3);
+  border-radius: 99px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(155, 89, 245, 0.5);
+}
+
+/* ── Form Elements Base ── */
+input, textarea, select {
+  font-family: var(--font-body);
+  background: var(--bg-glass);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  padding: 0.6rem 1rem;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+  font-size: 0.875rem;
+}
+
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  border-color: var(--violet);
+  box-shadow: 0 0 0 3px rgba(155, 89, 245, 0.12);
+}
+
+input::placeholder, textarea::placeholder {
+  color: var(--text-muted);
+}
+
+select option {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+/* ── Utility Classes ── */
+.text-gold    { color: var(--gold); }
+.bg-gold      { background: var(--gold); }
+.text-muted   { color: var(--text-muted); }
+.text-violet  { color: var(--violet); }
+.text-cyan    { color: var(--cyan); }
+.text-rose    { color: var(--rose); }
+.text-emerald { color: var(--emerald); }
