@@ -84,14 +84,17 @@ export const getProperties = async (req, res) => {
     }
 
     if (type && type !== 'all') {
-      if (type === 'Plot') {
-        filter.type = { $in: ['Plot', 'Residential Plot', 'Commercial Plot', 'Gated Community Plot', 'CRDA Approved Plot', 'Open Plot', 'Layout Plot'] };
-      } else if (type === 'Agriculture') {
-        filter.type = { $in: ['Agricultural Land', 'Farmhouse'] };
-      } else if (type === 'Villa') {
-        filter.type = { $in: ['Villa', 'Independent House'] };
+      const typeLower = type.toLowerCase();
+      if (typeLower.includes('plot') || typeLower === 'gajalu') {
+        filter.type = { $in: ['Plot', 'Residential Plot', 'Commercial Plot', 'Gated Community Plot', 'CRDA Approved Plot', 'Open Plot', 'Layout Plot', 'Industrial Plot'] };
+      } else if (typeLower.includes('agri') || typeLower.includes('farm')) {
+        filter.type = { $in: ['Agricultural Land', 'Farmhouse', 'Farm Villa', 'Acreage', 'Plantation'] };
+      } else if (typeLower.includes('villa') || typeLower.includes('house') || typeLower.includes('duplex')) {
+        filter.type = { $in: ['Villa', 'Independent House', 'Duplex', 'Penthouse', 'Bungalow'] };
+      } else if (typeLower.includes('apartment') || typeLower.includes('flat')) {
+        filter.type = { $in: ['Apartment', 'Flat', 'Apartment / Flat', 'Studio Apartment'] };
       } else {
-        filter.type = type;
+        filter.type = { $regex: type, $options: 'i' };
       }
     }
     if (city) filter.location = { $regex: city, $options: 'i' };

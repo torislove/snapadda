@@ -1,9 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, LayoutGrid, List, MapPin, CheckCircle2, Edit3, Trash2, Zap } from 'lucide-react';
-import { LivePreviewCard } from '../../../components/ui/LivePreviewCard';
-import { AssetEngagementChart, ListingHealthScore } from './PropertyAnalytics';
-import { getFuzzySuggestions } from '../../../services/SearchParser';
+import { Search, LayoutGrid, List, Plus } from 'lucide-react';
+import { AdminPropertyCard } from '../../../components/ui/AdminPropertyCard';
 
 interface PropertiesListProps {
   filteredProperties: any[];
@@ -13,132 +11,198 @@ interface PropertiesListProps {
   setViewMode: (v: 'grid' | 'cards') => void;
   handleEdit: (prop: any) => void;
   updateProperty: (id: string, payload: any) => Promise<any>;
+  createProperty: (payload: any) => Promise<any>;
   deleteProperty: (id: string) => Promise<any>;
   loadProperties: () => void;
+  setIsAdding?: (v: boolean) => void;
 }
 
-export const PropertiesList: React.FC<PropertiesListProps> = ({ 
-  filteredProperties, search, setSearch, viewMode, setViewMode, 
-  handleEdit, updateProperty, deleteProperty, loadProperties 
+export const PropertiesList: React.FC<PropertiesListProps> = ({
+  filteredProperties, search, setSearch, viewMode, setViewMode,
+  handleEdit, updateProperty, createProperty, deleteProperty, loadProperties, setIsAdding
 }) => {
+  const [statusFilter, setStatusFilter] = React.useState('all');
+  const [selectedIds, setSelectedIds] = React.useState<string[]>([]);
+  const [isBulkUpdating, setIsBulkUpdating] = React.useState(false);
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+  };
+
+  const handleBulkStatus = async (status: string) => {
+    if (selectedIds.length === 0 || isBulkUpdating) return;
+    setIsBulkUpdating(true);
+    try {
+      await Promise.all(selectedIds.map(id => updateProperty(id, { status })));
+      setSelectedIds([]);
+      loadProperties();
+    } catch (e) {
+      console.error(e);
+      alert("Bulk update failed partially.");
+    } finally {
+      setIsBulkUpdating(false);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.length === 0 || isBulkUpdating) return;
+    if (!window.confirm(`Are you sure you want to delete ${selectedIds.length} properties?`)) return;
+    setIsBulkUpdating(true);
+    try {
+      await Promise.all(selectedIds.map(id => deleteProperty(id)));
+      setSelectedIds([]);
+      loadProperties();
+    } catch (e) {
+      console.error(e);
+      alert("Bulk delete failed partially.");
+    } finally {
+      setIsBulkUpdating(false);
+    }
+  };
+
+  const finalFiltered = React.useMemo(() => {
+    if (statusFilter === 'all') return filteredProperties;
+    return filteredProperties.filter(p => p.status === statusFilter);
+  }, [filteredProperties, statusFilter]);
+
   return (
-    <motion.div 
+    <motion.div
       key="list"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}
+      style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}
     >
-      {/* Toolbar */}
-      <div className="glass-card" style={{ padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '2rem' }}>
-        <div style={{ position: 'relative', width: 'clamp(300px, 40vw, 500px)' }}>
-          <Search 
-            size={18} 
-            style={{ position: 'absolute', left: '1.2rem', top: '50%', transform: 'translateY(-50%)', color: 'rgba(212,175,55,0.8)' }} 
-          />
-          <input 
-            type="text" 
-            placeholder="Search assets (e.g. 'Flat in Guntur 50L')..." 
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            style={{ width: '100%', padding: '0.9rem 1.2rem 0.9rem 3rem', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(212,175,55,0.15)', borderRadius: '14px', color: '#fff', fontSize: '0.9rem', outline: 'none', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}
-          />
-          {search.length >= 2 && getFuzzySuggestions(search).length > 0 && (
-            <div style={{ position: 'absolute', top: '110%', left: 0, right: 0, background: 'rgba(7,7,15,0.95)', border: '1px solid rgba(212,175,55,0.3)', borderRadius: '12px', zIndex: 100, overflow: 'hidden', backdropFilter: 'blur(15px)' }}>
-              <div style={{ padding: '0.6rem 1rem', fontSize: '0.7rem', color: 'var(--gold)', fontWeight: 800, background: 'rgba(212,175,55,0.05)', letterSpacing: '0.1em' }}>SUGGESTED ASSET LOCATIONS</div>
-              {getFuzzySuggestions(search).map((s: any) => (
-                <button 
-                  key={`${s.name}-${s.type}`}
-                  onClick={() => setSearch(s.name)}
-                  style={{ width: '100%', padding: '0.7rem 1rem', display: 'flex', alignItems: 'center', gap: '0.8rem', background: 'transparent', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.05)', textAlign: 'left', cursor: 'pointer', transition: 'background 0.2s' }}
-                >
-                  <MapPin size={14} style={{ color: 'var(--gold)' }} />
-                  <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <span style={{ fontSize: '0.85rem', color: '#fff' }}>{s.name}</span>
-                    <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>{s.type} • {s.district || 'Andhra'}</span>
-                  </div>
-                </button>
-              ))}
+      {/* Bulk Action Bar */}
+      <AnimatePresence>
+        {selectedIds.length > 0 && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            style={{ overflow: 'hidden' }}
+          >
+            <div className="glass-card" style={{ padding: '1rem 2rem', background: 'rgba(232,184,75,0.08)', border: '1px solid rgba(232,184,75,0.3)', borderRadius: '18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <div style={{ background: 'var(--gold)', color: 'black', width: '28px', height: '28px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '0.8rem' }}>
+                  {selectedIds.length}
+                </div>
+                <div style={{ fontWeight: 800, color: 'white', fontSize: '0.9rem' }}>ASSETS SELECTED</div>
+                <button onClick={() => setSelectedIds([])} style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700 }}>Deselect All</button>
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)', fontWeight: 800, alignSelf: 'center', marginRight: '10px' }}>BULK ACTIONS:</span>
+                <button onClick={() => handleBulkStatus('Active')} disabled={isBulkUpdating} style={{ background: 'rgba(16,217,140,0.1)', border: '1px solid rgba(16,217,140,0.3)', color: '#10d98c', padding: '8px 16px', borderRadius: '10px', fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer' }}>SET LIVE</button>
+                <button onClick={() => handleBulkStatus('Sold')} disabled={isBulkUpdating} style={{ background: 'rgba(232,184,75,0.1)', border: '1px solid rgba(232,184,75,0.3)', color: 'var(--gold)', padding: '8px 16px', borderRadius: '10px', fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer' }}>SET SOLD</button>
+                <button onClick={() => handleBulkStatus('Draft')} disabled={isBulkUpdating} style={{ background: 'rgba(155,89,245,0.1)', border: '1px solid rgba(155,89,245,0.3)', color: '#9b59f5', padding: '8px 16px', borderRadius: '10px', fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer' }}>SET DRAFT</button>
+                <div style={{ width: '1px', background: 'rgba(255,255,255,0.1)', margin: '0 5px' }} />
+                <button onClick={handleBulkDelete} disabled={isBulkUpdating} style={{ background: 'rgba(245,57,123,0.1)', border: '1px solid rgba(245,57,123,0.3)', color: '#f5397b', padding: '8px 16px', borderRadius: '10px', fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer' }}>DELETE ALL</button>
+              </div>
             </div>
-          )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+      {/* Toolbar */}
+      <div className="glass-card" style={{ padding: '1rem 1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', borderRadius: '18px' }}>
+        <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center', flex: 1 }}>
+          {/* Search */}
+          <div style={{ position: 'relative', flex: '1', maxWidth: '400px' }}>
+            <Search
+              size={16}
+              style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'rgba(212,175,55,0.8)' }}
+            />
+            <input
+              type="text"
+              placeholder="Search assets..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              style={{ width: '100%', padding: '0.75rem 1rem 0.75rem 2.8rem', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(212,175,55,0.15)', borderRadius: '12px', color: '#fff', fontSize: '0.85rem', outline: 'none' }}
+            />
+          </div>
+
+          {/* Status Filters */}
+          <div style={{ display: 'flex', gap: '6px', background: 'rgba(255,255,255,0.03)', padding: '4px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+            {['all', 'Active', 'Sold', 'Pending', 'Draft'].map(f => (
+              <button
+                key={f}
+                onClick={() => setStatusFilter(f)}
+                style={{
+                  padding: '6px 12px', borderRadius: '8px', fontSize: '0.7rem', fontWeight: 700, border: 'none', cursor: 'pointer',
+                  background: statusFilter === f ? 'rgba(212,175,55,0.15)' : 'transparent',
+                  color: statusFilter === f ? 'var(--gold)' : 'rgba(255,255,255,0.4)',
+                  transition: 'all 0.2s'
+                }}
+              >
+                {f.toUpperCase()}
+              </button>
+            ))}
+          </div>
         </div>
-        <div style={{ display: 'flex', gap: '0.75rem', background: 'rgba(255,255,255,0.03)', padding: '0.5rem', borderRadius: '15px' }}>
-          {[
-            { id: 'cards', icon: LayoutGrid },
-            { id: 'grid', icon: List }
-          ].map(mode => (
-            <button 
-              key={mode.id}
-              onClick={() => setViewMode(mode.id as any)} 
-              style={{ 
-                background: viewMode === mode.id ? 'rgba(255,255,255,0.1)' : 'transparent', 
-                border: 'none', padding: '0.6rem 0.8rem', borderRadius: '10px', 
-                color: viewMode === mode.id ? 'white' : 'var(--text-muted)', 
-                cursor: 'pointer', transition: 'all 0.2s' 
-              }}
+
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+          <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.35)', fontWeight: 600 }}>
+            {finalFiltered.length} matching
+          </div>
+
+          <div style={{ display: 'flex', gap: '4px', background: 'rgba(255,255,255,0.03)', padding: '4px', borderRadius: '10px' }}>
+            {[
+              { id: 'cards', icon: LayoutGrid },
+              { id: 'grid', icon: List }
+            ].map(mode => (
+              <button
+                key={mode.id}
+                onClick={() => setViewMode(mode.id as any)}
+                style={{
+                  background: viewMode === mode.id ? 'rgba(255,255,255,0.12)' : 'transparent',
+                  border: 'none', padding: '6px 8px', borderRadius: '8px',
+                  color: viewMode === mode.id ? 'white' : 'rgba(255,255,255,0.3)',
+                  cursor: 'pointer'
+                }}
+              >
+                <mode.icon size={16} />
+              </button>
+            ))}
+          </div>
+
+          {setIsAdding && (
+            <button
+              onClick={() => setIsAdding(true)}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', background: 'var(--gold, #e8b84b)', color: '#07070f', border: 'none', borderRadius: '10px', fontWeight: 800, fontSize: '0.75rem', cursor: 'pointer', boxShadow: '0 4px 15px rgba(232,184,75,0.2)' }}
             >
-              <mode.icon size={20} />
+              <Plus size={14} /> NEW ASSET
             </button>
-          ))}
+          )}
         </div>
       </div>
 
-      {/* Asset List */}
-      <div className="admin-properties-grid" style={{ 
-        display: 'grid', 
-        gridTemplateColumns: viewMode === 'grid' ? '1fr' : 'repeat(auto-fill, minmax(320px, 1fr))', 
-        gap: '1.5rem' 
+      {/* Property Grid */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: viewMode === 'grid'
+          ? '1fr'
+          : 'repeat(auto-fill, minmax(310px, 1fr))',
+        gap: '1.5rem'
       }}>
         <AnimatePresence>
-          {filteredProperties.length === 0 ? (
-            <div style={{ gridColumn: '1 / -1', padding: '5rem', textAlign: 'center', opacity: 0.2 }}>
-              <LayoutGrid size={60} style={{ marginBottom: '1rem' }} />
-              <p>No assets found in current sector.</p>
+          {finalFiltered.length === 0 ? (
+            <div key="empty" style={{ gridColumn: '1 / -1', padding: '5rem', textAlign: 'center', opacity: 0.15 }}>
+              <LayoutGrid size={56} style={{ marginBottom: '1rem' }} />
+              <p>No properties match your filter.</p>
             </div>
           ) : (
-            filteredProperties.map((prop) => (
-              <motion.div 
-                layout
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
+            finalFiltered.map((prop) => (
+              <AdminPropertyCard
                 key={prop._id || prop.id}
-                style={{ position: 'relative' }}
-              >
-                <LivePreviewCard {...prop} />
-                <ListingHealthScore prop={prop} />
-                <AssetEngagementChart views={prop.views} likes={prop.likeCount} />
-                <div style={{ position: 'absolute', top: 0, right: 0, margin: '15px', zIndex: 100, display: 'flex', gap: '8px' }}>
-                  {prop.status !== 'Sold' && (
-                    <button 
-                      onClick={() => updateProperty(prop._id || prop.id, { ...prop, status: 'Sold' }).then(loadProperties)} 
-                      style={{ background: 'rgba(16,217,140,0.8)', backdropFilter: 'blur(10px)', border: '1px solid rgba(16,217,140,0.4)', padding: '10px', borderRadius: '50%', color: 'white', cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,0,0,0.5)' }} 
-                      title="Mark as SOLD"
-                    >
-                      <CheckCircle2 size={18} />
-                    </button>
-                  )}
-                  <button onClick={() => handleEdit(prop)} style={{ background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.2)', padding: '10px', borderRadius: '50%', color: 'white', cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,0,0,0.5)' }} title="Edit">
-                    <Edit3 size={18} />
-                  </button>
-                  <button onClick={() => { if(window.confirm('Wipe asset data?')) deleteProperty(prop._id || prop.id).then(loadProperties); }} style={{ background: 'rgba(245,57,123,0.8)', backdropFilter: 'blur(10px)', border: '1px solid rgba(245,57,123,0.4)', padding: '10px', borderRadius: '50%', color: 'white', cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,0,0,0.5)' }} title="Delete">
-                    <Trash2 size={18} />
-                  </button>
-                  <a 
-                    href={`https://snapadda-7a6e6.web.app/property/${prop._id || prop.id}`} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    style={{ background: 'var(--gold)', backdropFilter: 'blur(10px)', border: '1px solid var(--gold)', padding: '10px', borderRadius: '50%', color: 'var(--midnight)', cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }} 
-                    title="Launch to Site"
-                  >
-                    <Zap size={18} fill="currentColor" />
-                  </a>
-                </div>
-                {prop.status === 'Sold' && (
-                  <div style={{ position: 'absolute', top: '15px', left: '15px', zIndex: 101, background: 'rgba(16,217,140,0.9)', color: 'white', padding: '4px 12px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 900, letterSpacing: '0.1em', boxShadow: '0 4px 15px rgba(0,0,0,0.5)' }}>
-                    SOLD OUT
-                  </div>
-                )}
-              </motion.div>
+                prop={prop}
+                handleEdit={handleEdit}
+                updateProperty={updateProperty}
+                createProperty={createProperty}
+                deleteProperty={deleteProperty}
+                loadProperties={loadProperties}
+                selected={selectedIds.includes(prop._id || prop.id)}
+                onSelect={toggleSelect}
+              />
             ))
           )}
         </AnimatePresence>

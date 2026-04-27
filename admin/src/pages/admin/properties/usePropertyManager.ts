@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { fetchProperties, createProperty, updateProperty, uploadMedia } from '../../../services/api';
+import { fetchProperties, createProperty, updateProperty, deleteProperty, uploadMedia } from '../../../services/api';
 import { adminAIService } from '../../../services/aiService';
 
 export const usePropertyManager = () => {
@@ -137,9 +137,21 @@ export const usePropertyManager = () => {
     propData.isVerified = isVerified;
     propData.isFeatured = isFeatured;
 
+    // Duplicate Detection (Simple Title + Location match)
+    const isDuplicate = properties.some(p => 
+      (p._id || p.id) !== (editingProperty?._id || editingProperty?.id) && 
+      p.title?.toLowerCase().trim() === propData.title?.toLowerCase().trim() &&
+      p.location?.toLowerCase().trim() === propData.location?.toLowerCase().trim()
+    );
+
+    if (isDuplicate && !window.confirm("A property with this exact title and location already exists. Do you want to save anyway?")) {
+      setIsUploading(false);
+      return;
+    }
+
     try {
-      // Filter out temporary blob previews, only keep permanent Cloudinary/External URLs
-      let uploadedUrls: string[] = currentImageUrls.filter(u => u.startsWith('http'));
+      // Filter out temporary blob previews — ONLY keep permanent Cloudinary/External URLs
+      let uploadedUrls: string[] = currentImageUrls.filter(u => u.startsWith('http') && !u.startsWith('blob:'));
       
       if (newImageFiles.length > 0) {
         const uploadResult = await uploadMedia(newImageFiles);
@@ -163,7 +175,7 @@ export const usePropertyManager = () => {
       }
 
       const isVideoUrl = (url: string) => /\.(mp4|mov|webm|ogg)$/i.test(url) || url.includes('/video/');
-      const imagesList = uploadedUrls.filter(url => !isVideoUrl(url));
+      const imagesList = uploadedUrls.filter(url => !isVideoUrl(url) && url.startsWith('http'));
       const videosList = uploadedUrls.filter(url => isVideoUrl(url));
 
       propData.images = imagesList;
@@ -176,8 +188,10 @@ export const usePropertyManager = () => {
         customFeatures,
         isVerified,
         isFeatured,
-        images: uploadedUrls,
-        image: uploadedUrls.length > 0 ? uploadedUrls[0] : null
+        images: imagesList,
+        image: imagesList.length > 0 ? imagesList[0] : '',
+        // Always set Active for new listings
+        status: isEditing ? (propData.status || 'Active') : 'Active',
       };
 
       if (isEditing && editingProperty) {
@@ -240,6 +254,14 @@ export const usePropertyManager = () => {
     viewMode, setViewMode,
     loadProperties, handleCloseForm, handleEdit,
     handleGenerateAIDescription, handleAddSubmit, handleFormChange, handleMediaChange,
-    agriAutoValuation, convertToValue, getAgriTotalDecimal
+    agriAutoValuation, convertToValue, getAgriTotalDecimal,
+    createProperty, updateProperty, deleteProperty,
+    addCustomFeature: () => setCustomFeatures([...customFeatures, { label: '', value: '' }]),
+    removeCustomFeature: (index: number) => setCustomFeatures(customFeatures.filter((_, i) => i !== index)),
+    updateCustomFeature: (index: number, key: 'label' | 'value', val: string) => {
+      const updated = [...customFeatures];
+      updated[index][key] = val;
+      setCustomFeatures(updated);
+    }
   };
 };

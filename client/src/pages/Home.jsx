@@ -312,12 +312,26 @@ export default function Home() {
   const supportPhone = (supportInfo?.phone || '+919346793364').replace(/\s+/g, '');
   const supportWA = supportInfo?.whatsapp || '919346793364';
 
-  // Sectional Data Filters
   // Sectional Data Filters - Robust grouping for regional property types
-  const villas = useMemo(() => properties.filter(p => ['Villa', 'Independent House', 'Duplex'].includes(p.type)).slice(0, 8), [properties]);
-  const apartments = useMemo(() => properties.filter(p => ['Apartment', 'Apartment / Flat', 'Flat'].includes(p.type)).slice(0, 8), [properties]);
-  const plots = useMemo(() => properties.filter(p => ['Plot', 'Residential Plot', 'Commercial Plot', 'Gated Community Plot', 'CRDA Approved Plot', 'Open Plot', 'Layout Plot'].includes(p.type)).slice(0, 8), [properties]);
-  const agri = useMemo(() => properties.filter(p => ['Agricultural Land', 'Farmhouse', 'Farm Villa'].includes(p.type)).slice(0, 8), [properties]);
+  const villas = useMemo(() => properties.filter(p => {
+    const t = (p.type || '').toLowerCase();
+    return t.includes('villa') || t.includes('duplex') || t.includes('independent house') || t.includes('house');
+  }).slice(0, 8), [properties]);
+
+  const apartments = useMemo(() => properties.filter(p => {
+    const t = (p.type || '').toLowerCase();
+    return t.includes('apartment') || t.includes('flat') || t.includes('bhk');
+  }).slice(0, 8), [properties]);
+
+  const plots = useMemo(() => properties.filter(p => {
+    const t = (p.type || '').toLowerCase();
+    return t.includes('plot') || t.includes('layout') || t.includes('gajalu') || t.includes('crda');
+  }).slice(0, 8), [properties]);
+
+  const agri = useMemo(() => properties.filter(p => {
+    const t = (p.type || '').toLowerCase();
+    return t.includes('agricultural') || t.includes('farm') || t.includes('acre') || t.includes('land');
+  }).slice(0, 8), [properties]);
 
   return (
     <div 

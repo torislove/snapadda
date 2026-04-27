@@ -42,20 +42,27 @@ export default function FilterSidebar({ isOpen, onClose, filters, setFilters, on
   const toggleStyle = (active) => ({
     flex: 1,
     fontSize: '0.72rem',
-    padding: '11px 8px',
-    background: active ? 'linear-gradient(135deg, #e8b84b, #b9933a)' : 'rgba(15, 15, 30, 0.6)',
+    padding: '12px 10px',
+    background: active 
+      ? 'linear-gradient(135deg, rgba(232,184,75,0.95), rgba(185,147,58,0.7))' 
+      : 'rgba(255, 255, 255, 0.03)',
     backdropFilter: 'blur(20px)',
     WebkitBackdropFilter: 'blur(20px)',
-    boxShadow: active ? '0 10px 20px rgba(232,184,75,0.3)' : 'inset 0 2px 10px rgba(255,255,255,0.03)',
-    color: active ? '#000' : 'rgba(255,255,255,0.8)',
-    border: active ? '1px solid #e8b84b' : '1px solid rgba(255,255,255,0.1)',
-    borderRadius: '10px',
+    boxShadow: active 
+      ? '0 10px 25px rgba(232,184,75,0.4), inset 0 1px 2px rgba(255,255,255,0.5), inset 0 -1px 2px rgba(0,0,0,0.3)' 
+      : 'inset 0 1px 1px rgba(255,255,255,0.05), 0 5px 15px rgba(0,0,0,0.2)',
+    color: active ? '#000' : 'rgba(255,255,255,0.6)',
+    border: active ? '1px solid rgba(255,255,255,0.4)' : '1px solid rgba(255,255,255,0.1)',
+    borderRadius: '12px',
     cursor: 'pointer',
-    fontWeight: active ? 800 : 600,
-    transition: 'all 0.2s ease',
+    fontWeight: 900,
+    textTransform: 'uppercase',
+    letterSpacing: '0.05em',
+    transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
     touchAction: 'manipulation',
     userSelect: 'none',
     WebkitTapHighlightColor: 'transparent',
+    transform: active ? 'translateY(-1px)' : 'translateY(0)',
   });
 
   return (
@@ -84,23 +91,27 @@ export default function FilterSidebar({ isOpen, onClose, filters, setFilters, on
             ref={sidebarRef}
             className="filter-sidebar"
             onClick={e => e.stopPropagation()}
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.9, opacity: 0 }}
-            transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+            initial={window.innerWidth <= 600 ? { x: '100%', opacity: 1 } : { scale: 0.9, opacity: 0 }}
+            animate={window.innerWidth <= 600 ? { x: 0, opacity: 1 } : { scale: 1, opacity: 1 }}
+            exit={window.innerWidth <= 600 ? { x: '100%', opacity: 1 } : { scale: 0.9, opacity: 0 }}
+            transition={window.innerWidth <= 600 ? { type: 'tween', duration: 0.25 } : { type: 'spring', damping: 25, stiffness: 350 }}
             style={{
-              background: 'rgba(12,12,24,0.98)',
-              backdropFilter: 'blur(30px)',
-              border: '1px solid rgba(212,175,55,0.3)',
-              borderRadius: '24px',
-              width: '100%',
+              background: 'rgba(10,10,20,0.95)',
+              backdropFilter: 'blur(40px) saturate(200%)',
+              WebkitBackdropFilter: 'blur(40px) saturate(200%)',
+              border: '1px solid rgba(212,175,55,0.4)',
+              borderRadius: window.innerWidth <= 600 ? '0' : '28px',
+              width: window.innerWidth <= 600 ? '100vw' : '100%',
               maxWidth: '480px',
-              height: 'auto',
-              maxHeight: '90vh',
+              height: window.innerWidth <= 600 ? '100vh' : 'auto',
+              maxHeight: window.innerWidth <= 600 ? '100vh' : '90vh',
               display: 'flex',
               flexDirection: 'column',
-              boxShadow: '0 20px 80px rgba(0,0,0,0.8), 0 0 0 1px rgba(212,175,55,0.1)',
+              boxShadow: '0 40px 100px rgba(0,0,0,0.9)',
               overflow: 'hidden',
+              position: window.innerWidth <= 600 ? 'fixed' : 'relative',
+              top: 0,
+              right: 0
             }}
           >
             {/* Header */}
