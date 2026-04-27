@@ -107,12 +107,12 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
                 </select>
               </div>
               <div>
-                <label className="admin-label">City / Area</label>
-                <input name="location" defaultValue={editingProperty?.location || ''} className="admin-input" placeholder="e.g. Mangalagiri, Vijayawada" />
+                <label className="admin-label">City / Area <span style={{ color: 'var(--rose)' }}>*</span></label>
+                <input name="location" defaultValue={editingProperty?.location || ''} className="admin-input" placeholder="e.g. Mangalagiri, Vijayawada" required />
               </div>
               <div>
-                <label className="admin-label">District (AP)</label>
-                <select name="district" defaultValue={editingProperty?.district || ''} className="admin-select">
+                <label className="admin-label">District (AP) <span style={{ color: 'var(--rose)' }}>*</span></label>
+                <select name="district" defaultValue={editingProperty?.district || ''} className="admin-select" required>
                   <option value="">Select District</option>
                   {['Anantapur','Bapatla','Chittoor','East Godavari','Eluru','Guntur','Kadapa','Kakinada','Krishna','Kurnool','Nandyal','Nellore','Palnadu','Parvathipuram Manyam','Prakasam','Rajahmundry','Srikakulam','Sri Potti Sriramulu Nellore','Tirupati','Visakhapatnam','Vizianagaram','West Godavari'].map(d => (
                     <option key={d} value={d}>{d}</option>
@@ -120,7 +120,7 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
                 </select>
               </div>
               <div>
-                <label className="admin-label">Price</label>
+                <label className="admin-label">Price <span style={{ color: 'var(--rose)' }}>*</span></label>
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <input 
                     name="price" 
@@ -130,6 +130,7 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
                     className="admin-input" 
                     placeholder="Amount"
                     style={{ flex: 1 }}
+                    required
                   />
                   <select 
                     className="admin-select" 
@@ -142,11 +143,6 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
                     <option value="Cr">Cr</option>
                   </select>
                 </div>
-                {liveData.price > 0 && (
-                   <div style={{ marginTop: '8px', fontSize: '0.7rem', color: 'var(--gold)', fontWeight: 700 }}>
-                      CURRENCY HUD: {convertToValue(liveData.price, priceUnit).toLocaleString('en-IN')}
-                   </div>
-                )}
               </div>
               <div>
                 <label className="admin-label">Purpose</label>
@@ -166,8 +162,8 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
                 </select>
               </div>
               <div style={{ gridColumn: 'span 2' }}>
-                <label className="admin-label">Property Title</label>
-                <input name="title" defaultValue={editingProperty?.title || ''} className="admin-input" placeholder="e.g. 6 Acres of CRM Land in Mangalagiri" />
+                <label className="admin-label">Property Title <span style={{ color: 'var(--rose)' }}>*</span></label>
+                <input name="title" defaultValue={editingProperty?.title || ''} className="admin-input" placeholder="e.g. 6 Acres of CRM Land in Mangalagiri" required />
               </div>
               <div>
                 <label className="admin-label">Area Size</label>

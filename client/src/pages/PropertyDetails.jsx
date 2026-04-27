@@ -125,8 +125,14 @@ export default function PropertyDetails() {
     fetchSetting('support_info').then(setSupportInfo).catch(console.error);
   }, [id]);
 
-  // Elite Gallery Logic: Filter dummies, limit to 10 photos, include up to 3 videos
-  // Prioritize Admin-uploaded images, then gallery, then single image
+  // Elite Image Priority logic: Filter dummies, limit to 10 photos, include up to 3 videos
+  const isValidMedia = (media) => {
+    if (!media || typeof media !== 'string') return false;
+    if (media.trim() === '' || media.length < 5) return false;
+    if (media.includes('placeholder') || media.includes('dummy') || media === 'null' || media === 'undefined') return false;
+    return true;
+  };
+
   const rawImages = [
     ...(property?.images || []),
     ...(property?.gallery || []),
@@ -134,7 +140,7 @@ export default function PropertyDetails() {
   ];
   
   const validPhotos = rawImages
-    .filter(img => img && typeof img === 'string' && !img.includes('placeholder') && !img.includes('dummy'))
+    .filter(isValidMedia)
     .slice(0, 10);
   
   // Deduplicate
@@ -143,7 +149,7 @@ export default function PropertyDetails() {
   const validVideos = [
     ...(property?.videos || []),
     property?.videoUrl
-  ].filter(vid => vid && typeof vid === 'string' && !vid.includes('placeholder') && !vid.includes('dummy'))
+  ].filter(isValidMedia)
     .slice(0, 3);
   
   const uniqueVideos = [...new Set(validVideos)];
@@ -313,57 +319,68 @@ export default function PropertyDetails() {
         </div>
       </div>
 
-      <section className="pd-gallery-section">
-        <div className="pd-gallery-main-wrap">
-          <div className="pd-gallery-hero" onClick={() => { if (property_images.length > 0 || property_videos.length > 0) { setImgIdx(0); setLightbox(true); } }} style={{ cursor: property_images.length > 0 || property_videos.length > 0 ? 'pointer' : 'default' }}>
-            {property_images[0] ? (
-              <motion.img 
-                layoutId={`prop-image-${id || property?._id}`}
-                src={property_images[0]} 
-                alt={property.title} 
-                className="pd-gallery-hero-img"
-                initial={{ scale: 1.1 }}
-                animate={{ scale: 1, transition: { duration: 20, repeat: Infinity, repeatType: 'reverse', ease: 'linear' } }}
-              />
-            ) : (
-              <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#111' }}>
-                <Building2 size={64} style={{ opacity: 0.2 }}/>
-              </div>
-            )}
-            {(property_images.length > 0 || property_videos.length > 0) && (
-              <div className="pd-gallery-hero-overlay">
-                <Maximize2 size={16}/> మొత్తం {property_images.length} ఫోటోలు {property_videos.length > 0 ? `& ${property_videos.length} వీడియోలు` : ''} చూడండి
-              </div>
-            )}
-          </div>
-
-          {(property_images.length > 1 || property_videos.length > 0) && (
-            <div className="pd-gallery-strip">
-              <button className="pd-strip-arrow" onClick={() => scrollGallery(-1)}><ChevronLeft size={20}/></button>
-              <div className="pd-strip-scroller" ref={galleryRef}>
-                {/* Render Photos */}
-                {property_images.map((img, i) => (
-                  <div key={`img-${i}`} className={`pd-thumb ${i === imgIdx ? 'active' : ''}`}
-                    onClick={() => { setImgIdx(i); setLightbox(true); }}>
-                    <img src={img} alt={`Thumb ${i+1}`} loading="lazy"/>
-                  </div>
-                ))}
-                
-                {/* Render Videos */}
-                {property_videos.map((vid, i) => (
-                  <div key={`vid-${i}`} className="pd-thumb" 
-                    onClick={() => { setImgIdx(property_images.length + i); setLightbox(true); }}
-                    style={{ position: 'relative', background: '#000' }}>
-                    <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--gold)', zIndex: 2 }}>
-                      <Eye size={20} />
+      {/* Cinematic Property Gallery (Phase 3) */}
+      <section className="pd-gallery-section" style={{ position: 'relative', width: '100%', overflow: 'hidden', background: '#05050a' }}>
+        <div 
+          className="pd-snap-gallery hide-scrollbar" 
+          style={{ 
+            display: 'flex', 
+            overflowX: 'auto', 
+            scrollSnapType: 'x mandatory', 
+            WebkitOverflowScrolling: 'touch',
+            height: '55vh',
+            minHeight: '400px'
+          }}
+        >
+          {property_images.length > 0 ? (
+            property_images.map((img, i) => (
+              <div 
+                key={i} 
+                style={{ 
+                  flex: '0 0 100%', 
+                  scrollSnapAlign: 'start', 
+                  position: 'relative',
+                  cursor: 'pointer'
+                }}
+                onClick={() => { setImgIdx(i); setLightbox(true); }}
+              >
+                <img 
+                  src={img} 
+                  alt={`${property.title} - ${i + 1}`} 
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  loading={i === 0 ? "eager" : "lazy"}
+                />
+                <div style={{ position: 'absolute', top: '15px', right: '15px', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(10px)', color: 'white', padding: '6px 12px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 800, zIndex: 2 }}>
+                  {i + 1} / {property_images.length}
+                </div>
+                {/* Embedded Cinematic Data Overlay */}
+                <div style={{ 
+                  position: 'absolute', 
+                  bottom: 0, left: 0, right: 0, 
+                  background: 'linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.7) 40%, transparent 100%)',
+                  padding: '40px 20px 20px',
+                  display: 'flex', flexDirection: 'column', gap: '8px'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                    <div>
+                      <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                        {property.isVerified && <span style={{ background: 'var(--gold)', color: 'black', fontSize: '0.65rem', fontWeight: 900, padding: '4px 8px', borderRadius: '12px' }}><ShieldCheck size={10} style={{ display: 'inline', verticalAlign: 'text-top' }}/> VERIFIED</span>}
+                        <span style={{ background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(10px)', color: 'white', fontSize: '0.65rem', fontWeight: 900, padding: '4px 8px', borderRadius: '12px' }}>{tr(property.type)}</span>
+                      </div>
+                      <h1 style={{ color: 'white', fontSize: '1.5rem', fontWeight: 900, margin: 0, textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>{property.title}</h1>
                     </div>
-                    {/* Use first image as poster if available */}
-                    <img src={property_images[0]} alt="Video" style={{ opacity: 0.4 }} />
-                    <div style={{ position: 'absolute', bottom: '4px', right: '4px', background: 'rgba(0,0,0,0.8)', color: 'white', fontSize: '10px', padding: '2px 6px', borderRadius: '4px', fontWeight: 900 }}>VIDEO</div>
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ color: 'var(--gold)', fontSize: '1.4rem', fontWeight: 900, textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>
+                        {formatSnapAddaPrice(displayPrice)}
+                      </div>
+                    </div>
                   </div>
-                ))}
+                </div>
               </div>
-              <button className="pd-strip-arrow" onClick={() => scrollGallery(1)}><ChevronRight size={20}/></button>
+            ))
+          ) : (
+            <div style={{ flex: '0 0 100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#111' }}>
+              <Building2 size={64} style={{ opacity: 0.2 }}/>
             </div>
           )}
         </div>
@@ -387,9 +404,10 @@ export default function PropertyDetails() {
                 </span>
                 {property.isFeatured && <span className="pd-badge-gold">ఎలైట్</span>}
               </div>
-              <h1 className="pd-h1">{property.title}</h1>
+              {/* Title hidden on mobile as it's injected into the gallery overlay */}
+              <h1 className="pd-h1" style={{ display: 'none' }}>{property.title}</h1>
               
-              <div className="pd-location-row" style={{ display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'flex-start' }}>
+              <div className="pd-location-row" style={{ display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'flex-start', marginTop: '1rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <MapPin size={18} style={{ color: 'var(--gold)' }}/>
                   <span style={{ fontSize: '1.2rem', fontWeight: 800 }}>{property.location} {property.district ? `(${property.district})` : ''}</span>
@@ -408,13 +426,11 @@ export default function PropertyDetails() {
                     href={finalGoogleMapsLink} 
                     target="_blank" 
                     rel="noopener noreferrer" 
-                    className="btn-3d-liquid"
+                    className="btn-3d-glass"
                     style={{ 
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px',
+                      width: '100%',
                       padding: '1.2rem', fontSize: '1rem', fontWeight: 900, borderRadius: '20px',
-                      background: 'linear-gradient(135deg, #4285F4, #34A853, #FBBC05, #EA4335)',
-                      color: 'white', textDecoration: 'none', border: 'none',
-                      boxShadow: '0 10px 30px rgba(66,133,244,0.3)'
+                      textDecoration: 'none'
                     }}
                   >
                     <MapPin size={24}/> గూగుల్ మ్యాప్స్‌లో చూడండి
@@ -423,7 +439,7 @@ export default function PropertyDetails() {
               </div>
             </div>
 
-            <div className="pd-price-block">
+            <div className="pd-price-block" style={{ display: 'none' }}> {/* Hidden on mobile, shown via overlay */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', background: 'rgba(39, 201, 125, 0.1)', border: '1px solid rgba(39, 201, 125, 0.3)', padding: '6px 12px', borderRadius: '12px' }}>
                  <ShieldCheck size={14} color="#27c97d"/> <span style={{ color: '#27c97d', fontSize: '0.7rem', fontWeight: 900 }}>100% వెరిఫైడ్ టైటిల్</span>
               </div>
@@ -628,15 +644,15 @@ export default function PropertyDetails() {
             <div className="pd-contact-sticky">
               <div className="pd-contact-card">
                 <div style={{ color: 'rgba(0,0,0,0.6)', fontSize: '0.7rem', fontWeight: 900, textTransform: 'uppercase', marginBottom: '1rem' }}>ఏజెంట్‌ను సంప్రదించండి</div>
-                <button onClick={() => window.location.href = `tel:${supportPhone}`} className="pd-btn-primary" style={{ width: '100%', background: '#05050a', color: 'white', border: 'none', padding: '1.25rem' }}>
+                <button onClick={() => window.location.href = `tel:${supportPhone}`} className="btn-3d-glass" style={{ width: '100%' }}>
                   <Phone size={20}/> కాల్ చేయండి
                 </button>
                 <div style={{ textAlign: 'center', margin: '0.75rem 0', opacity: 0.5, fontSize: '0.7rem', fontWeight: 800 }}>లేదా (OR)</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                  <button onClick={handleWhatsApp} className="pd-btn-wa" style={{ width: '100%', padding: '1rem' }}>
+                  <button onClick={handleWhatsApp} className="btn-3d-glass-emerald" style={{ width: '100%' }}>
                     <MessageSquare size={18}/> వాట్సాప్ చాట్
                   </button>
-                  <button onClick={() => navigate('/request-callback')} className="request-btn-submit" style={{ width: '100%', padding: '1rem', borderRadius: '14px', fontSize: '0.85rem' }}>
+                  <button onClick={() => navigate('/request-callback')} className="btn-3d-glass-dark" style={{ width: '100%' }}>
                     <Send size={18}/> కాల్‌బ్యాక్ రిక్వెస్ట్
                   </button>
                 </div>
@@ -673,10 +689,10 @@ export default function PropertyDetails() {
       )}
 
       <div className="pd-mobile-bar" style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: 'rgba(7, 7, 15, 0.98)', backdropFilter: 'blur(20px)', borderTop: '1px solid rgba(255,255,255,0.1)', padding: '12px 16px', display: 'flex', gap: '12px', zIndex: 1000, boxShadow: '0 -10px 40px rgba(0,0,0,0.8)' }}>
-        <button onClick={() => window.location.href = `tel:${supportPhone}`} style={{ flex: 1, height: '52px', background: 'white', color: '#000', border: 'none', borderRadius: '14px', fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '0.85rem' }}>
+        <button onClick={() => window.location.href = `tel:${supportPhone}`} className="btn-3d-glass" style={{ flex: 1, padding: '12px', fontSize: '0.85rem' }}>
           <Phone size={18}/> కాల్ చేయండి
         </button>
-        <button onClick={handleWhatsApp} style={{ flex: 1, height: '52px', background: '#25D366', color: '#fff', border: 'none', borderRadius: '14px', fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '0.85rem' }}>
+        <button onClick={handleWhatsApp} className="btn-3d-glass-emerald" style={{ flex: 1, padding: '12px', fontSize: '0.85rem' }}>
           <MessageSquare size={18}/> వాట్సాప్
         </button>
       </div>

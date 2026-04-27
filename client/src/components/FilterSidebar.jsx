@@ -43,9 +43,12 @@ export default function FilterSidebar({ isOpen, onClose, filters, setFilters, on
     flex: 1,
     fontSize: '0.72rem',
     padding: '11px 8px',
-    background: active ? 'var(--gold)' : 'rgba(255,255,255,0.05)',
+    background: active ? 'linear-gradient(135deg, #e8b84b, #b9933a)' : 'rgba(15, 15, 30, 0.6)',
+    backdropFilter: 'blur(20px)',
+    WebkitBackdropFilter: 'blur(20px)',
+    boxShadow: active ? '0 10px 20px rgba(232,184,75,0.3)' : 'inset 0 2px 10px rgba(255,255,255,0.03)',
     color: active ? '#000' : 'rgba(255,255,255,0.8)',
-    border: active ? '1px solid var(--gold)' : '1px solid rgba(255,255,255,0.1)',
+    border: active ? '1px solid #e8b84b' : '1px solid rgba(255,255,255,0.1)',
     borderRadius: '10px',
     cursor: 'pointer',
     fontWeight: active ? 800 : 600,
@@ -147,14 +150,23 @@ export default function FilterSidebar({ isOpen, onClose, filters, setFilters, on
                       style={{ width: '100%' }}
                     >
                       <option value="All">{t('filter.items')}</option>
-                      <option value="Apartment">Apartment</option>
-                      <option value="Independent House">House</option>
-                      <option value="Villa">{t('types.villa')}</option>
-                      <option value="Residential Plot">{t('types.plot')}</option>
-                      <option value="Commercial Plot">Comm. Plot</option>
-                      <option value="Agricultural Land">{t('types.agriculture')}</option>
-                      <option value="Industrial Land">Industrial Land</option>
-                      <option value="Gated Community">Gated Community</option>
+                      <option value="Apartment">Apartment / Flat</option>
+                      <option value="Independent House">Independent House</option>
+                      <option value="Villa">Villa / Duplex</option>
+                      <option value="Residential Plot">Residential Plot</option>
+                      <option value="Gated Community Plot">Gated Plot</option>
+                      <option value="CRDA Approved Plot">CRDA Plot</option>
+                      <option value="Open Plot">Open Plot</option>
+                      <option value="Layout Plot">Layout Plot</option>
+                      <option value="Commercial Plot">Commercial Plot</option>
+                      <option value="Commercial Space">Commercial Space</option>
+                      <option value="Office Space">Office Space</option>
+                      <option value="Showroom">Showroom / Retail</option>
+                      <option value="Agricultural Land">Agricultural Land</option>
+                      <option value="Farmhouse">Farmhouse / Farm Villa</option>
+                      <option value="Industrial Shed">Industrial Shed</option>
+                      <option value="Warehouse">Warehouse</option>
+                      <option value="Factory">Factory</option>
                     </select>
                   </div>
                   <div>
@@ -213,7 +225,7 @@ export default function FilterSidebar({ isOpen, onClose, filters, setFilters, on
               {/* Toggle Buttons */}
               <div className="filter-card-elite">
                 <label style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.65rem', fontWeight: 800, letterSpacing: '0.1em', display: 'block', marginBottom: '10px' }}>PROPERTY FLAGS</label>
-                <div style={{ display: 'flex', gap: '10px' }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
                   <button
                     style={toggleStyle(filters.vastu)}
                     onClick={() => set('vastu', !filters.vastu)}
@@ -243,15 +255,15 @@ export default function FilterSidebar({ isOpen, onClose, filters, setFilters, on
             <div style={{ padding: '16px 20px', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', gap: '10px', flexShrink: 0 }}>
               <button
                 onClick={handleClearAll}
-                className="btn-glass"
-                style={{ flex: 1, padding: '12px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.7)', borderRadius: '12px', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 700, touchAction: 'manipulation' }}
+                className="btn-3d-glass-dark"
+                style={{ flex: 1, padding: '12px', borderRadius: '12px', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 700, touchAction: 'manipulation' }}
               >
                 {t('filter.clearAll')}
               </button>
               <button
                 onClick={onApply}
-                className="btn-3d"
-                style={{ flex: 2, padding: '12px', background: 'var(--gold)', color: '#000', border: 'none', borderRadius: '12px', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 800, touchAction: 'manipulation' }}
+                className="btn-3d-glass"
+                style={{ flex: 2, padding: '12px', borderRadius: '12px', cursor: 'pointer', fontSize: '0.82rem', touchAction: 'manipulation' }}
               >
                 {t('filter.apply')}
               </button>

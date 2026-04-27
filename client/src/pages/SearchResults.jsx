@@ -14,16 +14,23 @@ import { parseSmartSearch, getFuzzySuggestions, loadAndhraData } from '../servic
 
 const PROPERTY_TYPES = [
   { label: 'All Types', value: '', icon: <Filter size={14}/> },
-  { label: 'Apartment', value: 'Apartment', icon: <Building2 size={14}/> },
-  { label: 'Villa', value: 'Villa', icon: <HomeIcon size={14}/> },
+  { label: 'Apartment / Flat', value: 'Apartment', icon: <Building2 size={14}/> },
   { label: 'Independent House', value: 'Independent House', icon: <HomeIcon size={14}/> },
-  { label: 'Residential Plot / Gajalu', value: 'Residential Plot', icon: <Square size={14}/> },
-  { label: 'CRDA / Open Plots', value: 'CRDA Plot', icon: <Award size={14}/> },
-  { label: 'Agri Land / Acres', value: 'Agricultural Land', icon: <Leaf size={14}/> },
+  { label: 'Villa / Duplex', value: 'Villa', icon: <HomeIcon size={14}/> },
+  { label: 'Residential Plot', value: 'Residential Plot', icon: <Square size={14}/> },
+  { label: 'Gated Community Plot', value: 'Gated Community Plot', icon: <Square size={14}/> },
+  { label: 'CRDA Approved Plot', value: 'CRDA Approved Plot', icon: <Award size={14}/> },
+  { label: 'Open Plot', value: 'Open Plot', icon: <Square size={14}/> },
+  { label: 'Layout Plot', value: 'Layout Plot', icon: <Square size={14}/> },
   { label: 'Commercial Plot', value: 'Commercial Plot', icon: <Square size={14}/> },
-  { label: 'Farmhouse', value: 'Farmhouse', icon: <Trees size={14}/> },
   { label: 'Commercial Space', value: 'Commercial Space', icon: <Building2 size={14}/> },
-  { label: 'Industrial / Warehouse', value: 'Industrial', icon: <Maximize2 size={14}/> },
+  { label: 'Office Space', value: 'Office Space', icon: <Building2 size={14}/> },
+  { label: 'Showroom / Retail', value: 'Showroom', icon: <Building2 size={14}/> },
+  { label: 'Agricultural Land', value: 'Agricultural Land', icon: <Leaf size={14}/> },
+  { label: 'Farmhouse / Farm Villa', value: 'Farmhouse', icon: <HomeIcon size={14}/> },
+  { label: 'Industrial Shed', value: 'Industrial Shed', icon: <Maximize2 size={14}/> },
+  { label: 'Warehouse', value: 'Warehouse', icon: <Maximize2 size={14}/> },
+  { label: 'Factory', value: 'Factory', icon: <Maximize2 size={14}/> },
 ];
 
 const SORT_OPTIONS = [
@@ -177,8 +184,8 @@ export default function SearchResults() {
           <input
             ref={searchRef}
             type="text"
-            className="admin-input"
-            style={{ paddingLeft: '36px', fontSize: '0.85rem' }}
+            className="dropdown-3d-glass"
+            style={{ width: '100%', paddingLeft: '36px', fontSize: '0.85rem', boxSizing: 'border-box' }}
             placeholder="City, area, keyword..."
             value={keyword}
             onChange={e => { setKeyword(e.target.value); setPage(1); }}
@@ -240,11 +247,11 @@ export default function SearchResults() {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
           <div style={{ position: 'relative' }}>
              <span style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--txt-muted)', fontSize: '0.8rem' }}>₹</span>
-             <input className="admin-input" type="number" placeholder="Min" value={minPrice} onChange={e => { setMinPrice(e.target.value); setPage(1); }} style={{ fontSize: '0.8rem', paddingLeft: '22px' }}/>
+             <input className="dropdown-3d-glass" type="number" placeholder="Min" value={minPrice} onChange={e => { setMinPrice(e.target.value); setPage(1); }} style={{ width: '100%', boxSizing: 'border-box', fontSize: '0.8rem', paddingLeft: '22px' }}/>
           </div>
           <div style={{ position: 'relative' }}>
              <span style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--txt-muted)', fontSize: '0.8rem' }}>₹</span>
-             <input className="admin-input" type="number" placeholder="Max" value={maxPrice} onChange={e => { setMaxPrice(e.target.value); setPage(1); }} style={{ fontSize: '0.8rem', paddingLeft: '22px' }}/>
+             <input className="dropdown-3d-glass" type="number" placeholder="Max" value={maxPrice} onChange={e => { setMaxPrice(e.target.value); setPage(1); }} style={{ width: '100%', boxSizing: 'border-box', fontSize: '0.8rem', paddingLeft: '22px' }}/>
           </div>
         </div>
       </div>
@@ -265,7 +272,7 @@ export default function SearchResults() {
       {/* Facing */}
       <div>
         <label className="sr-filter-label">{t('filter.facing', 'Facing')}</label>
-        <select className="admin-select" value={facing} onChange={e => { setFacing(e.target.value); setPage(1); }} style={{ width: '100%', fontSize: '0.82rem' }}>
+        <select className="dropdown-3d-glass" value={facing} onChange={e => { setFacing(e.target.value); setPage(1); }} style={{ width: '100%', fontSize: '0.82rem', boxSizing: 'border-box' }}>
           <option value="">Any Direction</option>
           <option>East</option><option>North</option><option>West</option>
           <option>South</option><option>North-East</option><option>South-West</option>
@@ -275,7 +282,7 @@ export default function SearchResults() {
       {/* Approval */}
       <div>
         <label className="sr-filter-label">{t('filter.approval', 'Approval Authority')}</label>
-        <select className="admin-select" value={approval} onChange={e => { setApproval(e.target.value); setPage(1); }} style={{ width: '100%', fontSize: '0.82rem' }}>
+        <select className="dropdown-3d-glass" value={approval} onChange={e => { setApproval(e.target.value); setPage(1); }} style={{ width: '100%', fontSize: '0.82rem', boxSizing: 'border-box' }}>
           <option value="">Any / All</option>
           <option>AP CRDA</option><option>AP RERA</option>
           <option>VMRDA</option><option>DTCP</option>
@@ -420,21 +427,18 @@ export default function SearchResults() {
         </main>
       </div>
 
-      {/* Mobile Filter Bottom Sheet */}
+      {/* Mobile Filter Fullscreen Modal */}
       <AnimatePresence>
         {showMobileFilter && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(5px)' }}
+            style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(5,5,15,0.85)', backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '15px' }}
             onClick={() => setShowMobileFilter(false)}>
             <motion.div 
-              initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
-              transition={{ type: 'spring', stiffness: 400, damping: 35 }}
-              drag="y" dragConstraints={{ top: 0 }} dragElastic={0.15}
-              onDragEnd={(e, info) => { if (info.offset.y > 120) setShowMobileFilter(false); }}
+              initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 350 }}
               onClick={e => e.stopPropagation()}
-              style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'rgba(9,9,18,0.98)', borderTop: '1px solid rgba(255,255,255,0.15)', borderRadius: '32px 32px 0 0', padding: '1.5rem', maxHeight: '92vh', overflowY: 'auto', transform: 'translateZ(0)' }}>
-              <div style={{ width: '40px', height: '4px', background: 'rgba(255,255,255,0.2)', borderRadius: '4px', margin: '0 auto 1.5rem auto' }} />
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              style={{ width: '100%', maxWidth: '480px', background: 'rgba(12,12,24,0.95)', border: '1px solid rgba(212,175,55,0.3)', borderRadius: '24px', padding: '1.5rem', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 80px rgba(0,0,0,0.8)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '1rem' }}>
                 <div style={{ fontWeight: 800, color: 'white', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <SlidersHorizontal size={18} style={{ color: 'var(--gold)' }}/> Advanced Filters
                 </div>

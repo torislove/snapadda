@@ -1,11 +1,12 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import {
   Search, SlidersHorizontal, MapPin, Phone, MessageSquare, ShieldCheck, Star,
   Building2, Home as HomeIcon, Square, Leaf, Filter, ChevronDown, X, ArrowRight,
-  Zap, Shield, Clock, IndianRupee, Compass, Users, TrendingUp, CheckCircle2, Navigation2, Flame
+  Zap, Shield, Clock, IndianRupee, Compass, Users, TrendingUp, CheckCircle2, Navigation2, Flame,
+  Warehouse, Factory
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { fetchProperties, fetchCities, fetchTestimonials, fetchSetting } from '../services/api';
@@ -104,10 +105,22 @@ const BUDGET_OPTIONS = (t) => [
 
 const PROPERTY_TYPES = (t) => [
   { label: 'Apartment', value: 'Apartment', icon: <Building2 size={24} /> },
-  { label: 'Villa', value: 'Villa', icon: <HomeIcon size={24} /> },
-  { label: 'CRDA / Open Plots', value: 'Residential Plot', icon: <Square size={24} /> },
-  { label: 'Agri Land (Acres)', value: 'Agricultural Land', icon: <Leaf size={24} /> },
+  { label: 'Independent House', value: 'Independent House', icon: <HomeIcon size={24} /> },
+  { label: 'Villa / Duplex', value: 'Villa', icon: <HomeIcon size={24} /> },
+  { label: 'Residential Plot', value: 'Residential Plot', icon: <Square size={24} /> },
+  { label: 'Gated Community Plot', value: 'Gated Community Plot', icon: <Square size={24} /> },
+  { label: 'CRDA Approved Plot', value: 'CRDA Approved Plot', icon: <ShieldCheck size={24} /> },
+  { label: 'Open Plot', value: 'Open Plot', icon: <Square size={24} /> },
+  { label: 'Layout Plot', value: 'Layout Plot', icon: <Square size={24} /> },
+  { label: 'Commercial Plot', value: 'Commercial Plot', icon: <Building2 size={24} /> },
   { label: 'Commercial Space', value: 'Commercial Space', icon: <Building2 size={24} /> },
+  { label: 'Office Space', value: 'Office Space', icon: <Building2 size={24} /> },
+  { label: 'Showroom / Retail', value: 'Showroom', icon: <Building2 size={24} /> },
+  { label: 'Agricultural Land', value: 'Agricultural Land', icon: <Leaf size={24} /> },
+  { label: 'Farmhouse / Farm Villa', value: 'Farmhouse', icon: <HomeIcon size={24} /> },
+  { label: 'Industrial Shed', value: 'Industrial Shed', icon: <Warehouse size={24} /> },
+  { label: 'Warehouse', value: 'Warehouse', icon: <Warehouse size={24} /> },
+  { label: 'Factory', value: 'Factory', icon: <Factory size={24} /> },
 ];
 
 const WHY_CARDS = (t) => [
@@ -300,10 +313,11 @@ export default function Home() {
   const supportWA = supportInfo?.whatsapp || '919346793364';
 
   // Sectional Data Filters
-  const villas = useMemo(() => properties.filter(p => p.type === 'Villa' || p.type === 'Independent House').slice(0, 8), [properties]);
-  const apartments = useMemo(() => properties.filter(p => p.type === 'Apartment' || p.type === 'Apartment / Flat').slice(0, 8), [properties]);
-  const plots = useMemo(() => properties.filter(p => p.type === 'Plot' || p.type === 'Residential Plot' || p.type === 'CRDA / Open Plots').slice(0, 8), [properties]);
-  const agri = useMemo(() => properties.filter(p => p.type === 'Agricultural Land' || p.type === 'Farmhouse').slice(0, 8), [properties]);
+  // Sectional Data Filters - Robust grouping for regional property types
+  const villas = useMemo(() => properties.filter(p => ['Villa', 'Independent House', 'Duplex'].includes(p.type)).slice(0, 8), [properties]);
+  const apartments = useMemo(() => properties.filter(p => ['Apartment', 'Apartment / Flat', 'Flat'].includes(p.type)).slice(0, 8), [properties]);
+  const plots = useMemo(() => properties.filter(p => ['Plot', 'Residential Plot', 'Commercial Plot', 'Gated Community Plot', 'CRDA Approved Plot', 'Open Plot', 'Layout Plot'].includes(p.type)).slice(0, 8), [properties]);
+  const agri = useMemo(() => properties.filter(p => ['Agricultural Land', 'Farmhouse', 'Farm Villa'].includes(p.type)).slice(0, 8), [properties]);
 
   return (
     <div 
@@ -328,90 +342,6 @@ export default function Home() {
           </div>
         </section>
 
-        <section id="search" className="search-section" style={{ paddingTop: '1rem' }}>
-          <div className="container">
-            {/* Recently Sold Social Proof Ticker */}
-            <RecentlySoldTicker />
-            <motion.div
-              ref={searchRef}
-              className="search-platform glass-heavy search-glass-card"
-              style={{ rotateX, rotateY, transformStyle: 'preserve-3d', willChange: 'transform' }}
-              onMouseMove={e => {
-                if (!searchRef.current) return;
-                const r = searchRef.current.getBoundingClientRect();
-                mx.set((e.clientX - r.left) / r.width - 0.5);
-                my.set((e.clientY - r.top) / r.height - 0.5);
-              }}
-              onMouseLeave={() => { mx.set(0); my.set(0); }}
-            >
-              <div className="intent-cards">
-                {INTENT_TABS(t).map(tab => (
-                  <button key={tab.value} className={`intent-card${intent === tab.value ? ' active' : ''}`} onClick={() => setIntent(tab.value)}>
-                    {tab.icon}
-                    <span>{tab.label}</span>
-                  </button>
-                ))}
-              </div>
-              <div className="search-main-row" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                <div className="search-bar-wrap">
-                  <Search size={18} className="s-icon" />
-                  <input
-                    type="text" className="search-bar-input" placeholder="Location, project, keyword..."
-                    value={keyword} onChange={e => setKeyword(e.target.value)}
-                    onFocus={() => { loadAndhraData(); setShowAutocomplete(true); }}
-                    onBlur={() => setTimeout(() => setShowAutocomplete(false), 200)}
-                    onKeyDown={e => e.key === 'Enter' && loadProperties()}
-                  />
-                  {showAutocomplete && keyword.length >= 2 && (
-                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="search-autocomplete-dropdown">
-                      {getFuzzySuggestions(keyword).length > 0 ? (
-                        <>
-                          <div className="autocomplete-header">Suggested Locations (Andhra Pradesh)</div>
-                          {getFuzzySuggestions(keyword).map(c => (
-                            <button key={`${c.name}-${c.type}`} className="autocomplete-item" onClick={() => { setKeyword(c.name); setCityFilter(c.name); setShowAutocomplete(false); }}>
-                              <MapPin size={14} className="ac-icon" />
-                              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-                                <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>{c.name}</span>
-                                <span className="ac-badge" style={{ fontSize: '0.65rem' }}>{c.type === 'District' ? 'District' : c.district || 'Andhra Pradesh'} • {c.type}</span>
-                              </div>
-                            </button>
-                          ))}
-                        </>
-                      ) : (
-                        <div className="autocomplete-header">Continue typing for all Mandals/Cities...</div>
-                      )}
-                    </motion.div>
-                  )}
-                  {keyword && <button className="search-clear" onMouseDown={e => { e.preventDefault(); setKeyword(''); }}><X size={14} /></button>}
-                </div>
-
-                <div className="search-action-row" style={{ width: '100%' }}>
-                  <button className="search-go-btn btn-3d-liquid" 
-                    onClick={() => {
-                      if (!user) {
-                        navigate('/login', { state: { from: '/search' } });
-                        return;
-                      }
-                      const params = new URLSearchParams();
-                      if (keyword) params.set('keyword', keyword);
-                      if (intent && intent !== 'Any') params.set('purpose', intent);
-                      if (budget && budget !== '999999999') params.set('maxPrice', budget);
-                      if (cityFilter) params.set('city', cityFilter);
-                      
-                      // Log Institutional Activity
-                      logUserActivity(ACTIONS.SEARCH, { keyword, city: cityFilter, budget }, user?._id);
-                      
-                      navigate(`/search?${params.toString()}`);
-                    }} 
-                    style={{ width: '100%', padding: '1.25rem', background: 'var(--gold)', color: 'var(--midnight)', fontWeight: 900, fontSize: '1.1rem', borderRadius: '18px', boxShadow: '0 15px 35px rgba(232, 184, 75, 0.4)' }}>
-                    <Zap size={22} style={{ marginRight: '10px' }} />
-                    {t('hero.searchBtn', 'EXPLORE ELITE ESTATES')}
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        </section>
 
         <section className="hero-section" style={{ paddingBottom: '2.5rem' }}>
           <div className="container">
@@ -428,6 +358,229 @@ export default function Home() {
             <motion.p className="hero-subtitle" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2 }}>
               {heroContent?.subtitle || t('hero.subtitle')}
             </motion.p>
+
+            {/* Elite Unified Hero Search Platform (Responsive) */}
+            <motion.div 
+              initial={{ opacity: 0, y: 30 }} 
+              animate={{ opacity: 1, y: 0 }} 
+              transition={{ delay: 0.4 }}
+              className="hero-search-platform glass-heavy"
+              style={{ 
+                maxWidth: '900px', 
+                margin: '2rem auto 3rem', 
+                padding: '2rem', 
+                borderRadius: '32px',
+                background: 'rgba(5, 10, 20, 0.85)',
+                border: '1px solid rgba(212, 175, 55, 0.2)',
+                boxShadow: '0 30px 100px rgba(0,0,0,0.8)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '1.5rem',
+                textAlign: 'left'
+              }}
+            >
+              {/* 1. Keyword Search */}
+              <div className="search-group">
+                <label style={{ color: 'var(--gold)', fontSize: '0.7rem', fontWeight: 900, letterSpacing: '0.1em', marginBottom: '10px', display: 'block' }}>KEYWORDS / LOCATION</label>
+                <div style={{ position: 'relative', display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.05)', borderRadius: '14px', padding: '0 15px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                  <Search size={16} style={{ color: 'rgba(255,255,255,0.4)', marginRight: '10px' }} />
+                  <input 
+                    type="text" 
+                    placeholder="Search by project, mandal..."
+                    value={keyword}
+                    onChange={(e) => setKeyword(e.target.value)}
+                    style={{ background: 'transparent', border: 'none', color: 'white', fontSize: '0.95rem', width: '100%', padding: '12px 0', outline: 'none' }}
+                  />
+                </div>
+              </div>
+
+              {/* 2. Property Type Cards */}
+              <div className="search-group">
+                <label style={{ color: 'var(--gold)', fontSize: '0.7rem', fontWeight: 900, letterSpacing: '0.1em', marginBottom: '10px', display: 'block' }}>PROPERTY TYPE</label>
+                <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '5px', margin: '0 -5px' }} className="hide-scrollbar">
+                  {PROPERTY_TYPES(t).map(type => (
+                    <button 
+                      key={type.value}
+                      onClick={() => setTypeFilter(typeFilter === type.value ? 'all' : type.value)}
+                      style={{ 
+                        flexShrink: 0,
+                        padding: '10px 16px',
+                        borderRadius: '14px',
+                        background: typeFilter === type.value ? 'var(--gold)' : 'rgba(255,255,255,0.03)',
+                        border: '1px solid',
+                        borderColor: typeFilter === type.value ? 'var(--gold)' : 'rgba(255,255,255,0.1)',
+                        color: typeFilter === type.value ? 'black' : 'white',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: '6px',
+                        minWidth: '90px',
+                        cursor: 'pointer',
+                        transition: '0.2s'
+                      }}
+                    >
+                      <div style={{ opacity: 0.8 }}>{React.cloneElement(type.icon, { size: 18 })}</div>
+                      <span style={{ fontSize: '0.7rem', fontWeight: 700 }}>{type.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 3. City Cards with Photos */}
+              <div className="search-group">
+                <label style={{ color: 'var(--gold)', fontSize: '0.7rem', fontWeight: 900, letterSpacing: '0.1em', marginBottom: '12px', display: 'block' }}>CHOOSE CITY</label>
+                <div style={{ display: 'flex', gap: '15px', overflowX: 'auto', paddingBottom: '10px', margin: '0 -5px' }} className="hide-scrollbar">
+                  {cities.map(city => (
+                    <button 
+                      key={city._id}
+                      onClick={() => setCityFilter(cityFilter === city.name ? null : city.name)}
+                      style={{ 
+                        flexShrink: 0,
+                        position: 'relative',
+                        width: '120px',
+                        height: '80px',
+                        borderRadius: '16px',
+                        overflow: 'hidden',
+                        border: cityFilter === city.name ? '3px solid var(--gold)' : '1px solid rgba(255,255,255,0.1)',
+                        cursor: 'pointer',
+                        transition: 'all 0.3s'
+                      }}
+                    >
+                      {city.image ? (
+                        <img 
+                          src={city.image} 
+                          alt={city.name} 
+                          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.6 }} 
+                        />
+                      ) : (
+                        <div style={{ position: 'absolute', inset: 0, background: '#222' }} />
+                      )}
+                      <div style={{ 
+                        position: 'absolute', inset: 0, 
+                        background: cityFilter === city.name ? 'rgba(212,175,55,0.2)' : 'linear-gradient(to top, rgba(0,0,0,0.8), transparent)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        zIndex: 2
+                      }}>
+                        <span style={{ 
+                          color: cityFilter === city.name ? 'var(--gold)' : 'white', 
+                          fontSize: '0.8rem', 
+                          fontWeight: 900,
+                          textShadow: '0 2px 4px rgba(0,0,0,0.5)'
+                        }}>
+                          {city.name}
+                        </span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 4. Budget Slide & Search */}
+              <div className="search-footer-mobile" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                <div style={{ width: '100%' }}>
+                  <label style={{ color: 'var(--gold)', fontSize: '0.7rem', fontWeight: 900, letterSpacing: '0.1em', marginBottom: '12px', display: 'flex', justifyContent: 'space-between' }}>
+                    <span>MAX BUDGET</span>
+                    <span style={{ color: 'white', fontWeight: 800 }}>{budget ? `₹${(budget/10000000).toFixed(2)} Cr` : 'Any'}</span>
+                  </label>
+                  <div style={{ padding: '5px 0' }}>
+                    <input 
+                      type="range" 
+                      min="500000" 
+                      max="100000000" 
+                      step="500000"
+                      value={budget || 100000000}
+                      onChange={(e) => setBudget(e.target.value)}
+                      style={{ width: '100%', accentColor: 'var(--gold)', cursor: 'pointer', height: '6px', borderRadius: '5px' }}
+                    />
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', marginTop: '8px' }}>
+                    <span>₹5L</span>
+                    <span>₹10Cr+</span>
+                  </div>
+                </div>
+
+                <button 
+                  onClick={() => {
+                    const params = new URLSearchParams();
+                    if (keyword) params.set('keyword', keyword);
+                    if (typeFilter !== 'all') params.set('type', typeFilter);
+                    if (cityFilter) params.set('city', cityFilter);
+                    if (budget && budget < 100000000) params.set('maxPrice', budget);
+                    navigate(`/search?${params.toString()}`);
+                  }}
+                  className="btn-3d-glass"
+                  style={{ 
+                    background: 'var(--gold)', 
+                    color: 'black', 
+                    padding: '16px', 
+                    borderRadius: '16px', 
+                    fontWeight: 900, 
+                    fontSize: '1rem',
+                    width: '100%',
+                    boxShadow: '0 10px 30px rgba(232,184,75,0.3)'
+                  }}
+                >
+                  <Zap size={18} style={{ marginRight: '8px' }} />
+                  {t('hero.searchBtn', 'EXPLORE ESTATES')}
+                </button>
+              </div>
+
+              <style>{`
+                .hero-search-platform {
+                  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                  margin: 0 auto;
+                  max-width: 900px; /* Center it nicely */
+                  width: 100%;
+                }
+                .hero-search-platform:hover {
+                  border-color: rgba(212, 175, 55, 0.4);
+                  box-shadow: 0 40px 120px rgba(0,0,0,0.9);
+                }
+                .hide-scrollbar::-webkit-scrollbar { display: none; }
+                .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+                
+                @media (max-width: 600px) {
+                  .hero-search-platform {
+                    padding: 1.5rem !important;
+                    margin: 1.5rem 12px !important;
+                    border-radius: 28px !important;
+                    gap: 1.75rem !important;
+                    background: rgba(8, 12, 25, 0.95) !important;
+                  }
+                  .search-group label {
+                    font-size: 0.65rem !important;
+                    opacity: 0.6;
+                  }
+                  .search-group input {
+                    font-size: 1.05rem !important;
+                  }
+                  .search-footer-mobile {
+                    gap: 1.75rem !important;
+                  }
+                  .search-group .hide-scrollbar {
+                    gap: 12px !important;
+                    padding-bottom: 15px !important;
+                    overflow-x: auto !important;
+                    -webkit-overflow-scrolling: touch;
+                  }
+                  /* Make cards slightly larger for touch */
+                  .search-group button {
+                    padding: 14px 22px !important;
+                    min-width: 110px !important;
+                    border-radius: 18px !important;
+                  }
+                  /* Increase budget slider height for touch */
+                  input[type="range"]::-webkit-slider-runnable-track {
+                    height: 10px !important;
+                  }
+                  input[type="range"]::-webkit-slider-thumb {
+                    width: 24px !important;
+                    height: 24px !important;
+                    margin-top: -7px !important;
+                  }
+                }
+              `}</style>
+            </motion.div>
             <motion.div className="hero-ctas" initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.65, delay: 0.3 }}>
               <a href={heroContent?.cta1Url || "#cities"} className="hero-btn hero-btn-primary">
                 <Navigation2 size={18} /> {heroContent?.cta1Text || t('hero.browseBtn')}
@@ -462,6 +615,9 @@ export default function Home() {
             </motion.div>
           </div>
         </section>
+
+
+
 
         <section id="cities" className="section-wrap" style={{ paddingBottom: '1rem' }}>
           <div className="container">
@@ -515,10 +671,6 @@ export default function Home() {
           )}
         </AnimatePresence>
 
-        <div className="container" style={{ marginTop: '2rem' }}>
-          <ClientReviews />
-        </div>
-
         <section id="properties" style={{ paddingTop: '2rem' }}>
           <HorizontalPropertySection 
             title="ఎలైట్ విల్లాలు (Elite Villas)" 
@@ -552,6 +704,10 @@ export default function Home() {
             loading={loading}
           />
         </section>
+
+        <div className="container" style={{ marginTop: '2rem', marginBottom: '2rem' }}>
+          <ClientReviews />
+        </div>
 
         <section className="stats-band">
           <div className="container">

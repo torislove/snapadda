@@ -5,7 +5,7 @@ import {
   Heart, Share2, Eye, Phone, MessageSquare, ShieldCheck, Flame,
   MapPin, Building2, User, Leaf, BedDouble, Bath, Square,
   Compass, IndianRupee, CheckCircle2, Award, TreePine, ArrowRight, Home as HomeIcon,
-  SlidersHorizontal
+  SlidersHorizontal, ChevronLeft, ChevronRight, Image as ImageIcon
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { likeProperty, shareProperty } from '../services/api';
@@ -48,10 +48,10 @@ const PropertyCard = memo(({
   const hoverIntervalRef = useRef(null);
 
   const startImageCycle = () => {
-    if (images && images.length > 1) {
+    if (displayImages && displayImages.length > 1) {
       hoverIntervalRef.current = setInterval(() => {
-        setActiveImgIdx(prev => (prev + 1) % Math.min(images.length, 5));
-      }, 1500);
+        setActiveImgIdx(prev => (prev + 1) % displayImages.length);
+      }, 2000);
     }
   };
 
@@ -181,7 +181,14 @@ const PropertyCard = memo(({
     }
   }, [user, propertyId, title, type, location, displayPrice, navigate]);
 
-  // Elite Image Priority logic: filter out placeholder/dummy URLs
+  // Elite Image Priority logic: Strict validation for Cloudinary/Uploads only
+  const isValidImage = (img) => {
+    if (!img || typeof img !== 'string') return false;
+    if (img.trim() === '' || img.length < 5) return false;
+    if (img.includes('placeholder') || img.includes('dummy') || img === 'null' || img === 'undefined') return false;
+    return true;
+  };
+
   const rawImages = [
     ...(images || []),
     ...(gallery || []),
@@ -189,11 +196,10 @@ const PropertyCard = memo(({
   ];
   
   const finalImages = rawImages
-    .filter(img => img && typeof img === 'string' && !img.includes('placeholder') && !img.includes('dummy'))
+    .filter(isValidImage)
     .slice(0, 5);
     
-  const property_image = finalImages[0] || null;
-  const displayImages = finalImages.length > 0 ? finalImages : [property_image];
+  const displayImages = finalImages;
 
   return (
     <>
@@ -225,25 +231,75 @@ const PropertyCard = memo(({
               onMouseLeave={stopImageCycle}
               style={{ position: 'relative', width: '100%', height: '100%' }}
             >
-              {displayImages.length > 0 ? (
-                <AnimatePresence mode="wait">
+              {displayImages.length > 0 && displayImages[activeImgIdx % displayImages.length] ? (
+                <AnimatePresence initial={false} custom={activeImgIdx}>
                   <motion.img 
                     key={activeImgIdx}
-                    initial={{ opacity: 0.6, scale: 1.05 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0.8, scale: 1.1 }}
-                    transition={{ duration: 0.8, ease: "easeOut" }}
+                    custom={activeImgIdx}
+                    initial={{ opacity: 0.6, x: 50 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0.6, x: -50 }}
+                    transition={{ duration: 0.3, ease: "easeInOut" }}
+                    drag="x"
+                    dragConstraints={{ left: 0, right: 0 }}
+                    dragElastic={1}
+                    onDragEnd={(e, { offset, velocity }) => {
+                      e.preventDefault(); e.stopPropagation();
+                      const swipe = Math.abs(offset.x) * velocity.x;
+                      if (swipe < -1000) {
+                        setActiveImgIdx(prev => (prev + 1) % displayImages.length);
+                      } else if (swipe > 1000) {
+                        setActiveImgIdx(prev => (prev - 1 + displayImages.length) % displayImages.length);
+                      }
+                    }}
                     src={displayImages[activeImgIdx % displayImages.length]} 
                     alt={`${title}`} 
                     className="property-image" 
                     loading="lazy" 
-                    style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+                    style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', cursor: 'grab' }}
+                    whileTap={{ cursor: 'grabbing' }}
+                    onDoubleClick={(e) => {
+                      e.preventDefault(); e.stopPropagation();
+                      if (user) {
+                         likeProperty(propertyId, user._id).then(() => setToast('Saved!'));
+                      } else {
+                         setToast('Sign in to save properties');
+                      }
+                    }}
                   />
                 </AnimatePresence>
               ) : (
+
                 <div style={{ height: '100%', background: '#111', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <Building2 size={48} opacity={0.2} />
                 </div>
+              )}
+
+              {/* E-Commerce Image Counter */}
+              {displayImages.length > 1 && (
+                <div style={{ position: 'absolute', top: '10px', right: '10px', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)', color: 'white', padding: '4px 10px', borderRadius: '14px', fontSize: '0.65rem', fontWeight: 800, zIndex: 10, display: 'flex', alignItems: 'center', gap: '4px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                  <ImageIcon size={10} /> {(activeImgIdx % displayImages.length) + 1} / {displayImages.length}
+                </div>
+              )}
+
+              {/* Advanced Gallery Navigation (Professional App Feel) */}
+              {displayImages.length > 1 && (
+                <>
+                  <div 
+                    className="pc-nav pc-nav-left" 
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); setActiveImgIdx(prev => (prev - 1 + displayImages.length) % displayImages.length); }}
+                    style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '30%', zIndex: 5, display: 'flex', alignItems: 'center', paddingLeft: '8px', cursor: 'pointer' }}
+                  >
+                    <div className="pc-nav-btn"><ChevronLeft size={16} /></div>
+                  </div>
+                  <div 
+                    className="pc-nav pc-nav-right" 
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); setActiveImgIdx(prev => (prev + 1) % displayImages.length); }}
+                    style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '30%', zIndex: 5, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingRight: '8px', cursor: 'pointer' }}
+                  >
+                    <div className="pc-nav-btn"><ChevronRight size={16} /></div>
+                  </div>
+                </>
               )}
             </div>
             {finalImages.length > 1 && (
@@ -260,12 +316,12 @@ const PropertyCard = memo(({
                 ))}
               </div>
             )}
-            <div className="property-image-gradient" style={{ pointerEvents: 'none' }} />
+            <div className="property-image-gradient" style={{ pointerEvents: 'none', position: 'absolute', bottom: 0, left: 0, right: 0, height: '40%', background: 'linear-gradient(to top, rgba(0,0,0,0.8), transparent)' }} />
 
-            {/* Senior Analyst: FOMO Pulse Viewer */}
-            <div style={{ position: 'absolute', top: '10px', left: '10px', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(10px)', color: 'white', padding: '4px 10px', borderRadius: '20px', fontSize: '0.65rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '6px', zIndex: 10 }}>
+            {/* Senior Analyst: FOMO Pulse Viewer (E-commerce Style Top Left) */}
+            <div style={{ position: 'absolute', top: '10px', left: '10px', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(10px)', color: 'white', padding: '4px 10px', borderRadius: '20px', fontSize: '0.65rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '6px', zIndex: 10, border: '1px solid rgba(255,255,255,0.1)' }}>
                <div style={{ width: '6px', height: '6px', background: 'var(--rose)', borderRadius: '50%' }} className="pulse-primary" />
-               {liveViewers} మంది చూస్తున్నారు
+               {liveViewers} views
             </div>
             
             <div className="pc-social-group">
@@ -369,19 +425,19 @@ const PropertyCard = memo(({
                 e.preventDefault(); e.stopPropagation(); 
                 if (!user) { navigate('/login', { state: { from: `/property/${propertyId}` } }); }
                 else { navigate(`/property/${propertyId}`); }
-              }} className="pc-btn pc-btn-view btn-3d-liquid" style={{ flex: 1, padding: '0.6rem', fontSize: '0.75rem' }}>
+              }} className="pc-btn pc-btn-view btn-3d-glass" style={{ flex: 1, padding: '0.6rem', fontSize: '0.75rem' }}>
                 <Eye size={14} style={{ marginRight: '6px' }}/> వివరాలు చూడండి
               </button>
               
               <div style={{ display: 'flex', gap: '8px' }}>
-                <a href={`tel:${supportPhone}`} onClick={(e) => e.stopPropagation()} className="pc-btn pc-btn-call glass-premium" style={{ width: '40px', height: '40px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '12px' }} title="కాల్ చేయండి">
+                <a href={`tel:${supportPhone}`} onClick={(e) => e.stopPropagation()} className="pc-btn pc-btn-call btn-3d-glass-dark" style={{ width: '40px', height: '40px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '12px' }} title="కాల్ చేయండి">
                   <Phone size={16}/>
                 </a>
                 <a 
                   href={`https://wa.me/${supportWA}?text=నమస్కారం! ఈ ప్రాపర్టీలో నాకు ఆసక్తి ఉంది: ${title}`} 
                   onClick={(e) => e.stopPropagation()}
                   target="_blank" rel="noopener noreferrer" 
-                  className="pc-btn pc-btn-wa btn-3d-emerald"
+                  className="pc-btn pc-btn-wa btn-3d-glass-emerald"
                   style={{ width: '40px', height: '40px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', boxShadow: '0 5px 15px rgba(39,201,125,0.3)' }}
                   title="వాట్సాప్"
                 >

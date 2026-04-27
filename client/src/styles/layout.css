@@ -104,6 +104,7 @@
   gap: 1.5rem;
   width: 100%;
   padding-bottom: 2rem;
+  justify-content: center; /* Centers the grid if items don't fill the row */
 }
 
 @media (max-width: 1024px) {
@@ -115,8 +116,21 @@
 
 @media (max-width: 640px) {
   .properties-grid {
-    grid-template-columns: 1fr;
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
     gap: 1rem;
+    padding-bottom: 2rem;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; /* Firefox */
+  }
+  .properties-grid::-webkit-scrollbar {
+    display: none; /* Safari and Chrome */
+  }
+  .properties-grid > div {
+    flex: 0 0 85%; /* Cards take up 85% width on mobile */
+    scroll-snap-align: center;
   }
 }
 

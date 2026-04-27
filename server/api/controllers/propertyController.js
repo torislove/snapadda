@@ -84,9 +84,15 @@ export const getProperties = async (req, res) => {
     }
 
     if (type && type !== 'all') {
-      if (type === 'Plot') filter.type = { $in: ['Residential Plot', 'Commercial Plot'] };
-      else if (type === 'Agriculture') filter.type = 'Agricultural Land';
-      else filter.type = type;
+      if (type === 'Plot') {
+        filter.type = { $in: ['Plot', 'Residential Plot', 'Commercial Plot', 'Gated Community Plot', 'CRDA Approved Plot', 'Open Plot', 'Layout Plot'] };
+      } else if (type === 'Agriculture') {
+        filter.type = { $in: ['Agricultural Land', 'Farmhouse'] };
+      } else if (type === 'Villa') {
+        filter.type = { $in: ['Villa', 'Independent House'] };
+      } else {
+        filter.type = type;
+      }
     }
     if (city) filter.location = { $regex: city, $options: 'i' };
     if (district) filter.district = { $regex: district, $options: 'i' };

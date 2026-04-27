@@ -9,7 +9,7 @@ export default defineConfig({
     strictPort: false,
     proxy: {
       '/api': {
-        target: 'https://snapadda-7a6e6.web.app',
+        target: 'http://localhost:5000',
         changeOrigin: true
       }
     }
