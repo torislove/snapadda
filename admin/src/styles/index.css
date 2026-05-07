@@ -4,6 +4,7 @@
 @import './layout.css';
 @import './components.css';
 @import './pages.css';
+@import "./holographic.css";
 @import './legacy.css';
 
 /* ── SNAPADDA ADMIN MODULAR CSS ARCHITECTURE ── */

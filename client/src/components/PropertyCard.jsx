@@ -5,7 +5,7 @@ import {
   Heart, Share2, Eye, Phone, MessageSquare, ShieldCheck, Flame,
   MapPin, Building2, User, Leaf, BedDouble, Bath, Square,
   Compass, IndianRupee, CheckCircle2, Award, TreePine, ArrowRight, Home as HomeIcon,
-  SlidersHorizontal, ChevronLeft, ChevronRight, Image as ImageIcon
+  SlidersHorizontal, ChevronLeft, ChevronRight, Image as ImageIcon, Maximize2
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { likeProperty, shareProperty } from '../services/api';
@@ -18,6 +18,7 @@ import {
 } from '../utils/priceUtils';
 import tr from '../utils/teluguTranslations';
 import { logUserActivity, ACTIONS } from '../services/activityTracker';
+import HolographicWrapper from './HolographicWrapper';
 
 const Toast = memo(({ msg, onDone }) => {
   return (
@@ -42,9 +43,12 @@ const PropertyCard = memo(({
   createdAt, likeCount: initialLikeCount = 0, initialLiked = false,
   isGated, cornerProperty, constructionStatus,
   supportPhone = '+919346793364', supportWA = '919346793364',
-  status: propStatus = 'Active', pricePerSqYd, address
+  status: propStatus = 'Active', pricePerSqYd, address,
+  holographic = true, iridescent = false
 }) => {
   const [activeImgIdx, setActiveImgIdx] = useState(0);
+  const [liked, setLiked] = useState(initialLiked);
+  const [likeCount, setLikeCount] = useState(initialLikeCount);
   const hoverIntervalRef = useRef(null);
 
   const startImageCycle = () => {
@@ -158,7 +162,16 @@ const PropertyCard = memo(({
   const handleLike = useCallback((e) => {
     e.preventDefault(); e.stopPropagation();
     if (!user) return setToast('Sign in to save properties');
-    likeProperty(propertyId, user._id).then(() => setToast('Saved!'));
+    
+    likeProperty(propertyId, user._id || user.id)
+      .then(res => {
+        if (res.status === 'success') {
+          setLiked(res.data.liked);
+          setLikeCount(res.data.likeCount);
+          setToast(res.data.liked ? '❤️ Saved!' : '💔 Removed');
+        }
+      })
+      .catch(() => setToast('⚠️ Try again'));
   }, [user, propertyId]);
 
   const handleShare = useCallback((e) => {
@@ -175,7 +188,7 @@ const PropertyCard = memo(({
         title: `SnapAdda: ${title}`, 
         text: shareText,
         url 
-      }).catch(() => {});
+      }).catch(() => null);
     } else {
       navigator.clipboard.writeText(`${shareText} ${url}`).then(() => setToast('🔗 Details copied!'));
     }
@@ -200,20 +213,39 @@ const PropertyCard = memo(({
     .slice(0, 5);
     
   const displayImages = finalImages;
+  const isMobile = window.innerWidth <= 600;
 
   return (
     <>
       <AnimatePresence>{toast && <Toast msg={toast} onDone={() => setToast('')} />}</AnimatePresence>
       <motion.article
         ref={cardRef}
-        initial={{ opacity: 0, scale: 0.9 }}
-        whileInView={{ opacity: 1, scale: 1 }}
-        viewport={{ once: true }}
-        style={{ perspective: 1000, height: '100%' }}
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-50px" }}
+        style={{ perspective: 1000, height: isMobile ? '420px' : '460px', padding: isMobile ? '0 8px' : '0' }}
       >
+        <HolographicWrapper
+          intensity={holographic ? 1.5 : 0}
+          iridescent={iridescent || isFeatured}
+          tilt={!isMobile}
+          style={{ height: '100%', borderRadius: isMobile ? '28px' : '24px' }}
+        >
         <motion.div 
-          className="property-card glass-elite" 
-          style={{ height: '100%', cursor: 'pointer' }}
+          className="property-card" 
+          whileTap={{ scale: 0.98 }}
+          style={{ 
+            height: '100%', 
+            cursor: 'pointer',
+            borderRadius: 'inherit',
+            background: '#050a14',
+            border: isMobile ? '1px solid rgba(255,255,255,0.08)' : '1px solid var(--border-light)',
+            boxShadow: isMobile ? '0 15px 35px rgba(0,0,0,0.4)' : '0 10px 30px rgba(0,0,0,0.2)',
+            overflow: 'hidden',
+            position: 'relative',
+            display: 'flex',
+            flexDirection: 'column'
+          }}
           onClick={(e) => { 
             if (!e.defaultPrevented) {
               if (!user) navigate('/login', { state: { from: `/property/${propertyId}` } });
@@ -224,8 +256,8 @@ const PropertyCard = memo(({
             }
           }}
         >
-          {/* Elite Header: Image + Social Floating */}
-          <div className="property-image-container" style={{ borderRadius: '24px 24px 0 0', overflow: 'hidden' }}>
+          {/* FULL BLEED BACKGROUND IMAGE */}
+          <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
             <div className="pc-image-carousel" 
               onMouseEnter={startImageCycle} 
               onMouseLeave={stopImageCycle}
@@ -236,217 +268,213 @@ const PropertyCard = memo(({
                   <motion.img 
                     key={activeImgIdx}
                     custom={activeImgIdx}
-                    initial={{ opacity: 0.6, x: 50 }}
+                    initial={{ opacity: 0.8, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0.6, x: -50 }}
-                    transition={{ duration: 0.3, ease: "easeInOut" }}
+                    exit={{ opacity: 0.8, x: -20 }}
+                    transition={{ duration: 0.25, ease: "easeOut" }}
                     drag="x"
                     dragConstraints={{ left: 0, right: 0 }}
-                    dragElastic={1}
-                    onDragEnd={(e, { offset, velocity }) => {
+                    dragElastic={0.4}
+                    onDragEnd={(e, { offset }) => {
                       e.preventDefault(); e.stopPropagation();
-                      const swipe = Math.abs(offset.x) * velocity.x;
-                      if (swipe < -1000) {
+                      const swipe = offset.x;
+                      if (swipe < -50) {
                         setActiveImgIdx(prev => (prev + 1) % displayImages.length);
-                      } else if (swipe > 1000) {
+                      } else if (swipe > 50) {
                         setActiveImgIdx(prev => (prev - 1 + displayImages.length) % displayImages.length);
                       }
                     }}
                     src={displayImages[activeImgIdx % displayImages.length]} 
                     alt={`${title}`} 
-                    className="property-image" 
                     loading="lazy" 
                     style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', cursor: 'grab' }}
                     whileTap={{ cursor: 'grabbing' }}
-                    onDoubleClick={(e) => {
-                      e.preventDefault(); e.stopPropagation();
-                      if (user) {
-                         likeProperty(propertyId, user._id).then(() => setToast('Saved!'));
-                      } else {
-                         setToast('Sign in to save properties');
-                      }
-                    }}
+                    onError={(e) => { e.currentTarget.style.display = 'none'; }}
                   />
                 </AnimatePresence>
               ) : (
-
                 <div style={{ height: '100%', background: '#111', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <Building2 size={48} opacity={0.2} />
                 </div>
               )}
 
+              {/* Holographic Gradient Overlay to ensure text pops */}
+              <div style={{ pointerEvents: 'none', position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, transparent 25%, transparent 40%, rgba(5,10,20,0.95) 90%, rgba(5,10,20,1) 100%)', zIndex: 1 }} />
+              
               {/* E-Commerce Image Counter */}
               {displayImages.length > 1 && (
-                <div style={{ position: 'absolute', top: '10px', right: '10px', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)', color: 'white', padding: '4px 10px', borderRadius: '14px', fontSize: '0.65rem', fontWeight: 800, zIndex: 10, display: 'flex', alignItems: 'center', gap: '4px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                <div style={{ position: 'absolute', top: '16px', left: '16px', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)', color: 'white', padding: '4px 10px', borderRadius: '14px', fontSize: '0.65rem', fontWeight: 800, zIndex: 10, display: 'flex', alignItems: 'center', gap: '4px', border: '1px solid rgba(255,255,255,0.1)' }}>
                   <ImageIcon size={10} /> {(activeImgIdx % displayImages.length) + 1} / {displayImages.length}
                 </div>
               )}
 
-              {/* Advanced Gallery Navigation (Professional App Feel) */}
+              {/* Advanced Gallery Navigation */}
               {displayImages.length > 1 && (
                 <>
                   <div 
                     className="pc-nav pc-nav-left" 
                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); setActiveImgIdx(prev => (prev - 1 + displayImages.length) % displayImages.length); }}
-                    style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '30%', zIndex: 5, display: 'flex', alignItems: 'center', paddingLeft: '8px', cursor: 'pointer' }}
+                    style={{ position: 'absolute', left: 0, top: 0, bottom: '40%', width: '25%', zIndex: 5, display: 'flex', alignItems: 'center', paddingLeft: '12px', cursor: 'pointer' }}
                   >
-                    <div className="pc-nav-btn"><ChevronLeft size={16} /></div>
+                    <div className="pc-nav-btn" style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(10px)', color: 'white', borderRadius: '50%', padding: '6px', opacity: 0, transition: 'opacity 0.2s' }}><ChevronLeft size={18} /></div>
                   </div>
                   <div 
                     className="pc-nav pc-nav-right" 
                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); setActiveImgIdx(prev => (prev + 1) % displayImages.length); }}
-                    style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '30%', zIndex: 5, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingRight: '8px', cursor: 'pointer' }}
+                    style={{ position: 'absolute', right: 0, top: 0, bottom: '40%', width: '25%', zIndex: 5, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingRight: '12px', cursor: 'pointer' }}
                   >
-                    <div className="pc-nav-btn"><ChevronRight size={16} /></div>
+                    <div className="pc-nav-btn" style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(10px)', color: 'white', borderRadius: '50%', padding: '6px', opacity: 0, transition: 'opacity 0.2s' }}><ChevronRight size={18} /></div>
                   </div>
+                  <style>{`.pc-image-carousel:hover .pc-nav-btn { opacity: 1 !important; }`}</style>
                 </>
               )}
-            </div>
-            {finalImages.length > 1 && (
-              <div style={{ position: 'absolute', bottom: '10px', left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: '4px', zIndex: 10, pointerEvents: 'none' }}>
-                {finalImages.map((_, idx) => (
-                  <div key={idx} style={{ 
-                    width: activeImgIdx === idx ? '12px' : '6px', 
-                    height: '6px', 
-                    borderRadius: '3px', 
-                    background: activeImgIdx === idx ? 'var(--gold)' : 'rgba(255,255,255,0.7)', 
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.5)',
-                    transition: 'all 0.3s ease'
-                  }} />
-                ))}
+
+              {/* Floating Action Pill */}
+              <div style={{ position: 'absolute', top: '16px', right: '16px', zIndex: 20, display: 'flex', gap: '4px', background: 'rgba(10, 15, 25, 0.65)', backdropFilter: 'blur(20px)', padding: '4px', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.15)', boxShadow: '0 8px 32px rgba(0,0,0,0.4)' }}>
+                <motion.button 
+                  whileTap={{ scale: 0.9 }}
+                  onClick={(e) => {
+                    e.preventDefault(); e.stopPropagation();
+                    window.dispatchEvent(new CustomEvent('toggle-compare', { 
+                      detail: { id: propertyId, title, price, image: displayImages[0], isFeatured, isVerified } 
+                    }));
+                  }}
+                  style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'transparent', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: 'none' }}
+                  title="Compare"
+                >
+                  <SlidersHorizontal size={14} />
+                </motion.button>
+                <motion.button 
+                  whileTap={{ scale: 0.9 }}
+                  onClick={handleShare}
+                  style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'transparent', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: 'none' }}
+                  title="Share"
+                >
+                  <Share2 size={14} />
+                </motion.button>
+                <motion.button 
+                  whileTap={{ scale: 0.9 }}
+                  onClick={handleLike}
+                  style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'transparent', color: liked ? 'var(--gold)' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: 'none' }}
+                  title="Save"
+                >
+                  <Heart size={14} fill={liked ? 'currentColor' : 'none'} />
+                </motion.button>
               </div>
-            )}
-            <div className="property-image-gradient" style={{ pointerEvents: 'none', position: 'absolute', bottom: 0, left: 0, right: 0, height: '40%', background: 'linear-gradient(to top, rgba(0,0,0,0.8), transparent)' }} />
 
-            {/* Senior Analyst: FOMO Pulse Viewer (E-commerce Style Top Left) */}
-            <div style={{ position: 'absolute', top: '10px', left: '10px', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(10px)', color: 'white', padding: '4px 10px', borderRadius: '20px', fontSize: '0.65rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '6px', zIndex: 10, border: '1px solid rgba(255,255,255,0.1)' }}>
-               <div style={{ width: '6px', height: '6px', background: 'var(--rose)', borderRadius: '50%' }} className="pulse-primary" />
-               {liveViewers} views
-            </div>
-            
-            <div className="pc-social-group">
-              <button 
-                className="pc-social-btn glass-premium" 
-                onClick={(e) => {
-                  e.preventDefault(); e.stopPropagation();
-                  window.dispatchEvent(new CustomEvent('toggle-compare', { detail: { id: propertyId, title, image: property_image, type, price: displayPrice } }));
-                }}
-                title="Compare"
-                style={{ color: 'white' }}
-              >
-                <SlidersHorizontal size={15} />
-              </button>
-              <button className="pc-social-btn glass-premium" onClick={(e) => handleLike(e)} title="Like">
-                <Heart size={15} fill={initialLiked ? "var(--rose)" : "none"} color={initialLiked ? "var(--rose)" : "white"} />
-              </button>
-              <button className="pc-social-btn glass-premium" onClick={(e) => handleShare(e)} title="Share" style={{ color: 'white' }}>
-                <Share2 size={15} />
-              </button>
-            </div>
-
-            {/* Price Tag: Professional Elite Look */}
-            <div className="pc-floating-price" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-              <div>
-                <span className="price-main">
-                  {displayPrice ? formatSnapAddaPrice(displayPrice) : 'Price on Request'}
-                </span>
-                {isAgri && agriTotalValue > 0 && <span className="price-suffix"> Total</span>}
+              {/* Status Labels Top Right below Actions */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'flex-end', position: 'absolute', top: '64px', right: '16px', zIndex: 10 }}>
+                 {iq && <span style={{ background: 'rgba(10,15,25,0.8)', color: iq.color, border: `1px solid ${iq.color}66`, backdropFilter: 'blur(10px)', fontSize: '0.65rem', padding: '4px 10px', borderRadius: '8px', fontWeight: 700 }}>{iq.label}</span>}
+                 {isVerified && (
+                   <motion.span 
+                     initial={{ scale: 0.8 }}
+                     animate={{ scale: [1, 1.05, 1] }}
+                     transition={{ repeat: Infinity, duration: 3 }}
+                     style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(212,175,55,0.15)', color: 'var(--gold)', border: '1px solid var(--gold-border)', backdropFilter: 'blur(10px)', fontWeight: 700, padding: '4px 10px', borderRadius: '8px', fontSize: '0.65rem' }}
+                   >
+                     <ShieldCheck size={12} /> Verified
+                   </motion.span>
+                 )}
               </div>
-              {isPlot && pricePerSqYd && <span style={{ fontSize: '0.62rem', fontWeight: 800, color: 'rgba(255,255,255,0.9)', background: 'rgba(212,175,55,0.2)', border: '1px solid rgba(212,175,55,0.3)', padding: '2px 8px', borderRadius: '4px', marginTop: '4px', textTransform: 'uppercase' }}>₹{pricePerSqYd} / SqYd (Gajam)</span>}
-              {isAgri && pricePerAcre > 0 && <span style={{ fontSize: '0.62rem', fontWeight: 800, color: 'rgba(255,255,255,0.9)', background: 'rgba(16,217,140,0.15)', border: '1px solid rgba(16,217,140,0.3)', padding: '2px 8px', borderRadius: '4px', marginTop: '4px', textTransform: 'uppercase' }}>{formatSnapAddaPrice(pricePerAcre)} / Acre</span>}
-            </div>
 
-             {/* Labels combined with Scarcity */}
-            <div className="pc-status-labels" style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'flex-end', top: '10px', right: '10px', position: 'absolute' }}>
-               {iq && <span className="pc-label iq-badge" style={{ background: 'rgba(0,0,0,0.8)', color: iq.color, border: `1px solid ${iq.color}`, backdropFilter: 'blur(10px)', fontSize: '0.6rem', padding: '3px 8px', borderRadius: '6px', fontWeight: 900, boxShadow: `0 4px 15px ${iq.color}44` }}>{iq.label}</span>}
-               {isHotAsset && (propStatus || 'Active') !== 'Sold' && <span className="pc-label" style={{ background: 'var(--rose)', color: 'white', fontSize: '0.6rem', padding: '2px 8px', borderRadius: '4px', fontWeight: 800, boxShadow: '0 4px 10px rgba(240,93,94,0.4)', textTransform: 'uppercase' }}>🔥 {t('card.hot', 'Hot Asset')}</span>}
-               {isVerified && (
-                 <motion.span 
-                   initial={{ scale: 0.8 }}
-                   animate={{ scale: [1, 1.05, 1] }}
-                   transition={{ repeat: Infinity, duration: 3 }}
-                   className="pc-label verified" 
-                   style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'linear-gradient(135deg, #e8b84b, #b9933a)', color: '#07070f', fontWeight: 900, boxShadow: '0 4px 12px rgba(232,184,75,0.4)' }}
-                 >
-                   <ShieldCheck size={10} /> వెరిఫైడ్
-                 </motion.span>
-               )}
-               {(propStatus || 'Active') === 'Sold' && <span className="pc-label" style={{ background: 'var(--emerald)', color: 'white', fontSize: '0.6rem', padding: '2px 8px', borderRadius: '4px', fontWeight: 900, boxShadow: '0 4px 15px rgba(16,217,140,0.4)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>అమ్మబడినది</span>}
-            </div>
-          </div>
-
-          <div className="property-content">
-            <div className="pc-entity-type">
-              {typeStyle.icon} <span>{tr(type) || 'ప్రాపర్టీ'}</span>
-              {purpose && <span style={{ marginLeft: 'auto', fontSize: '0.6rem', fontWeight: 900, color: purpose === 'Rent' ? '#22d9e0' : '#27c97d', background: purpose === 'Rent' ? 'rgba(34,217,224,0.1)' : 'rgba(39,201,125,0.1)', padding: '2px 8px', borderRadius: '20px', border: `1px solid ${purpose === 'Rent' ? '#22d9e033' : '#27c97d33'}` }}>{tr(purpose === 'Rent' ? 'For Rent' : 'For Sale')}</span>}
-            </div>
-
-            <h3 className="pc-title-elite">{title}</h3>
-            
-            <div className="pc-location-elite">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <MapPin size={12} /> {location}
-              </div>
-              {/* Added Address display as requested */}
-              {address && (
-                <div style={{ fontSize: '0.65rem', opacity: 0.6, marginTop: '2px', marginLeft: '16px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {address}
+              {/* Dot Indicators */}
+              {finalImages.length > 1 && (
+                <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: '6px', zIndex: 10, pointerEvents: 'none' }}>
+                  {finalImages.map((_, idx) => (
+                    <div key={idx} style={{ 
+                      width: activeImgIdx === idx ? '16px' : '6px', 
+                      height: '4px', 
+                      borderRadius: '2px', 
+                      background: activeImgIdx === idx ? 'var(--gold)' : 'rgba(255,255,255,0.4)', 
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.8)',
+                      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+                    }} />
+                  ))}
                 </div>
               )}
             </div>
+          </div>
 
-            {/* Features Row */}
-            <div className="pc-specs-grid">
+          {/* FLOATING CONTENT AT BOTTOM */}
+          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '1.25rem', zIndex: 20, display: 'flex', flexDirection: 'column' }}>
+            
+            {/* Price Row */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
+                <span style={{ fontFamily: 'var(--font-serif)', fontSize: '1.6rem', fontWeight: 900, color: 'white', textShadow: '0 2px 10px rgba(0,0,0,0.8)' }}>
+                  {displayPrice ? formatSnapAddaPrice(displayPrice) : 'Price on Request'}
+                </span>
+                {isAgri && agriTotalValue > 0 && <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.8)' }}>Total</span>}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 600, background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(10px)', padding: '4px 10px', borderRadius: '12px' }}>
+                <span style={{ color: typeStyle.accent }}>{typeStyle.icon}</span> <span>{tr(type) || 'ప్రాపర్టీ'}</span>
+                {purpose && <span style={{ marginLeft: '4px', color: purpose === 'Rent' ? 'var(--cyan)' : 'var(--emerald)' }}>{purpose}</span>}
+              </div>
+            </div>
+
+            {/* Title */}
+            <h3 style={{ fontFamily: 'var(--font-body)', fontSize: '1.1rem', fontWeight: 800, color: 'white', margin: '0 0 4px 0', lineHeight: 1.3, textShadow: '0 2px 4px rgba(0,0,0,0.8)' }}>{title}</h3>
+            
+            {/* Location */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem', marginBottom: '12px', textShadow: '0 1px 3px rgba(0,0,0,0.8)' }}>
+              <MapPin size={14} style={{ color: 'var(--gold)' }} /> {location}
+            </div>
+
+            {/* Advanced Specs Grid */}
+            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '16px' }}>
                {isResidential && (bhk || beds) ? (
-                 <div className="spec-item">
-                   <HomeIcon size={14} /> <span>{bhk || beds} BHK</span>
+                 <div style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(12px)', padding: '6px 12px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', color: 'white', fontWeight: 600 }}>
+                   <BedDouble size={14} style={{ color: 'var(--gold)' }} /> <span>{bhk || beds} BHK</span>
                  </div>
                ) : null}
                {areaDisplay && (
-                 <div className="spec-item">
-                   {isAgri ? <Leaf size={14}/> : <Square size={14}/>} <span>{areaDisplay}</span>
+                 <div style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(12px)', padding: '6px 12px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', color: 'white', fontWeight: 600 }}>
+                   {isAgri ? <Leaf size={14} style={{ color: 'var(--emerald)' }}/> : <Square size={14} style={{ color: 'var(--cyan)' }}/>} <span>{areaDisplay}</span>
                  </div>
                )}
                {facing && facing !== 'Any' && (
-                 <div className="spec-item">
-                   <Compass size={14} /> <span>{tr(facing)}</span>
+                 <div style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(12px)', padding: '6px 12px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', color: 'white', fontWeight: 600 }}>
+                   <Compass size={14} style={{ color: 'var(--gold)' }} /> <span>{tr(facing)}</span>
                  </div>
                )}
-               {authority && authority !== 'N/A' && authority !== 'None' && (
-                 <div className="spec-item" style={{ color: isCRDA || authority.includes('CRDA') ? 'var(--gold)' : 'var(--emerald)', fontWeight: 800 }}>
-                   <Award size={14} /> <span>{authority}</span>
-                 </div>
-               )}
+               {/* View Similar Action */}
+               <button 
+                  onClick={(e) => {
+                    e.preventDefault(); e.stopPropagation();
+                    navigate(`/search?type=${type}&city=${location}`);
+                  }}
+                  style={{ background: 'rgba(212,175,55,0.2)', backdropFilter: 'blur(12px)', border: '1px solid var(--gold-border)', padding: '6px 12px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', color: 'var(--gold)', fontWeight: 700, cursor: 'pointer', marginLeft: 'auto' }}
+                >
+                 <SlidersHorizontal size={14} /> Find Similar
+               </button>
             </div>
 
-            {/* Elite Action Bar */}
-            <div className="pc-elite-actions" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto', gap: '8px' }}>
+            {/* Actions */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '8px' }}>
               <button onClick={(e) => { 
                 e.preventDefault(); e.stopPropagation(); 
                 if (!user) { navigate('/login', { state: { from: `/property/${propertyId}` } }); }
                 else { navigate(`/property/${propertyId}`); }
-              }} className="pc-btn pc-btn-view btn-3d-glass" style={{ flex: 1, padding: '0.6rem', fontSize: '0.75rem' }}>
-                <Eye size={14} style={{ marginRight: '6px' }}/> వివరాలు చూడండి
+              }} className="pc-btn" style={{ background: 'var(--gold)', color: 'var(--midnight)', border: 'none', borderRadius: '12px', padding: '0.7rem', fontSize: '0.85rem', fontWeight: 800, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', cursor: 'pointer', transition: 'all 0.2s' }}>
+                View Details <ArrowRight size={16} />
               </button>
               
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <a href={`tel:${supportPhone}`} onClick={(e) => e.stopPropagation()} className="pc-btn pc-btn-call btn-3d-glass-dark" style={{ width: '40px', height: '40px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '12px' }} title="కాల్ చేయండి">
-                  <Phone size={16}/>
-                </a>
-                <a 
-                  href={`https://wa.me/${supportWA}?text=నమస్కారం! ఈ ప్రాపర్టీలో నాకు ఆసక్తి ఉంది: ${title}`} 
-                  onClick={(e) => e.stopPropagation()}
-                  target="_blank" rel="noopener noreferrer" 
-                  className="pc-btn pc-btn-wa btn-3d-glass-emerald"
-                  style={{ width: '40px', height: '40px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', boxShadow: '0 5px 15px rgba(39,201,125,0.3)' }}
-                  title="వాట్సాప్"
-                >
-                  <MessageSquare size={16}/>
-                </a>
-              </div>
+              <a href={`tel:${supportPhone}`} onClick={(e) => e.stopPropagation()} style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.2)', width: '44px', height: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '12px', color: 'white', transition: 'all 0.2s' }} title="Call">
+                <Phone size={18}/>
+              </a>
+              <a 
+                href={`https://wa.me/${supportWA}?text=Hi! I'm interested in this property: ${title}`} 
+                onClick={(e) => e.stopPropagation()}
+                target="_blank" rel="noopener noreferrer" 
+                style={{ background: 'rgba(39,201,125,0.2)', backdropFilter: 'blur(10px)', border: '1px solid rgba(39,201,125,0.4)', color: 'var(--emerald)', width: '44px', height: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '12px', transition: 'all 0.2s' }}
+                title="WhatsApp"
+              >
+                <MessageSquare size={18}/>
+              </a>
             </div>
           </div>
         </motion.div>
+        </HolographicWrapper>
       </motion.article>
     </>
   );

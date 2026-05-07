@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Star, Phone, Mail, Search, Upload, Plus, Trash2, Edit3, MessageCircle, X, Building2, User, Filter, FileSpreadsheet, Check } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
+import { ConnectivityBanner } from '../../components/ui/ConnectivityBanner';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -132,6 +133,7 @@ const AdminContacts = () => {
     company: '', location: '', district: '', notes: '', tags: ''
   });
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { fetchContacts(); }, [filter, searchQuery]);
 
   const fetchContacts = async () => {
@@ -202,6 +204,7 @@ const AdminContacts = () => {
 
   return (
     <div>
+      <ConnectivityBanner />
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: 'var(--spacing-xl)' }}>
         <h1>CRM Contacts</h1>

@@ -15,6 +15,7 @@ import tr from '../utils/teluguTranslations';
 import { useTranslation } from 'react-i18next';
 import VisualCompass from '../components/VisualCompass';
 import EliteLightBox from '../components/EliteLightBox';
+import { useBehaviorTracker } from '../hooks/useBehaviorTracker';
 
 // ─────────────────────────────────────────────
 // Toast
@@ -66,6 +67,7 @@ export default function PropertyDetails() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { t } = useTranslation();
+  const { logPropertyView } = useBehaviorTracker();
 
   const [property, setProperty] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -111,6 +113,9 @@ export default function PropertyDetails() {
           filtered.unshift({ _id: data._id, title: data.title, price: data.price, location: data.location, type: data.type, image: data.images?.[0] || data.image });
           localStorage.setItem('snapadda_recent_views', JSON.stringify(filtered.slice(0, 6)));
         } catch {}
+
+        // Smart Recommendation Engine: Log View
+        logPropertyView(data.type, data.location);
 
         // Update page title
         document.title = `${data.title} | ${data.type} in ${data.location} | SnapAdda`;

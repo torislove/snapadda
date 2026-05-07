@@ -139,6 +139,29 @@ export const fetchPromotions = async (query = '') => {
   }
 };
 
+/**
+ * Promotion Analytics Tracking
+ */
+export const trackPromotionView = async (promoId) => {
+  try {
+    const res = await fetch(`${API_BASE}/promotions/${promoId}/view`, { method: 'POST' });
+    return res.ok;
+  } catch (e) {
+    console.warn('Track View Failed (Silent):', e);
+    return false;
+  }
+};
+
+export const trackPromotionClick = async (promoId) => {
+  try {
+    const res = await fetch(`${API_BASE}/promotions/${promoId}/click`, { method: 'POST' });
+    return res.ok;
+  } catch (e) {
+    console.warn('Track Click Failed (Silent):', e);
+    return false;
+  }
+};
+
 // Hardcoded defaults — Admin can override via backend
 const SETTING_DEFAULTS = {
   support_info: {

@@ -1,5 +1,17 @@
-import { X } from '../globals.jsx';
-export const Button = ,({children:e,variant:t=`primary`,size:n=`md`,fullWidth:r=!1,className:i=``,...a}
-)=>(0,X.jsx)(`button`,{className:[`btn`,`btn-${t}
-`,`btn-${n}
-`,r?`btn-full`:``,i].filter(Boolean).join(` `),...a,children:e}
+import React from 'react';
+
+export const Button = ({ children, variant = 'primary', size = 'md', fullWidth = false, className = '', ...props }) => {
+  const classes = [
+    'btn',
+    `btn-${variant}`,
+    `size-${size}`,
+    fullWidth ? 'btn-full' : '',
+    className
+  ].filter(Boolean).join(' ');
+
+  return (
+    <button className={classes} {...props}>
+      {children}
+    </button>
+  );
+};

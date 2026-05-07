@@ -124,6 +124,7 @@ export const Testimonials = () => {
     setTimeout(() => setToast(null), 3000);
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, []);
 
   const load = () => {

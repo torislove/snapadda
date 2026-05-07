@@ -6,8 +6,12 @@ import {
 import {
   Plus, Trash2, Loader2,
   Sparkles,
+  TrendingUp, MousePointer2, Calendar,
   Zap, GripVertical, Eye, EyeOff, X, CheckCircle, AlertCircle
 } from 'lucide-react';
+import { 
+  BarChart, Bar, Tooltip, ResponsiveContainer
+} from 'recharts';
 import { MediaManager } from '../../components/ui/MediaManager';
 
 /* ── Color map ── */
@@ -89,6 +93,12 @@ const MiniPreview = ({ form }: { form: typeof EMPTY_FORM }) => (
   </div>
 );
 
+/* ── Analytics Helpers ── */
+const calculateCTR = (views: number = 0, clicks: number = 0) => {
+  if (!views) return '0%';
+  return ((clicks / views) * 100).toFixed(1) + '%';
+};
+
 /* ── Promotion Card in Grid ── */
 const PromoCard = ({
   promo, onToggle, onDelete, onEdit, onDragStart, onDragOver, onDrop, isDragging
@@ -96,6 +106,9 @@ const PromoCard = ({
   const [confirmDelete, setConfirmDelete] = useState(false);
   const cfg = TYPE_CONFIG[promo.type] || TYPE_CONFIG.ad;
   const color = COLOR_PRESETS.find(c => c.id === promo.cardColor)?.accent ?? '#71717a';
+  
+  const stats = promo.stats || { views: 0, clicks: 0 };
+  const ctr = calculateCTR(stats.views, stats.clicks);
 
   return (
     <div
@@ -106,10 +119,11 @@ const PromoCard = ({
       style={{
         background: 'rgba(255,255,255,0.02)',
         border: `1px solid ${isDragging ? color : 'rgba(255,255,255,0.07)'}`,
-        borderRadius: '18px', overflow: 'hidden',
+        borderRadius: '24px', overflow: 'hidden',
         opacity: isDragging ? 0.5 : 1,
-        transition: 'all 0.25s ease',
-        boxShadow: isDragging ? `0 0 24px ${color}44` : 'none',
+        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        boxShadow: isDragging ? `0 20px 40px ${color}33` : '0 4px 20px rgba(0,0,0,0.2)',
+        position: 'relative'
       }}
     >
       {/* Image / gradient preview strip */}
@@ -184,6 +198,55 @@ const PromoCard = ({
             ◉ {COLOR_PRESETS.find(c => c.id === promo.cardColor)?.label || 'Dark'}
           </span>
         </div>
+
+        {/* Analytics Overlay Toggle */}
+        <div style={{ 
+          marginBottom: '1rem', 
+          padding: '0.75rem', 
+          background: 'rgba(255,255,255,0.03)', 
+          borderRadius: '14px',
+          border: '1px solid rgba(255,255,255,0.05)',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}>
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <div title="Views">
+              <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Views</div>
+              <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#fff' }}>{stats.views.toLocaleString()}</div>
+            </div>
+            <div title="Clicks">
+              <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Clicks</div>
+              <div style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--gold)' }}>{stats.clicks.toLocaleString()}</div>
+            </div>
+          </div>
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>CTR</div>
+            <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#10d98c' }}>{ctr}</div>
+          </div>
+        </div>
+
+        {/* Schedule Info */}
+        {(promo.startDate || promo.endDate) && (
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '6px', 
+            fontSize: '0.65rem', 
+            color: 'rgba(255,255,255,0.4)',
+            marginBottom: '1rem',
+            padding: '4px 8px',
+            background: 'rgba(0,0,0,0.2)',
+            borderRadius: '6px'
+          }}>
+            <Calendar size={10} />
+            <span>
+              {promo.startDate ? new Date(promo.startDate).toLocaleDateString() : 'Now'} 
+              {' → '} 
+              {promo.endDate ? new Date(promo.endDate).toLocaleDateString() : 'Forever'}
+            </span>
+          </div>
+        )}
 
         {/* Actions */}
         <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -428,11 +491,23 @@ export const Promotions = () => {
 
   const steps = ['Content', 'Design', 'Targeting', 'Schedule'];
 
+  const statsData = promotions.map(p => ({
+    name: p.title.length > 10 ? p.title.substring(0, 8) + '...' : p.title,
+    views: p.stats?.views || 0,
+    clicks: p.stats?.clicks || 0,
+    ctr: parseFloat(calculateCTR(p.stats?.views, p.stats?.clicks))
+  })).sort((a, b) => b.views - a.views).slice(0, 6);
+
+  const totalViews = promotions.reduce((sum, p) => sum + (p.stats?.views || 0), 0);
+  const totalClicks = promotions.reduce((sum, p) => sum + (p.stats?.clicks || 0), 0);
+  const avgCTR = calculateCTR(totalViews, totalClicks);
+
   const showToast = (msg: string, type: 'success' | 'error' = 'success') => {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 3000);
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, []);
 
   const load = () => {
@@ -557,6 +632,70 @@ export const Promotions = () => {
         }}>
           {toast.type === 'success' ? <CheckCircle size={15} /> : <AlertCircle size={15} />}
           {toast.msg}
+        </div>
+      )}
+
+      {/* ── Performance Cockpit ── */}
+      {!loading && promotions.length > 0 && (
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', 
+          gap: '1.5rem',
+          marginBottom: '0.5rem'
+        }}>
+          {/* Global Stats Cards */}
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(3, 1fr)', 
+            gap: '1rem' 
+          }}>
+            {[
+              { label: 'Total Views', val: totalViews.toLocaleString(), icon: <Eye size={18}/>, color: '#fff' },
+              { label: 'Total Clicks', val: totalClicks.toLocaleString(), icon: <MousePointer2 size={18}/>, color: 'var(--gold)' },
+              { label: 'Avg. CTR', val: avgCTR, icon: <TrendingUp size={18}/>, color: '#10d98c' },
+            ].map((s, i) => (
+              <div key={i} style={{ 
+                background: 'rgba(255,255,255,0.03)', 
+                border: '1px solid rgba(255,255,255,0.08)', 
+                borderRadius: '20px', 
+                padding: '1.25rem',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px'
+              }}>
+                <div style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  {s.icon} <span style={{ fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{s.label}</span>
+                </div>
+                <div style={{ fontSize: '1.5rem', fontWeight: 900, color: s.color }}>{s.val}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Quick Analytics Chart */}
+          <div style={{ 
+            background: 'rgba(255,255,255,0.03)', 
+            border: '1px solid rgba(255,255,255,0.08)', 
+            borderRadius: '24px', 
+            padding: '1.25rem',
+            height: '180px',
+            position: 'relative',
+            overflow: 'hidden'
+          }}>
+             <div style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '1rem', display: 'flex', justifyContent: 'space-between' }}>
+                <span>Performance Benchmarks</span>
+                <span style={{ color: 'var(--gold)' }}>Top 6 Campaigns</span>
+             </div>
+             <ResponsiveContainer width="100%" height="80%">
+                <BarChart data={statsData}>
+                  <Tooltip 
+                    contentStyle={{ background: '#0f0f1a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', fontSize: '0.75rem' }}
+                    itemStyle={{ color: 'var(--gold)' }}
+                  />
+                  <Bar dataKey="views" fill="rgba(255,255,255,0.1)" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="clicks" fill="var(--gold)" radius={[4, 4, 0, 0]} />
+                </BarChart>
+             </ResponsiveContainer>
+          </div>
         </div>
       )}
 

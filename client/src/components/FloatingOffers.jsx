@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Zap, X, ArrowRight, MessageCircle } from 'lucide-react';
-import { fetchPromotions } from '../services/api';
+import { fetchPromotions, trackPromotionView, trackPromotionClick } from '../services/api';
 
 const FloatingOffers = () => {
   const [promos, setPromos] = useState([]);
@@ -16,7 +16,11 @@ const FloatingOffers = () => {
         setPromos(active);
         setActivePromo(active[0]);
         // Show after 3s delay for "Elite" entrance
-        setTimeout(() => setIsVisible(true), 3000);
+        setTimeout(() => {
+          setIsVisible(true);
+          // Track View
+          if (active[0]._id) trackPromotionView(active[0]._id);
+        }, 3000);
       }
     });
   }, []);
@@ -93,7 +97,10 @@ const FloatingOffers = () => {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <a 
                   href={activePromo.actionUrl || '#'} 
-                  onClick={() => setIsOpen(false)}
+                  onClick={() => {
+                    setIsOpen(false);
+                    if (activePromo._id) trackPromotionClick(activePromo._id);
+                  }}
                   style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
                     padding: '12px', borderRadius: '14px', background: '#e8b84b', color: '#07070f',

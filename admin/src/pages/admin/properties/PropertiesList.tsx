@@ -168,10 +168,29 @@ export const PropertiesList: React.FC<PropertiesListProps> = ({
           {setIsAdding && (
             <button
               onClick={() => setIsAdding(true)}
+              className="desktop-only-btn"
               style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', background: 'var(--gold, #e8b84b)', color: '#07070f', border: 'none', borderRadius: '10px', fontWeight: 800, fontSize: '0.75rem', cursor: 'pointer', boxShadow: '0 4px 15px rgba(232,184,75,0.2)' }}
             >
               <Plus size={14} /> NEW ASSET
             </button>
+          )}
+
+          {/* Mobile-only FAB (Floating Action Button) */}
+          {setIsAdding && (
+            <motion.button
+              className="mobile-only-btn"
+              whileTap={{ scale: 0.9 }}
+              onClick={() => setIsAdding(true)}
+              style={{
+                position: 'fixed', bottom: '20px', right: '20px',
+                width: '60px', height: '60px', borderRadius: '30px',
+                background: 'linear-gradient(135deg, #e8b84b, #b9933a)',
+                color: 'black', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: '0 10px 25px rgba(0,0,0,0.4)', zIndex: 1000, border: 'none', cursor: 'pointer'
+              }}
+            >
+              <Plus size={32} strokeWidth={2.5} />
+            </motion.button>
           )}
         </div>
       </div>

@@ -2,6 +2,7 @@ import express from 'express';
 import mongoose from 'mongoose';
 import Lead from '../models/Lead.js';
 import { automationService } from '../modules/automationService.js';
+import { db } from '../firebase.js';
 
 const router = express.Router();
 
@@ -30,6 +31,15 @@ router.post('/', async (req, res) => {
     });
     
     await newLead.save();
+
+    // Mirror to Firebase RTDB for Real-Time Analytics
+    if (db) {
+      db.ref('crm_leads').push({
+        ...newLead.toObject(),
+        status: 'new',
+        createdAt: new Date().toISOString()
+      }).catch(e => console.error('Firebase lead sync error:', e));
+    }
 
     // Non-blocking: AI drafts & sends WhatsApp/Email response
     automationService.handleNewLead(newLead).catch(e => console.error('Automation error:', e));

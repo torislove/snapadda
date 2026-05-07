@@ -21,10 +21,11 @@ import RequestPage from './pages/RequestPage';
 import SearchResults from './pages/SearchResults';
 import Terms from './pages/Terms';
 import Privacy from './pages/Privacy';
+import ComparisonRadar from './pages/ComparisonRadar';
 
 import Logo from './components/Logo';
 import { useGoogleMarketing } from './utils/useGoogleMarketing';
-
+import ScrollToTop from './components/ScrollToTop';
 // Minimalist High-Performance Loader
 const EliteLoader = () => (
   <div style={{ 
@@ -52,6 +53,7 @@ function ProtectedRoute({ children }) {
 }
 
 import MobileNav from './components/MobileNav';
+import PWAInstallPrompt from './components/PWAInstallPrompt';
 
 function AppContent() {
   useNotifications();
@@ -73,8 +75,10 @@ function AppContent() {
           <Route path="/" element={<Home />} />
           <Route path="/search" element={<SearchResults />} />
           <Route path="/property/:id" element={<PropertyDetails />} />
+          <Route path="/compare" element={<ComparisonRadar />} />
           <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
           <Route path="/dashboard/*" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path="/profile" element={<ProtectedRoute><Dashboard defaultTab="profile" /></ProtectedRoute>} />
           <Route path="/request-callback" element={<RequestPage />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/privacy" element={<Privacy />} />
@@ -85,6 +89,7 @@ function AppContent() {
       <ComparisonHud />
       <FloatingOffers />
       <MobileNav />
+      <PWAInstallPrompt />
     </>
   );
 }
@@ -105,6 +110,7 @@ export default function App() {
       </AnimatePresence>
       <LazyMotion features={domAnimation}>
         <BrowserRouter>
+          <ScrollToTop />
           <AppContent />
         </BrowserRouter>
       </LazyMotion>

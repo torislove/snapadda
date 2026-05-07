@@ -58,10 +58,11 @@ export default function SearchResults() {
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [meta, setMeta] = useState({ total: 0, totalPages: 1, page: 1 });
+  const [apiError, setApiError] = useState(false);
   const [showMobileFilter, setShowMobileFilter] = useState(false);
   const [showAutocomplete, setShowAutocomplete] = useState(false);
+  const [viewMode, setViewMode] = useState('list');
   const searchRef = useRef(null);
-
   // Read all filters from URL
   const getParam = (key, def = '') => searchParams.get(key) || def;
 
@@ -122,14 +123,16 @@ export default function SearchResults() {
 
   const loadResults = useCallback(() => {
     if (page === 1) setLoading(true);
+    setApiError(false);
     const filters = buildFilters();
     fetchProperties(filters)
       .then(res => {
         const newData = res?.data || [];
         setProperties(prev => page > 1 ? [...prev, ...newData] : newData);
         setMeta(res?.meta || { total: res?.data?.length || 0, totalPages: 1, page: filters.page });
+        setApiError(false);
       })
-      .catch(() => { if (page === 1) setProperties([]); })
+      .catch(() => { setApiError(true); if (page === 1) setProperties([]); })
       .finally(() => setLoading(false));
   }, [buildFilters, page]);
 
@@ -330,9 +333,9 @@ export default function SearchResults() {
               style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.8)', padding: '7px 10px', borderRadius: '8px', fontSize: '0.75rem', cursor: 'pointer', outline: 'none' }}>
               {SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
-            {/* Filter button (mobile) */}
+            {/* Filter button (mobile) — always visible on mobile via CSS */}
             <button onClick={() => setShowMobileFilter(true)} className="sr-mobile-filter-btn"
-              style={{ display: 'none', alignItems: 'center', gap: '6px', padding: '7px 14px', background: 'var(--gold)', color: '#000', border: 'none', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer' }}>
+              style={{ alignItems: 'center', gap: '6px', padding: '7px 14px', background: 'var(--gold)', color: '#000', border: 'none', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer', flexShrink: 0 }}>
               <SlidersHorizontal size={14}/> Filters {activeFilterChips.length > 0 && `(${activeFilterChips.length})`}
             </button>
             {/* Result count */}
@@ -354,13 +357,37 @@ export default function SearchResults() {
               <button onClick={resetAll} style={{ flexShrink: 0, padding: '4px 10px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.4)', borderRadius: '20px', fontSize: '0.68rem', cursor: 'pointer' }}>Clear all</button>
             </div>
           )}
+
+          {/* Professional Quick Action Chips (Industry Standard) */}
+          <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', scrollbarWidth: 'none', padding: '12px 0 5px', marginTop: '5px' }} className="hide-scrollbar">
+            {[
+              { label: 'Under ₹50L', action: () => { setMaxPrice('5000000'); setPage(1); } },
+              { label: 'Ready to Move', action: () => { setApproval('DTCP'); setPage(1); } },
+              { label: 'East Facing', action: () => { setFacing('East'); setPage(1); } },
+              { label: 'CRDA Approved', action: () => { setApproval('AP CRDA'); setPage(1); } },
+              { label: 'Verified Only', action: () => { setVerified(true); setPage(1); } },
+            ].map((q, idx) => (
+              <button
+                key={idx}
+                onClick={q.action}
+                style={{
+                  flexShrink: 0, padding: '8px 16px', borderRadius: '12px',
+                  background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+                  color: 'white', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer'
+                }}
+              >
+                {q.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
+
       {/* Body */}
-      <div className="container" style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: '2rem', paddingTop: '2rem', paddingBottom: '4rem', alignItems: 'start' }}>
+      <div className="container sr-results-grid" style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: '2rem', paddingTop: '2rem', paddingBottom: '4rem', alignItems: 'start' }}>
         {/* LEFT: Filter Panel */}
-        <aside className="sr-filter-panel" style={{ position: 'sticky', top: 'calc(var(--nav-h) + 80px)', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '18px', padding: '1.5rem', maxHeight: 'calc(100vh - 160px)', overflowY: 'auto' }}>
+        <aside className="sr-filter-panel glass-panel" style={{ position: 'sticky', top: 'calc(var(--nav-h) + 80px)', padding: '1.5rem', maxHeight: 'calc(100vh - 160px)', overflowY: 'auto' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.82rem', fontWeight: 800, color: 'white' }}>
               <SlidersHorizontal size={15} style={{ color: 'var(--gold)' }}/> Filters
@@ -374,53 +401,88 @@ export default function SearchResults() {
 
         {/* RIGHT: Results */}
         <main>
-          {loading ? (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem' }}>
-              {Array(6).fill(0).map((_, i) => <SkeletonPropertyCard key={i}/>)}
-            </div>
-          ) : properties.length > 0 ? (
-            <>
-              <motion.div 
-                className="properties-grid" 
-                style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem' }}
-                initial="hidden"
-                animate="visible"
-                variants={{
-                  hidden: { opacity: 0 },
-                  visible: {
-                    opacity: 1,
-                    transition: { staggerChildren: 0.05 }
-                  }
-                }}
-              >
-                {properties.map((p) => (
-                  <PropertyCard key={p._id || p.id} {...p} />
-                ))}
-              </motion.div>
+          {viewMode === 'list' ? (
+            loading ? (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem' }}>
+                {Array(6).fill(0).map((_, i) => <SkeletonPropertyCard key={i}/>)}
+              </div>
+            ) : properties.length > 0 ? (
+              <>
+                <motion.div 
+                  className="properties-grid" 
+                  style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem' }}
+                  initial="hidden"
+                  animate="visible"
+                  variants={{
+                    hidden: { opacity: 0 },
+                    visible: {
+                      opacity: 1,
+                      transition: { staggerChildren: 0.05 }
+                    }
+                  }}
+                >
+                  {properties.map((p) => (
+                    <PropertyCard key={p._id || p.id} {...p} />
+                  ))}
+                </motion.div>
 
-              {/* Pagination / Infinite Scroll Node */}
-              {meta.totalPages > 1 && (
-                <div style={{ textAlign: 'center', marginTop: '3rem', padding: '1rem' }}>
-                  {page < meta.totalPages ? (
-                    <div ref={loadMoreRef} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', color: 'var(--txt-muted)' }}>
-                      <div className="pulse-primary" style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--gold)' }} /> Loading more properties...
-                    </div>
-                  ) : (
-                    <span style={{ color: 'var(--txt-muted)', fontSize: '0.85rem' }}>You've reached the end of the results.</span>
-                  )}
-                </div>
-              )}
-            </>
+                {/* Pagination / Infinite Scroll Node */}
+                {meta.totalPages > 1 && (
+                  <div style={{ textAlign: 'center', marginTop: '3rem', padding: '1rem' }}>
+                    {page < meta.totalPages ? (
+                      <div ref={loadMoreRef} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', color: 'var(--txt-muted)' }}>
+                        <div className="pulse-primary" style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--gold)' }} /> Loading more properties...
+                      </div>
+                    ) : (
+                      <span style={{ color: 'var(--txt-muted)', fontSize: '0.85rem' }}>You've reached the end of the results.</span>
+                    )}
+                  </div>
+                )}
+              </>
+            ) : (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                style={{ textAlign: 'center', padding: '5rem 2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+                <AlertCircle size={52} style={{ color: 'rgba(255,255,255,0.15)' }}/>
+                <h3 style={{ color: 'white', fontSize: '1.35rem', fontWeight: 800 }}>No properties found</h3>
+                <p style={{ color: 'var(--txt-muted)', fontSize: '0.88rem', maxWidth: '340px' }}>
+                  Try widening your filters — remove the budget limit, change the city, or pick a broader property type.
+                </p>
+                <button onClick={resetAll} style={{ marginTop: '1rem', padding: '0.75rem 2rem', background: 'var(--gold)', color: '#000', border: 'none', borderRadius: '12px', fontWeight: 800, fontSize: '0.88rem', cursor: 'pointer' }}>
+                  Clear All Filters
+                </button>
+              </motion.div>
+            )
           ) : (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-              style={{ textAlign: 'center', padding: '5rem 2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
-              <AlertCircle size={52} style={{ color: 'rgba(255,255,255,0.15)' }}/>
-              <h3 style={{ color: 'white', fontSize: '1.35rem', fontWeight: 800 }}>No properties found</h3>
-              <p style={{ color: 'var(--txt-muted)', fontSize: '0.88rem', maxWidth: '340px' }}>
-                Try widening your filters — remove the budget limit, change the city, or pick a broader property type.
+            /* Professional Map View Placeholder */
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              style={{ 
+                height: 'calc(100vh - 250px)', 
+                background: 'rgba(255,255,255,0.02)', 
+                borderRadius: '32px', 
+                border: '1px solid rgba(232,184,75,0.2)',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                position: 'relative',
+                overflow: 'hidden'
+              }}
+            >
+              <div style={{ position: 'absolute', inset: 0, opacity: 0.1, backgroundImage: 'radial-gradient(circle at 2px 2px, rgba(212,175,55,0.3) 1px, transparent 0)', backgroundSize: '30px 30px' }} />
+              <div className="radar-animation" style={{ marginBottom: '2rem' }}>
+                <RadarIcon size={80} style={{ color: 'var(--gold)' }} />
+              </div>
+              <h3 style={{ color: 'white', fontSize: '1.5rem', fontWeight: 900, marginBottom: '10px' }}>Interactive Map View</h3>
+              <p style={{ color: 'var(--txt-muted)', fontSize: '0.9rem', textAlign: 'center', maxWidth: '400px' }}>
+                Discover elite properties in your area. Visual search and location-based hotspots are coming soon.
               </p>
-              <button onClick={resetAll} style={{ marginTop: '1rem', padding: '0.75rem 2rem', background: 'var(--gold)', color: '#000', border: 'none', borderRadius: '12px', fontWeight: 800, fontSize: '0.88rem', cursor: 'pointer' }}>
-                Clear All Filters
+              <button 
+                onClick={() => setViewMode('list')}
+                style={{ marginTop: '2rem', padding: '12px 24px', borderRadius: '14px', background: 'rgba(232,184,75,0.1)', border: '1px solid var(--gold)', color: 'var(--gold)', fontWeight: 800, cursor: 'pointer' }}
+              >
+                Back to List View
               </button>
             </motion.div>
           )}
@@ -434,10 +496,11 @@ export default function SearchResults() {
             style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(5,5,15,0.85)', backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '15px' }}
             onClick={() => setShowMobileFilter(false)}>
             <motion.div 
-              initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
+              initial={{ y: "100%", opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: "100%", opacity: 0 }}
               transition={{ type: 'spring', damping: 25, stiffness: 350 }}
               onClick={e => e.stopPropagation()}
-              style={{ width: '100%', maxWidth: '480px', background: 'rgba(12,12,24,0.95)', border: '1px solid rgba(212,175,55,0.3)', borderRadius: '24px', padding: '1.5rem', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 80px rgba(0,0,0,0.8)' }}>
+              style={{ width: '100%', maxWidth: '480px', background: 'var(--midnight)', borderTop: '1px solid var(--border-glass)', borderRadius: '32px 32px 0 0', padding: '2rem 1.5rem 1.5rem', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 -20px 80px rgba(0,0,0,0.8)', position: 'absolute', bottom: 0 }}>
+              <div style={{ position: 'absolute', top: '12px', left: '50%', transform: 'translateX(-50%)', width: '40px', height: '4px', background: 'rgba(255,255,255,0.2)', borderRadius: '4px' }} />
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '1rem' }}>
                 <div style={{ fontWeight: 800, color: 'white', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <SlidersHorizontal size={18} style={{ color: 'var(--gold)' }}/> Advanced Filters
@@ -456,17 +519,87 @@ export default function SearchResults() {
       </AnimatePresence>
 
 
+      {/* Floating View Switcher (Airbnb/Zillow Style) */}
+      <div style={{ position: 'fixed', bottom: '100px', left: '50%', transform: 'translateX(-50%)', zIndex: 1000, display: 'flex', alignItems: 'center' }}>
+        <div style={{ 
+          background: '#000', 
+          borderRadius: '30px', 
+          padding: '4px', 
+          display: 'flex', 
+          gap: '2px', 
+          boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
+          border: '1px solid rgba(255,255,255,0.1)'
+        }}>
+          <button 
+            onClick={() => setViewMode('list')}
+            style={{ 
+              padding: '10px 20px', borderRadius: '26px', border: 'none',
+              background: viewMode === 'list' ? 'var(--gold)' : 'transparent',
+              color: viewMode === 'list' ? 'black' : 'white',
+              fontSize: '0.85rem', fontWeight: 800, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.3s'
+            }}
+          >
+            <Building2 size={16} /> List
+          </button>
+          <button 
+            onClick={() => setViewMode('map')}
+            style={{ 
+              padding: '10px 20px', borderRadius: '26px', border: 'none',
+              background: viewMode === 'map' ? 'var(--gold)' : 'transparent',
+              color: viewMode === 'map' ? 'black' : 'white',
+              fontSize: '0.85rem', fontWeight: 800, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.3s'
+            }}
+          >
+            <MapPin size={16} /> Map
+          </button>
+        </div>
+      </div>
+
       <style>{`
         .sr-filter-label { color: rgba(255,255,255,0.5); font-size: 0.62rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; display: block; margin-bottom: 8px; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .sr-mobile-filter-btn { display: none; }
+        
+        /* Desktop filter sidebar styles */
+        .sr-filter-panel {
+          scrollbar-width: thin;
+          scrollbar-color: rgba(232,184,75,0.2) transparent;
+        }
+        .sr-filter-panel::-webkit-scrollbar { width: 4px; }
+        .sr-filter-panel::-webkit-scrollbar-track { background: transparent; }
+        .sr-filter-panel::-webkit-scrollbar-thumb { background: rgba(232,184,75,0.2); border-radius: 4px; }
+
+        /* Tablet breakpoint */
+        @media (max-width: 1100px) {
+          .sr-filter-panel { min-width: 240px !important; }
+        }
+
+        /* Mobile breakpoint — hide sidebar, show filter button */
         @media (max-width: 900px) {
           .sr-filter-panel { display: none !important; }
           .sr-mobile-filter-btn { display: flex !important; }
-          .container > main { grid-column: 1; }
-          .container { grid-template-columns: 1fr !important; }
+          .sr-results-grid { grid-template-columns: 1fr !important; gap: 0 !important; }
         }
-        @media (max-width: 768px) {
-          .container { padding-bottom: 100px !important; }
+
+        /* Small mobile */
+        @media (max-width: 600px) {
+          .sr-topbar-row { flex-wrap: wrap; gap: 8px !important; }
+          .sr-topbar-row > div:first-child { width: 100%; }
+          .sr-topbar-row select { flex: 1; }
+          .container { padding-bottom: 150px !important; }
+          .sr-mobile-filter-btn { width: 100%; justify-content: center; }
         }
+
+        /* Active filter chip row */
+        .filter-chip-row::-webkit-scrollbar { display: none; }
+        .filter-chip-row { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* Quick action chips row */
+        .quick-chips-row::-webkit-scrollbar { display: none; }
+        .quick-chips-row { -ms-overflow-style: none; scrollbar-width: none; }
       `}</style>
     </div>
   );

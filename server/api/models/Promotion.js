@@ -71,6 +71,14 @@ const promotionSchema = new mongoose.Schema({
     ref: 'Property',
     default: null
   },
+  clickUrl: {
+    type: String,
+    default: ''
+  },
+  stats: {
+    views: { type: Number, default: 0 },
+    clicks: { type: Number, default: 0 }
+  },
   createdAt: {
     type: Date,
     default: Date.now

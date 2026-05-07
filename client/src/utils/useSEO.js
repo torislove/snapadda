@@ -15,7 +15,7 @@ export const useSEO = (seoData) => {
 
     // 2. Update Meta Description
     const updateMeta = (name, content) => {
-      let el = document.querySelector(`meta[name="${name}"]`) || 
+      const el = document.querySelector(`meta[name="${name}"]`) || 
                document.querySelector(`meta[property="${name}"]`);
       if (el) {
         el.setAttribute('content', content);
@@ -43,7 +43,7 @@ export const useSEO = (seoData) => {
     }
 
     if (seoData.canonical) {
-      let link = document.querySelector('link[rel="canonical"]');
+      const link = document.querySelector('link[rel="canonical"]');
       if (link) {
         link.setAttribute('href', seoData.canonical);
       } else {

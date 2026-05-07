@@ -1,13 +1,14 @@
 /* ── Glass Card (High-Fidelity) ── */
 .glass-card {
-  background: var(--bg-glass);
-  border: 1px solid var(--border);
+  background: var(--bg-panel);
+  border: 1px solid var(--border-glass);
   border-radius: var(--radius-lg);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  transition: all var(--transition-spring);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  transition: all var(--transition-slow);
   position: relative;
   overflow: hidden;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02), 0 8px 32px rgba(0, 0, 0, 0.4);
 }
 
 .glass-card::after {
@@ -19,23 +20,26 @@
 }
 
 .glass-card:hover {
-  border-color: rgba(245, 200, 66, 0.3);
-  box-shadow: 0 24px 64px rgba(0,0,0,0.7), 0 0 16px rgba(245, 200, 66, 0.1);
-  transform: translateY(-4px) scale(1.01);
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6), var(--neon-glow);
+  transform: translateY(-2px);
 }
 
 .stat-card {
-  background: var(--glass);
-  backdrop-filter: blur(20px);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--r-lg);
+  background: var(--bg-panel);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-lg);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
   padding: 1.75rem;
-  transition: transform 0.4s var(--ease-butter), border-color 0.4s;
+  transition: transform var(--transition-slow), border-color var(--transition-slow), box-shadow var(--transition-slow);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02), 0 8px 32px rgba(0, 0, 0, 0.4);
 }
 
 .stat-card:hover {
-  transform: translateY(-5px);
-  border-color: var(--gold-border);
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6), var(--neon-glow);
+  transform: translateY(-2px);
 }
 
 /* ── Elite Highlights ── */

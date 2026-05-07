@@ -31,7 +31,7 @@ const HorizontalPropertySection = ({ title, eyebrow, properties, type, loading }
             </h2>
           </div>
           
-          <div style={{ display: 'flex', gap: '12px' }}>
+          <div className="desktop-only" style={{ display: 'flex', gap: '12px' }}>
             <button 
               onClick={() => scroll('left')}
               className="scroll-nav-btn glass-premium"
@@ -53,23 +53,25 @@ const HorizontalPropertySection = ({ title, eyebrow, properties, type, loading }
           ref={scrollRef}
           style={{ 
             display: 'flex', 
-            gap: '24px', 
+            gap: window.innerWidth <= 600 ? '12px' : '24px', 
             overflowX: 'auto', 
-            paddingBottom: '2rem',
+            paddingBottom: '2.5rem',
             scrollSnapType: 'x mandatory',
             msOverflowStyle: 'none',
             scrollbarWidth: 'none',
-            paddingRight: '4rem'
+            paddingLeft: window.innerWidth <= 600 ? '15px' : '0',
+            paddingRight: window.innerWidth <= 600 ? '30px' : '4rem',
+            position: 'relative'
           }}
-          className="hide-scrollbar"
+          className="hide-scrollbar holographic-carousel"
         >
           {loading ? (
              [...Array(4)].map((_, i) => (
-                <div key={i} style={{ minWidth: '320px', height: '450px', background: 'rgba(255,255,255,0.03)', borderRadius: '24px', animate: 'pulse 2s infinite' }} />
+                <div key={i} style={{ minWidth: window.innerWidth <= 600 ? '280px' : '320px', height: '450px', background: 'rgba(255,255,255,0.03)', borderRadius: '24px', animate: 'pulse 2s infinite' }} />
              ))
           ) : (
             properties.map((p) => (
-              <div key={p._id} style={{ minWidth: '320px', maxWidth: '320px', scrollSnapAlign: 'start' }}>
+              <div key={p._id} style={{ minWidth: window.innerWidth <= 600 ? '290px' : '320px', maxWidth: window.innerWidth <= 600 ? '290px' : '320px', scrollSnapAlign: 'start' }}>
                 <PropertyCard {...p} />
               </div>
             ))
@@ -79,8 +81,8 @@ const HorizontalPropertySection = ({ title, eyebrow, properties, type, loading }
             <div 
               onClick={() => navigate('/search', { state: { typeFilter: type } })}
               style={{ 
-                minWidth: '240px', 
-                height: '450px', 
+                minWidth: window.innerWidth <= 600 ? '200px' : '240px', 
+                height: window.innerWidth <= 600 ? '420px' : '450px', 
                 background: 'rgba(212,175,55,0.05)', 
                 border: '2px dashed rgba(212,175,55,0.2)', 
                 borderRadius: '24px',
@@ -90,7 +92,8 @@ const HorizontalPropertySection = ({ title, eyebrow, properties, type, loading }
                 justifyContent: 'center',
                 gap: '1rem',
                 cursor: 'pointer',
-                transition: 'all 0.3s ease'
+                transition: 'all 0.3s ease',
+                scrollSnapAlign: 'start'
               }}
               className="view-more-card"
             >
@@ -100,6 +103,32 @@ const HorizontalPropertySection = ({ title, eyebrow, properties, type, loading }
               <div style={{ color: 'var(--gold)', fontWeight: 900, fontSize: '0.9rem' }}>అన్నీ చూడండి (View All)</div>
             </div>
           )}
+        </div>
+
+        {/* Holographic Scroll Progress (Elite Touch Indicator) */}
+        <div style={{ 
+          width: '120px', 
+          height: '3px', 
+          background: 'rgba(255,255,255,0.05)', 
+          borderRadius: '10px', 
+          margin: '0 auto', 
+          position: 'relative',
+          overflow: 'hidden' 
+        }}>
+          <motion.div 
+            style={{ 
+              position: 'absolute', 
+              top: 0, left: 0, height: '100%', 
+              width: '40px', 
+              background: 'var(--gold)',
+              boxShadow: '0 0 10px var(--gold)',
+              borderRadius: 'inherit'
+            }}
+            animate={{ 
+              x: [0, 80, 0] // Simple bounce if no scroll listener, but better with listener
+            }}
+            transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
+          />
         </div>
       </div>
 

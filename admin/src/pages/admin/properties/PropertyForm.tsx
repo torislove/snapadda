@@ -107,7 +107,35 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
                 </select>
               </div>
               <div>
-                <label className="admin-label">City / Area <span style={{ color: 'var(--rose)' }}>*</span></label>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <label className="admin-label" style={{ marginBottom: 0 }}>City / Area <span style={{ color: 'var(--rose)' }}>*</span></label>
+                  <button 
+                    type="button" 
+                    onClick={() => {
+                      if ("geolocation" in navigator) {
+                        navigator.geolocation.getCurrentPosition(async (pos) => {
+                          try {
+                            const { latitude, longitude } = pos.coords;
+                            const res = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`);
+                            const data = await res.json();
+                            const city = data.city || data.locality || data.principalSubdivision;
+                            if (city) { 
+                              setLiveData((p: any) => ({ ...p, location: city }));
+                              const input = document.querySelector('input[name="location"]') as HTMLInputElement;
+                              if (input) input.value = city;
+                            }
+                          } catch (e) {
+                            console.error('Location fetch failed', e);
+                          }
+                        });
+                      }
+                    }}
+                    className="btn-ghost"
+                    style={{ fontSize: '0.65rem', padding: '4px 8px', borderRadius: '6px', border: '1px solid var(--cyan)', color: 'var(--cyan)', display: 'flex', alignItems: 'center', gap: '4px' }}
+                  >
+                    📍 AUTO-DETECT
+                  </button>
+                </div>
                 <input name="location" defaultValue={editingProperty?.location || ''} className="admin-input" placeholder="e.g. Mangalagiri, Vijayawada" required />
               </div>
               <div>

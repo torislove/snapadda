@@ -7,6 +7,8 @@ import {
 } from 'lucide-react';
 import { Logo } from '../../components/ui/Logo';
 import { useAdminAuth } from '../../contexts/AdminAuthContext';
+import { ConnectivityBanner } from '../../components/ui/ConnectivityBanner';
+import { AdminMobileNav } from '../../components/ui/AdminMobileNav';
 // Styles imported via main entry point
 
 /* ── 2-click Logout Button ── */
@@ -57,27 +59,14 @@ const NAV_ITEMS = [
   { to: '/admin/guide',      label: 'System Guide',     icon: BookOpen, exact: false, activeClass: 'active-settings', color: 'var(--emerald)' },
 ];
 
-import { StatusBar, Style } from '@capacitor/status-bar';
-import { SplashScreen } from '@capacitor/splash-screen';
+
 
 const AdminLayout = () => {
   const location = useLocation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
   const { adminLogout, adminUser } = useAdminAuth();
-
   useEffect(() => {
-    const initNative = async () => {
-      try {
-        if ((window as any).Capacitor) {
-          await StatusBar.setStyle({ style: Style.Dark });
-          await StatusBar.setBackgroundColor({ color: '#030308' });
-          await SplashScreen.hide();
-        }
-      } catch (e) { console.warn(e); }
-    };
-    initNative();
-
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
@@ -214,6 +203,8 @@ const AdminLayout = () => {
           </div>
 
           <div className="topbar-right">
+            {/* Live connectivity pill */}
+            <ConnectivityBanner compact />
             <span className="topbar-time">
               {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </span>
@@ -232,9 +223,12 @@ const AdminLayout = () => {
         </div>
 
         {/* Mobile Floating Action Button (FAB) for rapid property entry */}
-        <Link to="/admin/properties" className="admin-fab mobile-only">
+        <Link to="/admin/properties" className="admin-fab mobile-only" style={{ bottom: '90px' }}>
           <Building size={24} />
         </Link>
+        <div className="mobile-only">
+           <AdminMobileNav />
+        </div>
       </main>
     </div>
   );

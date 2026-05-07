@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback, memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Timer, ExternalLink, ArrowRight, Zap } from 'lucide-react';
-import { fetchPromotions } from '../services/api';
+import { fetchPromotions, trackPromotionView, trackPromotionClick } from '../services/api';
 
 /**
  * Cloudinary Transformation Utility
@@ -50,6 +50,12 @@ const Slide = memo(({ slide, index, accent, bg, theme, countdown, onNext, onPrev
     }}
     whileTap={{ cursor: 'grabbing' }}
     viewport={{ once: true }}
+    onViewportEnter={() => {
+      if (slide._id && !slide.viewTracked) {
+        trackPromotionView(slide._id);
+        slide.viewTracked = true; // Prevents re-tracking on the same mount
+      }
+    }}
   >
     {slide.image && (
       <>
@@ -99,6 +105,9 @@ const Slide = memo(({ slide, index, accent, bg, theme, countdown, onNext, onPrev
           whileHover={{ scale: 1.05, x: 5 }}
           whileTap={{ scale: 0.95 }}
           href={slide.actionUrl || slide.ctaUrl || '#'} 
+          onClick={() => {
+            if (slide._id) trackPromotionClick(slide._id);
+          }}
           style={{
             display: 'inline-flex', alignItems: 'center', gap: '10px', padding: '14px 36px',
             background: `linear-gradient(135deg, ${accent}, #fff)`, color: '#07070f', borderRadius: '40px',

@@ -23,6 +23,8 @@ import { SkeletonCityCard, SkeletonPropertyCard } from '../components/SkeletonLo
 import { parseSmartSearch, getFuzzySuggestions, loadAndhraData } from '../services/SearchParser';
 import { useSEO } from '../utils/useSEO';
 import HorizontalPropertySection from '../components/HorizontalPropertySection';
+import MobileOnboarding from '../components/MobileOnboarding';
+import { useBehaviorTracker } from '../hooks/useBehaviorTracker';
 
 // ─── Recently Sold Live Ticker ─────────────────────────────────────────────
 const SOLD_FEED = [
@@ -174,6 +176,7 @@ export default function Home() {
   const scrolled = useScrolled();
   const typedWord = useTypewriter(['Apartments', 'Villas', 'Farmland', 'Premium Plots', 'CRDA Homes']);
   const searchRef = useRef(null);
+  const { getTopPreferences } = useBehaviorTracker();
 
   // 3D search platform tilt
   const mx = useMotionValue(0), my = useMotionValue(0);
@@ -196,7 +199,7 @@ export default function Home() {
   const [modalType, setModalType] = useState('callback');
   const [filterOpen, setFilterOpen] = useState(false);
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
-  
+  const [apiError, setApiError] = useState(false);  
   // Dynamic Settings
   const [heroContent, setHeroContent] = useState(null);
   const [siteStats, setSiteStats] = useState([]);
@@ -279,6 +282,7 @@ export default function Home() {
 
   const loadProperties = useCallback(() => {
     setLoading(true);
+    setApiError(false);
     const smart = parseSmartSearch(keyword);
     fetchProperties({
       ...advFilters,
@@ -291,8 +295,22 @@ export default function Home() {
       minPrice: smart?.minPrice || advFilters.minPrice || undefined,
       bhk: smart?.bhk || advFilters.bhk || undefined,
     })
-      .then(res => setProperties(res?.data || (Array.isArray(res) ? res : [])))
-      .catch(console.error)
+      .then(res => { 
+        setApiError(false); 
+        let data = [...(res?.data || (Array.isArray(res) ? res : []))];
+        
+        // Smart Recommendation Engine
+        const prefs = getTopPreferences();
+        if (prefs && prefs.preferredType) {
+          data.sort((a, b) => {
+            const aScore = (a.type === prefs.preferredType ? 10 : 0) + (a.location?.includes(prefs.preferredLocation) ? 5 : 0);
+            const bScore = (b.type === prefs.preferredType ? 10 : 0) + (b.location?.includes(prefs.preferredLocation) ? 5 : 0);
+            return bScore - aScore; // Highest score first
+          });
+        }
+        setProperties(data); 
+      })
+      .catch(() => setApiError(true))
       .finally(() => setLoading(false));
   }, [advFilters, debouncedKeyword, typeFilter, cityFilter, intent, budget]);
 
@@ -333,14 +351,18 @@ export default function Home() {
     return t.includes('agricultural') || t.includes('farm') || t.includes('acre') || t.includes('land');
   }).slice(0, 8), [properties]);
 
+  const latestListings = useMemo(() => {
+    return [...properties].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 10);
+  }, [properties]);
+
   return (
     <div 
       className={`app-container ${appearance?.enable3D !== false ? 'scene-3d' : ''}`}
-      style={{ 
-        '--brand-primary': appearance?.primaryColor || '#e8b84b',
-        '--brand-glow': (appearance?.primaryColor || '#e8b84b') + '44'
-      }}
+      style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: 'var(--bg-deep)', '--brand-primary': appearance?.primaryColor || '#e8b84b', '--brand-glow': (appearance?.primaryColor || '#e8b84b') + '44' }}
     >
+      <MobileOnboarding onLocationDetected={(city) => { setKeyword(city); setDebouncedKeyword(city); }} />
+      <Header />
+
       {appearance?.bgUrl
         ? <div className="site-bg-overlay" style={{ backgroundImage: `url(${appearance.bgUrl})`, opacity: 0.22, position: 'fixed', inset: 0, backgroundSize: 'cover', zIndex: 0 }} />
         : <div className="animated-bg" style={{ position: 'fixed', inset: 0, zIndex: 0, background: 'radial-gradient(ellipse at 20% 50%, rgba(10,80,40,0.08) 0%, transparent 60%), radial-gradient(ellipse at 80% 20%, rgba(130,60,0,0.08) 0%, transparent 60%), var(--bg-deep)' }} />
@@ -405,6 +427,22 @@ export default function Home() {
                     onChange={(e) => setKeyword(e.target.value)}
                     style={{ background: 'transparent', border: 'none', color: 'white', fontSize: '0.95rem', width: '100%', padding: '12px 0', outline: 'none' }}
                   />
+                  <button 
+                    onClick={() => {
+                      if ("geolocation" in navigator) {
+                        navigator.geolocation.getCurrentPosition(async (pos) => {
+                          const { latitude, longitude } = pos.coords;
+                          const res = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`);
+                          const data = await res.json();
+                          const city = data.city || data.locality || data.principalSubdivision;
+                          if (city) { setKeyword(city); setDebouncedKeyword(city); }
+                        });
+                      }
+                    }}
+                    style={{ background: 'rgba(34,217,224,0.1)', border: '1px solid rgba(34,217,224,0.3)', borderRadius: '8px', padding: '6px 10px', color: 'var(--cyan)', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', fontSize: '0.7rem', fontWeight: 800, whiteSpace: 'nowrap', marginLeft: '10px' }}
+                  >
+                    <Navigation2 size={12} /> Auto-Detect
+                  </button>
                 </div>
               </div>
 
@@ -686,6 +724,14 @@ export default function Home() {
         </AnimatePresence>
 
         <section id="properties" style={{ paddingTop: '2rem' }}>
+          <HorizontalPropertySection 
+            title="తాజా ప్రాపర్టీలు (Latest Listings)" 
+            eyebrow="New on Market" 
+            properties={latestListings} 
+            type="All"
+            loading={loading}
+          />
+
           <HorizontalPropertySection 
             title="ఎలైట్ విల్లాలు (Elite Villas)" 
             eyebrow="Luxury Living" 

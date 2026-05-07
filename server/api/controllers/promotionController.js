@@ -168,3 +168,25 @@ export const deletePromotion = async (req, res) => {
     res.status(500).json({ status: 'error', message: error.message });
   }
 };
+
+// Track View
+export const trackPromotionView = async (req, res) => {
+  try {
+    const { id } = req.params;
+    await Promotion.findByIdAndUpdate(id, { $inc: { 'stats.views': 1 } });
+    res.status(200).json({ status: 'success' });
+  } catch (error) {
+    res.status(500).json({ status: 'error' });
+  }
+};
+
+// Track Click
+export const trackPromotionClick = async (req, res) => {
+  try {
+    const { id } = req.params;
+    await Promotion.findByIdAndUpdate(id, { $inc: { 'stats.clicks': 1 } });
+    res.status(200).json({ status: 'success' });
+  } catch (error) {
+    res.status(500).json({ status: 'error' });
+  }
+};

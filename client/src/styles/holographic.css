@@ -1,0 +1,111 @@
+/* ── Holographic & Iridescent Animation System ── */
+
+@keyframes holographic-shimmer {
+  0% { transform: rotate(0deg) translate(-10%, -10%); }
+  100% { transform: rotate(360deg) translate(-10%, -10%); }
+}
+
+@keyframes iridescent-border-anim {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes pulse-glow {
+  0% { box-shadow: 0 0 5px rgba(232, 184, 75, 0.2); }
+  50% { box-shadow: 0 0 20px rgba(232, 184, 75, 0.4); }
+  100% { box-shadow: 0 0 5px rgba(232, 184, 75, 0.2); }
+}
+
+.holographic-container {
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.4s var(--ease-3d);
+}
+
+.holographic-card-bg {
+  position: absolute;
+  inset: 0;
+  background: var(--bg-card);
+  backdrop-filter: blur(25px);
+  z-index: -1;
+}
+
+.holographic-overlay {
+  position: absolute;
+  inset: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(
+    circle at center,
+    rgba(255, 255, 255, 0.1) 0%,
+    rgba(255, 255, 255, 0.05) 30%,
+    transparent 70%
+  );
+  pointer-events: none;
+  mix-blend-mode: overlay;
+  z-index: 1;
+  opacity: 0.5;
+}
+
+.holographic-edge {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 10;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.1) 0%,
+    transparent 40%,
+    rgba(255, 255, 255, 0.05) 60%,
+    rgba(255, 255, 255, 0.1) 100%
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+}
+
+.holographic-edge-iridescent {
+  background: var(--holo-iridescent);
+  background-size: 300% 300%;
+  animation: iridescent-border-anim 8s ease infinite;
+  opacity: 0.3;
+}
+
+/* Chrome Aberration Simulation */
+.chromatic-aberration {
+  text-shadow: 
+    -1px 0 rgba(255, 0, 0, 0.3),
+    1px 0 rgba(0, 255, 255, 0.3);
+}
+
+/* Horizontal Scroll Container Styles */
+.holographic-carousel {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  gap: 1.5rem;
+  padding: 1rem 1rem 2.5rem 1rem;
+}
+
+.holographic-carousel::-webkit-scrollbar {
+  display: none;
+}
+
+.holographic-carousel-item {
+  scroll-snap-align: center;
+  flex-shrink: 0;
+}
+
+/* Adaptive Property Card (Mobile optimized) */
+@media (max-width: 600px) {
+  .holographic-carousel-item {
+    width: 88vw;
+    scroll-snap-align: center;
+  }
+}

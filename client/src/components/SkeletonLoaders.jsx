@@ -32,17 +32,3 @@ export const SkeletonPropertyCard = () => (
     <div className="shimmer-effect" />
   </div>
 );
-
-// Add these to App.css to power the shimmer
-/*
-@keyframes shimmer {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
-}
-.shimmer-effect {
-  position: absolute;
-  top: 0; left: 0; width: 100%; height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(212,175,55,0.05), transparent);
-  animation: shimmer 1.5s infinite;
-}
-*/

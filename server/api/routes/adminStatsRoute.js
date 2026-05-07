@@ -9,12 +9,13 @@ const router = express.Router();
 // GET /api/admin/stats
 router.get('/stats', async (req, res) => {
   try {
-    const [propertyCount, leadCount, inquiryCount, recentProperties, recentInquiries] = await Promise.all([
+    const [propertyCount, leadCount, inquiryCount, recentProperties, recentInquiries, recentLeads] = await Promise.all([
       Property.countDocuments(),
       Lead.countDocuments(),
       Inquiry.countDocuments(),
       Property.find().sort({ createdAt: -1 }).limit(5).select('title price location status createdAt'),
       Inquiry.find().sort({ createdAt: -1 }).limit(5).populate('propertyId', 'title'),
+      Lead.find().sort({ createdAt: -1 }).limit(5).populate('propertyId', 'title')
     ]);
 
     const verifiedCount = await Property.countDocuments({ isVerified: true });
@@ -67,6 +68,7 @@ router.get('/stats', async (req, res) => {
         totalShares,
         recentProperties,
         recentInquiries,
+        recentLeads,
         marketIntelligence: {
           heatmap: searchHeatmap,
           activityStream: recentActivity

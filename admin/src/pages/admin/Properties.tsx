@@ -1,16 +1,18 @@
-import React from 'react';
 import { usePropertyManager } from './properties/usePropertyManager';
 import { PropertiesList } from './properties/PropertiesList';
 import { PropertyForm } from './properties/PropertyForm';
 import { AnimatePresence } from 'framer-motion';
 import { Plus } from 'lucide-react';
 import { formatSnapAddaPrice } from '../../utils/priceUtils';
+import { ConnectivityBanner } from '../../components/ui/ConnectivityBanner';
 
 const AdminProperties = () => {
   const manager = usePropertyManager();
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
+      {/* Connectivity status — shown only when degraded */}
+      <ConnectivityBanner />
       
       {/* Header Section */}
       <div className="flex-row-mobile-stack" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1.5rem' }}>
@@ -68,16 +70,6 @@ const AdminProperties = () => {
             loadProperties={manager.loadProperties}
             setIsAdding={manager.setIsAdding}
           />
-        )}
-      </AnimatePresence>
-    </div>
-  );
-};
-
-export default AdminProperties;
-              </AnimatePresence>
-            </div>
-          </motion.div>
         )}
       </AnimatePresence>
     </div>

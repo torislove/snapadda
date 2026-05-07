@@ -250,6 +250,53 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Deep health check — probes actual connectivity status
+app.get('/api/health/deep', async (req, res) => {
+  const mongoStates = { 0: 'disconnected', 1: 'connected', 2: 'connecting', 3: 'disconnecting' };
+  const mongoState = mongoose.connection.readyState;
+  const mongoOk = mongoState === 1;
+
+  // Cloudinary: verify config is loaded (keys are non-empty strings)
+  const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+  const cloudKey = process.env.CLOUDINARY_API_KEY;
+  const cloudSecret = process.env.CLOUDINARY_API_SECRET;
+  const cloudinaryConfigured = !!(cloudName && cloudKey && cloudSecret &&
+    cloudName !== 'your_cloud_name' && cloudKey !== 'your_api_key');
+
+  // Try a lightweight Cloudinary ping (only if configured)
+  let cloudinaryOk = false;
+  if (cloudinaryConfigured) {
+    try {
+      // ping() is available in cloudinary SDK — lightweight API call
+      await cloudinary.api.ping({ timeout: 4000 });
+      cloudinaryOk = true;
+    } catch (_) {
+      cloudinaryOk = false;
+    }
+  }
+
+  const allOk = mongoOk && cloudinaryOk;
+
+  res.status(allOk ? 200 : 207).json({
+    status: allOk ? 'healthy' : 'degraded',
+    timestamp: new Date().toISOString(),
+    services: {
+      server: { ok: true, message: 'Express server running' },
+      mongodb: {
+        ok: mongoOk,
+        state: mongoStates[mongoState] || 'unknown',
+        message: mongoOk ? 'Connected to MongoDB Atlas' : `MongoDB is ${mongoStates[mongoState] || 'unknown'}`
+      },
+      cloudinary: {
+        ok: cloudinaryOk,
+        configured: cloudinaryConfigured,
+        cloudName: cloudName ? `${cloudName.slice(0, 3)}***` : null,
+        message: cloudinaryOk ? 'Cloudinary API reachable' : (cloudinaryConfigured ? 'Cloudinary ping failed' : 'Cloudinary not configured')
+      }
+    }
+  });
+});
+
 // Catch-all 404 Diagnostic (Must be LAST)
 app.use((req, res) => {
   console.log('404_NOT_FOUND_PATH:', req.originalUrl);

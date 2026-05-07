@@ -12,6 +12,12 @@
   --midnight-deep: #020205;
   --glass:         rgba(255, 255, 255, 0.03);
   --glass-border:  rgba(255, 255, 255, 0.1);
+  --bg-panel:      rgba(15, 18, 25, 0.6);
+  --border-glass:  rgba(255, 255, 255, 0.12);
+  --neon-glow:     0 0 15px rgba(34, 217, 224, 0.2);
+  --holo-iridescent: linear-gradient(135deg, #ff00c1 0%, #9600ff 25%, #4900ff 50%, #00b8ff 75%, #00ff88 100%);
+  --holo-glass:    rgba(255, 255, 255, 0.03);
+  --holo-border:   rgba(255, 255, 255, 0.1);
 
   /* ── Text Palette ── */
   --text-primary:   #ffffff;
