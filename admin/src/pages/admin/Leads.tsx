@@ -7,6 +7,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { Activity, TrendingUp, Zap, Clock, PieChart } from 'lucide-react';
 import { ConnectivityBanner } from '../../components/ui/ConnectivityBanner';
+import { triggerHaptic } from '../../utils/haptics';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -161,7 +162,19 @@ const LeadCard = ({ lead, onDelete, onStatusChange, onFlag }: {
   const [showTimeline, setShowTimeline] = useState(false);
   const [updating, setUpdating] = useState(false);
 
+  // Data Analyst: Lead Quality Algorithm
+  const leadScore = useMemo(() => {
+    let score = 0;
+    if (lead.propertyId) score += 30;
+    if (lead.message) score += 20;
+    if (lead.message?.length > 40) score += 10;
+    if (lead.intentProfile?.length > 0) score += 20;
+    if (lead.phone?.length >= 10) score += 20;
+    return score;
+  }, [lead]);
+
   const handleStatusChange = async (newStatus: string) => {
+    triggerHaptic('medium');
     setUpdating(true);
     await onStatusChange(lead._id, newStatus);
     setUpdating(false);
@@ -195,7 +208,11 @@ const LeadCard = ({ lead, onDelete, onStatusChange, onFlag }: {
             fill={lead.followUpFlag ? 'var(--gold)' : 'none'} 
             color={lead.followUpFlag ? 'var(--gold)' : 'var(--text-muted)'} 
             style={{ cursor: 'pointer', opacity: lead.followUpFlag ? 1 : 0.3 }}
-            onClick={(e) => { e.stopPropagation(); onFlag(lead._id, !lead.followUpFlag); }}
+            onClick={(e) => { 
+              e.stopPropagation(); 
+              triggerHaptic('light');
+              onFlag(lead._id, !lead.followUpFlag); 
+            }}
           />
           <button 
             onClick={() => setShowActions(!showActions)}
@@ -246,8 +263,16 @@ const LeadCard = ({ lead, onDelete, onStatusChange, onFlag }: {
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-        <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <User size={14} style={{ opacity: 0.6 }} /> {lead.phone}
+        <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <User size={14} style={{ opacity: 0.6 }} /> {lead.phone}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+             <span style={{ fontSize: '0.6rem', fontWeight: 800, color: leadScore > 70 ? 'var(--emerald)' : 'var(--text-muted)' }}>SCORE: {leadScore}</span>
+             <div style={{ width: '30px', height: '4px', background: 'rgba(255,255,255,0.05)', borderRadius: '2px', overflow: 'hidden' }}>
+               <div style={{ width: `${leadScore}%`, height: '100%', background: leadScore > 70 ? 'var(--emerald)' : 'var(--gold)' }} />
+             </div>
+          </div>
         </div>
         {lead.propertyId?.title && (
           <div style={{ fontSize: '0.78rem', color: 'var(--violet)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>

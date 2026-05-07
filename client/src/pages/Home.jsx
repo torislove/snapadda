@@ -361,7 +361,6 @@ export default function Home() {
       style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: 'var(--bg-deep)', '--brand-primary': appearance?.primaryColor || '#e8b84b', '--brand-glow': (appearance?.primaryColor || '#e8b84b') + '44' }}
     >
       <MobileOnboarding onLocationDetected={(city) => { setKeyword(city); setDebouncedKeyword(city); }} />
-      <Header />
 
       {appearance?.bgUrl
         ? <div className="site-bg-overlay" style={{ backgroundImage: `url(${appearance.bgUrl})`, opacity: 0.22, position: 'fixed', inset: 0, backgroundSize: 'cover', zIndex: 0 }} />

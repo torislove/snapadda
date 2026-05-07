@@ -9,6 +9,7 @@ import { Logo } from '../../components/ui/Logo';
 import { useAdminAuth } from '../../contexts/AdminAuthContext';
 import { ConnectivityBanner } from '../../components/ui/ConnectivityBanner';
 import { AdminMobileNav } from '../../components/ui/AdminMobileNav';
+import { triggerHaptic } from '../../utils/haptics';
 // Styles imported via main entry point
 
 /* ── 2-click Logout Button ── */
@@ -117,7 +118,10 @@ const AdminLayout = () => {
               <Link
                 key={item.to}
                 to={item.to}
-                onClick={() => setIsSidebarOpen(false)}
+                onClick={() => {
+                  triggerHaptic('light');
+                  setIsSidebarOpen(false);
+                }}
                 className={`nav-item ${active ? item.activeClass : ''} ${active ? 'active' : ''}`}
               >
                 <span className="nav-icon" style={active ? { color: item.color } : {}}>
@@ -137,7 +141,10 @@ const AdminLayout = () => {
               <Link
                 key={item.to}
                 to={item.to}
-                onClick={() => setIsSidebarOpen(false)}
+                onClick={() => {
+                  triggerHaptic('light');
+                  setIsSidebarOpen(false);
+                }}
                 className={`nav-item ${active ? item.activeClass : ''} ${active ? 'active' : ''}`}
               >
                 <span className="nav-icon" style={active ? { color: item.color } : {}}>

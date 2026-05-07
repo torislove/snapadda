@@ -1,6 +1,7 @@
 import express from 'express';
 import mongoose from 'mongoose';
 import Lead from '../models/Lead.js';
+import Property from '../models/Property.js';
 import { automationService } from '../modules/automationService.js';
 import { db } from '../firebase.js';
 
@@ -16,7 +17,7 @@ router.post('/', async (req, res) => {
     // Auto-Routing: Fetch property to determine district
     let district = '';
     if (propertyId) {
-      const prop = await mongoose.model('Property').findById(propertyId);
+      const prop = await Property.findById(propertyId);
       if (prop) district = prop.district;
     }
 

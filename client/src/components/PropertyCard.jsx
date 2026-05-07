@@ -19,6 +19,7 @@ import {
 import tr from '../utils/teluguTranslations';
 import { logUserActivity, ACTIONS } from '../services/activityTracker';
 import HolographicWrapper from './HolographicWrapper';
+import { triggerHaptic } from '../utils/haptics';
 
 const Toast = memo(({ msg, onDone }) => {
   return (
@@ -163,6 +164,7 @@ const PropertyCard = memo(({
     e.preventDefault(); e.stopPropagation();
     if (!user) return setToast('Sign in to save properties');
     
+    triggerHaptic('medium');
     likeProperty(propertyId, user._id || user.id)
       .then(res => {
         if (res.status === 'success') {
@@ -180,6 +182,8 @@ const PropertyCard = memo(({
       navigate('/login', { state: { from: `/property/${propertyId}` } });
       return;
     }
+    
+    triggerHaptic('success');
     const url = `${window.location.origin}/property/${propertyId}`;
     const shareText = `Check out this ${type} in ${location} on SnapAdda.\n\nPrice: ${formatSnapAddaPrice(displayPrice)}\n\nView details:`;
     

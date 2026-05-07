@@ -2,6 +2,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Home, Search, Heart, MessageCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { triggerHaptic } from '../utils/haptics';
 
 const MobileNav = () => {
   const location = useLocation();
@@ -47,7 +48,7 @@ const MobileNav = () => {
           <motion.button
             key={item.id}
             onClick={() => {
-              if (navigator.vibrate) navigator.vibrate(50);
+              triggerHaptic('light');
               navigate(item.path);
             }}
             whileTap={{ scale: 0.88 }}
@@ -85,7 +86,7 @@ const MobileNav = () => {
       {/* Profile button with Google avatar */}
       <motion.button
         onClick={() => {
-          if (navigator.vibrate) navigator.vibrate(50);
+          triggerHaptic('light');
           navigate('/dashboard');
         }}
         whileTap={{ scale: 0.88 }}
