@@ -21,7 +21,7 @@ const PrecisionToast = ({ msg, onDone }) => (
   <motion.div initial={{ opacity: 0, y: 40, x: '-50%' }} animate={{ opacity: 1, y: 0, x: '-50%' }} exit={{ opacity: 0, y: 20, x: '-50%' }}
     style={{
       position: 'fixed', bottom: '100px', left: '50%', zIndex: 11000,
-      background: 'rgba(212, 175, 55, 0.95)', color: '#000', padding: '10px 24px',
+      background: 'rgba(212, 175, 55, 0.95)', color: 'var(--txt-on-gold)', padding: '10px 24px',
       borderRadius: '50px', fontWeight: 900, fontSize: '0.8rem', whiteSpace: 'nowrap',
       boxShadow: '0 10px 40px rgba(0,0,0,0.6)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.2)'
     }}
@@ -40,7 +40,7 @@ const HudSwitch = ({ icon: Icon, label, desc, active, onClick }) => (
       textAlign: 'left', color: '#fff', position: 'relative', overflow: 'hidden'
     }}
   >
-    <div style={{ width: '44px', height: '44px', borderRadius: '14px', background: active ? 'var(--gold)' : 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: active ? '#000' : 'var(--gold)' }}>
+    <div style={{ width: '44px', height: '44px', borderRadius: '14px', background: active ? 'var(--gold)' : 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: active ? 'var(--txt-on-gold)' : 'var(--gold)' }}>
       <Icon size={22} />
     </div>
     <div style={{ flex: 1 }}>
@@ -106,7 +106,7 @@ const LiquidCompass = ({ rotation }) => {
           </g>
 
           <circle cx="50" cy="50" r="4" fill="var(--gold)" />
-          <circle cx="50" cy="50" r="1.5" fill="#000" />
+          <circle cx="50" cy="50" r="1.5" fill="var(--txt-on-gold)" />
         </svg>
 
         <div style={{
@@ -223,7 +223,7 @@ export default function UnitConverter() {
           height: '60px', 
           borderRadius: '50%', 
           background: 'linear-gradient(135deg, var(--gold) 0%, #b9933a 100%)', 
-          color: '#000', 
+          color: 'var(--txt-on-gold)', 
           border: '2px solid rgba(255,255,255,0.2)', 
           boxShadow: '0 10px 40px rgba(0,0,0,0.6)', 
           cursor: 'pointer', 
@@ -304,12 +304,25 @@ export default function UnitConverter() {
                 </div>
                 {['C', '/', '*', 'DEL', '7', '8', '9', '-', '4', '5', '6', '+', '1', '2', '3', '%', '.', '0', 'H', '='].map(key => (
                   <button key={key} onClick={() => {
-                    if (key === '=') { try { const res = new Function('return ' + calcFormula.replace(/[^-()\d/*+.]/g, ''))(); setCalcDisplay(String(res)); setCalcFormula(String(res)); } catch { setCalcDisplay('ERR'); } return; }
+                    if (key === '=') { 
+                      try { 
+                        // Enhanced sanitization: Only allow numbers, basic operators, and decimals
+                        const sanitized = calcFormula.replace(/[^-()\d/*+.]/g, '');
+                        if (!sanitized) return;
+                        const res = new Function('return ' + sanitized)(); 
+                        const resultString = String(Number(res.toFixed(8)));
+                        setCalcDisplay(resultString); 
+                        setCalcFormula(resultString); 
+                      } catch { 
+                        setCalcDisplay('ERR'); 
+                      } 
+                      return; 
+                    }
                     if (key === 'C') { setCalcDisplay('0'); setCalcFormula(''); return; }
                     if (key === 'DEL') { setCalcDisplay(calcDisplay.length > 1 ? calcDisplay.slice(0, -1) : '0'); setCalcFormula(calcFormula.slice(0, -1)); return; }
                     const newDisp = calcDisplay === '0' ? key : calcDisplay + key;
                     setCalcDisplay(newDisp); setCalcFormula(calcFormula + key);
-                  }} style={{ padding: '18px 0', borderRadius: '20px', background: key === '=' ? 'var(--gold)' : 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', color: key === '=' ? '#000' : '#fff', fontSize: '1.25rem', fontWeight: 950 }}>{key}</button>
+                  }} style={{ padding: '18px 0', borderRadius: '20px', background: key === '=' ? 'var(--gold)' : 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', color: key === '=' ? 'var(--txt-on-gold)' : '#fff', fontSize: '1.25rem', fontWeight: 950 }}>{key}</button>
                 ))}
               </div>
             )}

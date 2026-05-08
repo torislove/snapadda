@@ -56,6 +56,14 @@ export const useGoogleMarketing = () => {
       }
     };
 
-    initializeMarketing();
+    const deferInitialization = () => {
+      if (window.requestIdleCallback) {
+        window.requestIdleCallback(() => initializeMarketing(), { timeout: 2000 });
+      } else {
+        setTimeout(initializeMarketing, 3000);
+      }
+    };
+
+    deferInitialization();
   }, []);
 };

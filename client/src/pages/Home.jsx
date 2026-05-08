@@ -501,7 +501,10 @@ export default function Home() {
                       {city.image ? (
                         <img 
                           src={city.image} 
-                          alt={city.name} 
+                          alt={`Real estate in ${city.name}`} 
+                          width="120"
+                          height="80"
+                          loading="lazy"
                           style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.6 }} 
                         />
                       ) : (
@@ -816,10 +819,10 @@ export default function Home() {
               <div className="footer-col"><h4>{t('footer.support')}</h4><a href={`mailto:${supportInfo?.email || 'info@snapadda.com'}`}>{supportInfo?.email || 'info@snapadda.com'}</a><a href={`tel:${supportPhone}`}>{supportInfo?.phone || '+91 93467 93364'}</a></div>
             </div>
             <div className="footer-legal-links">
-              <a href="/terms">Terms of Service</a>
-              <a href="/privacy">Privacy Policy</a>
-              <a href="/#contact">Contact Us</a>
-              <a href="/#about">About SnapAdda</a>
+              <Link to="/terms">Terms of Service</Link>
+              <Link to="/privacy">Privacy Policy</Link>
+              <Link to="/#contact">Contact Us</Link>
+              <Link to="/#about">About SnapAdda</Link>
             </div>
             <div className="footer-bottom"><span>© 2026 SnapAdda. {t('footer.rights')}</span></div>
           </div>

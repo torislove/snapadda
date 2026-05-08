@@ -289,8 +289,10 @@ const PropertyCard = memo(({
                       }
                     }}
                     src={displayImages[activeImgIdx % displayImages.length]} 
-                    alt={`${title}`} 
+                    alt={`View of ${title} in ${location}`} 
                     loading="lazy" 
+                    width="400"
+                    height="300"
                     style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', cursor: 'grab' }}
                     whileTap={{ cursor: 'grabbing' }}
                     onError={(e) => { e.currentTarget.style.display = 'none'; }}
