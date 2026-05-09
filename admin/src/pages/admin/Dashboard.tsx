@@ -252,6 +252,11 @@ const AdminDashboard = () => {
       sub: 'Trust Badge Assets', trend: 5, link: '/admin/properties',
     },
     {
+      title: 'Pending Submissions', value: stats?.pendingSubmissions || 0,
+      icon: Activity, color: '#f5c842',
+      sub: 'Awaiting Review', trend: 0, link: '/admin/properties',
+    },
+    {
       title: 'Total Likes', value: stats?.totalLikes || 0,
       icon: Heart, color: '#f5397b',
       sub: 'User Favorites', trend: 15, link: '/admin/properties',

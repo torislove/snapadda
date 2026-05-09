@@ -10,7 +10,31 @@
     <meta name="theme-color" content="#07070f" />
     
     <title>SnapAdda | Institutional Real Estate Discovery in Andhra Pradesh</title>
-    <meta name="description" content="SnapAdda is the premier institutional portal for verified residential and agricultural assets in Andhra Pradesh. High-precision discovery in Amaravati, Vijayawada, and Vizag hotspots." />
+    <meta name="description" content="SnapAdda is the premier institutional portal for verified residential and agricultural assets in Andhra Pradesh." />
+    
+    <!-- Critical CSS Inlined for 100/100 Score -->
+    <style>
+      :root {
+        --midnight: #05050a;
+        --gold: #e8b84b;
+        --txt-primary: #fcfaf7;
+        --bg-deep: #050a14;
+        --font-body: "Inter", system-ui, sans-serif;
+        --nav-h: 74px;
+      }
+      body {
+        margin: 0;
+        background: var(--bg-deep);
+        color: var(--txt-primary);
+        font-family: var(--font-body);
+        overflow-x: hidden;
+        min-height: 100vh;
+      }
+      #root { min-height: 100vh; }
+      .elite-skeleton { background: linear-gradient(90deg, #12121a 25%, #1a1a25 50%, #12121a 75%); background-size: 200% 100%; animation: loading 1.5s infinite; }
+      @keyframes loading { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+    </style>
+
     <meta name="keywords" content="Andhra Pradesh Real Estate, Institutional Plots, Vijayawada Investment, Amaravati Asset Discovery, CRDA Verified Plots" />
     <meta name="author" content="SnapAdda Enterprise" />
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -22,7 +46,7 @@
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://snapadda-7a6e6.web.app/">
     <meta property="og:title" content="SnapAdda Enterprise | AP Real Estate Authority">
-    <meta property="og:description" content="The standard for verified asset discovery in Andhra Pradesh. Access elite plots, villas, and commercial land with institutional trust.">
+    <meta property="og:description" content="The standard for verified asset discovery in Andhra Pradesh.">
     <meta property="og:image" content="https://snapadda-7a6e6.web.app/og-image.jpg">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="SnapAdda | AP Asset Intelligence">
@@ -30,7 +54,12 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://res.cloudinary.com">
+    
+    <!-- Preload Critical Fonts -->
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Outfit:wght@700;900&family=Inter:wght@400;700&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@700;900&family=Inter:wght@400;700&display=swap" media="print" onload="this.media='all'">
+    
     <link rel="canonical" href="https://snapadda-7a6e6.web.app/" />
   </head>
   <body>

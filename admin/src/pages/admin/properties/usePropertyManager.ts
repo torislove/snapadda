@@ -20,6 +20,7 @@ export const usePropertyManager = () => {
   const [agriAcres, setAgriAcres] = useState<number | string>('');
   const [search, setSearch] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'cards'>('cards');
+  const [realtorData, setRealtorData] = useState<any>({});
 
   useEffect(() => {
     loadProperties();
@@ -48,6 +49,7 @@ export const usePropertyManager = () => {
     setPriceUnit('Total');
     setPricePerAcreUnit('Total');
     setAgriAcres('');
+    setRealtorData({});
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -59,6 +61,7 @@ export const usePropertyManager = () => {
     const existing = prop.images || (prop.image ? [prop.image] : []);
     setCurrentImageUrls(existing);
     setLiveData(prop);
+    setRealtorData(prop.realtor || {});
     
     if (prop.price >= 10000000) setPriceUnit('Cr');
     else if (prop.price >= 100000) setPriceUnit('Lakhs');
@@ -190,6 +193,7 @@ export const usePropertyManager = () => {
         isFeatured,
         images: imagesList,
         image: imagesList.length > 0 ? imagesList[0] : '',
+        realtor: realtorData,  // include realtor info
         // Always set Active for new listings
         status: isEditing ? (propData.status || 'Active') : 'Active',
       };
@@ -262,6 +266,7 @@ export const usePropertyManager = () => {
       const updated = [...customFeatures];
       updated[index][key] = val;
       setCustomFeatures(updated);
-    }
+    },
+    realtorData, setRealtorData,
   };
 };

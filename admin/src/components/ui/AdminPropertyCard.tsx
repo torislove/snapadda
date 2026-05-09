@@ -71,6 +71,7 @@ export const AdminPropertyCard: React.FC<Props> = ({
   const [deleting, setDeleting] = useState(false);
   const [copying, setCopying] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
   const timerRef = useRef<any>(null);
 
   const id = prop._id || prop.id;
@@ -82,6 +83,13 @@ export const AdminPropertyCard: React.FC<Props> = ({
   const typeStyle = getTypeStyle(prop.type);
   const isAgri = ['agricultural land','farmhouse'].some(t => (prop.type||'').toLowerCase().includes(t));
   const isResidential = ['apartment', 'villa', 'independent house'].some(t => (prop.type || '').toLowerCase().includes(t));
+
+  const getOptimizedImg = (url: string, width = 400) => {
+    if (!url || !url.includes('cloudinary.com')) return url;
+    const parts = url.split('/upload/');
+    if (parts.length !== 2) return url;
+    return `${parts[0]}/upload/f_auto,q_auto:good,w_${width},c_fill/${parts[1]}`;
+  };
 
   const daysAgo = prop.createdAt
     ? Math.floor((Date.now() - new Date(prop.createdAt).getTime()) / 86400000)
@@ -117,6 +125,28 @@ export const AdminPropertyCard: React.FC<Props> = ({
     } catch(e) { console.error(e); }
     finally { setCopying(false); }
   }, [prop, copying, createProperty, loadProperties]);
+
+  const handleShareLink = useCallback(() => {
+    const url = `https://snapadda-7a6e6.web.app/property/${id}`;
+    navigator.clipboard.writeText(url).catch(() => {
+      const ta = document.createElement('textarea');
+      ta.value = url;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+    });
+    setLinkCopied(true);
+    setTimeout(() => setLinkCopied(false), 2000);
+  }, [id]);
+
+  const handleWhatsAppShare = useCallback(() => {
+    const url  = `https://snapadda-7a6e6.web.app/property/${id}`;
+    const code = prop.propertyCode || `SNA-${id.toString().slice(-5).toUpperCase()}`;
+    const price = fmt(prop.price);
+    const msg  = `🏠 *${prop.title}*\n📍 ${prop.location}, ${prop.district}\n🏷️ Code: *${code}*\n💰 Price: *${price}*\n\n🔗 View Full Details:\n${url}\n\n_Shared via SnapAdda – Andhra's Leading Property Platform_`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+  }, [id, prop]);
 
   const scoreColor = score >= 80 ? '#10d98c' : score >= 50 ? '#e8b84b' : '#f5397b';
   const isMobile = window.innerWidth <= 600;
@@ -164,20 +194,20 @@ export const AdminPropertyCard: React.FC<Props> = ({
 
       <motion.div
         layout
-        initial={{ opacity: 0, y: 16 }}
+        initial={{ opacity: 0, y: 0 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95 }}
+        transition={{ duration: 0.4, ease: 'easeOut' }}
         whileTap={{ scale: 0.98 }}
         style={{
           margin: isMobile ? '0 4px' : '0',
-          height: isMobile ? '460px' : '520px', // Slightly taller for Admin to fit actions
-          perspective: 1000
+          height: isMobile ? '460px' : '520px',
         }}
       >
         <HolographicWrapper
           intensity={1.5}
           iridescent={prop.isFeatured}
-          tilt={!isMobile}
+          tilt={false}
           style={{ height: '100%', borderRadius: isMobile ? 28 : 24 }}
         >
         <div style={{ 
@@ -196,13 +226,13 @@ export const AdminPropertyCard: React.FC<Props> = ({
           <div style={{ position: 'absolute', inset: 0, zIndex: 0 }} onMouseEnter={startCycle} onMouseLeave={stopCycle}>
             <AnimatePresence initial={false}>
               {imgs.length > 0 ? (
-                <motion.img key={imgIdx} src={imgs[imgIdx % imgs.length]}
+                <motion.img key={imgIdx} src={getOptimizedImg(imgs[imgIdx % imgs.length])}
                   initial={{ opacity: 0.8 }} animate={{ opacity: 1 }}
                   exit={{ opacity: 0.8 }} transition={{ duration: 0.25 }}
                   onClick={() => setLightbox(true)}
                   style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', cursor: 'pointer' }}
                   alt={prop.title}
-                  onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+                  onError={(e: any) => { e.currentTarget.style.display = 'none'; }} />
               ) : (
                 <div style={{ height: '100%', background: '#111', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', opacity: 0.5 }}>
                   <Building2 size={44} />
@@ -278,9 +308,43 @@ export const AdminPropertyCard: React.FC<Props> = ({
               </div>
             </div>
 
-            {/* Title */}
+            {/* Title + SNA Code */}
             <h3 style={{ fontFamily: 'var(--font-body)', fontSize: '1.05rem', fontWeight: 800, color: 'white', margin: '0 0 4px 0', lineHeight: 1.3, textShadow: '0 2px 4px rgba(0,0,0,0.8)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{prop.title}</h3>
             
+            {/* SNA Property Code with copy */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+              <span style={{ background: 'rgba(232,184,75,0.15)', border: '1px solid rgba(232,184,75,0.35)', color: '#e8b84b', padding: '3px 8px', borderRadius: '8px', fontSize: '0.62rem', fontWeight: 900, letterSpacing: '0.08em', fontFamily: 'monospace' }}>
+                {prop.propertyCode || `SNA-${id.toString().slice(-5).toUpperCase()}`}
+              </span>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const code = prop.propertyCode || `SNA-${id.toString().slice(-5).toUpperCase()}`;
+                  navigator.clipboard.writeText(code).catch(() => null);
+                }}
+                title="Copy property code"
+                style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', padding: '2px', display: 'flex', alignItems: 'center' }}
+              >
+                <Copy size={11} />
+              </button>
+            </div>
+            
+            {/* Realtor Badge */}
+            {prop.realtor?.name && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', padding: '6px 10px', background: 'rgba(255,255,255,0.04)', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.06)' }}>
+                {prop.realtor.photo ? (
+                  <img src={prop.realtor.photo} alt={prop.realtor.name} style={{ width: '24px', height: '24px', borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--gold)', flexShrink: 0 }} />
+                ) : (
+                  <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'linear-gradient(45deg,var(--gold),#f5c842)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '0.65rem', color: 'black', flexShrink: 0 }}>
+                    {prop.realtor.name.charAt(0)}
+                  </div>
+                )}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'white', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{prop.realtor.name}</div>
+                  {prop.realtor.agency && <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.4)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{prop.realtor.agency}</div>}
+                </div>
+              </div>
+            )}
             {/* Location & Meta */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'rgba(255,255,255,0.7)', fontSize: '0.8rem', textShadow: '0 1px 3px rgba(0,0,0,0.8)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
@@ -292,6 +356,7 @@ export const AdminPropertyCard: React.FC<Props> = ({
                 </div>
               )}
             </div>
+
 
             {/* Advanced Specs Grid */}
             <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '16px' }}>
@@ -313,7 +378,7 @@ export const AdminPropertyCard: React.FC<Props> = ({
                )}
             </div>
 
-            {/* Admin Actions Overlay Block */}
+            {/* Share Button Group */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '12px' }}>
               <Btn onClick={() => handleEdit(prop)} icon={<Edit3 size={13}/>} label="Edit" />
               
@@ -330,12 +395,33 @@ export const AdminPropertyCard: React.FC<Props> = ({
                 <Btn onClick={() => changeStatus('Active')} icon={<TrendingUp size={13}/>} label="Set Live"
                   color="rgba(232,184,75,0.1)" border="rgba(232,184,75,0.3)" textColor="#e8b84b" />
               )}
-              
+
+              {/* WhatsApp Share */}
+              <Btn
+                onClick={handleWhatsAppShare}
+                icon={<span style={{ fontSize: '13px' }}>📱</span>}
+                label="WA Share"
+                color="rgba(37,211,102,0.1)" border="rgba(37,211,102,0.35)" textColor="#25d366"
+              />
+
+              {/* Copy Link + Open Client — full width row */}
+              <button
+                onClick={handleShareLink}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+                  padding: '8px', background: linkCopied ? 'rgba(16,217,140,0.15)' : 'rgba(232,184,75,0.12)',
+                  border: `1px solid ${linkCopied ? 'rgba(16,217,140,0.4)' : 'rgba(232,184,75,0.3)'}`,
+                  borderRadius: 12, color: linkCopied ? '#10d98c' : '#e8b84b',
+                  fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer', backdropFilter: 'blur(10px)', transition: 'all 0.3s' }}
+              >
+                <Zap size={13} fill={linkCopied ? '#10d98c' : '#e8b84b'}/>
+                {linkCopied ? 'Copied!' : 'Copy Link'}
+              </button>
+
               <a href={`https://snapadda-7a6e6.web.app/property/${id}`} target="_blank" rel="noopener noreferrer"
-                style={{ gridColumn: 'span 2', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  gap: 5, padding: '8px', background: 'rgba(232,184,75,0.15)', border: '1px solid rgba(232,184,75,0.3)', backdropFilter: 'blur(10px)',
-                  borderRadius: 12, color: '#e8b84b', fontSize: '0.75rem', fontWeight: 800, textDecoration: 'none' }}>
-                <Zap size={14} fill="#e8b84b"/> View Live Listing
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  gap: 5, padding: '8px', background: 'rgba(34,217,224,0.1)', border: '1px solid rgba(34,217,224,0.3)',
+                  borderRadius: 12, color: '#22d9e0', fontSize: '0.75rem', fontWeight: 800, textDecoration: 'none' }}>
+                🖥 Client
               </a>
             </div>
           </div>

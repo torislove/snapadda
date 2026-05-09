@@ -117,6 +117,15 @@ export const getProperties = async (req, res) => {
     if (isGated === 'true') filter.isGated = true;
     if (subType) filter.subType = subType;
 
+    // Exclude specific property ID (used by similar properties feature)
+    const excludeId = req.query.exclude;
+    if (excludeId) {
+      try {
+        const mongoose = await import('mongoose');
+        filter._id = { $ne: new mongoose.default.Types.ObjectId(excludeId) };
+      } catch (_) { /* invalid id, skip */ }
+    }
+
     if (minPrice || maxPrice) {
       filter.price = {};
       if (minPrice) filter.price.$gte = Number(minPrice);
@@ -130,10 +139,9 @@ export const getProperties = async (req, res) => {
       const regexes = tokens.map(t => new RegExp(t, 'i'));
 
       filter.$or = [
-        { $text: { $search: safeSearch } },
         { location: { $regex: safeSearch, $options: 'i' } },
-        { district: { $regex: search, $options: 'i' } },
-        { title: { $regex: search, $options: 'i' } }
+        { district: { $regex: safeSearch, $options: 'i' } },
+        { title: { $regex: safeSearch, $options: 'i' } }
       ];
 
       if (tokens.length > 0) {
@@ -312,9 +320,29 @@ export const createProperty = async (req, res) => {
 // Get single property by ID
 export const getPropertyById = async (req, res) => {
   try {
-    const property = await Property.findById(req.params.id).populate('cityId');
+    const { userId } = req.query; // Optional: passed by client to get isLiked state
+
+    // Atomically increment view count (non-blocking, fire-and-forget)
+    const property = await Property.findByIdAndUpdate(
+      req.params.id,
+      { $inc: { viewCount: 1 } },
+      { new: true }
+    ).populate('cityId');
+
     if (!property) return res.status(404).json({ message: 'Property not found' });
-    res.status(200).json({ status: 'success', data: property });
+
+    // Compute isLiked for the requesting user
+    let isLiked = false;
+    if (userId) {
+      isLiked = property.likeLogs.some(
+        log => log.userId?.toString() === userId.toString()
+      );
+    }
+
+    const data = property.toObject();
+    data.isLiked = isLiked;
+
+    res.status(200).json({ status: 'success', data });
   } catch (error) {
     console.error('GET_PROPERTY_BY_ID_ERROR:', error);
     res.status(500).json({ status: 'error', message: error.message });
@@ -418,27 +446,35 @@ export const getSimilarProperties = async (req, res) => {
 export const likeProperty = async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user?.id || req.body.userId;
+    // Support both JWT middleware (req.user) and direct body (for lightweight auth)
+    const userId = (req.user?.id || req.user?._id || req.body.userId)?.toString();
     if (!userId) return res.status(401).json({ message: 'User not authenticated' });
 
     const property = await Property.findById(id);
     if (!property) return res.status(404).json({ message: 'Property not found' });
 
-    const likeIndex = property.likeLogs.findIndex(log => log.userId.toString() === userId.toString());
+    // String comparison — works for both MongoDB ObjectId AND Google Auth string UIDs
+    const likeIndex = property.likeLogs.findIndex(
+      log => log.userId?.toString() === userId
+    );
     
+    let liked;
     if (likeIndex > -1) {
-      // Unlike
+      // Unlike: remove the log entry
       property.likeLogs.splice(likeIndex, 1);
       property.likeCount = Math.max(0, property.likeCount - 1);
+      liked = false;
     } else {
-      // Like
-      property.likeLogs.push({ userId });
+      // Like: store userId as string
+      property.likeLogs.push({ userId: userId.toString() });
       property.likeCount += 1;
+      liked = true;
     }
 
     await property.save();
-    res.status(200).json({ status: 'success', data: { liked: likeIndex === -1, likeCount: property.likeCount } });
+    res.status(200).json({ status: 'success', data: { liked, likeCount: property.likeCount } });
   } catch (error) {
+    console.error('LIKE_PROPERTY_ERROR:', error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -498,5 +534,36 @@ export const getEngagementStats = async (req, res) => {
     res.status(200).json({ status: 'success', data: properties });
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+};
+
+export const publicSubmitProperty = async (req, res) => {
+  try {
+    const data = req.body;
+    const propertyData = {
+      ...data,
+      status: 'Pending',
+      verificationStatus: 'Draft',
+      isVerified: false,
+      isFeatured: false,
+      submissionMetadata: {
+        submittedAt: new Date(),
+        source: 'Public Portal',
+        posterName: data.posterName || 'Unknown',
+        posterPhone: data.posterPhone || 'Unknown'
+      }
+    };
+
+    const property = new Property(propertyData);
+    await property.save();
+    
+    res.status(201).json({
+      status: 'success',
+      message: 'Property submitted successfully. It will be live after admin review.',
+      data: { id: property._id }
+    });
+  } catch (err) {
+    console.error('PUBLIC_SUBMIT_ERROR:', err);
+    res.status(500).json({ status: 'error', message: err.message });
   }
 };

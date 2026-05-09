@@ -21,6 +21,7 @@ router.get('/stats', async (req, res) => {
     const verifiedCount = await Property.countDocuments({ isVerified: true });
     const activeCount = await Property.countDocuments({ status: 'Active' });
     const pendingInquiries = await Inquiry.countDocuments({ status: 'Pending' });
+    const pendingSubmissions = await Property.countDocuments({ status: 'Pending' });
 
     // Aggregate engagement stats
     const engagementStats = await Property.aggregate([
@@ -64,6 +65,7 @@ router.get('/stats', async (req, res) => {
         verifiedCount,
         activeCount,
         pendingInquiries,
+        pendingSubmissions,
         totalLikes,
         totalShares,
         recentProperties,

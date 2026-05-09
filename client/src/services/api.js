@@ -81,9 +81,10 @@ export const fetchNearbyProperties = async (lat, lng) => {
   }
 };
 
-export const fetchProperty = async (id) => {
+export const fetchProperty = async (id, userId) => {
   try {
-    const res = await safeFetch(`${API_BASE}/properties/${id}`);
+    const query = userId ? `?userId=${encodeURIComponent(userId)}` : '';
+    const res = await safeFetch(`${API_BASE}/properties/${id}${query}`);
     if (!res.ok) throw new Error(`Failed to fetch property: ${res.status}`);
     return await res.json();
   } catch (e) {
@@ -113,13 +114,43 @@ export const submitLead = async (data) => {
     const res = await fetch(`${API_BASE}/leads`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
+      body: JSON.stringify({
+        ...data,
+        source: data.source || 'Website', // tag where lead came from
+      }),
     });
     if (!res.ok) throw new Error(`Failed to submit lead: ${res.status}`);
     return await res.json();
   } catch (e) {
     console.error('API Error:', e);
     throw e;
+  }
+};
+
+export const addLeadNote = async (leadId, text, addedBy = 'Admin') => {
+  try {
+    const res = await fetch(`${API_BASE}/leads/${leadId}/notes`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, addedBy }),
+    });
+    if (!res.ok) throw new Error('Failed to add note');
+    return await res.json();
+  } catch (e) {
+    console.error('API Error (addLeadNote):', e);
+    throw e;
+  }
+};
+
+export const fetchLeadStats = async (franchiseId) => {
+  try {
+    const q = franchiseId ? `?franchiseId=${franchiseId}` : '';
+    const res = await safeFetch(`${API_BASE}/leads/stats${q}`);
+    if (!res.ok) return {};
+    return (await res.json()).data || {};
+  } catch (e) {
+    console.error('API Error (fetchLeadStats):', e);
+    return {};
   }
 };
 
@@ -385,3 +416,19 @@ export const notifyAIInteraction = async (payload) => {
     return { status: 'error' };
   }
 };
+
+export const submitProperty = async (data) => {
+  try {
+    const res = await fetch(`${API_BASE}/properties/public-submit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error(`Failed to submit property: ${res.status}`);
+    return await res.json();
+  } catch (e) {
+    console.error('API Error:', e);
+    throw e;
+  }
+};
+

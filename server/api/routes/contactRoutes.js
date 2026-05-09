@@ -8,24 +8,56 @@ const upload = multer({ storage: multer.memoryStorage() });
 // GET all contacts (with filters)
 router.get('/', async (req, res) => {
   try {
-    const { type, starred, search, district, tag } = req.query;
+    const { type, starred, search, district, tag, limit = 200, page = 1 } = req.query;
     let filter = {};
 
     if (type && type !== 'all') filter.type = type;
     if (starred === 'true') filter.isStarred = true;
-    if (district) filter.district = district;
+    if (district) filter.district = { $regex: district, $options: 'i' };
     if (tag) filter.tags = tag;
     if (search) {
       filter.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { phone: { $regex: search, $options: 'i' } },
+        { name:    { $regex: search, $options: 'i' } },
+        { phone:   { $regex: search, $options: 'i' } },
         { company: { $regex: search, $options: 'i' } },
-        { email: { $regex: search, $options: 'i' } }
+        { email:   { $regex: search, $options: 'i' } },
+        { realtorCode: { $regex: search, $options: 'i' } },
       ];
     }
 
-    const contacts = await Contact.find(filter).sort({ isStarred: -1, createdAt: -1 });
-    res.json({ status: 'success', data: contacts, count: contacts.length });
+    const limitNum = Math.min(500, Math.max(1, parseInt(limit)));
+    const pageNum  = Math.max(1, parseInt(page));
+    const skip     = (pageNum - 1) * limitNum;
+
+    const [contacts, total] = await Promise.all([
+      Contact.find(filter).sort({ isStarred: -1, createdAt: -1 }).skip(skip).limit(limitNum),
+      Contact.countDocuments(filter)
+    ]);
+    res.json({ status: 'success', data: contacts, count: total, page: pageNum });
+  } catch (err) {
+    res.status(500).json({ status: 'error', message: err.message });
+  }
+});
+
+// GET CRM Stats (for dashboard stats bar)
+router.get('/stats', async (req, res) => {
+  try {
+    const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const [realtors, clients, waTotal, newThisWeek] = await Promise.all([
+      Contact.countDocuments({ type: 'Realtor' }),
+      Contact.countDocuments({ type: 'Client' }),
+      Contact.aggregate([{ $group: { _id: null, total: { $sum: '$whatsappSent.count' } } }]),
+      Contact.countDocuments({ createdAt: { $gte: oneWeekAgo } })
+    ]);
+    res.json({
+      status: 'success',
+      data: {
+        realtors,
+        clients,
+        whatsappSent: waTotal[0]?.total || 0,
+        newThisWeek
+      }
+    });
   } catch (err) {
     res.status(500).json({ status: 'error', message: err.message });
   }
@@ -159,6 +191,23 @@ router.post('/:id/whatsapp', async (req, res) => {
     contact.whatsappSent.count = (contact.whatsappSent.count || 0) + 1;
     contact.whatsappSent.lastSent = new Date();
     await contact.save();
+    res.json({ status: 'success', data: contact });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// POST add note to contact
+router.post('/:id/notes', async (req, res) => {
+  try {
+    const { text, addedBy = 'Admin' } = req.body;
+    if (!text?.trim()) return res.status(400).json({ message: 'Note text required' });
+    const contact = await Contact.findByIdAndUpdate(
+      req.params.id,
+      { $push: { notes: { text: text.trim(), addedBy } }, $set: { lastContactedAt: new Date() } },
+      { new: true }
+    );
+    if (!contact) return res.status(404).json({ message: 'Contact not found' });
     res.json({ status: 'success', data: contact });
   } catch (err) {
     res.status(500).json({ message: err.message });

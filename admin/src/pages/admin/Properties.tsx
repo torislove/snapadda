@@ -5,9 +5,18 @@ import { AnimatePresence } from 'framer-motion';
 import { Plus } from 'lucide-react';
 import { formatSnapAddaPrice } from '../../utils/priceUtils';
 import { ConnectivityBanner } from '../../components/ui/ConnectivityBanner';
+import { fetchRealtors } from '../../services/api';
+import { useState, useEffect } from 'react';
 
 const AdminProperties = () => {
   const manager = usePropertyManager();
+  const [realtors, setRealtors] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetchRealtors()
+      .then(setRealtors)
+      .catch(() => setRealtors([]));
+  }, []);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
@@ -55,6 +64,7 @@ const AdminProperties = () => {
           <PropertyForm 
             {...manager} 
             formatPriceAdminLocal={formatSnapAddaPrice}
+            realtors={realtors}
           />
         ) : (
           <PropertiesList 

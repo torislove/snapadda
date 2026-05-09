@@ -9,7 +9,7 @@ import {
   Warehouse, Factory
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { fetchProperties, fetchCities, fetchTestimonials, fetchSetting } from '../services/api';
+import { fetchProperties, fetchCities, fetchTestimonials, fetchSetting, fetchPromotions } from '../services/api';
 import PropertyCard from '../components/PropertyCard';
 import ContactModal from '../components/ContactModal';
 import ClientReviews from '../components/ClientReviews';
@@ -159,6 +159,40 @@ function useTypewriter(words = [], speed = 100, pause = 2000) {
   return text;
 }
 
+const WhyMarquee = ({ cards }) => {
+  const [trackWidth, setTrackWidth] = useState(0);
+  const trackRef = useRef(null);
+
+  useEffect(() => {
+    if (trackRef.current) {
+      setTrackWidth(trackRef.current.scrollWidth / 2);
+    }
+  }, [cards]);
+
+  return (
+    <div className="why-marquee-container" style={{ overflow: 'hidden', padding: '2rem 0', position: 'relative' }}>
+      <div style={{ position: 'absolute', inset: 0, zIndex: 2, pointerEvents: 'none', background: 'linear-gradient(to right, var(--bg-deep) 0%, transparent 15%, transparent 85%, var(--bg-deep) 100%)' }} />
+      <motion.div 
+        ref={trackRef}
+        className="why-marquee-track"
+        animate={{ x: [0, -(trackWidth || 2000)] }}
+        transition={{ duration: 50, repeat: Infinity, ease: 'linear' }}
+        style={{ display: 'flex', gap: '2rem', width: 'max-content' }}
+        onHoverStart={(e) => { e.target.closest('.why-marquee-track').style.animationPlayState = 'paused'; }} // CSS is better for pause but this is JS
+      >
+        {[...cards, ...cards, ...cards].map((card, i) => (
+          <div key={i} className="why-card glass-premium"
+            style={{ width: '380px', padding: '2.5rem', borderRadius: '32px', border: '1px solid rgba(255,255,255,0.05)', background: 'rgba(10,12,20,0.4)', borderTop: `2px solid ${card.color}`, flexShrink: 0 }}>
+            <div style={{ color: card.color, marginBottom: '1.5rem', transform: 'scale(1.2)', transformOrigin: 'left' }}>{card.icon}</div>
+            <h3 style={{ fontSize: '1.4rem', marginBottom: '0.75rem', color: 'white' }}>{card.title}</h3>
+            <p style={{ color: 'var(--txt-secondary)', fontSize: '0.95rem', lineHeight: '1.6' }}>{card.desc}</p>
+          </div>
+        ))}
+      </motion.div>
+    </div>
+  );
+};
+
 function useScrolled(threshold = 20) {
   const [scrolled, setScrolled] = useState(false);
   useEffect(() => {
@@ -200,6 +234,7 @@ export default function Home() {
   const [filterOpen, setFilterOpen] = useState(false);
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const [apiError, setApiError] = useState(false);  
+  const [promotions, setPromotions] = useState([]);
   // Dynamic Settings
   const [heroContent, setHeroContent] = useState(null);
   const [siteStats, setSiteStats] = useState([]);
@@ -249,6 +284,9 @@ export default function Home() {
     fetchSetting('hero_content').then(setHeroContent).catch(console.error);
     fetchSetting('site_stats').then(setSiteStats).catch(console.error);
     fetchSetting('seo').then(setSeoData).catch(console.error);
+    fetchPromotions('segment=hero').then(d => {
+      setPromotions(d?.data || (Array.isArray(d) ? d : []));
+    }).catch(console.error);
   }, []);
 
   useEffect(() => {
@@ -351,9 +389,33 @@ export default function Home() {
     return t.includes('agricultural') || t.includes('farm') || t.includes('acre') || t.includes('land');
   }).slice(0, 8), [properties]);
 
+  const commercial = useMemo(() => properties.filter(p => {
+    const t = (p.type || '').toLowerCase();
+    return t.includes('commercial') || t.includes('office') || t.includes('showroom') || t.includes('industrial') || t.includes('warehouse') || t.includes('factory');
+  }).slice(0, 8), [properties]);
+
   const latestListings = useMemo(() => {
     return [...properties].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 10);
   }, [properties]);
+
+  const recommended = useMemo(() => {
+    // Exclude ones already shown in top sections to avoid duplicates
+    const shownIds = new Set([
+      ...latestListings.map(p => p._id),
+      ...villas.map(p => p._id),
+      ...apartments.map(p => p._id),
+      ...plots.map(p => p._id),
+      ...agri.map(p => p._id),
+      ...commercial.map(p => p._id)
+    ]);
+    return properties.filter(p => !shownIds.has(p._id)).slice(0, 12);
+  }, [properties, latestListings, villas, apartments, plots, agri, commercial]);
+
+  const optimizedBg = useMemo(() => {
+    const url = appearance?.bgUrl;
+    if (!url || !url.includes('cloudinary')) return url;
+    return url.replace('/upload/', '/upload/q_auto,f_auto,w_1920/');
+  }, [appearance?.bgUrl]);
 
   return (
     <>
@@ -363,8 +425,8 @@ export default function Home() {
         style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: 'var(--bg-deep)', '--brand-primary': appearance?.primaryColor || '#e8b84b', '--brand-glow': (appearance?.primaryColor || '#e8b84b') + '44' }}
       >
 
-      {appearance?.bgUrl
-        ? <div className="site-bg-overlay" style={{ backgroundImage: `url(${appearance.bgUrl})`, opacity: 0.22, position: 'fixed', inset: 0, backgroundSize: 'cover', zIndex: 0 }} />
+      {optimizedBg
+        ? <div className="site-bg-overlay" style={{ backgroundImage: `url(${optimizedBg})`, opacity: 0.22, position: 'fixed', inset: 0, backgroundSize: 'cover', zIndex: 0 }} />
         : <div className="animated-bg" style={{ position: 'fixed', inset: 0, zIndex: 0, background: 'radial-gradient(ellipse at 20% 50%, rgba(10,80,40,0.08) 0%, transparent 60%), radial-gradient(ellipse at 80% 20%, rgba(130,60,0,0.08) 0%, transparent 60%), var(--bg-deep)' }} />
       }
 
@@ -374,7 +436,7 @@ export default function Home() {
         <section className="promo-section-top">
           <div className="container">
             <div className="promo-header-label"><Zap size={13} /> Featured Promotions &amp; Offers</div>
-            <PromoCarousel />
+            <PromoCarousel promotions={promotions} />
           </div>
         </section>
 
@@ -671,6 +733,14 @@ export default function Home() {
           </div>
         </section>
 
+        <section style={{ padding: '4rem 0', background: 'rgba(255,255,255,0.01)', overflow: 'hidden' }}>
+          <div className="container">
+            <h2 className="section-title" style={{ textAlign: 'center', marginBottom: '1rem' }}>{t('why.title', 'Why Choose SnapAdda?')}</h2>
+            <p style={{ textAlign: 'center', color: 'var(--txt-secondary)', marginBottom: '3rem' }}>Institutional Excellence in Every Transaction</p>
+          </div>
+          <WhyMarquee cards={WHY_CARDS(t)} />
+        </section>
+
 
 
 
@@ -766,10 +836,41 @@ export default function Home() {
             type="Agriculture"
             loading={loading}
           />
+
+          <HorizontalPropertySection 
+            title="కమర్షియల్ & ఇండస్ట్రియల్ (Commercial & Industrial)" 
+            eyebrow="Business Assets" 
+            properties={commercial} 
+            type="Commercial"
+            loading={loading}
+          />
         </section>
 
+        {recommended.length > 0 && (
+          <section className="section-wrap">
+            <div className="container">
+              <div className="section-head">
+                <div className="section-eyebrow">Handpicked</div>
+                <h2 className="section-title" style={{ color: 'white' }}>మీ కోసం సిఫార్సు చేయబడినవి (Recommended for You)</h2>
+              </div>
+              <div className="properties-grid">
+                {recommended.map((p, i) => (
+                  <motion.div key={`rec-${p._id}`} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: (i % 3) * 0.1 }}>
+                    <PropertyCard {...p} />
+                  </motion.div>
+                ))}
+              </div>
+              <div style={{ textAlign: 'center', marginTop: '3rem' }}>
+                <button onClick={() => navigate('/search')} className="hero-btn hero-btn-glass" style={{ padding: '1rem 3rem' }}>
+                  VIEW ALL {properties.length} PROPERTIES <ArrowRight size={18} style={{ marginLeft: '8px' }} />
+                </button>
+              </div>
+            </div>
+          </section>
+        )}
+
         <div className="container" style={{ marginTop: '2rem', marginBottom: '2rem' }}>
-          <ClientReviews />
+          <ClientReviews testimonials={testimonials} />
         </div>
 
         <section className="stats-band">
@@ -829,54 +930,23 @@ export default function Home() {
         </footer>
       </main>
 
-      <div className="mobile-sticky-quick-contact" style={{ 
-        display: 'none', 
-        gap: '0.75rem', 
-        padding: '1rem', 
-        background: 'rgba(7,7,15,0.95)', 
-        backdropFilter: 'blur(20px)', 
-        borderTop: '1px solid rgba(255,255,255,0.1)',
-        position: 'fixed',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        zIndex: 1000,
-        pointerEvents: 'none'
-      }}>
-        <a href={`tel:${supportPhone}`} className="hero-btn hero-btn-primary pulse-primary btn-3d" style={{ flex: 1, padding: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', pointerEvents: 'auto' }}>
-          <Phone size={18} style={{ marginRight: '8px' }} /> CALL NOW
-        </a>
-        <a href={`https://wa.me/${supportWA}?text=Hello,%20I'm%20looking%20for%20assistance.`} className="hero-btn hero-btn-whatsapp pulse-green btn-3d-emerald" style={{ flex: 1, textDecoration: 'none', background: '#25D366', padding: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', pointerEvents: 'auto' }}>
-          <MessageSquare size={18} style={{ marginRight: '8px' }} /> WHATSAPP
-        </a>
-      </div>
-
-      <style>{`
-        @media (max-width: 768px) {
-          .mobile-sticky-quick-contact {
-            display: flex !important;
-            bottom: calc(64px + env(safe-area-inset-bottom, 0px)) !important;
-          }
-        }
-      `}</style>
-
-      <FilterSidebar isOpen={filterOpen} onClose={() => setFilterOpen(false)} filters={advFilters} setFilters={setAdvFilters} onApply={() => {
-        const params = new URLSearchParams();
-        if (keyword) params.set('keyword', keyword);
-        if (intent && intent !== 'Any') params.set('purpose', intent);
-        if (budget && budget !== '999999999') params.set('maxPrice', budget);
-        if (cityFilter) params.set('city', cityFilter);
-        if (advFilters.propertyType && advFilters.propertyType !== 'All') params.set('type', advFilters.propertyType);
-        if (advFilters.bhk) params.set('bhk', advFilters.bhk);
-        if (advFilters.minPrice) params.set('minPrice', advFilters.minPrice);
-        if (advFilters.maxPrice) params.set('maxPrice', advFilters.maxPrice);
-        if (advFilters.facing && advFilters.facing !== 'Any') params.set('facing', advFilters.facing);
-        if (advFilters.approval && advFilters.approval !== 'All') params.set('approval', advFilters.approval);
-        if (advFilters.verified) params.set('verified', 'true');
-        navigate(`/search?${params.toString()}`);
-        setFilterOpen(false);
-      }} />
-      <ContactModal isOpen={modalOpen} onClose={() => setModalOpen(false)} type={modalType} />
+        <FilterSidebar isOpen={filterOpen} onClose={() => setFilterOpen(false)} filters={advFilters} setFilters={setAdvFilters} onApply={() => {
+          const params = new URLSearchParams();
+          if (keyword) params.set('keyword', keyword);
+          if (intent && intent !== 'Any') params.set('purpose', intent);
+          if (budget && budget !== '999999999') params.set('maxPrice', budget);
+          if (cityFilter) params.set('city', cityFilter);
+          if (advFilters.propertyType && advFilters.propertyType !== 'All') params.set('type', advFilters.propertyType);
+          if (advFilters.bhk) params.set('bhk', advFilters.bhk);
+          if (advFilters.minPrice) params.set('minPrice', advFilters.minPrice);
+          if (advFilters.maxPrice) params.set('maxPrice', advFilters.maxPrice);
+          if (advFilters.facing && advFilters.facing !== 'Any') params.set('facing', advFilters.facing);
+          if (advFilters.approval && advFilters.approval !== 'All') params.set('approval', advFilters.approval);
+          if (advFilters.verified) params.set('verified', 'true');
+          navigate(`/search?${params.toString()}`);
+          setFilterOpen(false);
+        }} />
+        <ContactModal isOpen={modalOpen} onClose={() => setModalOpen(false)} type={modalType} />
       </div>
     </>
   );

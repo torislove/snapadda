@@ -1,15 +1,19 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Star, Phone, Mail, Search, Upload, Plus, Trash2, Edit3, MessageCircle, X, Building2, User, Filter, FileSpreadsheet, Check } from 'lucide-react';
+import { Star, Phone, Mail, Search, Upload, Plus, Trash2, Edit3, MessageCircle, X, Building2, User, Filter, FileSpreadsheet, Check, StickyNote, Share2 } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { ConnectivityBanner } from '../../components/ui/ConnectivityBanner';
+import { fetchContactStats, updateContact, addContactNote } from '../../services/api';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 type Contact = {
   _id: string; name: string; phone: string; email: string; type: 'Realtor' | 'Client';
-  company: string; location: string; district: string; notes: string; isStarred: boolean;
-  tags: string[]; source: string; whatsappSent: { count: number; lastSent?: string };
+  company: string; location: string; district: string;
+  notes: { text: string; addedAt: string; addedBy: string }[];
+  isStarred: boolean; tags: string[]; source: string;
+  whatsappSent: { count: number; lastSent?: string };
+  realtorCode: string; licenseNo: string; photo: string;
   createdAt: string;
 };
 
@@ -109,7 +113,14 @@ const ContactCard = ({ contact, onStar, onDelete, onWhatsApp, onEdit }: {
         <MessageCircle size={13} /> WhatsApp
       </Button>
       <Button size="sm" variant="outline" onClick={onEdit} style={{ fontSize: '0.78rem' }}>
-        <Edit3 size={13} />
+        <Edit3 size={14} />
+      </Button>
+      <Button size="sm" variant="outline" onClick={() => {
+        const text = `👤 *${contact.name}*\n📞 ${contact.phone}\n📧 ${contact.email || 'N/A'}\n🏢 ${contact.company || 'N/A'}\n📍 ${contact.location || 'N/A'}\n\n_Shared via SnapAdda CRM_`;
+        navigator.clipboard.writeText(text);
+        alert('Contact details copied to clipboard!');
+      }} style={{ fontSize: '0.78rem' }}>
+        <Share2 size={13} />
       </Button>
       <Button size="sm" variant="ghost" onClick={onDelete} style={{ color: 'var(--error)', fontSize: '0.78rem' }}>
         <Trash2 size={13} />
@@ -126,12 +137,23 @@ const AdminContacts = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [uploadResult, setUploadResult] = useState<string | null>(null);
+  const [editingContact, setEditingContact] = useState<Contact | null>(null);
+  const [waContact, setWaContact] = useState<Contact | null>(null);
+  const [waProperty, setWaProperty] = useState('');
+  const [waProperties, setWaProperties] = useState<any[]>([]);
+  const [noteText, setNoteText] = useState('');
+  const [stats, setStats] = useState({ realtors: 0, clients: 0, whatsappSent: 0, newThisWeek: 0 });
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
     name: '', phone: '', email: '', type: 'Client' as 'Realtor' | 'Client',
-    company: '', location: '', district: '', notes: '', tags: ''
+    company: '', location: '', district: '', tags: ''
   });
+
+  useEffect(() => {
+    fetchContactStats().then(setStats).catch(() => {});
+    fetch(`${API_URL}/properties?limit=100`).then(r => r.json()).then(d => setWaProperties(d?.data || [])).catch(() => {});
+  }, []);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { fetchContacts(); }, [filter, searchQuery]);
@@ -159,23 +181,40 @@ const AdminContacts = () => {
     fetchContacts();
   };
 
-  const handleWhatsApp = async (contact: Contact) => {
-    const msg = `Hi ${contact.name}, this is SnapAdda Real Estate. We have some excellent property listings in your area. Would you like to see the details?`;
-    window.open(`https://wa.me/${contact.phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(msg)}`, '_blank');
-    // Log the WhatsApp send
-    await fetch(`${API_URL}/contacts/${contact._id}/whatsapp`, { method: 'POST' });
-    fetchContacts();
-  };
-
   const handleAddContact = async (e: React.FormEvent) => {
     e.preventDefault();
-    const payload = { ...formData, tags: formData.tags ? formData.tags.split(',').map(t => t.trim()) : [] };
+    const payload = { ...formData, tags: formData.tags ? formData.tags.split(',').map((t: string) => t.trim()) : [] };
     await fetch(`${API_URL}/contacts`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
     setShowAddModal(false);
-    setFormData({ name: '', phone: '', email: '', type: 'Client', company: '', location: '', district: '', notes: '', tags: '' });
+    setFormData({ name: '', phone: '', email: '', type: 'Client', company: '', location: '', district: '', tags: '' });
+    fetchContactStats().then(setStats).catch(() => {});
+    fetchContacts();
+  };
+
+  const handleEditSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingContact) return;
+    await updateContact(editingContact._id, editingContact);
+    setEditingContact(null);
+    fetchContacts();
+  };
+
+  const handleWAWithProperty = async (contact: Contact) => {
+    const prop = waProperties.find((p: any) => (p._id || p.id) === waProperty);
+    const propTitle = prop ? prop.title : '';
+    const propCode  = prop ? (prop.propertyCode || `SNA-${(prop._id||'').slice(-5).toUpperCase()}`) : '';
+    const propPrice = prop ? (prop.price >= 10000000 ? `₹${(prop.price/10000000).toFixed(2)} Cr` : prop.price >= 100000 ? `₹${(prop.price/100000).toFixed(1)} L` : `₹${prop.price?.toLocaleString('en-IN')}`) : '';
+    const propLink  = prop ? `https://snapadda-7a6e6.web.app/property/${prop._id || prop.id}` : '';
+    const msg = propTitle
+      ? `Hi ${contact.name}, I have an excellent property for you!\n\n🏠 *${propTitle}*\n🏷️ Code: *${propCode}*\n💰 Price: *${propPrice}*\n\n🔗 View: ${propLink}\n\n_SnapAdda – Andhra's Leading Property Platform_`
+      : `Hi ${contact.name}, this is SnapAdda Real Estate. We have excellent listings in your area. Would you like details?`;
+    window.open(`https://wa.me/${contact.phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(msg)}`, '_blank');
+    await fetch(`${API_URL}/contacts/${contact._id}/whatsapp`, { method: 'POST' });
+    setWaContact(null);
+    setWaProperty('');
     fetchContacts();
   };
 
@@ -205,6 +244,23 @@ const AdminContacts = () => {
   return (
     <div>
       <ConnectivityBanner />
+
+      {/* Stats Bar */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(140px,1fr))', gap: '12px', marginBottom: '1.5rem' }}>
+        {[
+          { label: 'Realtors', value: stats.realtors, color: 'var(--accent-gold)', icon: '🏢' },
+          { label: 'Clients', value: stats.clients, color: '#5b7ea1', icon: '👤' },
+          { label: 'WA Sent', value: stats.whatsappSent, color: '#25D366', icon: '💬' },
+          { label: 'New This Week', value: stats.newThisWeek, color: 'var(--emerald)', icon: '✨' },
+        ].map(s => (
+          <div key={s.label} style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', padding: '16px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <div style={{ fontSize: '1.4rem' }}>{s.icon}</div>
+            <div style={{ fontSize: '1.5rem', fontWeight: 900, color: s.color }}>{s.value}</div>
+            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600 }}>{s.label}</div>
+          </div>
+        ))}
+      </div>
+
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: 'var(--spacing-xl)' }}>
         <h1>CRM Contacts</h1>
@@ -274,8 +330,8 @@ const AdminContacts = () => {
                 key={c._id} contact={c}
                 onStar={() => handleStar(c._id)}
                 onDelete={() => handleDelete(c._id)}
-                onWhatsApp={() => handleWhatsApp(c)}
-                onEdit={() => {/* TODO: edit modal */}}
+                onWhatsApp={() => { setWaContact(c); setWaProperty(''); }}
+                onEdit={() => setEditingContact({ ...c })}
               />
             ))}
           </AnimatePresence>
@@ -326,7 +382,6 @@ const AdminContacts = () => {
                 <input placeholder="District" value={formData.district} onChange={e => setFormData(p => ({ ...p, district: e.target.value }))} style={{ flex: 1 }} />
               </div>
               <input placeholder="Tags (comma separated)" value={formData.tags} onChange={e => setFormData(p => ({ ...p, tags: e.target.value }))} />
-              <textarea placeholder="Notes" value={formData.notes} onChange={e => setFormData(p => ({ ...p, notes: e.target.value }))} rows={3} />
               <Button type="submit" style={{ width: '100%' }}>
                 <Check size={16} /> Save Contact
               </Button>
@@ -384,6 +439,81 @@ const AdminContacts = () => {
             <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '16px' }}>
               Auto-detects columns like: Name, Phone/Mobile, Email, Type/Category, Company, Location, District
             </p>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Edit Contact Modal */}
+      {editingContact && (
+        <div style={{ position:'fixed',inset:0,background:'rgba(0,0,0,0.75)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:1000,padding:'20px' }}>
+          <motion.div initial={{opacity:0,scale:0.9}} animate={{opacity:1,scale:1}}
+            style={{ background:'var(--bg-secondary)',borderRadius:'var(--radius-lg)',padding:'32px',maxWidth:'500px',width:'100%',border:'1px solid var(--border-subtle)',maxHeight:'85vh',overflowY:'auto' }}>
+            <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'20px' }}>
+              <h2 style={{ margin:0 }}>Edit Contact</h2>
+              <button onClick={() => setEditingContact(null)} style={{ background:'none',border:'none',color:'var(--text-muted)',cursor:'pointer' }}><X size={20}/></button>
+            </div>
+            <form onSubmit={handleEditSave} style={{ display:'flex',flexDirection:'column',gap:'12px' }}>
+              <input placeholder="Name" required value={editingContact.name} onChange={e => setEditingContact(p => p ? {...p,name:e.target.value} : p)} />
+              <input placeholder="Phone" required value={editingContact.phone} onChange={e => setEditingContact(p => p ? {...p,phone:e.target.value} : p)} />
+              <input placeholder="Email" value={editingContact.email||''} onChange={e => setEditingContact(p => p ? {...p,email:e.target.value} : p)} />
+              <input placeholder="Company / Agency" value={editingContact.company||''} onChange={e => setEditingContact(p => p ? {...p,company:e.target.value} : p)} />
+              <div style={{ display:'flex',gap:'8px' }}>
+                <input placeholder="Location" value={editingContact.location||''} onChange={e => setEditingContact(p => p ? {...p,location:e.target.value} : p)} style={{ flex:1 }} />
+                <input placeholder="District" value={editingContact.district||''} onChange={e => setEditingContact(p => p ? {...p,district:e.target.value} : p)} style={{ flex:1 }} />
+              </div>
+              <input placeholder="RERA License" value={editingContact.licenseNo||''} onChange={e => setEditingContact(p => p ? {...p,licenseNo:e.target.value} : p)} />
+              <input placeholder="Realtor Code" value={editingContact.realtorCode||''} onChange={e => setEditingContact(p => p ? {...p,realtorCode:e.target.value} : p)} />
+              {/* Notes thread */}
+              {(editingContact.notes||[]).length > 0 && (
+                <div style={{ background:'var(--bg-tertiary)',borderRadius:'10px',padding:'12px',maxHeight:'150px',overflowY:'auto',display:'flex',flexDirection:'column',gap:'8px' }}>
+                  {editingContact.notes.map((n,i) => (
+                    <div key={i} style={{ fontSize:'0.78rem',color:'var(--text-secondary)',borderBottom:'1px solid var(--border-subtle)',paddingBottom:'6px' }}>
+                      <span style={{ fontWeight:700,color:'var(--text-primary)' }}>{n.addedBy}</span>: {n.text}
+                      <span style={{ marginLeft:'8px',color:'var(--text-muted)',fontSize:'0.68rem' }}>{new Date(n.addedAt).toLocaleDateString()}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div style={{ display:'flex',gap:'8px' }}>
+                <input placeholder="Add note..." value={noteText} onChange={e => setNoteText(e.target.value)} style={{ flex:1 }}
+                  onKeyDown={e => { if(e.key==='Enter'){ e.preventDefault(); if(noteText.trim()){ addContactNote(editingContact._id,noteText).then(()=>setNoteText('')); }}}} />
+                <Button type="button" size="sm" onClick={() => { if(noteText.trim()){ addContactNote(editingContact._id,noteText).then(()=>setNoteText('')); }}}><StickyNote size={14}/></Button>
+              </div>
+              <Button type="submit" style={{ width:'100%' }}><Check size={16}/> Save Changes</Button>
+            </form>
+          </motion.div>
+        </div>
+      )}
+
+      {/* WhatsApp + Property Modal */}
+      {waContact && (
+        <div style={{ position:'fixed',inset:0,background:'rgba(0,0,0,0.75)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:1000,padding:'20px' }}>
+          <motion.div initial={{opacity:0,scale:0.9}} animate={{opacity:1,scale:1}}
+            style={{ background:'var(--bg-secondary)',borderRadius:'var(--radius-lg)',padding:'32px',maxWidth:'480px',width:'100%',border:'1px solid var(--border-subtle)' }}>
+            <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'20px' }}>
+              <h2 style={{ margin:0,fontSize:'1.1rem' }}>📱 WhatsApp to {waContact.name}</h2>
+              <button onClick={() => setWaContact(null)} style={{ background:'none',border:'none',color:'var(--text-muted)',cursor:'pointer' }}><X size={20}/></button>
+            </div>
+            <div style={{ display:'flex',flexDirection:'column',gap:'14px' }}>
+              <div>
+                <label style={{ fontSize:'0.75rem',fontWeight:700,color:'var(--text-muted)',display:'block',marginBottom:'6px' }}>ATTACH PROPERTY (OPTIONAL)</label>
+                <select value={waProperty} onChange={e => setWaProperty(e.target.value)}
+                  style={{ width:'100%',background:'var(--bg-tertiary)',border:'1px solid var(--border-subtle)',color:'var(--text-primary)',borderRadius:'10px',padding:'10px',fontSize:'0.85rem' }}>
+                  <option value="">-- Generic greeting --</option>
+                  {waProperties.map((p:any) => (
+                    <option key={p._id||p.id} value={p._id||p.id}>{p.title} · {p.location}</option>
+                  ))}
+                </select>
+              </div>
+              {waProperty && (() => { const p = waProperties.find((x:any)=>(x._id||x.id)===waProperty); return p ? (
+                <div style={{ padding:'10px 14px',background:'rgba(37,211,102,0.06)',border:'1px solid rgba(37,211,102,0.2)',borderRadius:'10px',fontSize:'0.78rem',color:'var(--text-secondary)' }}>
+                  ✅ <strong style={{ color:'white' }}>{p.title}</strong> · {p.location} · {p.price >= 10000000 ? `₹${(p.price/10000000).toFixed(2)} Cr` : `₹${(p.price/100000).toFixed(1)} L`}
+                </div>
+              ) : null; })()}
+              <Button onClick={() => handleWAWithProperty(waContact)} style={{ width:'100%',background:'#25D366',borderColor:'#25D366',color:'white',fontWeight:800 }}>
+                <MessageCircle size={16}/> Send on WhatsApp
+              </Button>
+            </div>
           </motion.div>
         </div>
       )}

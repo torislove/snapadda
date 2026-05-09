@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MapPin, Phone, User, LogOut, LayoutDashboard, Building2, Globe, ChevronDown, UserCircle2 } from 'lucide-react';
+import { MapPin, Phone, User, LogOut, LayoutDashboard, Building2, Globe, ChevronDown, UserCircle2, PlusCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import Logo from './Logo';
@@ -133,6 +133,7 @@ export default function Header() {
 
   const navLinks = [
     { label: t('nav.properties', 'Browse'), path: '/#properties', icon: <Building2 size={18} /> },
+    { label: t('nav.post', 'Post Property'), path: '/post-property', icon: <PlusCircle size={18} /> },
     { label: t('nav.locations', 'Locations'), path: '/#cities', icon: <MapPin size={18} /> },
     { label: t('nav.callback', 'VIP Callback'), path: '/request-callback', icon: <Phone size={18} /> },
   ];

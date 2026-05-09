@@ -48,15 +48,14 @@ const HolographicWrapper: React.FC<Props> = ({
   };
 
   useEffect(() => {
+    if (!tilt) return; // skip when tilt disabled — saves battery
+
     const handleOrientation = (e: DeviceOrientationEvent) => {
-      if (!tilt) return;
-      const gamma = e.gamma || 0; 
-      const beta = e.beta || 0;   
-      
+      const gamma = e.gamma || 0;
+      const beta = e.beta || 0;
       x.set(Math.min(Math.max(gamma / 30, -0.5), 0.5));
       y.set(Math.min(Math.max((beta - 45) / 30, -0.5), 0.5));
     };
-
     window.addEventListener('deviceorientation', handleOrientation);
     return () => window.removeEventListener('deviceorientation', handleOrientation);
   }, [tilt, x, y]);
@@ -64,14 +63,12 @@ const HolographicWrapper: React.FC<Props> = ({
   return (
     <motion.div
       ref={containerRef}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
+      onMouseMove={tilt ? handleMouseMove : undefined}
+      onMouseLeave={tilt ? handleMouseLeave : undefined}
       className={`holographic-container ${className}`}
       style={{
         ...style,
-        rotateX: tilt ? rotateX : 0,
-        rotateY: tilt ? rotateY : 0,
-        transformStyle: "preserve-3d",
+        ...(tilt ? { rotateX, rotateY, transformStyle: 'preserve-3d' as const } : {}),
       }}
     >
       <div className="holographic-card-bg" />

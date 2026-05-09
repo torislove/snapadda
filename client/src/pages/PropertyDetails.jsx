@@ -80,6 +80,7 @@ export default function PropertyDetails() {
   const [lightbox, setLightbox] = useState(false);
   const [similar, setSimilar] = useState([]);
   const [toast, setToast] = useState('');
+  const [shareModal, setShareModal] = useState(false);
   const galleryRef = useRef(null);
 
   // Q&A
@@ -89,12 +90,20 @@ export default function PropertyDetails() {
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
 
+  // Utility: robustly extract userId from any auth shape (Email or Google)
+  const getUserId = (u) => {
+    if (!u) return null;
+    const inner = u.user || u;
+    return (inner._id || inner.id || inner.uid)?.toString() || null;
+  };
+
   useEffect(() => {
     if (!id) return;
     setLoading(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
-    fetchProperty(id)
+    const uid = getUserId(user);
+    fetchProperty(id, uid)
       .then(res => {
         const data = res.data || res;
         setProperty(data);
@@ -179,37 +188,71 @@ export default function PropertyDetails() {
 
   const handleLike = async () => {
     if (!user) { navigate('/login', { state: { from: window.location.pathname } }); return; }
+    // Optimistic update
+    const wasLiked = liked;
+    const prevCount = likeCount;
+    setLiked(!wasLiked);
+    setLikeCount(c => wasLiked ? Math.max(0, c - 1) : c + 1);
     try {
-      const res = await likeProperty(id, user._id || user.id);
+      const uid = getUserId(user);
+      const res = await likeProperty(id, uid);
       if (res.status === 'success') {
         setLiked(res.data.liked);
         setLikeCount(res.data.likeCount);
         showToast(res.data.liked ? '❤️ సేవ్ చేయబడింది!' : '💔 తీసివేయబడింది');
+      } else {
+        // Rollback
+        setLiked(wasLiked); setLikeCount(prevCount);
+        showToast('⚠️ మళ్ళీ ప్రయత్నించండి');
       }
-    } catch { showToast('⚠️ మళ్ళీ ప్రయత్నించండి'); }
+    } catch {
+      setLiked(wasLiked); setLikeCount(prevCount);
+      showToast('⚠️ నెట్‌వర్క్ లోపం');
+    }
   };
 
-  const handleShare = async () => {
-    const url = window.location.href;
-    const shareText = `Check out this ${property?.type} in ${property?.location} on SnapAdda.\n\nPrice: ${formatSnapAddaPrice(displayPrice)}\n\nView details:`;
-    
-    try {
-      if (navigator.share) {
-        await navigator.share({ 
-          title: `SnapAdda: ${property?.title}`, 
-          text: shareText, 
-          url 
-        });
-        shareProperty(id, 'native', user?._id);
-      } else {
-        await navigator.clipboard.writeText(`${shareText} ${url}`);
-        showToast('🔗 వివరాలు కాపీ చేయబడ్డాయి!');
-        shareProperty(id, 'clipboard', user?._id);
-      }
-    } catch { 
-      await navigator.clipboard.writeText(url);
-      showToast('🔗 లింక్ కాపీ చేయబడింది!'); 
+  // Share helpers
+  const getShareUrl  = () => window.location.href;
+  const getShareText = () => {
+    const price = (isAgri && agriTotalValue > 0) ? agriTotalValue : property?.price;
+    const code  = property?.propertyCode || '';
+    return `🏠 *${property?.title}*\n📍 ${property?.location}, ${property?.district || ''}\n🏷️ Code: *${code}*\n💰 ${formatSnapAddaPrice(price)}\n\n🔗 ${getShareUrl()}\n\n_SnapAdda – Andhra's Leading Property Platform_`;
+  };
+
+  const handleShare = () => setShareModal(true);
+
+  const handleShareWhatsApp = () => {
+    window.open(`https://wa.me/?text=${encodeURIComponent(getShareText())}`, '_blank');
+    shareProperty(id, 'whatsapp', getUserId(user));
+    setShareModal(false);
+    showToast('📱 WhatsApp తెరవబడింది!');
+  };
+
+  const handleCopyLink = async () => {
+    const url = getShareUrl();
+    let ok = false;
+    try { await navigator.clipboard.writeText(url); ok = true; } catch {}
+    if (!ok) {
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = url; ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta); ta.focus(); ta.select();
+        ok = document.execCommand('copy');
+        document.body.removeChild(ta);
+      } catch {}
     }
+    showToast(ok ? '🔗 లింక్ కాపీ చేయబడింది!' : '⚠️ కాపీ చేయడం సాధ్యం కాలేదు');
+    shareProperty(id, 'clipboard', getUserId(user));
+    setShareModal(false);
+  };
+
+  const handleNativeShare = async () => {
+    try {
+      await navigator.share({ title: `SnapAdda: ${property?.title}`, text: getShareText(), url: getShareUrl() });
+      shareProperty(id, 'native', getUserId(user));
+      showToast('✅ షేర్ చేయబడింది!');
+    } catch {}
+    setShareModal(false);
   };
 
   const handleWhatsApp = () => {
@@ -294,6 +337,14 @@ export default function PropertyDetails() {
   );
 
   const supportPhone = (supportInfo?.phone || '+919346793364').replace(/\s+/g, '');
+  // Cloudinary Optimization Helper
+  const getOptimizedImg = (url, width = 800) => {
+    if (!url || !url.includes('cloudinary.com')) return url;
+    const parts = url.split('/upload/');
+    if (parts.length !== 2) return url;
+    return `${parts[0]}/upload/f_auto,q_auto:good,w_${width},c_fill/${parts[1]}`;
+  };
+
   const TABS = [
     { id: 'overview', label: 'అవలోకనం' },
     { id: 'specs', label: 'వివరాలు' },
@@ -307,7 +358,7 @@ export default function PropertyDetails() {
       <AnimatePresence>
         {lightbox && (
           <EliteLightBox 
-            images={property_images} 
+            images={property_images.map(img => getOptimizedImg(img, 1200))} 
             videos={property_videos} 
             startIdx={imgIdx} 
             title={property.title}
@@ -339,29 +390,40 @@ export default function PropertyDetails() {
         >
           {property_images.length > 0 ? (
             property_images.map((img, i) => (
-              <div 
-                key={i} 
-                style={{ 
-                  flex: '0 0 100%', 
-                  scrollSnapAlign: 'start', 
+              <div
+                key={i}
+                style={{
+                  flex: '0 0 100%',
+                  scrollSnapAlign: 'start',
                   position: 'relative',
-                  cursor: 'pointer'
+                  height: '100%',       // ← critical fix: explicit height propagation
+                  cursor: 'pointer',
+                  background: '#05050a'
                 }}
                 onClick={() => { setImgIdx(i); setLightbox(true); }}
               >
-                <img 
-                  src={img} 
-                  alt={`${property.title} - ${i + 1}`} 
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                  loading={i === 0 ? "eager" : "lazy"}
+                <img
+                  src={getOptimizedImg(img, 800)}
+                  alt={`${property.title} - ${i + 1}`}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                  loading={i === 0 ? 'eager' : 'lazy'}
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                    e.currentTarget.nextSibling && (e.currentTarget.nextSibling.style.display = 'flex');
+                  }}
                 />
+                {/* Fallback shown when image fails */}
+                <div style={{ display: 'none', position: 'absolute', inset: 0, alignItems: 'center', justifyContent: 'center', background: '#111', flexDirection: 'column', gap: '12px' }}>
+                  <Building2 size={48} style={{ opacity: 0.2 }}/>
+                  <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.75rem' }}>Image unavailable</span>
+                </div>
                 <div style={{ position: 'absolute', top: '15px', right: '15px', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(10px)', color: 'white', padding: '6px 12px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 800, zIndex: 2 }}>
                   {i + 1} / {property_images.length}
                 </div>
-                {/* Embedded Cinematic Data Overlay */}
-                <div style={{ 
-                  position: 'absolute', 
-                  bottom: 0, left: 0, right: 0, 
+                {/* Cinematic Data Overlay */}
+                <div style={{
+                  position: 'absolute',
+                  bottom: 0, left: 0, right: 0,
                   background: 'linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.7) 40%, transparent 100%)',
                   padding: '40px 20px 20px',
                   display: 'flex', flexDirection: 'column', gap: '8px'
@@ -373,6 +435,16 @@ export default function PropertyDetails() {
                         <span style={{ background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(10px)', color: 'white', fontSize: '0.65rem', fontWeight: 900, padding: '4px 8px', borderRadius: '12px' }}>{tr(property.type)}</span>
                       </div>
                       <h1 style={{ color: 'white', fontSize: '1.5rem', fontWeight: 900, margin: 0, textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>{property.title}</h1>
+                      <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                        <span style={{ background: 'rgba(232,184,75,0.2)', border: '1px solid rgba(232,184,75,0.4)', color: '#e8b84b', padding: '2px 8px', borderRadius: '6px', fontSize: '0.65rem', fontWeight: 900, letterSpacing: '0.05em' }}>
+                          CODE: {property.propertyCode || `SNA-${(id || '').toString().slice(-5).toUpperCase()}`}
+                        </span>
+                        {property.reraNumber && (
+                          <span style={{ background: 'rgba(34,217,224,0.15)', border: '1px solid rgba(34,217,224,0.4)', color: '#22d9e0', padding: '2px 8px', borderRadius: '6px', fontSize: '0.65rem', fontWeight: 900 }}>
+                            RERA: {property.reraNumber}
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <div style={{ textAlign: 'right' }}>
                       <div style={{ color: 'var(--gold)', fontSize: '1.4rem', fontWeight: 900, textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>
@@ -384,7 +456,7 @@ export default function PropertyDetails() {
               </div>
             ))
           ) : (
-            <div style={{ flex: '0 0 100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#111' }}>
+            <div style={{ flex: '0 0 100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#111' }}>
               <Building2 size={64} style={{ opacity: 0.2 }}/>
             </div>
           )}
@@ -572,7 +644,7 @@ export default function PropertyDetails() {
                         </div>
                      </>
                    )}
-                   {isPlot && (
+                   {isPlot && property.areaSize > 0 && (
                      <div style={{ padding: '0.75rem', background: 'rgba(0,0,0,0.2)', borderRadius: '12px' }}>
                         <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.65rem', fontWeight: 700 }}>గజం ధర (Sq.Yard)</div>
                         <div style={{ color: 'var(--gold)', fontSize: '1.1rem', fontWeight: 900 }}>₹{Math.round(property.price / property.areaSize).toLocaleString()}</div>
@@ -588,6 +660,19 @@ export default function PropertyDetails() {
 
             <section id="pd-specs" className="pd-section">
               <h2 className="pd-section-h">ముఖ్యమైన వివరాలు (Specifications)</h2>
+
+              {/* Property Code Badge */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(232,184,75,0.12)', border: '1px solid rgba(232,184,75,0.4)', padding: '8px 16px', borderRadius: '14px' }}>
+                  <FileText size={14} style={{ color: 'var(--gold)' }}/>
+                  <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.7rem', fontWeight: 700 }}>Property Code:</span>
+                  <span style={{ color: 'var(--gold)', fontSize: '0.85rem', fontWeight: 900, letterSpacing: '0.1em', fontFamily: 'monospace' }}>
+                    {property.propertyCode || `SNA-${id.slice(-5).toUpperCase()}`}
+                  </span>
+                </div>
+                <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.7rem' }}>ఏజెంట్‌కు ఈ కోడ్ చెప్పండి (Share this code with our agent)</span>
+              </div>
+
               <p className="pd-desc-text" style={{ marginBottom: '2rem' }}>{generateDesc(property)}</p>
               
               <div className="pd-specs-grid">
@@ -600,6 +685,58 @@ export default function PropertyDetails() {
                 <SpecCard label="రోడ్డు వెడల్పు" value={property.roadWidth ? `${property.roadWidth} Ft` : property.roadType} accent="white"/>
               </div>
             </section>
+
+            {/* Listed By — Realtor Section */}
+            {property.realtor?.name && (
+              <section id="pd-realtor" className="pd-section" style={{ padding: '1.5rem', background: 'rgba(232,184,75,0.04)', border: '1px solid rgba(232,184,75,0.15)', borderRadius: '20px' }}>
+                <h2 className="pd-section-h" style={{ marginBottom: '1.25rem' }}>Listed By (సమర్పించిన వ్యక్తి)</h2>
+                <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+                  {/* Avatar */}
+                  {property.realtor.photo ? (
+                    <img src={property.realtor.photo} alt={property.realtor.name} onError={e => { e.currentTarget.style.display = 'none'; }}
+                      style={{ width: '72px', height: '72px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--gold)', flexShrink: 0 }} />
+                  ) : (
+                    <div style={{ width: '72px', height: '72px', borderRadius: '50%', background: 'linear-gradient(135deg,var(--gold),#f5c842)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '1.8rem', color: 'black', flexShrink: 0 }}>
+                      {property.realtor.name.charAt(0)}
+                    </div>
+                  )}
+                  
+                  {/* Info */}
+                  <div style={{ flex: 1, minWidth: '200px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', marginBottom: '6px' }}>
+                      <span style={{ color: 'white', fontWeight: 900, fontSize: '1.05rem' }}>{property.realtor.name}</span>
+                      {property.realtor.contactId && (
+                        <span style={{ background: 'rgba(16,217,140,0.15)', border: '1px solid rgba(16,217,140,0.3)', color: 'var(--emerald)', padding: '2px 8px', borderRadius: '10px', fontSize: '0.65rem', fontWeight: 800 }}>
+                          ✓ Verified SnapAdda Partner
+                        </span>
+                      )}
+                    </div>
+                    {property.realtor.agency && (
+                      <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem', marginBottom: '4px' }}>🏢 {property.realtor.agency}</div>
+                    )}
+                    {property.realtor.licenseNo && (
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(232,184,75,0.1)', border: '1px solid rgba(232,184,75,0.25)', padding: '3px 10px', borderRadius: '8px', fontSize: '0.7rem', color: 'var(--gold)', fontWeight: 700, marginBottom: '10px' }}>
+                        <FileText size={11}/> RERA: {property.realtor.licenseNo}
+                      </div>
+                    )}
+
+                    {property.realtor.phone && (
+                      <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '10px' }}>
+                        <a href={`tel:${property.realtor.phone}`}
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(34,217,224,0.1)', border: '1px solid rgba(34,217,224,0.3)', color: 'var(--cyan)', padding: '7px 14px', borderRadius: '10px', fontWeight: 800, fontSize: '0.8rem', textDecoration: 'none' }}>
+                          📞 Call Agent
+                        </a>
+                        <a href={`https://wa.me/91${property.realtor.phone.replace(/[^0-9]/g,'')}?text=Hi, I saw property ${property.propertyCode || ''} on SnapAdda. Can you share more details?`}
+                          target="_blank" rel="noopener noreferrer"
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(37,211,102,0.12)', border: '1px solid rgba(37,211,102,0.3)', color: '#25d366', padding: '7px 14px', borderRadius: '10px', fontWeight: 800, fontSize: '0.8rem', textDecoration: 'none' }}>
+                          💬 WhatsApp Agent
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </section>
+            )}
 
             <section id="pd-amenities" className="pd-section">
               <h2 className="pd-section-h">సదుపాయాలు (Amenities)</h2>
@@ -693,12 +830,96 @@ export default function PropertyDetails() {
         </section>
       )}
 
-      <div className="pd-mobile-bar" style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: 'rgba(7, 7, 15, 0.98)', backdropFilter: 'blur(20px)', borderTop: '1px solid rgba(255,255,255,0.1)', padding: '12px 16px', display: 'flex', gap: '12px', zIndex: 1000, boxShadow: '0 -10px 40px rgba(0,0,0,0.8)' }}>
-        <button onClick={() => window.location.href = `tel:${supportPhone}`} className="btn-3d-glass" style={{ flex: 1, padding: '12px', fontSize: '0.85rem' }}>
-          <Phone size={18}/> కాల్ చేయండి
+      {/* ─── Share Modal ─── */}
+      <AnimatePresence>
+        {shareModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShareModal(false)}
+            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 9998, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', backdropFilter: 'blur(10px)', padding: '0 0 80px' }}
+          >
+            <motion.div
+              initial={{ y: 80, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 80, opacity: 0 }}
+              onClick={e => e.stopPropagation()}
+              style={{ background: 'rgba(10,10,20,0.98)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '28px 28px 0 0', padding: '28px 24px 24px', width: '100%', maxWidth: '500px', boxShadow: '0 -20px 60px rgba(0,0,0,0.8)' }}
+            >
+              {/* Handle bar */}
+              <div style={{ width: '40px', height: '4px', background: 'rgba(255,255,255,0.2)', borderRadius: '4px', margin: '0 auto 20px' }} />
+              <div style={{ fontWeight: 900, fontSize: '1.05rem', color: 'white', marginBottom: '20px', textAlign: 'center' }}>
+                📤 షేర్ చేయండి
+              </div>
+              {/* Property preview */}
+              <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '12px 16px', marginBottom: '20px', fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)' }}>
+                <div style={{ fontWeight: 800, color: 'white', marginBottom: '4px' }}>{property?.title}</div>
+                <div>{property?.location} · {formatSnapAddaPrice((isAgri && agriTotalValue > 0) ? agriTotalValue : property?.price)}</div>
+              </div>
+              {/* Share options */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <button onClick={handleShareWhatsApp}
+                  style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '14px 18px', background: 'rgba(37,211,102,0.12)', border: '1px solid rgba(37,211,102,0.3)', borderRadius: '16px', color: '#25D366', fontWeight: 800, fontSize: '1rem', cursor: 'pointer', width: '100%' }}>
+                  <span style={{ fontSize: '1.4rem' }}>💬</span> WhatsApp షేర్
+                </button>
+                <button onClick={handleCopyLink}
+                  style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '14px 18px', background: 'rgba(232,184,75,0.1)', border: '1px solid rgba(232,184,75,0.3)', borderRadius: '16px', color: '#e8b84b', fontWeight: 800, fontSize: '1rem', cursor: 'pointer', width: '100%' }}>
+                  <span style={{ fontSize: '1.4rem' }}>🔗</span> లింక్ కాపీ చేయండి
+                </button>
+                {typeof navigator !== 'undefined' && navigator.share && (
+                  <button onClick={handleNativeShare}
+                    style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '14px 18px', background: 'rgba(155,89,245,0.1)', border: '1px solid rgba(155,89,245,0.3)', borderRadius: '16px', color: '#9b59f5', fontWeight: 800, fontSize: '1rem', cursor: 'pointer', width: '100%' }}>
+                    <span style={{ fontSize: '1.4rem' }}>📲</span> More Options
+                  </button>
+                )}
+                <button onClick={() => setShareModal(false)}
+                  style={{ padding: '12px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', color: 'rgba(255,255,255,0.5)', fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer', width: '100%' }}>
+                  రద్దు చేయండి
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Mobile Bottom Bar */}
+      <div className="pd-mobile-bar" style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: 'rgba(7, 7, 15, 0.98)', backdropFilter: 'blur(20px)', borderTop: '1px solid rgba(255,255,255,0.1)', padding: '10px 12px', display: 'flex', gap: '8px', zIndex: 100001, boxShadow: '0 -10px 40px rgba(0,0,0,0.8)' }}>
+        <button onClick={() => window.location.href = `tel:${supportPhone}`} className="btn-3d-glass" style={{ flex: 2, padding: '11px 6px', fontSize: '0.78rem' }}>
+          <Phone size={16}/> కాల్
         </button>
-        <button onClick={handleWhatsApp} className="btn-3d-glass-emerald" style={{ flex: 1, padding: '12px', fontSize: '0.85rem' }}>
-          <MessageSquare size={18}/> వాట్సాప్
+        <button onClick={handleWhatsApp} className="btn-3d-glass-emerald" style={{ flex: 2, padding: '11px 6px', fontSize: '0.78rem' }}>
+          <MessageSquare size={16}/> వాట్సాప్
+        </button>
+        <button
+          onClick={handleLike}
+          style={{
+            flex: 1, padding: '11px 6px', fontSize: '0.78rem',
+            background: liked ? 'rgba(255,80,80,0.18)' : 'rgba(255,255,255,0.07)',
+            border: `1px solid ${liked ? 'rgba(255,80,80,0.5)' : 'rgba(255,255,255,0.12)'}`,
+            color: liked ? '#ff5050' : 'rgba(255,255,255,0.75)',
+            borderRadius: '14px', cursor: 'pointer',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1px',
+            transition: 'all 0.25s',
+          }}
+        >
+          <Heart size={16} fill={liked ? 'currentColor' : 'none'}/>
+          {likeCount > 0 && <span style={{ fontSize: '0.6rem', fontWeight: 800 }}>{likeCount}</span>}
+        </button>
+        <button
+          onClick={handleShare}
+          style={{
+            flex: 1, padding: '11px 6px', fontSize: '0.78rem',
+            background: 'rgba(255,255,255,0.07)',
+            border: '1px solid rgba(255,255,255,0.12)',
+            color: 'rgba(255,255,255,0.75)',
+            borderRadius: '14px', cursor: 'pointer',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1px',
+            transition: 'all 0.25s',
+          }}
+        >
+          <Share2 size={16}/>
+          <span style={{ fontSize: '0.6rem', fontWeight: 800 }}>షేర్</span>
         </button>
       </div>
     </div>

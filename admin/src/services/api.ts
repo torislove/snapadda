@@ -239,3 +239,45 @@ export const saveSetting = async (key: string, value: any) => {
 export const fetchWhatsappSettings = () => fetchSetting('whatsapp_settings');
 export const saveWhatsappSettings = (number: string, message: string) =>
   saveSetting('whatsapp_settings', { number, message });
+
+/* ─────────────── CRM Contacts ─────────────── */
+export const fetchRealtors = async () => {
+  const res = await fetch(`${API_URL}/contacts?type=Realtor&limit=200`, { headers: getAuthHeaders() });
+  if (!res.ok) throw new Error('Failed to fetch realtors');
+  const data = await res.json();
+  return data.data || [];
+};
+
+export const fetchContactStats = async () => {
+  const res = await fetch(`${API_URL}/contacts/stats`, { headers: getAuthHeaders() });
+  if (!res.ok) return { realtors: 0, clients: 0, whatsappSent: 0, newThisWeek: 0 };
+  return (await res.json()).data || {};
+};
+
+export const updateContact = async (id: string, data: any) => {
+  const res = await fetch(`${API_URL}/contacts/${id}`, {
+    method: 'PUT',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(data)
+  });
+  if (!res.ok) throw new Error('Failed to update contact');
+  return res.json();
+};
+
+export const addContactNote = async (id: string, text: string, addedBy = 'Admin') => {
+  const res = await fetch(`${API_URL}/contacts/${id}/notes`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ text, addedBy })
+  });
+  if (!res.ok) throw new Error('Failed to add note');
+  return res.json();
+};
+
+export const fetchContactProperties = async (contactId: string) => {
+  const res = await fetch(`${API_URL}/properties?realtorContactId=${contactId}&limit=100`, { headers: getAuthHeaders() });
+  if (!res.ok) return [];
+  const data = await res.json();
+  return data.data || [];
+};
+

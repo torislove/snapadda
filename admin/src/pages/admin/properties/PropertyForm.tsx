@@ -37,6 +37,9 @@ interface PropertyFormProps {
   addCustomFeature: () => void;
   removeCustomFeature: (index: number) => void;
   updateCustomFeature: (index: number, key: 'label' | 'value', val: string) => void;
+  realtorData: any;
+  setRealtorData: (v: any) => void;
+  realtors?: any[];
 }
 
 export const PropertyForm: React.FC<PropertyFormProps> = ({
@@ -45,7 +48,8 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
   currentImageUrls, priceUnit, setPriceUnit, pricePerAcreUnit, setPricePerAcreUnit,
   agriAcres, setAgriAcres, handleAddSubmit, handleFormChange, handleCloseForm, handleGenerateAIDescription,
   handleMediaChange, convertToValue, agriAutoValuation, formatPriceAdminLocal, getAgriTotalDecimal,
-  addCustomFeature, removeCustomFeature, updateCustomFeature
+  addCustomFeature, removeCustomFeature, updateCustomFeature,
+  realtorData, setRealtorData, realtors = []
 }) => {
   return (
     <motion.div 
@@ -578,8 +582,91 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
              </div>
           </section>
 
+          {/* STEP 7: REALTOR / SOURCE INFO */}
+          <section>
+            <h3 style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--gold)', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '1.75rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ width: '20px', height: '1px', background: 'var(--gold)' }} /> STEP 7: REALTOR / SOURCE INFO
+            </h3>
+            <div style={{ padding: '1.25rem', background: 'rgba(232,184,75,0.04)', borderRadius: '16px', border: '1px solid rgba(232,184,75,0.15)', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              
+              {/* CRM Picker */}
+              {realtors.length > 0 && (
+                <div>
+                  <label className="admin-label">Pick from CRM Realtors</label>
+                  <select
+                    className="admin-select"
+                    value={realtorData.contactId || ''}
+                    onChange={(e) => {
+                      const picked = realtors.find((r: any) => r._id === e.target.value);
+                      if (picked) {
+                        setRealtorData({
+                          contactId: picked._id,
+                          name:      picked.name,
+                          phone:     picked.phone,
+                          email:     picked.email || '',
+                          agency:    picked.company || '',
+                          licenseNo: picked.licenseNo || '',
+                          photo:     picked.photo || '',
+                        });
+                      } else {
+                        setRealtorData({});
+                      }
+                    }}
+                    style={{ border: '1px solid rgba(232,184,75,0.3)' }}
+                  >
+                    <option value="">-- Enter manually --</option>
+                    {realtors.map((r: any) => (
+                      <option key={r._id} value={r._id}>
+                        {r.name}{r.company ? ` · ${r.company}` : ''}
+                      </option>
+                    ))}
+                  </select>
+                  {realtorData.contactId && (
+                    <div style={{ marginTop: '8px', padding: '8px 12px', background: 'rgba(16,217,140,0.08)', border: '1px solid rgba(16,217,140,0.2)', borderRadius: '10px', fontSize: '0.75rem', color: 'var(--emerald)', fontWeight: 700 }}>
+                      ✅ Linked to CRM: {realtorData.name} · {realtorData.phone}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div>
+                  <label className="admin-label">Realtor Name</label>
+                  <input className="admin-input" placeholder="e.g. Ravi Kumar" value={realtorData.name || ''}
+                    onChange={e => setRealtorData((p: any) => ({ ...p, name: e.target.value }))} />
+                </div>
+                <div>
+                  <label className="admin-label">Phone / WhatsApp</label>
+                  <input className="admin-input" placeholder="e.g. 9346793364" value={realtorData.phone || ''}
+                    onChange={e => setRealtorData((p: any) => ({ ...p, phone: e.target.value }))} />
+                </div>
+                <div>
+                  <label className="admin-label">Agency / Firm</label>
+                  <input className="admin-input" placeholder="e.g. Ravi Realty" value={realtorData.agency || ''}
+                    onChange={e => setRealtorData((p: any) => ({ ...p, agency: e.target.value }))} />
+                </div>
+                <div>
+                  <label className="admin-label">RERA License No</label>
+                  <input className="admin-input" placeholder="If applicable" value={realtorData.licenseNo || ''}
+                    onChange={e => setRealtorData((p: any) => ({ ...p, licenseNo: e.target.value }))} />
+                </div>
+                <div style={{ gridColumn: 'span 2' }}>
+                  <label className="admin-label">Email</label>
+                  <input className="admin-input" placeholder="realtor@email.com" value={realtorData.email || ''}
+                    onChange={e => setRealtorData((p: any) => ({ ...p, email: e.target.value }))} />
+                </div>
+              </div>
+
+              {realtorData.name && (
+                <div style={{ padding: '12px 16px', background: 'rgba(255,255,255,0.03)', borderRadius: '12px', border: '1px solid rgba(232,184,75,0.1)', fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)' }}>
+                  👤 Listed by <strong style={{ color: 'var(--gold)' }}>{realtorData.name}</strong>{realtorData.agency ? ` · ${realtorData.agency}` : ''}
+                </div>
+              )}
+            </div>
+          </section>
+
           <div style={{ gridColumn: '1 / -1' }}>
-            <label className="admin-label">STEP 7: VISUAL ASSETS (MULTI-SELECT)</label>
+            <label className="admin-label">STEP 8: VISUAL ASSETS (MULTI-SELECT)</label>
             <MediaManager 
               existingUrls={currentImageUrls}
               onImagesChange={handleMediaChange}

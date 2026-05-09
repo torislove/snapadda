@@ -30,6 +30,9 @@ const propertySchema = new mongoose.Schema({
   approvalAuthority: { type: String, default: 'N/A' },
   measurementUnit: { type: String, default: 'SqFt' },
   areaSize: { type: Number, default: 0 },
+  surveyNo: { type: String, default: '' },       // Survey number for agri/plot land
+  roadType: { type: String, default: 'N/A' },    // e.g., "Tar Road", "CC Road"
+  roadWidth: { type: Number, default: 0 },       // Road width in feet
   
   beds: { type: Number, default: 0 },
   baths: { type: Number, default: 0 },
@@ -61,6 +64,7 @@ const propertySchema = new mongoose.Schema({
   
   image: { type: String, default: '' },
   images: [{ type: String }],
+  gallery: [{ type: String }],   // extra gallery images
   videos: [{ type: String }],
   videoUrl: { type: String }, 
   
@@ -71,11 +75,26 @@ const propertySchema = new mongoose.Schema({
   franchiseId: { type: String, default: null },
   
   listerType: { type: String, default: 'Individual Owner' },
+
+  // Realtor / Source Agent (who submitted this property to SnapAdda)
+  realtor: {
+    name:      { type: String, default: '' },
+    phone:     { type: String, default: '' },
+    email:     { type: String, default: '' },
+    agency:    { type: String, default: '' },   // Company / Firm name
+    photo:     { type: String, default: '' },   // Cloudinary avatar URL
+    licenseNo: { type: String, default: '' },   // RERA License / Agent ID
+    contactId: { type: String, default: '' },   // CRM Contact._id (optional link)
+  },
+
   customFeatures: [{
     label: String,
     value: String
   }],
   
+  // Analytics
+  viewCount: { type: Number, default: 0 },       // Server-side view tracking
+
   // Engagement Tracking
   shareCount: { type: Number, default: 0 },
   shareLogs: [{
@@ -85,11 +104,22 @@ const propertySchema = new mongoose.Schema({
   }],
   likeCount: { type: Number, default: 0 },
   likeLogs: [{
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    userId: { type: String },                    // String to support both ObjectId & Google UID
     timestamp: { type: Date, default: Date.now }
   }],
 
-  createdAt: { type: Date, default: Date.now }
+  createdAt: { type: Date, default: Date.now },
+
+  // Unique property reference code (auto-generated: SNA-XXXXX)
+  propertyCode: { type: String, unique: true, sparse: true, default: '' },
+});
+
+// Auto-generate SNA property code before first save
+propertySchema.pre('save', function(next) {
+  if (!this.propertyCode && this._id) {
+    this.propertyCode = 'SNA-' + this._id.toString().slice(-5).toUpperCase();
+  }
+  next();
 });
 
 // Performance Indexes - Aggressive Compound Indexing for Real Estate Filters

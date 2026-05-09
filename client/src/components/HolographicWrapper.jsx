@@ -41,21 +41,18 @@ const HolographicWrapper = ({
     y.set(0);
   };
 
-  // Gyroscope effect for mobile (optional, but premium)
+  // Gyroscope effect — only registered when tilt is enabled
   useEffect(() => {
+    if (!tilt) return; // ← skip entirely when tilt disabled — saves mobile CPU/battery
+
     const handleOrientation = (e) => {
-      if (!tilt) return;
-      // Map beta/gamma to x/y
-      const gamma = e.gamma || 0; // -90 to 90
-      const beta = e.beta || 0;   // -180 to 180
-      
+      const gamma = e.gamma || 0;
+      const beta = e.beta || 0;
       x.set(Math.min(Math.max(gamma / 30, -0.5), 0.5));
       y.set(Math.min(Math.max((beta - 45) / 30, -0.5), 0.5));
     };
 
-    if (window.DeviceOrientationEvent && typeof window.DeviceOrientationEvent.requestPermission === 'function') {
-      // Permission required for iOS
-    } else {
+    if (window.DeviceOrientationEvent && typeof window.DeviceOrientationEvent.requestPermission !== 'function') {
       window.addEventListener('deviceorientation', handleOrientation);
     }
     
@@ -65,14 +62,13 @@ const HolographicWrapper = ({
   return (
     <motion.div
       ref={containerRef}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
+      onMouseMove={tilt ? handleMouseMove : undefined}
+      onMouseLeave={tilt ? handleMouseLeave : undefined}
       className={`holographic-container ${className}`}
       style={{
         ...style,
-        rotateX: tilt ? rotateX : 0,
-        rotateY: tilt ? rotateY : 0,
-        transformStyle: "preserve-3d",
+        // Only apply 3D transforms when tilt is active
+        ...(tilt ? { rotateX, rotateY, transformStyle: 'preserve-3d' } : {}),
       }}
     >
       <div className="holographic-card-bg" />

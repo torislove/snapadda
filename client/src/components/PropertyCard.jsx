@@ -45,7 +45,7 @@ const PropertyCard = memo(({
   isGated, cornerProperty, constructionStatus,
   supportPhone = '+919346793364', supportWA = '919346793364',
   status: propStatus = 'Active', pricePerSqYd, address,
-  holographic = true, iridescent = false
+  holographic = true, iridescent = false, propertyCode
 }) => {
   const [activeImgIdx, setActiveImgIdx] = useState(0);
   const [liked, setLiked] = useState(initialLiked);
@@ -193,7 +193,6 @@ const PropertyCard = memo(({
         text: shareText,
         url 
       }).catch(() => null);
-    } else {
       navigator.clipboard.writeText(`${shareText} ${url}`).then(() => setToast('🔗 Details copied!'));
     }
   }, [user, propertyId, title, type, location, displayPrice, navigate]);
@@ -215,6 +214,13 @@ const PropertyCard = memo(({
   const finalImages = rawImages
     .filter(isValidImage)
     .slice(0, 5);
+
+  const getOptimizedImg = (url, width = 600) => {
+    if (!url || !url.includes('cloudinary.com')) return url;
+    const parts = url.split('/upload/');
+    if (parts.length !== 2) return url;
+    return `${parts[0]}/upload/f_auto,q_auto:good,w_${width},c_fill/${parts[1]}`;
+  };
     
   const displayImages = finalImages;
   const isMobile = window.innerWidth <= 600;
@@ -224,15 +230,16 @@ const PropertyCard = memo(({
       <AnimatePresence>{toast && <Toast msg={toast} onDone={() => setToast('')} />}</AnimatePresence>
       <motion.article
         ref={cardRef}
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 0 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, margin: "-50px" }}
-        style={{ perspective: 1000, height: isMobile ? '420px' : '460px', padding: isMobile ? '0 8px' : '0' }}
+        transition={{ duration: 0.45, ease: 'easeOut' }}
+        style={{ height: isMobile ? '420px' : '460px', padding: isMobile ? '0 8px' : '0' }}
       >
         <HolographicWrapper
           intensity={holographic ? 1.5 : 0}
           iridescent={iridescent || isFeatured}
-          tilt={!isMobile}
+          tilt={false}
           style={{ height: '100%', borderRadius: isMobile ? '28px' : '24px' }}
         >
         <motion.div 
@@ -288,7 +295,7 @@ const PropertyCard = memo(({
                         setActiveImgIdx(prev => (prev - 1 + displayImages.length) % displayImages.length);
                       }
                     }}
-                    src={displayImages[activeImgIdx % displayImages.length]} 
+                    src={getOptimizedImg(displayImages[activeImgIdx % displayImages.length])} 
                     alt={`View of ${title} in ${location}`} 
                     loading="lazy" 
                     width="400"
@@ -383,6 +390,12 @@ const PropertyCard = memo(({
                  )}
               </div>
 
+              {/* SNA Property Code Badge */}
+              {(propertyCode || propertyId) && (
+                <div style={{ position: 'absolute', bottom: '168px', left: '14px', zIndex: 10, background: 'rgba(232,184,75,0.15)', backdropFilter: 'blur(10px)', border: '1px solid rgba(232,184,75,0.35)', color: 'var(--gold)', padding: '3px 8px', borderRadius: '8px', fontSize: '0.6rem', fontWeight: 900, letterSpacing: '0.08em' }}>
+                  {propertyCode || `SNA-${(propertyId || '').toString().slice(-5).toUpperCase()}`}
+                </div>
+              )}
               {/* Dot Indicators */}
               {finalImages.length > 1 && (
                 <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: '6px', zIndex: 10, pointerEvents: 'none' }}>

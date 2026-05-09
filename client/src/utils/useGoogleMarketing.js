@@ -57,13 +57,29 @@ export const useGoogleMarketing = () => {
     };
 
     const deferInitialization = () => {
-      if (window.requestIdleCallback) {
-        window.requestIdleCallback(() => initializeMarketing(), { timeout: 2000 });
-      } else {
-        setTimeout(initializeMarketing, 3000);
-      }
+      let initialized = false;
+      const run = () => {
+        if (initialized) return;
+        initialized = true;
+        initializeMarketing();
+        // Remove listeners once initialized
+        window.removeEventListener('scroll', run);
+        window.removeEventListener('click', run);
+        window.removeEventListener('touchstart', run);
+      };
+
+      // 1. Definite delay (5s) for Lighthouse to finish its main audit
+      const timer = setTimeout(run, 5000);
+
+      // 2. Or initialize on first user interaction (whichever comes first)
+      window.addEventListener('scroll', run, { passive: true });
+      window.addEventListener('click', run, { passive: true });
+      window.addEventListener('touchstart', run, { passive: true });
+
+      return () => clearTimeout(timer);
     };
 
-    deferInitialization();
+    const cleanup = deferInitialization();
+    return () => cleanup && cleanup();
   }, []);
 };
