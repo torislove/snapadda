@@ -26,6 +26,7 @@ function AvatarDropdown({ user, logout }) {
     <div ref={ref} style={{ position: 'relative' }}>
       <button
         onClick={() => setOpen(o => !o)}
+        aria-label="User menu"
         style={{
           display: 'flex', alignItems: 'center', gap: '8px',
           padding: '3px 10px 3px 3px',
@@ -148,7 +149,7 @@ export default function Header() {
     <>
       {/* ─── TOP NAVIGATION BAR ─── */}
       <header
-        className="app-nav"
+        className={`app-nav ${scrolled ? 'is-sticky' : ''}`}
         style={{
           background: scrolled || mobileMenuOpen ? 'rgba(5, 5, 10, 0.98)' : 'rgba(5, 5, 10, 0.85)',
           backdropFilter: 'blur(30px)',
@@ -156,8 +157,10 @@ export default function Header() {
           borderBottom: scrolled || mobileMenuOpen ? '1px solid rgba(212,175,55,0.25)' : '1px solid rgba(212,175,55,0.1)',
           boxShadow: scrolled ? '0 4px 30px rgba(0,0,0,0.4)' : 'none',
           transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-          zIndex: 9998, transform: 'translateZ(0)',
-          position: 'fixed', top: 0, left: 0, right: 0, height: '70px',
+          zIndex: 9998, 
+          position: 'fixed', top: 0, left: 0, right: 0, 
+          height: scrolled ? '60px' : '70px',
+          willChange: 'transform, background, height'
         }}
       >
         <div className="container nav-inner" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '100%', padding: '0 15px' }}>
@@ -166,6 +169,28 @@ export default function Header() {
           <Link to="/" className="nav-logo-wrap" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', flexShrink: 0 }}>
             <Logo size={28} showText={!scrolled} />
           </Link>
+
+          {/* ─── STICKY SEARCH TRIGGER ─── */}
+          <div className="nav-search-trigger">
+            <div 
+              onClick={() => navigate('/search')}
+              style={{ 
+                background: 'rgba(255,255,255,0.05)', 
+                border: '1px solid rgba(255,255,255,0.1)', 
+                borderRadius: '12px', 
+                padding: '8px 16px', 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '10px',
+                cursor: 'pointer',
+                color: 'rgba(255,255,255,0.5)',
+                fontSize: '0.85rem'
+              }}
+            >
+              <Building2 size={14} style={{ color: 'var(--gold)' }} />
+              <span>Search properties...</span>
+            </div>
+          </div>
 
           {/* ─── DESKTOP NAV LINKS ─── */}
           <nav className="nav-links-center desktop-only" style={{ display: 'flex', gap: '2rem', alignItems: 'center' }}>
@@ -190,6 +215,7 @@ export default function Header() {
             {/* Language toggle */}
             <button
               onClick={toggleLang}
+              aria-label={`Switch to ${i18n.language === 'en' ? 'Telugu' : 'English'}`}
               className="btn-3d-liquid desktop-only"
               style={{
                 background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
@@ -225,6 +251,7 @@ export default function Header() {
             <button
               className="mobile-only"
               onClick={() => setMobileMenuOpen(o => !o)}
+              aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
               style={{
                 width: '40px', height: '40px', borderRadius: '12px',
                 background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',

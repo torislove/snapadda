@@ -100,6 +100,7 @@
   
   .properties-grid {
     grid-template-columns: 1fr !important;
+    gap: 1rem !important;
   }
 }
 /* High-End 3D Liquid Button Effects */
@@ -165,4 +166,217 @@
   border-radius: 20px;
   font-size: 0.65rem;
   font-weight: 900;
+}
+
+/* ── Heading Visibility & Global Resets ── */
+h1, h2, h3, h4, h5, h6, .section-title {
+  color: #ffffff !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  -webkit-text-fill-color: initial !important;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+}
+
+.text-royal-gold {
+  color: var(--gold); /* Fallback */
+  background: linear-gradient(135deg, #f1d592, #d4af37, #9e822a);
+  -webkit-text-fill-color: transparent;
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+/* ── Global Spatial Tightening (Elite Compact) ── */
+@media (max-width: 768px) {
+  section {
+    padding: 1.5rem 0 !important;
+  }
+  
+  .section-head {
+    margin-bottom: 1rem !important;
+    text-align: center !important;
+  }
+
+  .container {
+    padding-left: 0.85rem !important;
+    padding-right: 0.85rem !important;
+  }
+  
+  .properties-grid {
+    gap: 0.75rem !important;
+  }
+
+  .app-nav {
+    height: 56px !important;
+  }
+  
+  .hero-section {
+    padding-top: 1.5rem !important;
+  }
+}
+
+/* ── Elite Flow Animations (Smooth Static System) ── */
+@keyframes eliteReveal {
+  from { opacity: 0; transform: translateY(20px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.animate-on-scroll {
+  view-timeline-name: --section;
+  view-timeline-axis: block;
+  animation-timeline: --section;
+  animation-name: eliteReveal;
+  animation-range: entry 10% cover 30%;
+  animation-fill-mode: both;
+}
+
+/* Fallback for browsers without animation-timeline */
+@supports not (animation-timeline: --section) {
+  .animate-on-scroll {
+    animation: eliteReveal 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    opacity: 0;
+  }
+}
+
+/* Subtle background float */
+@keyframes softFloat {
+  0% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+  100% { transform: translateY(0); }
+}
+
+.floating-bg {
+  animation: softFloat 8s ease-in-out infinite;
+}
+
+/* Global Centered Headings Policy */
+.section-head {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  text-align: center !important;
+  max-width: 800px !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+.section-eyebrow {
+  justify-content: center !important;
+  width: 100% !important;
+}
+
+.section-title {
+  margin-top: 0.5rem !important;
+}
+
+/* ── Elite Bento & Productivity Hub ── */
+.bento-grid {
+  margin-bottom: 1rem;
+}
+
+.bento-item {
+  border-radius: 24px !important;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2) !important;
+}
+
+.bento-item:hover {
+  border-color: rgba(255,255,255,0.2) !important;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.5) !important;
+}
+
+/* ── Vertical Offer Cards (Horizontal Scroller) ── */
+.offer-card-vertical {
+  transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+
+.offer-card-vertical .card-shine {
+  position: absolute;
+  top: 0; left: -100%;
+  width: 50%; height: 100%;
+  background: linear-gradient(to right, transparent, rgba(255,255,255,0.05), transparent);
+  transform: skewX(-25deg);
+  transition: 0.75s;
+}
+
+.offer-card-vertical:hover .card-shine {
+  left: 150%;
+}
+
+.offer-card-vertical:hover img {
+  transform: scale(1.05);
+  opacity: 0.9 !important;
+}
+
+/* ── Global Reachability Refinements ── */
+@media (max-width: 600px) {
+  .bento-grid {
+    grid-template-columns: 1fr !important;
+    gap: 0.75rem !important;
+  }
+  
+  .bento-item {
+    grid-column: span 1 !important;
+    padding: 1.25rem !important;
+    min-height: 120px !important;
+  }
+
+  .offer-card-vertical {
+    min-width: 200px !important;
+    width: 200px !important;
+    height: 280px !important;
+  }
+  
+  .offer-section-wrap .hide-scrollbar {
+    padding-left: 1rem !important;
+    gap: 12px !important;
+  }
+}
+
+/* ── Footer & Final Polish ── */
+.app-footer {
+  padding: 3rem 0 1.5rem !important;
+  background: #05050a !important;
+  border-top: 1px solid rgba(255,255,255,0.03);
+}
+
+.footer-grid {
+  gap: 2rem !important;
+  margin-bottom: 2rem !important;
+}
+
+.footer-col h4 {
+  font-size: 0.85rem !important;
+  margin-bottom: 1rem !important;
+  color: var(--gold) !important;
+}
+
+.footer-col a {
+  font-size: 0.8rem !important;
+  margin-bottom: 0.5rem !important;
+  opacity: 0.7;
+}
+
+.footer-bottom {
+  padding-top: 1.5rem !important;
+  font-size: 0.7rem !important;
+}
+
+@media (max-width: 768px) {
+  .footer-grid {
+    gap: 1.5rem !important;
+    text-align: center;
+  }
+  
+  .footer-col {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .footer-legal-links {
+    justify-content: center !important;
+    flex-wrap: wrap !important;
+    gap: 1rem !important;
+    font-size: 0.75rem !important;
+  }
 }

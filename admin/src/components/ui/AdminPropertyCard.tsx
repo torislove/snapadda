@@ -278,6 +278,11 @@ export const AdminPropertyCard: React.FC<Props> = ({
               <div style={{ background: sc.bg, color: sc.color, border: `1px solid ${sc.color}44`, padding: '4px 10px', borderRadius: '8px', fontSize: '0.65rem', fontWeight: 800, letterSpacing: '0.05em', backdropFilter: 'blur(10px)' }}>
                 {sc.label}
               </div>
+              {daysAgo !== null && daysAgo <= 1 && (
+                <div style={{ background: 'rgba(255,80,80,0.2)', color: '#ff5050', border: '1px solid rgba(255,80,80,0.4)', padding: '4px 10px', borderRadius: '8px', fontSize: '0.65rem', fontWeight: 900, letterSpacing: '0.05em', backdropFilter: 'blur(10px)', animation: 'pulse 2s infinite' }}>
+                  NEW
+                </div>
+              )}
               {prop.isVerified && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(212,175,55,0.15)', color: 'var(--gold)', border: '1px solid rgba(212,175,55,0.3)', backdropFilter: 'blur(10px)', fontWeight: 700, padding: '4px 10px', borderRadius: '8px', fontSize: '0.65rem' }}>
                   <ShieldCheck size={12} /> Verified

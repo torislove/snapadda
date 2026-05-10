@@ -1,52 +1,130 @@
-/* ── Keyframes ── */
-@keyframes bgDrift {
-  0% { transform: translate(-5%, -5%) scale(1); }
-  100% { transform: translate(5%, 5%) scale(1.1); }
-}
+/* ═══════════════════════════════════════════
+   ADMIN ANIMATIONS — Pure CSS, Zero Runtime Cost
+   ═══════════════════════════════════════════ */
 
-@keyframes fadeInUp {
+/* ── Page Entry ── */
+@keyframes fadeSlideUp {
   from { opacity: 0; transform: translateY(16px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-
-@keyframes fadeInLeft {
-  from { opacity: 0; transform: translateX(-16px); }
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes fadeSlideRight {
+  from { opacity: 0; transform: translateX(-12px); }
   to   { opacity: 1; transform: translateX(0); }
 }
-
-@keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(155, 89, 245, 0); }
-  50%       { box-shadow: 0 0 16px 4px rgba(155, 89, 245, 0.25); }
-}
-
-@keyframes shimmer {
-  0%   { background-position: -200% center; }
-  100% { background-position:  200% center; }
-}
-
-@keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50%      { transform: translateY(-4px); }
-}
-
-@keyframes spin-slow {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
-}
-
-@keyframes count-up {
-  from { opacity: 0; transform: scale(0.8); }
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
   to   { opacity: 1; transform: scale(1); }
 }
 
-/* ── Animation Utility Classes ── */
-.animate-fade-in    { animation: fadeInUp 0.5s ease-out forwards; }
-.animate-fade-left  { animation: fadeInLeft 0.4s ease-out forwards; }
-.animate-float      { animation: float 3s ease-in-out infinite; }
-.animate-count-up   { animation: count-up 0.6s var(--transition-spring) forwards; }
-.animate-spin-slow  { animation: spin-slow 8s linear infinite; }
-.animate-shimmer    {
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
-  background-size: 200% 100%;
-  animation: shimmer 2s infinite;
+/* ── Utility Animation Classes ── */
+.animate-fade-in    { animation: fadeIn 0.3s ease both; }
+.animate-slide-up   { animation: fadeSlideUp 0.35s cubic-bezier(0.16,1,0.3,1) both; }
+.animate-slide-right{ animation: fadeSlideRight 0.3s cubic-bezier(0.16,1,0.3,1) both; }
+.animate-scale-in   { animation: scaleIn 0.3s cubic-bezier(0.16,1,0.3,1) both; }
+
+/* ── Stagger delays for card grids ── */
+.stagger-1  { animation-delay: 0.04s; }
+.stagger-2  { animation-delay: 0.08s; }
+.stagger-3  { animation-delay: 0.12s; }
+.stagger-4  { animation-delay: 0.16s; }
+.stagger-5  { animation-delay: 0.20s; }
+.stagger-6  { animation-delay: 0.24s; }
+
+/* ── Skeleton Loader ── */
+@keyframes shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
 }
+.skeleton {
+  background: linear-gradient(90deg, #f0f2f5 25%, #e8eaf0 50%, #f0f2f5 75%);
+  background-size: 800px 100%;
+  animation: shimmer 1.5s infinite linear;
+  border-radius: var(--radius-md);
+}
+.skeleton-text  { height: 14px; margin-bottom: 8px; }
+.skeleton-title { height: 20px; width: 60%; margin-bottom: 12px; }
+.skeleton-card  { height: 120px; border-radius: var(--radius-lg); }
+
+/* ── Live Pulse Dot ── */
+@keyframes pulseDot {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50%       { transform: scale(1.5); opacity: 0.5; }
+}
+.pulse-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--emerald);
+  animation: pulseDot 1.8s ease-in-out infinite;
+  display: inline-block;
+}
+.pulse-dot.warning { background: var(--orange); }
+.pulse-dot.error   { background: var(--rose); }
+
+/* ── Number Count-up shimmer ── */
+@keyframes numShimmer {
+  0%   { color: var(--text-muted); }
+  100% { color: var(--text-primary); }
+}
+.counting { animation: numShimmer 0.8s ease forwards; }
+
+/* ── Notification Badge Bounce ── */
+@keyframes badgePop {
+  0%   { transform: scale(0); }
+  60%  { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+.badge-pop { animation: badgePop 0.35s cubic-bezier(0.34,1.56,0.64,1) both; }
+
+/* ── Sidebar slide-in ── */
+@keyframes sidebarIn {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(0); }
+}
+
+/* ── Success Checkmark ── */
+@keyframes checkDraw {
+  from { stroke-dashoffset: 100; }
+  to   { stroke-dashoffset: 0; }
+}
+.check-animate { animation: checkDraw 0.4s ease forwards; }
+
+/* ── Hover lift (applied via CSS, no JS) ── */
+.hover-lift {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.hover-lift:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lg);
+}
+
+/* ── Spin for loading ── */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+.spin { animation: spin 0.7s linear infinite; }
+
+/* ── Page content entrance ── */
+.admin-page-content > * {
+  animation: fadeSlideUp 0.3s cubic-bezier(0.16,1,0.3,1) both;
+}
+.admin-page-content > *:nth-child(1) { animation-delay: 0.02s; }
+.admin-page-content > *:nth-child(2) { animation-delay: 0.06s; }
+.admin-page-content > *:nth-child(3) { animation-delay: 0.10s; }
+.admin-page-content > *:nth-child(4) { animation-delay: 0.14s; }
+.admin-page-content > *:nth-child(5) { animation-delay: 0.18s; }
+
+/* ── Toast notification slide ── */
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(20px) scale(0.95); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes toastOut {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to   { opacity: 0; transform: translateY(-10px) scale(0.95); }
+}
+.toast-in  { animation: toastIn  0.3s cubic-bezier(0.16,1,0.3,1) both; }
+.toast-out { animation: toastOut 0.25s ease both; }

@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, LayoutGrid, List, Plus } from 'lucide-react';
+import { Search, LayoutGrid, List, Plus, RefreshCw } from 'lucide-react';
 import { AdminPropertyCard } from '../../../components/ui/AdminPropertyCard';
 
 interface PropertiesListProps {
@@ -105,38 +105,58 @@ export const PropertiesList: React.FC<PropertiesListProps> = ({
       </AnimatePresence>
       {/* Toolbar */}
       <div className="glass-card" style={{ padding: '1rem 1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', borderRadius: '18px' }}>
-        <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center', flex: 1 }}>
-          {/* Search */}
-          <div style={{ position: 'relative', flex: '1', maxWidth: '400px' }}>
-            <Search
-              size={16}
-              style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'rgba(212,175,55,0.8)' }}
-            />
-            <input
-              type="text"
-              placeholder="Search assets..."
+        <div className="flex-row-mobile-stack" style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
+          <div className="search-box" style={{ position: 'relative', flex: 1, minWidth: '240px' }}>
+            <Search size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+            <input 
+              type="text" 
+              placeholder="Search properties..." 
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              style={{ width: '100%', padding: '0.75rem 1rem 0.75rem 2.8rem', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(212,175,55,0.15)', borderRadius: '12px', color: '#fff', fontSize: '0.85rem', outline: 'none' }}
+              className="admin-input" 
+              style={{ width: '100%', paddingLeft: '40px', borderRadius: '12px' }}
             />
           </div>
 
-          {/* Status Filters */}
-          <div style={{ display: 'flex', gap: '6px', background: 'rgba(255,255,255,0.03)', padding: '4px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+          <div style={{ display: 'flex', gap: '8px', background: 'rgba(255,255,255,0.04)', padding: '4px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)' }}>
             {['all', 'Active', 'Sold', 'Pending', 'Draft'].map(f => (
-              <button
+              <button 
                 key={f}
                 onClick={() => setStatusFilter(f)}
-                style={{
-                  padding: '6px 12px', borderRadius: '8px', fontSize: '0.7rem', fontWeight: 700, border: 'none', cursor: 'pointer',
-                  background: statusFilter === f ? 'rgba(212,175,55,0.15)' : 'transparent',
-                  color: statusFilter === f ? 'var(--gold)' : 'rgba(255,255,255,0.4)',
-                  transition: 'all 0.2s'
+                style={{ 
+                  padding: '6px 12px', 
+                  borderRadius: '8px', 
+                  fontSize: '0.75rem', 
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  background: statusFilter === f ? 'var(--violet)' : 'transparent',
+                  color: statusFilter === f ? 'white' : 'var(--text-muted)',
+                  border: 'none',
+                  transition: '0.2s'
                 }}
               >
                 {f.toUpperCase()}
+                {f === 'Pending' && filteredProperties.filter(p => p.status === 'Pending').length > 0 && (
+                   <span style={{ marginLeft: '6px', background: '#ff5050', color: 'white', padding: '2px 6px', borderRadius: '4px', fontSize: '0.6rem' }}>
+                     {filteredProperties.filter(p => p.status === 'Pending').length}
+                   </span>
+                )}
               </button>
             ))}
+          </div>
+
+          <button 
+            onClick={() => loadProperties()}
+            className="btn-elite"
+            style={{ padding: '0.7rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', color: 'white', cursor: 'pointer', background: 'transparent' }}
+            title="Refresh List"
+          >
+            <RefreshCw size={18} />
+          </button>
+
+          <div style={{ display: 'flex', background: 'rgba(255,255,255,0.04)', padding: '4px', borderRadius: '12px' }}>
+            <button onClick={() => setViewMode('cards')} style={{ padding: '6px', borderRadius: '8px', background: viewMode === 'cards' ? 'rgba(255,255,255,0.1)' : 'transparent', border: 'none', color: viewMode === 'cards' ? 'var(--gold)' : 'var(--text-muted)', cursor: 'pointer' }}><LayoutGrid size={18} /></button>
+            <button onClick={() => setViewMode('grid')} style={{ padding: '6px', borderRadius: '8px', background: viewMode === 'grid' ? 'rgba(255,255,255,0.1)' : 'transparent', border: 'none', color: viewMode === 'grid' ? 'var(--gold)' : 'var(--text-muted)', cursor: 'pointer' }}><List size={18} /></button>
           </div>
         </div>
 

@@ -98,7 +98,7 @@ const propertySchema = new mongoose.Schema({
   // Engagement Tracking
   shareCount: { type: Number, default: 0 },
   shareLogs: [{
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    userId: { type: String }, // String to support both ObjectId & Google UID
     platform: String,
     timestamp: { type: Date, default: Date.now }
   }],
@@ -114,11 +114,21 @@ const propertySchema = new mongoose.Schema({
   propertyCode: { type: String, unique: true, sparse: true, default: '' },
 });
 
-// Auto-generate SNA property code before first save
+// Auto-generate SNA property code and calculate unit prices before first save
 propertySchema.pre('save', function(next) {
   if (!this.propertyCode && this._id) {
     this.propertyCode = 'SNA-' + this._id.toString().slice(-5).toUpperCase();
   }
+
+  // Elite Advanced: Auto-calculate unit pricing for land assets
+  if (this.price > 0 && this.areaSize > 0) {
+    this.pricePerUnit = this.price / this.areaSize;
+  }
+  
+  if (this.type === 'Agricultural Land' && this.price > 0 && this.totalAcres > 0) {
+    this.pricePerAcre = this.price / this.totalAcres;
+  }
+
   next();
 });
 

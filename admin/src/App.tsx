@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAdminAuth } from './contexts/AdminAuthContext';
 
@@ -60,7 +60,24 @@ const AntiAuthRoute = ({ children }: { children: React.ReactNode }) => {
   return children;
 };
 
+
 function App() {
+  // --- BROWSWER CACHE & VERSIONING SYNC ---
+  useEffect(() => {
+    // @ts-ignore
+    const currentVersion = import.meta.env.VITE_APP_VERSION;
+    const storedVersion = localStorage.getItem('snapadda_admin_version');
+
+    if (currentVersion && storedVersion && currentVersion !== storedVersion) {
+      console.log('🚀 New admin version detected. Purging cache and reloading...');
+      localStorage.clear(); 
+      localStorage.setItem('snapadda_admin_version', currentVersion);
+      window.location.reload();
+    } else if (currentVersion) {
+      localStorage.setItem('snapadda_admin_version', currentVersion);
+    }
+  }, []);
+
   return (
     <BrowserRouter>
       <Suspense fallback={<AdminLoader />}>

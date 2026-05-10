@@ -1,4 +1,11 @@
 import { StrictMode } from 'react';
+import { registerSW } from 'virtual:pwa-register';
+
+// Register Service Worker for Instant PWA Loading
+registerSW({
+  onNeedRefresh() {},
+  onOfflineReady() {},
+});
 import { createRoot } from 'react-dom/client';
 import './styles/index.css';
 import { GoogleOAuthProvider } from '@react-oauth/google';

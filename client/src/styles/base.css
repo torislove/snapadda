@@ -75,8 +75,15 @@ body {
 
 h1,
 h2,
-h3 {
+h3,
+h4,
+h5,
+h6 {
   font-family: var(--font-serif);
+  color: var(--txt-primary);
+  opacity: 1 !important;
+  visibility: visible !important;
+  -webkit-text-fill-color: initial !important; /* Prevent transparent gradient failures */
 }
 
 .font-calligraphy {

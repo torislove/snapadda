@@ -1,10 +1,10 @@
-import React, { useRef } from 'react';
+import React, { useRef, memo } from 'react';
 import { motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
 import PropertyCard from './PropertyCard';
 import { useNavigate } from 'react-router-dom';
 
-const HorizontalPropertySection = ({ title, eyebrow, properties, type, loading }) => {
+const HorizontalPropertySection = memo(({ title, eyebrow, properties, type, loading }) => {
   const scrollRef = useRef(null);
   const navigate = useNavigate();
 
@@ -19,36 +19,28 @@ const HorizontalPropertySection = ({ title, eyebrow, properties, type, loading }
   if (!loading && (!properties || properties.length === 0)) return null;
 
   return (
-    <section className="horizontal-section-wrap" style={{ padding: '4rem 0', overflow: 'hidden' }}>
+    <section className="horizontal-section-wrap animate-on-scroll" style={{ padding: '2.5rem 0', overflow: 'hidden' }}>
       <div className="container">
-        <div className="section-head" style={{ marginBottom: '2.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-          <div>
-            <div className="section-eyebrow" style={{ color: 'var(--gold)', fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.2em', marginBottom: '8px' }}>
-              {eyebrow}
-            </div>
-            <h2 className="section-title" style={{ fontSize: '2.2rem', fontWeight: 900, color: 'white', margin: 0 }}>
-              {title}
-            </h2>
+        <div className="section-head sr-head-responsive" style={{ marginBottom: '2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+          <div className="section-eyebrow" style={{ color: 'var(--gold)', fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.25em', marginBottom: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <span style={{ width: '20px', height: '1px', background: 'var(--gold)', marginRight: '10px', opacity: 0.5 }}></span>
+            {eyebrow}
+            <span style={{ width: '20px', height: '1px', background: 'var(--gold)', marginLeft: '10px', opacity: 0.5 }}></span>
           </div>
-          
-          <div className="desktop-only" style={{ display: 'flex', gap: '12px' }}>
-            <button 
-              onClick={() => scroll('left')}
-              className="scroll-nav-btn glass-premium"
-              style={{ width: '48px', height: '48px', borderRadius: '50%', border: '1px solid rgba(255,255,255,0.1)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
-            >
-              <ChevronLeft size={20} />
-            </button>
-            <button 
-              onClick={() => scroll('right')}
-              className="scroll-nav-btn glass-premium"
-              style={{ width: '48px', height: '48px', borderRadius: '50%', border: '1px solid rgba(255,255,255,0.1)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
-            >
-              <ChevronRight size={20} />
-            </button>
-          </div>
+          <h2 className="section-title" style={{ fontSize: 'clamp(1.75rem, 6vw, 2.5rem)', fontWeight: 900, color: 'white', margin: 0, lineHeight: 1.1, letterSpacing: '-0.02em' }}>
+            {title}
+          </h2>
         </div>
-
+          
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1.5rem', marginTop: '1rem', marginBottom: '2rem' }}>
+          <button 
+            onClick={() => navigate('/search', { state: { typeFilter: type } })}
+            className="hero-btn-glass"
+            style={{ padding: '8px 24px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 900, border: '1px solid rgba(255,255,255,0.1)' }}
+          >
+            VIEW ALL {type.toUpperCase()}S
+          </button>
+        </div>
         <div 
           ref={scrollRef}
           style={{ 
@@ -61,7 +53,8 @@ const HorizontalPropertySection = ({ title, eyebrow, properties, type, loading }
             scrollbarWidth: 'none',
             paddingLeft: window.innerWidth <= 600 ? '15px' : '0',
             paddingRight: window.innerWidth <= 600 ? '30px' : '4rem',
-            position: 'relative'
+            position: 'relative',
+            willChange: 'transform'
           }}
           className="hide-scrollbar holographic-carousel"
         >
@@ -71,7 +64,7 @@ const HorizontalPropertySection = ({ title, eyebrow, properties, type, loading }
              ))
           ) : (
             properties.map((p) => (
-              <div key={p._id} style={{ minWidth: window.innerWidth <= 600 ? '290px' : '320px', maxWidth: window.innerWidth <= 600 ? '290px' : '320px', scrollSnapAlign: 'start' }}>
+              <div key={p._id} style={{ minWidth: window.innerWidth <= 600 ? '290px' : '320px', maxWidth: window.innerWidth <= 600 ? '290px' : '320px', scrollSnapAlign: 'start', willChange: 'transform' }}>
                 <PropertyCard {...p} />
               </div>
             ))
@@ -136,9 +129,25 @@ const HorizontalPropertySection = ({ title, eyebrow, properties, type, loading }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .view-more-card:hover { background: rgba(212,175,55,0.1) !important; transform: translateY(-5px); }
         .scroll-nav-btn:hover { background: rgba(255,255,255,0.2) !important; color: var(--gold) !important; border-color: var(--gold) !important; }
+        
+        h1, h2, h3, h4, h5, h6 {
+          font-family: var(--font-serif);
+          color: var(--txt-primary);
+          opacity: 1 !important;
+          visibility: visible !important;
+          -webkit-text-fill-color: initial !important;
+        }
+
+        @media (max-width: 768px) {
+          .sr-head-responsive {
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            gap: 1rem !important;
+          }
+        }
       `}} />
     </section>
   );
-};
+});
 
 export default HorizontalPropertySection;

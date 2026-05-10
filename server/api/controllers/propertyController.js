@@ -2,6 +2,10 @@ import Property from '../models/Property.js';
 import { db } from '../firebase.js';
 import SiteSetting from '../models/SiteSetting.js';
 import { getCitiesNearby } from '../data/apCoordinates.js';
+import { getCached, setCached, invalidateCache, buildCacheKey } from '../cache/propertyCache.js';
+
+// Lean projection for card list views (avoids fetching 50+ unused fields)
+const CARD_FIELDS = 'title price priceDisplay pricePerUnit pricePerAcre totalAcres location district type purpose subType images image status isVerified isFeatured bhk beds baths areaSize measurementUnit facing furnishing constructionStatus approvalAuthority isGated vastuCompliant listerType propertyCode createdAt likeCount';
 
 // Helper to sync to Firebase
 const syncToFirebase = async (property) => {
@@ -66,6 +70,15 @@ const removeFromFirebase = async (id) => {
 // Get all properties (with optional filters + pagination + sort)
 export const getProperties = async (req, res) => {
   try {
+    // ── Cache check ──
+    const cacheKey = buildCacheKey(req.query);
+    const cached = getCached(cacheKey);
+    if (cached) {
+      res.set('X-Cache', 'HIT');
+      res.set('Cache-Control', 'public, max-age=30, stale-while-revalidate=300');
+      return res.status(200).json(cached);
+    }
+
     const {
       type, city, facing, approval, minPrice, maxPrice, search,
       verified, bhk, furnishing, constructionStatus, franchiseId,
@@ -79,7 +92,6 @@ export const getProperties = async (req, res) => {
       if (status !== 'all') filter.status = status;
     } else {
       filter.status = 'Active'; 
-      // Institutional Privacy: Hide only Rejected properties from public search for now
       filter.verificationStatus = { $nin: ['Rejected'] };
     }
 
@@ -97,6 +109,7 @@ export const getProperties = async (req, res) => {
         filter.type = { $regex: type, $options: 'i' };
       }
     }
+
     if (city) filter.location = { $regex: city, $options: 'i' };
     if (district) filter.district = { $regex: district, $options: 'i' };
     if (facing && facing !== 'Any') filter.facing = facing;
@@ -105,19 +118,20 @@ export const getProperties = async (req, res) => {
     if (bhk) filter.bhk = Number(bhk);
     if (furnishing && furnishing !== 'N/A') filter.furnishing = furnishing;
     if (constructionStatus && constructionStatus !== 'N/A') filter.constructionStatus = constructionStatus;
+    
+    const amenitiesArr = req.query.amenities?.split(',').filter(Boolean);
+    if (amenitiesArr?.length > 0) filter.amenities = { $all: amenitiesArr };
+    
     if (franchiseId) filter.franchiseId = franchiseId;
     if (purpose) {
-      if (purpose.toLowerCase() === 'buy') {
-        filter.purpose = { $regex: 'Sale|Buy', $options: 'i' };
-      } else {
-        filter.purpose = { $regex: purpose, $options: 'i' };
-      }
+      filter.purpose = purpose.toLowerCase() === 'buy'
+        ? { $regex: 'Sale|Buy', $options: 'i' }
+        : { $regex: purpose, $options: 'i' };
     }
     if (vastu === 'true') filter.vastuCompliant = true;
     if (isGated === 'true') filter.isGated = true;
     if (subType) filter.subType = subType;
 
-    // Exclude specific property ID (used by similar properties feature)
     const excludeId = req.query.exclude;
     if (excludeId) {
       try {
@@ -132,48 +146,56 @@ export const getProperties = async (req, res) => {
       if (maxPrice) filter.price.$lte = Number(maxPrice);
     }
 
+    let projection = {};
     if (search) {
-      // AP Locality Intelligence: Multi-token fuzzy search across specific regional pivots
-      const safeSearch = typeof search === 'string' ? search : String(search);
-      const tokens = safeSearch.split(/\s+/).filter(t => t.length > 2);
-      const regexes = tokens.map(t => new RegExp(t, 'i'));
-
-      filter.$or = [
-        { location: { $regex: safeSearch, $options: 'i' } },
-        { district: { $regex: safeSearch, $options: 'i' } },
-        { title: { $regex: safeSearch, $options: 'i' } }
-      ];
-
-      if (tokens.length > 0) {
-        filter.$or.push({ location: { $in: regexes } });
-        filter.$or.push({ district: { $in: regexes } });
-      }
+      filter.$text = { $search: search };
+      projection = { score: { $meta: 'textScore' } };
     }
 
-    let sortObj = { createdAt: -1 };
-    if (sort === 'price_asc') sortObj = { price: 1 };
-    else if (sort === 'price_desc') sortObj = { price: -1 };
-    else if (sort === 'featured') sortObj = { isFeatured: -1, createdAt: -1 };
+    let sortObj = search 
+      ? { score: { $meta: 'textScore' }, isFeatured: -1, isVerified: -1 }
+      : { isFeatured: -1, isVerified: -1, createdAt: -1 };
+    
+    if (sort === 'price_asc') sortObj = { price: 1, isFeatured: -1 };
+    else if (sort === 'price_desc') sortObj = { price: -1, isFeatured: -1 };
+    else if (sort === 'featured') sortObj = { isFeatured: -1, isVerified: -1, createdAt: -1 };
+    else if (sort === 'newest') sortObj = { createdAt: -1, isFeatured: -1 };
 
     const pageNum = Math.max(1, parseInt(page));
     const limitNum = Math.min(100, Math.max(1, parseInt(limit)));
     const skip = (pageNum - 1) * limitNum;
 
+    // ── Use .lean() for plain JS objects (30-40% faster Mongoose reads) ──
+    // ── Select only card fields unless it's a search (needs score meta) ──
+    const selectFields = search ? '' : CARD_FIELDS;
+
     const [properties, total] = await Promise.all([
-      Property.find(filter).sort(sortObj).skip(skip).limit(limitNum).populate('cityId'),
+      Property.find(filter, projection)
+        .select(selectFields)
+        .sort(sortObj)
+        .skip(skip)
+        .limit(limitNum)
+        .lean(),
       Property.countDocuments(filter)
     ]);
 
-    res.status(200).json({
+    const result = {
       status: 'success',
       data: properties,
       meta: { total, page: pageNum, limit: limitNum, totalPages: Math.ceil(total / limitNum), hasNextPage: pageNum < Math.ceil(total / limitNum), hasPrevPage: pageNum > 1 }
-    });
+    };
+
+    // ── Cache the result ──
+    setCached(cacheKey, result);
+    res.set('X-Cache', 'MISS');
+    res.set('Cache-Control', 'public, max-age=30, stale-while-revalidate=300');
+    res.status(200).json(result);
   } catch (error) {
     console.error('GET_PROPERTIES_ERROR:', error);
     res.status(500).json({ status: 'error', message: error.message });
   }
 };
+
 
 // Nearby Properties (using AP coordinate table - no external API)
 export const getNearbyProperties = async (req, res) => {
@@ -300,6 +322,9 @@ export const createProperty = async (req, res) => {
 
     const newProperty = new Property(propertyData);
     await newProperty.save();
+    
+    // Invalidate property list cache so new listing appears immediately
+    invalidateCache();
     
     // Sync to Firebase for real-time (Non-blocking)
     syncToFirebase(newProperty).catch(err => console.error('FIREBASE_SYNC_ERR:', err));

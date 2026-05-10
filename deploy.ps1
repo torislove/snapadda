@@ -56,6 +56,9 @@ try {
     # 1. Prepare for Production Build
     Write-Host "[1/6] Injecting Production Multi-Env Config..." -ForegroundColor Yellow
     
+    $DEPLOY_VERSION = Get-Date -Format "yyyyMMddHHmmss"
+    Write-Host "   Setting Version: $DEPLOY_VERSION" -ForegroundColor Cyan
+
     foreach ($path in @("admin/.env", "client/.env", "server/.env")) {
         Write-Host "   Updating $path..." -ForegroundColor Gray
         
@@ -64,6 +67,7 @@ try {
         if ($path -match "client") { $currentApi = "/api" }
         
         Set-EnvVar $path "VITE_API_URL" $currentApi
+        Set-EnvVar $path "VITE_APP_VERSION" $DEPLOY_VERSION
         
         foreach ($key in $FIREBASE_PROD.Keys) {
             Set-EnvVar $path $key $FIREBASE_PROD[$key]

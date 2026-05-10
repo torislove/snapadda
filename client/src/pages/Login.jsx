@@ -53,8 +53,15 @@ export default function Login() {
       });
       if (res.status === 'success') {
         loginGoogle({ user: res.user, token: credentialResponse.credential });
-        // Skip onboarding — phone already captured here
-        navigate(from, { replace: true });
+        
+        // Elite Redirect: Check if they came from a gated property click
+        const savedRedirect = sessionStorage.getItem('snapadda_redirect');
+        if (savedRedirect) {
+          sessionStorage.removeItem('snapadda_redirect');
+          navigate(savedRedirect, { replace: true });
+        } else {
+          navigate(from, { replace: true });
+        }
       }
     } catch {
       setLoginError('Google login failed. Please try again.');

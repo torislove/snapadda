@@ -8,7 +8,7 @@ import {
   SlidersHorizontal, ChevronLeft, ChevronRight, Image as ImageIcon, Maximize2
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { likeProperty, shareProperty } from '../services/api';
+import { likeProperty, shareProperty, createInquiry } from '../services/api';
 import { useTranslation } from 'react-i18next';
 import { 
   formatSnapAddaPrice, 
@@ -18,7 +18,6 @@ import {
 } from '../utils/priceUtils';
 import tr from '../utils/teluguTranslations';
 import { logUserActivity, ACTIONS } from '../services/activityTracker';
-import HolographicWrapper from './HolographicWrapper';
 import { triggerHaptic } from '../utils/haptics';
 
 const Toast = memo(({ msg, onDone }) => {
@@ -50,6 +49,10 @@ const PropertyCard = memo(({
   const [activeImgIdx, setActiveImgIdx] = useState(0);
   const [liked, setLiked] = useState(initialLiked);
   const [likeCount, setLikeCount] = useState(initialLikeCount);
+  const [quickInquiryOpen, setQuickInquiryOpen] = useState(false);
+  const [questionText, setQuestionText] = useState('');
+  const [submittingInquiry, setSubmittingInquiry] = useState(false);
+  const [inquirySent, setInquirySent] = useState(false);
   const hoverIntervalRef = useRef(null);
 
   const startImageCycle = () => {
@@ -178,11 +181,7 @@ const PropertyCard = memo(({
 
   const handleShare = useCallback((e) => {
     e.preventDefault(); e.stopPropagation();
-    if (!user) {
-      navigate('/login', { state: { from: `/property/${propertyId}` } });
-      return;
-    }
-    
+    // Senior Choice: Remove login requirement for sharing to maximize viral spread
     triggerHaptic('success');
     const url = `${window.location.origin}/property/${propertyId}`;
     const shareText = `Check out this ${type} in ${location} on SnapAdda.\n\nPrice: ${formatSnapAddaPrice(displayPrice)}\n\nView details:`;
@@ -192,10 +191,41 @@ const PropertyCard = memo(({
         title: `SnapAdda: ${title}`, 
         text: shareText,
         url 
-      }).catch(() => null);
-      navigator.clipboard.writeText(`${shareText} ${url}`).then(() => setToast('🔗 Details copied!'));
+      }).catch(() => {
+        // Fallback to clipboard if share sheet is cancelled or fails
+        navigator.clipboard.writeText(`${shareText} ${url}`).then(() => setToast('🔗 Details copied!'));
+      });
+    } else {
+      navigator.clipboard.writeText(`${shareText} ${url}`).then(() => setToast('🔗 Link copied!'));
     }
-  }, [user, propertyId, title, type, location, displayPrice, navigate]);
+  }, [propertyId, title, type, location, displayPrice]);
+
+  const submitQuickInquiry = async (e) => {
+    e.preventDefault(); e.stopPropagation();
+    if (!questionText.trim()) return;
+    if (!user) return setToast('Sign in to ask questions');
+
+    setSubmittingInquiry(true);
+    try {
+      await createInquiry({
+        propertyId,
+        clientName: user.name || 'User',
+        clientContact: user.phone || user.email || 'N/A',
+        question: questionText
+      });
+      setInquirySent(true);
+      setQuestionText('');
+      triggerHaptic('success');
+      setTimeout(() => {
+        setInquirySent(false);
+        setQuickInquiryOpen(false);
+      }, 3000);
+    } catch (err) {
+      setToast('⚠️ Submission failed');
+    } finally {
+      setSubmittingInquiry(false);
+    }
+  };
 
   // Elite Image Priority logic: Strict validation for Cloudinary/Uploads only
   const isValidImage = (img) => {
@@ -230,43 +260,112 @@ const PropertyCard = memo(({
       <AnimatePresence>{toast && <Toast msg={toast} onDone={() => setToast('')} />}</AnimatePresence>
       <motion.article
         ref={cardRef}
-        initial={{ opacity: 0, y: 0 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: "-50px" }}
-        transition={{ duration: 0.45, ease: 'easeOut' }}
-        style={{ height: isMobile ? '420px' : '460px', padding: isMobile ? '0 8px' : '0' }}
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        viewport={{ once: true, margin: "20px" }}
+        transition={{ duration: 0.3 }}
+        style={{ height: isMobile ? '380px' : '440px', padding: isMobile ? '0 4px' : '0' }}
+        className="property-card-container"
       >
-        <HolographicWrapper
-          intensity={holographic ? 1.5 : 0}
-          iridescent={iridescent || isFeatured}
-          tilt={false}
-          style={{ height: '100%', borderRadius: isMobile ? '28px' : '24px' }}
-        >
-        <motion.div 
+        <div 
           className="property-card" 
-          whileTap={{ scale: 0.98 }}
           style={{ 
             height: '100%', 
-            cursor: 'pointer',
-            borderRadius: 'inherit',
+            borderRadius: isMobile ? '20px' : '24px',
             background: '#050a14',
             border: isMobile ? '1px solid rgba(255,255,255,0.08)' : '1px solid var(--border-light)',
-            boxShadow: isMobile ? '0 15px 35px rgba(0,0,0,0.4)' : '0 10px 30px rgba(0,0,0,0.2)',
+            boxShadow: isMobile ? '0 12px 30px rgba(0,0,0,0.4)' : '0 10px 30px rgba(0,0,0,0.2)',
             overflow: 'hidden',
             position: 'relative',
             display: 'flex',
-            flexDirection: 'column'
+            flexDirection: 'column',
+            transition: 'transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease',
           }}
-          onClick={(e) => { 
-            if (!e.defaultPrevented) {
-              if (!user) navigate('/login', { state: { from: `/property/${propertyId}` } });
-              else {
-                logUserActivity(ACTIONS.PROPERTY_VIEW, { propertyId, title, location }, user?._id);
-                navigate(`/property/${propertyId}`);
-              }
+          onMouseEnter={(e) => {
+            if (!isMobile) {
+              e.currentTarget.style.transform = 'translateY(-4px)';
+              e.currentTarget.style.boxShadow = '0 20px 40px rgba(0,0,0,0.4), 0 0 20px rgba(232,184,75,0.1)';
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (!isMobile) {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 10px 30px rgba(0,0,0,0.2)';
             }
           }}
         >
+          {/* Main Navigation Layer (Z-Index: 5) */}
+          <div 
+            onClick={(e) => {
+              if (!user) {
+                e.preventDefault();
+                e.stopPropagation();
+                // Store intended destination to redirect after login
+                sessionStorage.setItem('snapadda_redirect', `/property/${propertyId}`);
+                // Open login modal (assuming we have one in Home or a global state)
+                // For now, redirect to /login
+                navigate('/login');
+                return;
+              }
+              logUserActivity(ACTIONS.PROPERTY_VIEW, { propertyId, title, location }, user?._id);
+              navigate(`/property/${propertyId}`);
+            }}
+            style={{ position: 'absolute', inset: 0, zIndex: 5, cursor: 'pointer' }}
+          />
+
+          {/* Liquid Shimmer Overlay (Desktop Only) */}
+          {!isMobile && (
+            <motion.div
+              className="pc-shimmer"
+              initial={{ x: '-100%', opacity: 0 }}
+              whileHover={{ x: '100%', opacity: 0.15 }}
+              transition={{ duration: 0.8, ease: "easeInOut" }}
+              style={{
+                position: 'absolute',
+                inset: 0,
+                background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)',
+                zIndex: 4,
+                pointerEvents: 'none'
+              }}
+            />
+          )}
+
+          {/* TOP ACTIONS (Z-Index: 30) - MOVED TO TOP LEVEL TO AVOID Z-INDEX TRAP */}
+          <div style={{ position: 'absolute', top: '12px', right: '12px', zIndex: 30, display: 'flex', gap: '6px', background: 'rgba(10, 15, 25, 0.75)', backdropFilter: 'blur(20px)', padding: '4px', borderRadius: '30px', border: '1px solid rgba(255,255,255,0.2)', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
+            <motion.button 
+              whileTap={{ scale: 0.9 }}
+              onClick={(e) => {
+                e.preventDefault(); e.stopPropagation();
+                window.dispatchEvent(new CustomEvent('toggle-compare', { 
+                  detail: { id: propertyId, title, price, image: displayImages[0], isFeatured, isVerified } 
+                }));
+              }}
+              style={{ width: '38px', height: '38px', borderRadius: '50%', background: 'transparent', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: 'none' }}
+              aria-label="Compare property"
+              title="Compare"
+            >
+              <SlidersHorizontal size={18} />
+            </motion.button>
+            <motion.button 
+              whileTap={{ scale: 0.9 }}
+              onClick={handleShare}
+              style={{ width: '38px', height: '38px', borderRadius: '50%', background: 'transparent', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: 'none' }}
+              aria-label="Share property"
+              title="Share"
+            >
+              <Share2 size={18} />
+            </motion.button>
+            <motion.button 
+              whileTap={{ scale: 0.9 }}
+              onClick={handleLike}
+              style={{ width: '38px', height: '38px', borderRadius: '50%', background: 'transparent', color: liked ? 'var(--gold)' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: 'none' }}
+              aria-label={liked ? "Remove from saved" : "Save property"}
+              title="Save"
+            >
+              <Heart size={18} fill={liked ? 'currentColor' : 'none'} />
+            </motion.button>
+          </div>
+          
           {/* FULL BLEED BACKGROUND IMAGE */}
           <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
             <div className="pc-image-carousel" 
@@ -275,36 +374,21 @@ const PropertyCard = memo(({
               style={{ position: 'relative', width: '100%', height: '100%' }}
             >
               {displayImages.length > 0 && displayImages[activeImgIdx % displayImages.length] ? (
-                <AnimatePresence initial={false} custom={activeImgIdx}>
-                  <motion.img 
-                    key={activeImgIdx}
-                    custom={activeImgIdx}
-                    initial={{ opacity: 0.8, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0.8, x: -20 }}
-                    transition={{ duration: 0.25, ease: "easeOut" }}
-                    drag="x"
-                    dragConstraints={{ left: 0, right: 0 }}
-                    dragElastic={0.4}
-                    onDragEnd={(e, { offset }) => {
-                      e.preventDefault(); e.stopPropagation();
-                      const swipe = offset.x;
-                      if (swipe < -50) {
-                        setActiveImgIdx(prev => (prev + 1) % displayImages.length);
-                      } else if (swipe > 50) {
-                        setActiveImgIdx(prev => (prev - 1 + displayImages.length) % displayImages.length);
-                      }
-                    }}
-                    src={getOptimizedImg(displayImages[activeImgIdx % displayImages.length])} 
-                    alt={`View of ${title} in ${location}`} 
-                    loading="lazy" 
-                    width="400"
-                    height="300"
-                    style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', cursor: 'grab' }}
-                    whileTap={{ cursor: 'grabbing' }}
-                    onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                  />
-                </AnimatePresence>
+                <img 
+                  key={activeImgIdx}
+                  src={getOptimizedImg(displayImages[activeImgIdx % displayImages.length])} 
+                  alt={`${title} in ${location} - ${type}`} 
+                  loading={id === 0 || id === 1 ? 'eager' : 'lazy'}
+                  fetchpriority={id === 0 || id === 1 ? 'high' : 'auto'}
+                  width="400"
+                  height="300"
+                  style={{ 
+                    position: 'absolute', inset: 0, width: '100%', height: '100%', 
+                    objectFit: 'cover', cursor: 'grab', 
+                    transition: 'opacity 0.3s ease-out' 
+                  }}
+                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                />
               ) : (
                 <div style={{ height: '100%', background: '#111', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <Building2 size={48} opacity={0.2} />
@@ -341,39 +425,7 @@ const PropertyCard = memo(({
                   <style>{`.pc-image-carousel:hover .pc-nav-btn { opacity: 1 !important; }`}</style>
                 </>
               )}
-
-              {/* Floating Action Pill */}
-              <div style={{ position: 'absolute', top: '16px', right: '16px', zIndex: 20, display: 'flex', gap: '4px', background: 'rgba(10, 15, 25, 0.65)', backdropFilter: 'blur(20px)', padding: '4px', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.15)', boxShadow: '0 8px 32px rgba(0,0,0,0.4)' }}>
-                <motion.button 
-                  whileTap={{ scale: 0.9 }}
-                  onClick={(e) => {
-                    e.preventDefault(); e.stopPropagation();
-                    window.dispatchEvent(new CustomEvent('toggle-compare', { 
-                      detail: { id: propertyId, title, price, image: displayImages[0], isFeatured, isVerified } 
-                    }));
-                  }}
-                  style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'transparent', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: 'none' }}
-                  title="Compare"
-                >
-                  <SlidersHorizontal size={14} />
-                </motion.button>
-                <motion.button 
-                  whileTap={{ scale: 0.9 }}
-                  onClick={handleShare}
-                  style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'transparent', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: 'none' }}
-                  title="Share"
-                >
-                  <Share2 size={14} />
-                </motion.button>
-                <motion.button 
-                  whileTap={{ scale: 0.9 }}
-                  onClick={handleLike}
-                  style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'transparent', color: liked ? 'var(--gold)' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: 'none' }}
-                  title="Save"
-                >
-                  <Heart size={14} fill={liked ? 'currentColor' : 'none'} />
-                </motion.button>
-              </div>
+              {/* Top Actions were moved up */}
 
               {/* Status Labels Top Right below Actions */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'flex-end', position: 'absolute', top: '64px', right: '16px', zIndex: 10 }}>
@@ -386,6 +438,15 @@ const PropertyCard = memo(({
                      style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(212,175,55,0.15)', color: 'var(--gold)', border: '1px solid var(--gold-border)', backdropFilter: 'blur(10px)', fontWeight: 700, padding: '4px 10px', borderRadius: '8px', fontSize: '0.65rem' }}
                    >
                      <ShieldCheck size={12} /> Verified
+                   </motion.span>
+                 )}
+                 {isNew && (
+                   <motion.span 
+                     animate={{ scale: [1, 1.05, 1], opacity: [0.8, 1, 0.8] }}
+                     transition={{ repeat: Infinity, duration: 2 }}
+                     style={{ background: 'rgba(255,80,80,0.2)', color: '#ff5050', border: '1px solid rgba(255,80,80,0.4)', backdropFilter: 'blur(10px)', fontWeight: 900, padding: '4px 10px', borderRadius: '8px', fontSize: '0.65rem', letterSpacing: '0.05em' }}
+                   >
+                     NEW
                    </motion.span>
                  )}
               </div>
@@ -415,85 +476,83 @@ const PropertyCard = memo(({
           </div>
 
           {/* FLOATING CONTENT AT BOTTOM */}
-          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '1.25rem', zIndex: 20, display: 'flex', flexDirection: 'column' }}>
+          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: isMobile ? '0.6rem' : '0.8rem', zIndex: 40, display: 'flex', flexDirection: 'column', background: 'linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.6) 50%, transparent 100%)' }}>
             
-            {/* Price Row */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '8px' }}>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
-                <span style={{ fontFamily: 'var(--font-serif)', fontSize: '1.6rem', fontWeight: 900, color: 'white', textShadow: '0 2px 10px rgba(0,0,0,0.8)' }}>
-                  {displayPrice ? formatSnapAddaPrice(displayPrice) : 'Price on Request'}
-                </span>
-                {isAgri && agriTotalValue > 0 && <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.8)' }}>Total</span>}
+            {/* Top Row: Location & Type Badge */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem', fontWeight: 600 }}>
+                <MapPin size={10} style={{ color: 'var(--gold)' }} /> <span>{location}</span>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 600, background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(10px)', padding: '4px 10px', borderRadius: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(255,255,255,0.08)', backdropFilter: 'blur(10px)', padding: '2px 6px', borderRadius: '6px', fontSize: '0.6rem', fontWeight: 800 }}>
                 <span style={{ color: typeStyle.accent }}>{typeStyle.icon}</span> <span>{tr(type) || 'ప్రాపర్టీ'}</span>
-                {purpose && <span style={{ marginLeft: '4px', color: purpose === 'Rent' ? 'var(--cyan)' : 'var(--emerald)' }}>{purpose}</span>}
               </div>
             </div>
 
             {/* Title */}
-            <h3 style={{ fontFamily: 'var(--font-body)', fontSize: '1.1rem', fontWeight: 800, color: 'white', margin: '0 0 4px 0', lineHeight: 1.3, textShadow: '0 2px 4px rgba(0,0,0,0.8)' }}>{title}</h3>
+            <h3 style={{ fontFamily: 'var(--font-body)', fontSize: '1rem', fontWeight: 800, color: 'white', margin: '0 0 6px 0', lineHeight: 1.2 }}>{title}</h3>
             
-            {/* Location */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem', marginBottom: '12px', textShadow: '0 1px 3px rgba(0,0,0,0.8)' }}>
-              <MapPin size={14} style={{ color: 'var(--gold)' }} /> {location}
-            </div>
-
-            {/* Advanced Specs Grid */}
-            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '16px' }}>
+            {/* Horizontal Specs Ribbon (Z-Scan Path) */}
+            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '8px', overflowX: 'auto' }} className="hide-scrollbar">
                {isResidential && (bhk || beds) ? (
-                 <div style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(12px)', padding: '6px 12px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', color: 'white', fontWeight: 600 }}>
-                   <BedDouble size={14} style={{ color: 'var(--gold)' }} /> <span>{bhk || beds} BHK</span>
+                 <div style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.05)', padding: '3px 8px', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.65rem', color: 'white', fontWeight: 700 }}>
+                   <BedDouble size={10} style={{ color: 'var(--gold)' }} /> <span>{bhk || beds} BHK</span>
                  </div>
                ) : null}
-               {areaDisplay && (
-                 <div style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(12px)', padding: '6px 12px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', color: 'white', fontWeight: 600 }}>
-                   {isAgri ? <Leaf size={14} style={{ color: 'var(--emerald)' }}/> : <Square size={14} style={{ color: 'var(--cyan)' }}/>} <span>{areaDisplay}</span>
+               {areaSize && (
+                 <div style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.05)', padding: '5px 10px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.72rem', color: 'white', fontWeight: 700 }}>
+                   {isAgri ? <Leaf size={12} style={{ color: 'var(--emerald)' }}/> : <Square size={12} style={{ color: 'var(--cyan)' }}/>} <span>{formatLandSize(areaSize, measurementUnit)}</span>
                  </div>
                )}
                {facing && facing !== 'Any' && (
-                 <div style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(12px)', padding: '6px 12px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', color: 'white', fontWeight: 600 }}>
-                   <Compass size={14} style={{ color: 'var(--gold)' }} /> <span>{tr(facing)}</span>
+                 <div style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.05)', padding: '5px 10px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.72rem', color: 'white', fontWeight: 700 }}>
+                   <Compass size={12} style={{ color: 'var(--gold)' }} /> <span>{tr(facing)}</span>
                  </div>
                )}
-               {/* View Similar Action */}
-               <button 
-                  onClick={(e) => {
-                    e.preventDefault(); e.stopPropagation();
-                    navigate(`/search?type=${type}&city=${location}`);
-                  }}
-                  style={{ background: 'rgba(212,175,55,0.2)', backdropFilter: 'blur(12px)', border: '1px solid var(--gold-border)', padding: '6px 12px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', color: 'var(--gold)', fontWeight: 700, cursor: 'pointer', marginLeft: 'auto' }}
-                >
-                 <SlidersHorizontal size={14} /> Find Similar
-               </button>
+               {isVerified && (
+                 <div style={{ background: 'rgba(16,217,140,0.1)', border: '1px solid rgba(16,217,140,0.2)', padding: '5px 10px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.72rem', color: '#10d98c', fontWeight: 800 }}>
+                   <ShieldCheck size={12} /> VERIFIED
+                 </div>
+               )}
             </div>
 
-            {/* Actions */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '8px' }}>
-              <button onClick={(e) => { 
-                e.preventDefault(); e.stopPropagation(); 
-                if (!user) { navigate('/login', { state: { from: `/property/${propertyId}` } }); }
-                else { navigate(`/property/${propertyId}`); }
-              }} className="pc-btn" style={{ background: 'var(--gold)', color: 'var(--midnight)', border: 'none', borderRadius: '12px', padding: '0.7rem', fontSize: '0.85rem', fontWeight: 800, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', cursor: 'pointer', transition: 'all 0.2s' }}>
-                View Details <ArrowRight size={16} />
-              </button>
-              
-              <a href={`tel:${supportPhone}`} onClick={(e) => e.stopPropagation()} style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.2)', width: '44px', height: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '12px', color: 'white', transition: 'all 0.2s' }} title="Call">
-                <Phone size={18}/>
-              </a>
-              <a 
-                href={`https://wa.me/${supportWA}?text=Hi! I'm interested in this property: ${title}`} 
-                onClick={(e) => e.stopPropagation()}
-                target="_blank" rel="noopener noreferrer" 
-                style={{ background: 'rgba(39,201,125,0.2)', backdropFilter: 'blur(10px)', border: '1px solid rgba(39,201,125,0.4)', color: 'var(--emerald)', width: '44px', height: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '12px', transition: 'all 0.2s' }}
-                title="WhatsApp"
+            {/* Bottom Row: Price & CTAs (Shared Baseline) */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto' }}>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.5)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Price Starts From</span>
+                <span style={{ fontFamily: 'var(--font-serif)', fontSize: '1.5rem', fontWeight: 900, color: 'var(--gold)', textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>
+                  {displayPrice ? formatSnapAddaPrice(displayPrice) : 'On Request'}
+                </span>
+              </div>
+
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <a href={`tel:${supportPhone}`} onClick={(e) => e.stopPropagation()} style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.1)', width: '42px', height: '42px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '12px', color: 'white', transition: 'all 0.2s' }}>
+                  <Phone size={16}/>
+                </a>
+                <button 
+                  onClick={(e) => {
+                    e.preventDefault(); e.stopPropagation();
+                    if (!user) navigate('/login');
+                    else navigate(`/property/${propertyId}`);
+                  }}
+                  className="btn-3d-liquid"
+                  style={{ background: 'var(--gold)', color: 'black', border: 'none', borderRadius: '12px', padding: '0 18px', height: '42px', fontSize: '0.8rem', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
+                >
+                  VIEW <ArrowRight size={14} />
+                </button>
+              </div>
+            </div>
+
+            {/* Quick Question Trigger (Muted Overlay) */}
+            <div style={{ marginTop: '12px' }}>
+              <button 
+                onClick={(e) => { e.stopPropagation(); setQuickInquiryOpen(true); }}
+                style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px dashed rgba(255,255,255,0.15)', borderRadius: '10px', padding: '6px', color: 'rgba(255,255,255,0.4)', fontSize: '0.65rem', fontWeight: 700, cursor: 'pointer' }}
               >
-                <MessageSquare size={18}/>
-              </a>
+                + ASK QUESTION
+              </button>
             </div>
           </div>
-        </motion.div>
-        </HolographicWrapper>
+        </div>
       </motion.article>
     </>
   );

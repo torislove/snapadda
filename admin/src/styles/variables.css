@@ -1,63 +1,63 @@
 :root {
-  /* ── Core Backgrounds (Deep Dark) ── */
-  --bg-primary:    #020205; /* Blacker Hole */
-  --bg-secondary:  #05060b;
-  --bg-tertiary:   #0a0b14;
-  --bg-glass:      rgba(255, 255, 255, 0.02);
-  --bg-glass-heavy:rgba(255, 255, 255, 0.045);
-  --bg-glass-hover:rgba(255, 255, 255, 0.07);
+  /* ── Core Backgrounds (Light Elite) ── */
+  --bg-primary:    #f8f9fc;
+  --bg-secondary:  #ffffff;
+  --bg-tertiary:   #f1f3f8;
+  --bg-glass:      rgba(255, 255, 255, 0.92);
+  --bg-glass-heavy:rgba(255, 255, 255, 0.97);
+  --bg-glass-hover:rgba(248, 249, 252, 0.98);
 
   /* ── Legacy App.css Tokens ── */
-  --midnight:      #05050a;
-  --midnight-deep: #020205;
-  --glass:         rgba(255, 255, 255, 0.03);
-  --glass-border:  rgba(255, 255, 255, 0.1);
-  --bg-panel:      rgba(15, 18, 25, 0.6);
-  --border-glass:  rgba(255, 255, 255, 0.12);
-  --neon-glow:     0 0 15px rgba(34, 217, 224, 0.2);
-  --holo-iridescent: linear-gradient(135deg, #ff00c1 0%, #9600ff 25%, #4900ff 50%, #00b8ff 75%, #00ff88 100%);
-  --holo-glass:    rgba(255, 255, 255, 0.03);
-  --holo-border:   rgba(255, 255, 255, 0.1);
+  --midnight:      #1a1a2e;
+  --midnight-deep: #0f0f1a;
+  --glass:         rgba(255, 255, 255, 0.9);
+  --glass-border:  rgba(0, 0, 0, 0.08);
+  --bg-panel:      #ffffff;
+  --border-glass:  rgba(0, 0, 0, 0.08);
+  --neon-glow:     0 0 15px rgba(124, 58, 237, 0.15);
+  --holo-iridescent: linear-gradient(135deg, #7c3aed 0%, #2563eb 50%, #059669 100%);
+  --holo-glass:    rgba(255, 255, 255, 0.9);
+  --holo-border:   rgba(0, 0, 0, 0.08);
 
   /* ── Text Palette ── */
-  --text-primary:   #ffffff;
-  --text-secondary: #a1a1aa;
-  --text-muted:     #52525b;
-  
+  --text-primary:   #1a1a2e;
+  --text-secondary: #4a4a6a;
+  --text-muted:     #8890a4;
+
   /* App.css text aliases */
   --txt-primary:    var(--text-primary);
-  --txt-secondary:  #c5beb5;
-  --txt-muted:      #7d756d;
+  --txt-secondary:  #4a4a6a;
+  --txt-muted:      #8890a4;
 
   /* ── Accent Palette ── */
-  --gold:           #f5c842;
-  --gold-light:     #fcd58e;
-  --gold-dim:       rgba(245, 200, 66, 0.12);
-  --gold-glow:      0 0 24px rgba(245, 200, 66, 0.25);
-  --gold-border:    rgba(232, 184, 75, 0.25);
+  --gold:           #e8b84b;
+  --gold-light:     #f5d07a;
+  --gold-dim:       rgba(232, 184, 75, 0.12);
+  --gold-glow:      0 4px 20px rgba(232, 184, 75, 0.25);
+  --gold-border:    rgba(232, 184, 75, 0.3);
 
-  --violet:         #9b59f5;
-  --violet-dim:     rgba(155, 89, 245, 0.12);
-  --violet-glow:    0 0 24px rgba(155, 89, 245, 0.3);
+  --violet:         #7c3aed;
+  --violet-dim:     rgba(124, 58, 237, 0.1);
+  --violet-glow:    0 4px 20px rgba(124, 58, 237, 0.2);
 
-  --cyan:           #22d9e0;
-  --cyan-dim:       rgba(34, 217, 224, 0.1);
-  --cyan-glow:      0 0 24px rgba(34, 217, 224, 0.25);
+  --cyan:           #0891b2;
+  --cyan-dim:       rgba(8, 145, 178, 0.1);
+  --cyan-glow:      0 4px 20px rgba(8, 145, 178, 0.2);
 
-  --rose:           #f5397b;
-  --rose-dim:       rgba(245, 57, 123, 0.1);
-  --rose-glow:      0 0 24px rgba(245, 57, 123, 0.25);
+  --rose:           #e11d48;
+  --rose-dim:       rgba(225, 29, 72, 0.08);
+  --rose-glow:      0 4px 20px rgba(225, 29, 72, 0.2);
 
-  --emerald:        #10d98c;
-  --emerald-dim:    rgba(16, 217, 140, 0.1);
-  --emerald-glow:   0 0 24px rgba(16, 217, 140, 0.25);
+  --emerald:        #059669;
+  --emerald-dim:    rgba(5, 150, 105, 0.1);
+  --emerald-glow:   0 4px 20px rgba(5, 150, 105, 0.2);
 
-  --orange:         #ff8c42;
-  --orange-dim:     rgba(255, 140, 66, 0.1);
+  --orange:         #ea580c;
+  --orange-dim:     rgba(234, 88, 12, 0.1);
 
   /* ── Layout & Grid ── */
-  --nav-h:          70px;
-  --sidebar-w:      260px;
+  --nav-h:          60px;
+  --sidebar-w:      256px;
   --spacing-xs:     0.25rem;
   --spacing-sm:     0.5rem;
   --spacing-md:     1rem;
@@ -67,41 +67,47 @@
 
   /* ── Radii ── */
   --radius-sm:      8px;
-  --radius-md:      14px;
-  --radius-lg:      20px;
-  --radius-xl:      28px;
+  --radius-md:      12px;
+  --radius-lg:      18px;
+  --radius-xl:      24px;
   --radius-full:    9999px;
-  
+
   /* App.css aliases */
   --r-md:           var(--radius-md);
   --r-lg:           var(--radius-lg);
 
   /* ── Typography ── */
-  --font-heading:   'Cormorant Garamond', serif;
+  --font-heading:   'Plus Jakarta Sans', sans-serif;
   --font-body:      'Plus Jakarta Sans', sans-serif;
-  --font-mono:      'Space Grotesk', sans-serif;
+  --font-mono:      'Space Grotesk', monospace;
 
-  /* ── Shadows ── */
-  --shadow-sm:      0 1px 4px rgba(0,0,0,0.6);
-  --shadow-md:      0 4px 16px rgba(0,0,0,0.7);
-  --shadow-lg:      0 16px 48px rgba(0,0,0,0.8);
-  --shadow-gold:    0 0 24px rgba(245, 200, 66, 0.2);
-  --shadow-violet:  0 0 24px rgba(155, 89, 245, 0.25);
+  /* ── Shadows (light-mode) ── */
+  --shadow-sm:      0 1px 4px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md:      0 4px 16px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.04);
+  --shadow-lg:      0 12px 40px rgba(0,0,0,0.10), 0 4px 12px rgba(0,0,0,0.06);
+  --shadow-gold:    0 4px 20px rgba(232, 184, 75, 0.25);
+  --shadow-violet:  0 4px 20px rgba(124, 58, 237, 0.2);
 
   /* ── Transitions ── */
   --transition-fast:   0.15s ease;
-  --transition-normal: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-slow:   0.5s cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-spring: 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  --transition-normal: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow:   0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-spring: 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
   --ease-butter:       cubic-bezier(0.16, 1, 0.3, 1);
 
   /* ── System Helpers ── */
-  --border:            rgba(255, 255, 255, 0.07);
-  --border-light:      rgba(255, 255, 255, 0.12);
-  --border-subtle:     rgba(255, 255, 255, 0.07);
-  --border-focus:      rgba(155, 89, 245, 0.5);
-  --border-gold:       rgba(245, 200, 66, 0.3);
-  --error:             #f5397b;
-  --success:           #10d98c;
-  --warning:           #ff8c42;
+  --border:            rgba(0, 0, 0, 0.08);
+  --border-light:      rgba(0, 0, 0, 0.05);
+  --border-subtle:     rgba(0, 0, 0, 0.06);
+  --border-focus:      rgba(124, 58, 237, 0.4);
+  --border-gold:       rgba(232, 184, 75, 0.35);
+  --error:             #e11d48;
+  --success:           #059669;
+  --warning:           #ea580c;
+
+  /* ── Card Styles ── */
+  --card-bg:           #ffffff;
+  --card-border:       1px solid rgba(0,0,0,0.07);
+  --card-shadow:       0 2px 12px rgba(0,0,0,0.06);
+  --card-shadow-hover: 0 8px 32px rgba(0,0,0,0.1);
 }

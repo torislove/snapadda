@@ -35,8 +35,12 @@ function Band({ items, speed, reverse }) {
   const repeated = [...normalized, ...normalized, ...normalized, ...normalized];
   
   return (
-    <div className="marquee-band-container">
-      <div className="marquee-track" style={{ animationDuration: `${speed}s`, animationDirection: reverse ? 'reverse' : 'normal' }}>
+    <div className="marquee-band-container" style={{ willChange: 'transform' }}>
+      <div className="marquee-track" style={{ 
+        animationDuration: `${speed}s`, 
+        animationDirection: reverse ? 'reverse' : 'normal',
+        willChange: 'transform'
+      }}>
         {repeated.map((item, i) => (
           <a key={`${item.id}-${i}`} href={item.link || '#'} className="marquee-item tilt-3d shimmer-3d">
             {item.icon && <MarqueeIcon name={item.icon} />}

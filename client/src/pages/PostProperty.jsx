@@ -7,7 +7,7 @@ import {
   ShieldCheck, AlertCircle, Phone, User
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { submitProperty } from '../services/api';
+import { submitProperty, uploadMedia } from '../services/api';
 
 const STEPS = [
   { id: 'basics', title: 'Basic Info', icon: <Info size={20} /> },
@@ -39,6 +39,7 @@ export default function PostProperty() {
     facing: 'East',
     posterName: user?.name || '',
     posterPhone: user?.phone || '',
+    imageFiles: [], // Add this to store actual File objects
   });
 
   useEffect(() => {
@@ -54,27 +55,55 @@ export default function PostProperty() {
 
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files);
-    // In a real app, you'd upload to Cloudinary/S3 here
-    // For now, we'll use base64 or just mock it
     const newImgs = files.map(f => URL.createObjectURL(f));
-    setFormData(prev => ({ ...prev, images: [...prev.images, ...newImgs] }));
+    setFormData(prev => ({ 
+      ...prev, 
+      images: [...prev.images, ...newImgs],
+      imageFiles: [...prev.imageFiles, ...files] 
+    }));
   };
 
   const nextStep = () => setStep(s => Math.min(s + 1, STEPS.length - 1));
   const prevStep = () => setStep(s => Math.max(s - 1, 0));
 
   const handleSubmit = async () => {
+    if (!formData.title || !formData.location || !formData.price) {
+      setError('Please fill in all required fields.');
+      return;
+    }
+
     setLoading(true);
     setError('');
     try {
-      // Mock API call - in production this would hit /api/properties/public-submit
-      // const res = await submitProperty({ ...formData, submittedBy: user.id, status: 'Pending' });
+      let uploadedUrls = [];
+      if (formData.imageFiles.length > 0) {
+        const uploadResult = await uploadMedia(formData.imageFiles);
+        if (uploadResult.status === 'success') {
+          uploadedUrls = uploadResult.data;
+        }
+      }
+
+      const payload = {
+        ...formData,
+        images: uploadedUrls,
+        image: uploadedUrls.length > 0 ? uploadedUrls[0] : '',
+        status: 'Pending',
+        isVerified: false,
+      };
+
+      // Remove local file blobs before sending
+      delete payload.imageFiles;
+
+      const res = await submitProperty(payload);
       
-      // Artificial delay for effect
-      await new Promise(r => setTimeout(r, 2000));
-      setSuccess(true);
+      if (res.status === 'success') {
+        setSuccess(true);
+      } else {
+        throw new Error(res.message || 'Submission failed');
+      }
     } catch (err) {
-      setError('Failed to submit property. Please try again.');
+      console.error('SUBMIT_ERROR:', err);
+      setError(err.message || 'Failed to submit property. Please try again.');
     } finally {
       setLoading(false);
     }

@@ -27,7 +27,16 @@ const AdminProperties = () => {
       <div className="flex-row-mobile-stack" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1.5rem' }}>
         <div>
           <div style={{ fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.18em', color: 'var(--gold)', marginBottom: '0.6rem', fontFamily: 'var(--font-mono)' }}>✦ ASSET INTELLIGENCE</div>
-          <h1 style={{ lineHeight: 1.2, fontWeight: 800, background: 'linear-gradient(135deg,#fff,#9b59f5)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', fontFamily: 'var(--font-heading)', letterSpacing: '-0.02em' }}>
+          <h1 style={{ 
+            lineHeight: 1.2, 
+            fontWeight: 800, 
+            color: 'white',
+            background: 'linear-gradient(135deg, #ffffff 0%, #9b59f5 100%)', 
+            WebkitBackgroundClip: 'text', 
+            WebkitTextFillColor: 'transparent', 
+            fontFamily: 'var(--font-heading)', 
+            letterSpacing: '-0.02em' 
+          }}>
             Property Command
           </h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', maxWidth: '600px' }}>Simple management of property assets across the SnapAdda regional network.</p>

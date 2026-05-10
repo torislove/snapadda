@@ -417,6 +417,36 @@ export const notifyAIInteraction = async (payload) => {
   }
 };
 
+export const uploadMedia = async (files) => {
+  const formData = new FormData();
+  files.forEach(file => {
+    formData.append('files', file);
+  });
+  
+  const res = await fetch(`${API_BASE}/media/upload`, { 
+    method: 'POST', 
+    body: formData 
+  });
+  
+  if (!res.ok) throw new Error('Media upload failed');
+  return await res.json();
+};
+
+export const createInquiry = async (data) => {
+  try {
+    const res = await fetch(`${API_BASE}/inquiries`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error(`Failed to create inquiry: ${res.status}`);
+    return await res.json();
+  } catch (e) {
+    console.error('API Error:', e);
+    throw e;
+  }
+};
+
 export const submitProperty = async (data) => {
   try {
     const res = await fetch(`${API_BASE}/properties/public-submit`, {

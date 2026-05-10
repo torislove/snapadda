@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Building, Users, MapPin, 
@@ -67,10 +67,30 @@ const AdminLayout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
   const { adminLogout, adminUser } = useAdminAuth();
+  const touchStartX = useRef(0);
+  const touchStartY = useRef(0);
+
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
+
+  // Close sidebar on route change (mobile)
+  useEffect(() => { setIsSidebarOpen(false); }, [location.pathname]);
+
+  // Swipe gesture: swipe right from left edge to open, swipe left to close
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+  }, []);
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    const dy = Math.abs(e.changedTouches[0].clientY - touchStartY.current);
+    if (dy > 60) return; // mostly vertical — ignore
+    if (dx > 80 && touchStartX.current < 32) { triggerHaptic('light'); setIsSidebarOpen(true); }
+    if (dx < -80 && isSidebarOpen) { triggerHaptic('light'); setIsSidebarOpen(false); }
+  }, [isSidebarOpen]);
 
   const isActive = (item: typeof NAV_ITEMS[0]) => {
     if (item.exact) return location.pathname === item.to;
@@ -83,10 +103,14 @@ const AdminLayout = () => {
   };
 
   return (
-    <div className="admin-layout">
+    <div
+      className="admin-layout"
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
       {/* Mobile Overlay */}
       {isSidebarOpen && (
-        <div className="admin-sidebar-overlay" onClick={() => setIsSidebarOpen(false)} />
+        <div className="admin-sidebar-overlay" onClick={() => { triggerHaptic('light'); setIsSidebarOpen(false); }} />
       )}
 
       {/* ── Sidebar ── */}
@@ -158,21 +182,21 @@ const AdminLayout = () => {
 
         <div className="sidebar-footer">
           <div style={{
-            margin: '0 0.75rem 0.5rem',
+            margin: '0 0.75rem 0.75rem',
             padding: '1rem',
-            background: 'rgba(255,255,255,0.03)',
-            borderRadius: '16px',
-            border: '1px solid var(--gold-border)'
+            background: 'var(--bg-tertiary)',
+            borderRadius: '14px',
+            border: '1px solid rgba(0,0,0,0.07)'
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '1rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '0.875rem' }}>
               <img
                 src={adminUser?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(adminUser?.name || 'Admin')}&background=e8b84b&color=000&bold=true`}
                 alt="Admin"
-                style={{ width: '36px', height: '36px', borderRadius: '50%', border: '2px solid var(--gold)' }}
+                style={{ width: '36px', height: '36px', borderRadius: '50%', border: '2px solid var(--gold)', flexShrink: 0 }}
               />
-              <div>
-                <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#fff' }}>{adminUser?.name || 'Admin'}</div>
-                <div style={{ fontSize: '0.65rem', color: 'var(--gold)', fontWeight: 800 }}>SNAP_ADDA_OFFICIAL</div>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: '0.84rem', fontWeight: 700, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{adminUser?.name || 'Admin'}</div>
+                <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)', fontWeight: 600, marginTop: '1px' }}>Administrator</div>
               </div>
             </div>
             <LogoutButton onLogout={adminLogout} />

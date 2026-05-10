@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo, startTransition } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useSearchParams, useNavigate, Link } from 'react-router-dom';
+import { useSearchParams, useNavigate, Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search, SlidersHorizontal, X, MapPin, Filter, ChevronLeft, ChevronRight,
@@ -53,6 +53,7 @@ const PAGE_SIZE = 12;
 
 export default function SearchResults() {
   const { t } = useTranslation();
+  const locationState = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const [properties, setProperties] = useState([]);
@@ -62,12 +63,19 @@ export default function SearchResults() {
   const [showMobileFilter, setShowMobileFilter] = useState(false);
   const [showAutocomplete, setShowAutocomplete] = useState(false);
   const [viewMode, setViewMode] = useState('list');
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 900);
   const searchRef = useRef(null);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 900);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
   // Read all filters from URL
   const getParam = (key, def = '') => searchParams.get(key) || def;
 
   const [keyword, setKeyword] = useState(getParam('keyword'));
-  const [type, setType] = useState(getParam('type'));
+  const [type, setType] = useState(getParam('type') || locationState.state?.typeFilter || '');
   const [city, setCity] = useState(getParam('city'));
   const [purpose, setPurpose] = useState(getParam('purpose'));
   const [minPrice, setMinPrice] = useState(getParam('minPrice'));
@@ -128,7 +136,9 @@ export default function SearchResults() {
     fetchProperties(filters)
       .then(res => {
         const newData = res?.data || [];
-        setProperties(prev => page > 1 ? [...prev, ...newData] : newData);
+        startTransition(() => {
+          setProperties(prev => page > 1 ? [...prev, ...newData] : newData);
+        });
         setMeta(res?.meta || { total: res?.data?.length || 0, totalPages: 1, page: filters.page });
         setApiError(false);
       })
@@ -311,73 +321,63 @@ export default function SearchResults() {
 
   return (
     <div style={{ minHeight: '100vh', paddingTop: 'var(--nav-h)', background: 'var(--bg-deep)' }}>
-      {/* Top bar */}
-      <div style={{ borderBottom: '1px solid rgba(255,255,255,0.07)', padding: '0.75rem 0', background: 'rgba(7,7,15,0.95)', backdropFilter: 'blur(20px)', position: 'sticky', top: 'var(--nav-h)', zIndex: 100 }}>
+      {/* Sticky Action Bar */}
+      <div style={{ borderBottom: '1px solid rgba(255,255,255,0.07)', padding: '0.75rem 0', background: 'rgba(7,7,15,0.98)', backdropFilter: 'blur(30px)', position: 'sticky', top: 'var(--nav-h)', zIndex: 100 }}>
         <div className="container">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-            <button onClick={() => navigate(-1)} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.7)', padding: '7px 12px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', fontWeight: 700, flexShrink: 0 }}>
-              <ArrowLeft size={14}/> Back
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', flexWrap: 'wrap' }}>
+            <button onClick={() => navigate(-1)} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', width: '38px', height: '38px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '10px', cursor: 'pointer', flexShrink: 0 }}>
+              <ArrowLeft size={16}/>
             </button>
-            {/* Inline search bar */}
-            <div style={{ flex: 1, position: 'relative', minWidth: '180px' }}>
-              <Search size={14} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--gold)', pointerEvents: 'none' }}/>
-              <input type="text" value={keyword} onChange={e => { setKeyword(e.target.value); setPage(1); }}
-                onKeyDown={e => e.key === 'Enter' && loadResults()}
-                style={{ width: '100%', paddingLeft: '34px', paddingRight: '36px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', color: 'white', height: '36px', fontSize: '0.82rem', outline: 'none', boxSizing: 'border-box' }}
-                placeholder="Search location, project..."
-              />
-              {keyword && <button onClick={() => { setKeyword(''); setPage(1); }} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', padding: '2px' }}><X size={13}/></button>}
+            
+            {/* Expanded Search Display */}
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '12px' }}>
+               <div style={{ display: 'flex', flexDirection: 'column' }}>
+                 <h2 style={{ fontSize: '0.95rem', fontWeight: 800, color: 'white', margin: 0 }}>{keyword || 'All Properties'}</h2>
+                 <span style={{ fontSize: '0.65rem', color: 'var(--gold)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    {loading ? 'SCANNING...' : `${meta.total} MATCHES FOUND`}
+                 </span>
+               </div>
             </div>
-            {/* Sort */}
-            <select value={sort} onChange={e => { setSort(e.target.value); setPage(1); }}
-              style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.8)', padding: '7px 10px', borderRadius: '8px', fontSize: '0.75rem', cursor: 'pointer', outline: 'none' }}>
-              {SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-            </select>
-            {/* Filter button (mobile) — always visible on mobile via CSS */}
+
+            {/* Sort Dropdown (3D Glass) */}
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+              <SlidersHorizontal size={12} style={{ position: 'absolute', left: '12px', color: 'var(--gold)', pointerEvents: 'none' }} />
+              <select value={sort} onChange={e => { setSort(e.target.value); setPage(1); }}
+                style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', padding: '8px 12px 8px 32px', borderRadius: '10px', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', outline: 'none', appearance: 'none' }}>
+                {SORT_OPTIONS.map(o => <option key={o.value} value={o.value} style={{ background: '#0a0a0f' }}>{o.label}</option>)}
+              </select>
+            </div>
+
             <button onClick={() => setShowMobileFilter(true)} className="sr-mobile-filter-btn"
-              style={{ alignItems: 'center', gap: '6px', padding: '7px 14px', background: 'var(--gold)', color: '#000', border: 'none', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer', flexShrink: 0 }}>
-              <SlidersHorizontal size={14}/> Filters {activeFilterChips.length > 0 && `(${activeFilterChips.length})`}
+              style={{ padding: '8px 16px', background: 'var(--gold)', color: '#000', border: 'none', borderRadius: '10px', fontSize: '0.75rem', fontWeight: 900, cursor: 'pointer', flexShrink: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+              FILTERS {activeFilterChips.length > 0 && <span style={{ background: 'black', color: 'white', padding: '1px 6px', borderRadius: '6px', fontSize: '0.6rem' }}>{activeFilterChips.length}</span>}
             </button>
-            {/* Result count */}
-            <span style={{ fontSize: '0.78rem', color: 'var(--txt-muted)', whiteSpace: 'nowrap', flexShrink: 0 }}>
-              {loading ? 'Searching...' : `${meta.total} properties`}
-            </span>
           </div>
 
-          {/* Active filter chips */}
-          {activeFilterChips.length > 0 && (
-            <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', marginTop: '10px', paddingBottom: '4px' }}>
-              <style>{`.container ::-webkit-scrollbar { display: none; }`}</style>
-              {activeFilterChips.map((chip, i) => (
-                <motion.button key={i} initial={{ scale: 0.9 }} animate={{ scale: 1 }} onClick={chip.clear}
-                  style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 10px', background: 'rgba(232,184,75,0.1)', border: '1px solid rgba(232,184,75,0.3)', color: 'var(--gold)', borderRadius: '20px', fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer' }}>
-                  {chip.label} <X size={10}/>
-                </motion.button>
-              ))}
-              <button onClick={resetAll} style={{ flexShrink: 0, padding: '4px 10px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.4)', borderRadius: '20px', fontSize: '0.68rem', cursor: 'pointer' }}>Clear all</button>
-            </div>
-          )}
-
-          {/* Professional Quick Action Chips (Industry Standard) */}
-          <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', scrollbarWidth: 'none', padding: '12px 0 5px', marginTop: '5px' }} className="hide-scrollbar">
-            {[
-              { label: 'Under ₹50L', action: () => { setMaxPrice('5000000'); setPage(1); } },
-              { label: 'Ready to Move', action: () => { setApproval('DTCP'); setPage(1); } },
-              { label: 'East Facing', action: () => { setFacing('East'); setPage(1); } },
-              { label: 'CRDA Approved', action: () => { setApproval('AP CRDA'); setPage(1); } },
-              { label: 'Verified Only', action: () => { setVerified(true); setPage(1); } },
-            ].map((q, idx) => (
-              <button
-                key={idx}
-                onClick={q.action}
-                style={{
-                  flexShrink: 0, padding: '8px 16px', borderRadius: '12px',
-                  background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
-                  color: 'white', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer'
-                }}
-              >
-                {q.label}
-              </button>
+          {/* ELITE FILTER RIBBON (Pill-Style Segmented Controls) */}
+          <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', padding: '12px 0 4px', marginTop: '4px', scrollbarWidth: 'none' }} className="hide-scrollbar">
+            {/* Purpose Pills */}
+            {['Sale', 'Rent'].map(p => (
+               <button key={p} onClick={() => { setPurpose(purpose === p ? '' : p); setPage(1); }}
+                 style={{ flexShrink: 0, padding: '6px 14px', borderRadius: '20px', fontSize: '0.72rem', fontWeight: 800, cursor: 'pointer', border: purpose === p ? '1px solid var(--gold)' : '1px solid rgba(255,255,255,0.1)', background: purpose === p ? 'rgba(232,184,75,0.15)' : 'rgba(255,255,255,0.04)', color: purpose === p ? 'var(--gold)' : 'rgba(255,255,255,0.6)', transition: 'all 0.2s' }}>
+                 {p}
+               </button>
+            ))}
+            <div style={{ width: '1px', height: '20px', background: 'rgba(255,255,255,0.1)', alignSelf: 'center', margin: '0 4px' }} />
+            {/* BHK Pills */}
+            {['1', '2', '3', '4+'].map(b => (
+               <button key={b} onClick={() => { setBhk(bhk === b ? '' : b); setPage(1); }}
+                 style={{ flexShrink: 0, padding: '6px 14px', borderRadius: '20px', fontSize: '0.72rem', fontWeight: 800, cursor: 'pointer', border: bhk === b ? '1px solid var(--gold)' : '1px solid rgba(255,255,255,0.1)', background: bhk === b ? 'rgba(232,184,75,0.15)' : 'rgba(255,255,255,0.04)', color: bhk === b ? 'var(--gold)' : 'rgba(255,255,255,0.6)', transition: 'all 0.2s' }}>
+                 {b} BHK
+               </button>
+            ))}
+            <div style={{ width: '1px', height: '20px', background: 'rgba(255,255,255,0.1)', alignSelf: 'center', margin: '0 4px' }} />
+            {/* Facing Pills */}
+            {['East', 'North'].map(f => (
+               <button key={f} onClick={() => { setFacing(facing === f ? '' : f); setPage(1); }}
+                 style={{ flexShrink: 0, padding: '6px 14px', borderRadius: '20px', fontSize: '0.72rem', fontWeight: 800, cursor: 'pointer', border: facing === f ? '1px solid var(--gold)' : '1px solid rgba(255,255,255,0.1)', background: facing === f ? 'rgba(232,184,75,0.15)' : 'rgba(255,255,255,0.04)', color: facing === f ? 'var(--gold)' : 'rgba(255,255,255,0.6)', transition: 'all 0.2s' }}>
+                 {f} Facing
+               </button>
             ))}
           </div>
         </div>
@@ -385,7 +385,7 @@ export default function SearchResults() {
 
 
       {/* Body */}
-      <div className="container sr-results-grid" style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: '2rem', paddingTop: '2rem', paddingBottom: '4rem', alignItems: 'start' }}>
+      <div className="container sr-results-grid" style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '260px 1fr', gap: isMobile ? '1rem' : '1.5rem', paddingTop: '1.5rem', paddingBottom: '4rem', alignItems: 'start' }}>
         {/* LEFT: Filter Panel */}
         <aside className="sr-filter-panel glass-panel" style={{ position: 'sticky', top: 'calc(var(--nav-h) + 80px)', padding: '1.5rem', maxHeight: 'calc(100vh - 160px)', overflowY: 'auto' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
@@ -403,14 +403,14 @@ export default function SearchResults() {
         <main>
           {viewMode === 'list' ? (
             loading ? (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '2rem' }}>
                 {Array(6).fill(0).map((_, i) => <SkeletonPropertyCard key={i}/>)}
               </div>
             ) : properties.length > 0 ? (
               <>
                 <motion.div 
                   className="properties-grid" 
-                  style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem' }}
+                  style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '2rem' }}
                   initial="hidden"
                   animate="visible"
                   variants={{

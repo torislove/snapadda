@@ -250,6 +250,17 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Elite Admin Diagnostic — Exposed for internal integrity audits
+import { runFullDiagnostic } from './diagnostic.js';
+app.get('/api/admin/system-check', async (req, res) => {
+  try {
+    const diagnostic = await runFullDiagnostic();
+    res.status(diagnostic.overall === 'ELITE' ? 200 : 207).json(diagnostic);
+  } catch (err) {
+    res.status(500).json({ status: 'error', message: err.message });
+  }
+});
+
 // Deep health check — probes actual connectivity status
 app.get('/api/health/deep', async (req, res) => {
   const mongoStates = { 0: 'disconnected', 1: 'connected', 2: 'connecting', 3: 'disconnecting' };

@@ -12,7 +12,6 @@ import { useAdminAuth } from '../../contexts/AdminAuthContext';
 import { WelcomeOverlay } from '../../components/ui/WelcomeOverlay';
 import { ConnectivityBanner } from '../../components/ui/ConnectivityBanner';
 import { useServerHealth } from '../../hooks/useServerHealth';
-import HolographicWrapper from '../../components/ui/HolographicWrapper';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -47,76 +46,45 @@ const AnimatedNumber = ({ target }: { target: number }) => {
 
 /* ─── Elite Metric Card ─── */
 const MetricCard = ({ title, value, icon: Icon, color, sub, trend, link, index }: any) => (
-  <motion.div
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ delay: index * 0.1, duration: 0.5, type: 'spring' }}
+  <div
+    className={`card hover-lift animate-slide-up stagger-${Math.min(index + 1, 6)}`}
+    style={{ borderTop: `3px solid ${color}`, padding: '1.5rem' }}
   >
-    <Link to={link || '#'} style={{ textDecoration: 'none' }}>
-      <HolographicWrapper
-        intensity={0.8}
-        iridescent={index === 0}
-        tilt={true}
-        style={{ height: '100%', borderRadius: '24px' }}
-      >
-      <div className="glass-card" style={{
-        padding: '1.75rem',
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'space-between',
-        background: 'transparent',
-        border: 'none',
-        borderTop: `2px solid ${color}44`,
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.25rem' }}>
-          <div style={{
-            width: '48px', height: '48px', borderRadius: '14px',
-            background: `${color}12`,
-            border: `1px solid ${color}25`,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: color,
-            boxShadow: `0 0 15px ${color}15`,
-          }}>
-            <Icon size={24} />
-          </div>
-          {trend && (
-            <span style={{
-              fontSize: '0.75rem', fontWeight: 700,
-              padding: '4px 12px', borderRadius: '99px',
-              background: trend > 0 ? 'rgba(16,217,140,0.1)' : 'rgba(245,57,123,0.1)',
-              color: trend > 0 ? '#10d98c' : '#f5397b',
-              border: `1px solid ${trend > 0 ? 'rgba(16,217,140,0.2)' : 'rgba(245,57,123,0.2)'}`,
-            }}>
-              {trend > 0 ? '↑' : '↓'} {Math.abs(trend)}%
-            </span>
-          )}
+    <a href={link || '#'} style={{ textDecoration: 'none', display: 'block' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+        <div style={{
+          width: '44px', height: '44px', borderRadius: '12px',
+          background: `${color}12`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          color: color,
+        }}>
+          <Icon size={22} />
         </div>
-
-        <div>
-          <div style={{ fontSize: '2.5rem', fontWeight: 900, color: 'white', marginBottom: '0.25rem', fontFamily: 'var(--font-heading)', letterSpacing: '-0.03em' }}>
-            <AnimatedNumber target={value} />
-          </div>
-          <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'rgba(255,255,255,0.7)', marginBottom: '0.25rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{title}</div>
-          {sub && <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 500 }}>{sub}</div>}
-        </div>
+        {trend && (
+          <span className={`metric-trend ${trend > 0 ? 'up' : 'down'}`}>
+            {trend > 0 ? '↑' : '↓'} {Math.abs(trend)}%
+          </span>
+        )}
       </div>
-      </HolographicWrapper>
-    </Link>
-  </motion.div>
+      <div className="metric-value"><AnimatedNumber target={value} /></div>
+      <div className="metric-label">{title}</div>
+      {sub && <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>{sub}</div>}
+    </a>
+  </div>
 );
+
 
 /* ─── Elite Activity Item ─── */
 const ActivityRow = ({ icon: Icon, color, title, sub, time, badge }: any) => (
   <div style={{
-    display: 'flex', alignItems: 'center', gap: '1rem',
-    padding: '1rem 0',
-    borderBottom: '1px solid rgba(255,255,255,0.04)',
-    transition: 'all 0.2s',
+    display: 'flex', alignItems: 'center', gap: '0.875rem',
+    padding: '0.875rem 0',
+    borderBottom: '1px solid rgba(0,0,0,0.05)',
+    transition: 'background 0.15s',
   }}>
     <div style={{
-      width: '42px', height: '42px', borderRadius: '12px',
-      background: `${color}08`, border: `1px solid ${color}15`,
+      width: '40px', height: '40px', borderRadius: '10px',
+      background: `${color}10`,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       color, flexShrink: 0,
     }}>
@@ -209,11 +177,24 @@ const AdminDashboard = () => {
     const headers: any = {};
     if (token) headers['Authorization'] = `Bearer ${token}`;
 
+    const cachedStats = sessionStorage.getItem('snapadda_admin_stats');
+    if (cachedStats) {
+      const parsed = JSON.parse(cachedStats);
+      setStats(parsed);
+      setLoading(false);
+      if (parsed.marketIntelligence?.heatmap) {
+        setChartData(parsed.marketIntelligence.heatmap.map((item: any) => ({
+          name: item._id || 'Unknown', views: item.count || 0
+        })));
+      }
+    }
+
     fetch(`${API_URL}/admin/stats`, { headers })
       .then(r => r.json())
       .then(d => { 
         if (d.status === 'success') {
           setStats(d.data);
+          sessionStorage.setItem('snapadda_admin_stats', JSON.stringify(d.data));
           if (d.data.marketIntelligence?.heatmap) {
             const newChartData = d.data.marketIntelligence.heatmap.map((item: any) => ({
               name: item._id || 'Unknown',
@@ -224,7 +205,9 @@ const AdminDashboard = () => {
         } 
       })
       .catch(() => {
-        setStats({ propertyCount: 12, leadCount: 48, inquiryCount: 24, verifiedCount: 8, activeCount: 10, pendingInquiries: 5, totalLikes: 0, totalShares: 0, recentProperties: [], recentInquiries: [], recentLeads: [] });
+        if (!cachedStats) {
+          setStats({ propertyCount: 12, leadCount: 48, inquiryCount: 24, verifiedCount: 8, activeCount: 10, pendingInquiries: 5, totalLikes: 0, totalShares: 0, recentProperties: [], recentInquiries: [], recentLeads: [] });
+        }
       })
       .finally(() => setLoading(false));
   // eslint-disable-next-line react-hooks/exhaustive-deps

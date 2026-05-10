@@ -18,8 +18,8 @@
   --emerald: #27c97d;
   --violet: #7c5cbf;
   --txt-primary: #fcfaf7;
-  --txt-secondary: #c5beb5;
-  --txt-muted: #7d756d;
+  --txt-secondary: #e5e1dc; /* Brighter than c5beb5 */
+  --txt-muted: #a8a29d; /* Brighter than 7d756d */
   --txt-on-gold: #05050a;
   --bg-glass-thin: rgba(5, 5, 10, 0.4);
   --bg-glass-mid: rgba(5, 5, 10, 0.6);
@@ -41,20 +41,20 @@
   --font-serif: "Outfit", sans-serif;
   --font-body: "Inter", system-ui, sans-serif;
   --font-mono: "Space Grotesk", monospace;
-  --sp-1: 0.25rem;
-  --sp-2: 0.5rem;
-  --sp-3: 0.75rem;
-  --sp-4: 1rem;
-  --sp-6: 1.5rem;
-  --sp-8: 2rem;
-  --r-sm: 8px;
-  --r-md: 14px;
-  --r-lg: 20px;
-  --r-xl: 32px;
+  --sp-1: 0.2rem;
+  --sp-2: 0.4rem;
+  --sp-3: 0.6rem;
+  --sp-4: 0.8rem;
+  --sp-6: 1.25rem;
+  --sp-8: 1.75rem;
+  --r-sm: 6px;
+  --r-md: 12px;
+  --r-lg: 18px;
+  --r-xl: 28px;
   --r-full: 9999px;
-  --nav-h: 74px;
-  --cmd-bottom: 24px;
-  --container-max: 1280px;
-  --sp-precision: clamp(1rem, 5vw, 2.5rem);
+  --nav-h: 64px;
+  --cmd-bottom: 16px;
+  --container-max: 1200px;
+  --sp-precision: clamp(0.75rem, 4vw, 2rem);
   --ease-butter: cubic-bezier(0.16, 1, 0.3, 1);
 }

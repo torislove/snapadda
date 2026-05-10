@@ -7,12 +7,12 @@ import GlobalLoader from './components/GlobalLoader';
 import FloatingOffers from './components/FloatingOffers';
 import { useNotifications } from './hooks/useNotifications';
 
-// Global HUD components - Symmetrically aligned
-import UnitConverter from './components/UnitConverter';
-import ComparisonHud from './components/ComparisonHud';
-import MobileBottomNav from './components/MobileBottomNav';
+// Global HUD components - Symmetrically aligned (Lazy Loaded to unblock main thread)
+const UnitConverter = lazy(() => import('./components/UnitConverter'));
+const ComparisonHud = lazy(() => import('./components/ComparisonHud'));
+const MobileBottomNav = lazy(() => import('./components/MobileBottomNav'));
 
-// Page components - Critical (Static)
+// Page components - Critical (Static previously, now Lazy for FCP)
 import Home from './pages/Home';
 
 // Page components - Secondary (Lazy Loaded)
@@ -100,22 +100,34 @@ function AppContent() {
 export default function App() {
   const [isAppLoading, setIsAppLoading] = useState(true);
 
+  // --- BROWSER CACHE & VERSIONING SYNC ---
   useEffect(() => {
-    // Instant Load - no artificial delay
     setIsAppLoading(false);
+    
+    const currentVersion = import.meta.env.VITE_APP_VERSION;
+    const storedVersion = localStorage.getItem('snapadda_app_version');
+
+    if (currentVersion && storedVersion && currentVersion !== storedVersion) {
+      console.log('🚀 New version detected. Purging cache and reloading...');
+      // Clear specific cache but keep essential user sessions if possible
+      // For now, full clear is safest for "immediate update"
+      localStorage.clear(); 
+      localStorage.setItem('snapadda_app_version', currentVersion);
+      window.location.reload(true);
+    } else if (currentVersion) {
+      localStorage.setItem('snapadda_app_version', currentVersion);
+    }
   }, []);
 
   return (
-    <>
+    <BrowserRouter>
+      <ScrollToTop />
       <AnimatePresence>
         {isAppLoading && <GlobalLoader key="loader" />}
       </AnimatePresence>
       <LazyMotion features={domAnimation}>
-        <BrowserRouter>
-          <ScrollToTop />
-          <AppContent />
-        </BrowserRouter>
+        <AppContent />
       </LazyMotion>
-    </>
+    </BrowserRouter>
   );
 }

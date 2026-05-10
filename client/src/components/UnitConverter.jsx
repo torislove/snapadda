@@ -81,14 +81,14 @@ const LiquidCompass = ({ rotation }) => {
 
           <circle cx="50" cy="50" r="48" fill="url(#metallicDial)" stroke="rgba(212,175,55,0.3)" strokeWidth="0.5" filter="url(#metallicSheen)" />
           
-          {[...Array(360)].map((_, i) => (
-             i % 5 === 0 && (
+          <g style={{ willChange: 'transform' }}>
+            {[...Array(72)].map((_, i) => (
                <line key={i} x1="50" y1="6" x2="50" y2="10" 
-                stroke={i % 90 === 0 ? "var(--gold)" : (i % 30 === 0 ? "#fff" : "rgba(255,255,255,0.2)")} 
-                strokeWidth={i % 30 === 0 ? "0.6" : "0.3"} transform={`rotate(${i} 50 50)`} 
+                stroke={(i * 5) % 90 === 0 ? "var(--gold)" : ((i * 5) % 30 === 0 ? "#fff" : "rgba(255,255,255,0.2)")} 
+                strokeWidth={(i * 5) % 30 === 0 ? "0.6" : "0.3"} transform={`rotate(${i * 5} 50 50)`} 
                />
-             )
-          ))}
+            ))}
+          </g>
 
           <text x="50" y="22" textAnchor="middle" fill="var(--gold)" fontSize="10" fontWeight="950" style={{ letterSpacing: '1px' }}>N</text>
           <text x="50" y="86" textAnchor="middle" fill="#fff" fontSize="7" opacity="0.6">S</text>
@@ -158,11 +158,15 @@ export default function UnitConverter() {
     
     if (rawHeading == null) return;
 
-    // 1. Low-Pass Filter (Simple Smoothing)
-    const alpha = 0.15; // Smoothing factor (0.1 = slow/heavy, 0.9 = fast/jittery)
+    // 1. Low-Pass Filter (Simple Smoothing) - Using ref to avoid state re-render loop
+    const alpha = 0.15;
     const smoothedHeading = prevHeadingRef.current + alpha * (rawHeading - prevHeadingRef.current);
     prevHeadingRef.current = smoothedHeading;
-    setDisplayHeading(Math.round(smoothedHeading));
+    
+    // Only update display state occasionally to save CPU
+    if (Math.abs(smoothedHeading - displayHeading) > 0.5) {
+      setDisplayHeading(Math.round(smoothedHeading));
+    }
 
     // 2. Shortest-Path Rotation Accumulator
     let diff = rawHeading - (totalRotationRef.current % 360);
@@ -171,7 +175,7 @@ export default function UnitConverter() {
     
     totalRotationRef.current += diff;
     rotationMotion.set(-totalRotationRef.current);
-  }, [rotationMotion]);
+  }, [rotationMotion, displayHeading]);
 
   useEffect(() => {
     if (compassPermission === 'granted') {
