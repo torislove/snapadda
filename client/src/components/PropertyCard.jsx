@@ -1,11 +1,11 @@
-import { useState, useRef, memo, useCallback } from 'react';
+import { useState, useRef, memo, useCallback, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence, useSpring, useMotionValue, useTransform } from 'framer-motion';
 import {
   Heart, Share2, Eye, Phone, MessageSquare, ShieldCheck, Flame,
   MapPin, Building2, User, Leaf, BedDouble, Bath, Square,
   Compass, IndianRupee, CheckCircle2, Award, TreePine, ArrowRight, Home as HomeIcon,
-  SlidersHorizontal, ChevronLeft, ChevronRight, Image as ImageIcon, Maximize2
+  SlidersHorizontal, ChevronLeft, ChevronRight, Image as ImageIcon, Maximize2, X, RefreshCw
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { likeProperty, shareProperty, createInquiry } from '../services/api';
@@ -19,6 +19,8 @@ import {
 import tr from '../utils/teluguTranslations';
 import { logUserActivity, ACTIONS } from '../services/activityTracker';
 import { triggerHaptic } from '../utils/haptics';
+import { prefetchPropertyData, prioritizeImage } from '../utils/PerformanceUtilities';
+import { fetchProperty } from '../services/api';
 
 const Toast = memo(({ msg, onDone }) => {
   return (
@@ -44,7 +46,8 @@ const PropertyCard = memo(({
   isGated, cornerProperty, constructionStatus,
   supportPhone = '+919346793364', supportWA = '919346793364',
   status: propStatus = 'Active', pricePerSqYd, address,
-  holographic = true, iridescent = false, propertyCode
+  holographic = true, iridescent = false, propertyCode,
+  designTokens // Dynamic Institutional Tokens
 }) => {
   const [activeImgIdx, setActiveImgIdx] = useState(0);
   const [liked, setLiked] = useState(initialLiked);
@@ -161,7 +164,9 @@ const PropertyCard = memo(({
   const [toast, setToast] = useState('');
   const cardRef = useRef(null);
 
-
+  const handleHoverPrefetch = () => {
+    prefetchPropertyData(propertyId, fetchProperty);
+  };
 
   const handleLike = useCallback((e) => {
     e.preventDefault(); e.stopPropagation();
@@ -181,7 +186,6 @@ const PropertyCard = memo(({
 
   const handleShare = useCallback((e) => {
     e.preventDefault(); e.stopPropagation();
-    // Senior Choice: Remove login requirement for sharing to maximize viral spread
     triggerHaptic('success');
     const url = `${window.location.origin}/property/${propertyId}`;
     const shareText = `Check out this ${type} in ${location} on SnapAdda.\n\nPrice: ${formatSnapAddaPrice(displayPrice)}\n\nView details:`;
@@ -192,7 +196,6 @@ const PropertyCard = memo(({
         text: shareText,
         url 
       }).catch(() => {
-        // Fallback to clipboard if share sheet is cancelled or fails
         navigator.clipboard.writeText(`${shareText} ${url}`).then(() => setToast('🔗 Details copied!'));
       });
     } else {
@@ -216,9 +219,9 @@ const PropertyCard = memo(({
       setInquirySent(true);
       setQuestionText('');
       triggerHaptic('success');
+      setQuickInquiryOpen(false);
       setTimeout(() => {
         setInquirySent(false);
-        setQuickInquiryOpen(false);
       }, 3000);
     } catch (err) {
       setToast('⚠️ Submission failed');
@@ -227,7 +230,6 @@ const PropertyCard = memo(({
     }
   };
 
-  // Elite Image Priority logic: Strict validation for Cloudinary/Uploads only
   const isValidImage = (img) => {
     if (!img || typeof img !== 'string') return false;
     if (img.trim() === '' || img.length < 5) return false;
@@ -245,19 +247,102 @@ const PropertyCard = memo(({
     .filter(isValidImage)
     .slice(0, 5);
 
-  const getOptimizedImg = (url, width = 600) => {
+  const getOptimizedImg = (url, width = designTokens?.imageWidth || 600, height = designTokens?.imageHeight || 450) => {
     if (!url || !url.includes('cloudinary.com')) return url;
     const parts = url.split('/upload/');
     if (parts.length !== 2) return url;
-    return `${parts[0]}/upload/f_auto,q_auto:good,w_${width},c_fill/${parts[1]}`;
+    return `${parts[0]}/upload/f_auto,q_auto:good,w_${width},h_${height},c_fill/${parts[1]}`;
   };
     
   const displayImages = finalImages;
   const isMobile = window.innerWidth <= 600;
 
+  const QuickInquiryModal = () => (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      onClick={(e) => { e.stopPropagation(); setQuickInquiryOpen(false); }}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 99999,
+        background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(12px)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: '20px'
+      }}
+    >
+      <motion.div
+        initial={{ scale: 0.9, y: 20 }}
+        animate={{ scale: 1, y: 0 }}
+        exit={{ scale: 0.9, y: 20 }}
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          width: '100%', maxWidth: '420px',
+          background: 'rgba(15, 20, 35, 0.98)',
+          border: '1px solid rgba(232,184,75,0.2)',
+          borderRadius: '24px', padding: '24px',
+          boxShadow: '0 20px 60px rgba(0,0,0,0.6)'
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+          <div>
+            <h4 style={{ color: 'white', margin: 0, fontSize: '1.1rem', fontWeight: 900 }}>Ask a Question</h4>
+            <div style={{ color: 'var(--gold)', fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>{title}</div>
+          </div>
+          <button 
+            onClick={() => setQuickInquiryOpen(false)}
+            style={{ background: 'rgba(255,255,255,0.05)', border: 'none', borderRadius: '50%', width: '32px', height: '32px', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+          >
+            <X size={16} />
+          </button>
+        </div>
+
+        {inquirySent ? (
+          <div style={{ textAlign: 'center', padding: '40px 0' }}>
+            <div style={{ width: '60px', height: '60px', background: 'rgba(16,217,140,0.1)', color: '#10d98c', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+              <CheckCircle2 size={32} />
+            </div>
+            <h5 style={{ color: 'white', fontSize: '1rem', margin: '0 0 8px 0' }}>Question Sent!</h5>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', margin: 0 }}>An agent will contact you shortly via WhatsApp.</p>
+          </div>
+        ) : (
+          <form onSubmit={submitQuickInquiry}>
+            <textarea
+              autoFocus
+              value={questionText}
+              onChange={(e) => setQuestionText(e.target.value)}
+              placeholder="Ex: Is the price negotiable? When can I visit?"
+              style={{
+                width: '100%', height: '120px',
+                background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)',
+                borderRadius: '16px', padding: '16px', color: 'white',
+                fontSize: '0.9rem', outline: 'none', resize: 'none',
+                marginBottom: '16px'
+              }}
+            />
+            <button
+              type="submit"
+              disabled={submittingInquiry || !questionText.trim()}
+              style={{
+                width: '100%', padding: '14px',
+                background: 'var(--gold)', color: 'black',
+                border: 'none', borderRadius: '14px',
+                fontWeight: 900, fontSize: '0.9rem',
+                cursor: 'pointer', opacity: submittingInquiry || !questionText.trim() ? 0.6 : 1,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
+              }}
+            >
+              {submittingInquiry ? <RefreshCw className="animate-spin" size={18} /> : 'Submit Question'}
+            </button>
+          </form>
+        )}
+      </motion.div>
+    </motion.div>
+  );
+
   return (
     <>
       <AnimatePresence>{toast && <Toast msg={toast} onDone={() => setToast('')} />}</AnimatePresence>
+      <AnimatePresence>{quickInquiryOpen && <QuickInquiryModal />}</AnimatePresence>
       <motion.article
         ref={cardRef}
         initial={{ opacity: 0 }}
@@ -271,7 +356,7 @@ const PropertyCard = memo(({
           className="property-card" 
           style={{ 
             height: '100%', 
-            borderRadius: isMobile ? '20px' : '24px',
+            borderRadius: isMobile ? '20px' : (designTokens?.borderRadius || '24px'),
             background: '#050a14',
             border: isMobile ? '1px solid rgba(255,255,255,0.08)' : '1px solid var(--border-light)',
             boxShadow: isMobile ? '0 12px 30px rgba(0,0,0,0.4)' : '0 10px 30px rgba(0,0,0,0.2)',
@@ -282,6 +367,7 @@ const PropertyCard = memo(({
             transition: 'transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease',
           }}
           onMouseEnter={(e) => {
+            handleHoverPrefetch();
             if (!isMobile) {
               e.currentTarget.style.transform = 'translateY(-4px)';
               e.currentTarget.style.boxShadow = '0 20px 40px rgba(0,0,0,0.4), 0 0 20px rgba(232,184,75,0.1)';
@@ -294,16 +380,12 @@ const PropertyCard = memo(({
             }
           }}
         >
-          {/* Main Navigation Layer (Z-Index: 5) */}
           <div 
             onClick={(e) => {
               if (!user) {
                 e.preventDefault();
                 e.stopPropagation();
-                // Store intended destination to redirect after login
                 sessionStorage.setItem('snapadda_redirect', `/property/${propertyId}`);
-                // Open login modal (assuming we have one in Home or a global state)
-                // For now, redirect to /login
                 navigate('/login');
                 return;
               }
@@ -313,7 +395,6 @@ const PropertyCard = memo(({
             style={{ position: 'absolute', inset: 0, zIndex: 5, cursor: 'pointer' }}
           />
 
-          {/* Liquid Shimmer Overlay (Desktop Only) */}
           {!isMobile && (
             <motion.div
               className="pc-shimmer"
@@ -330,8 +411,14 @@ const PropertyCard = memo(({
             />
           )}
 
-          {/* TOP ACTIONS (Z-Index: 30) - MOVED TO TOP LEVEL TO AVOID Z-INDEX TRAP */}
           <div style={{ position: 'absolute', top: '12px', right: '12px', zIndex: 30, display: 'flex', gap: '6px', background: 'rgba(10, 15, 25, 0.75)', backdropFilter: 'blur(20px)', padding: '4px', borderRadius: '30px', border: '1px solid rgba(255,255,255,0.2)', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
+            <motion.button 
+              whileTap={{ scale: 0.9 }}
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); setQuickInquiryOpen(true); triggerHaptic('light'); }}
+              style={{ width: '38px', height: '38px', borderRadius: '50%', background: 'transparent', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: 'none' }}
+            >
+              <MessageSquare size={18} />
+            </motion.button>
             <motion.button 
               whileTap={{ scale: 0.9 }}
               onClick={(e) => {
@@ -341,8 +428,6 @@ const PropertyCard = memo(({
                 }));
               }}
               style={{ width: '38px', height: '38px', borderRadius: '50%', background: 'transparent', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: 'none' }}
-              aria-label="Compare property"
-              title="Compare"
             >
               <SlidersHorizontal size={18} />
             </motion.button>
@@ -350,8 +435,6 @@ const PropertyCard = memo(({
               whileTap={{ scale: 0.9 }}
               onClick={handleShare}
               style={{ width: '38px', height: '38px', borderRadius: '50%', background: 'transparent', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: 'none' }}
-              aria-label="Share property"
-              title="Share"
             >
               <Share2 size={18} />
             </motion.button>
@@ -359,14 +442,11 @@ const PropertyCard = memo(({
               whileTap={{ scale: 0.9 }}
               onClick={handleLike}
               style={{ width: '38px', height: '38px', borderRadius: '50%', background: 'transparent', color: liked ? 'var(--gold)' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: 'none' }}
-              aria-label={liked ? "Remove from saved" : "Save property"}
-              title="Save"
             >
               <Heart size={18} fill={liked ? 'currentColor' : 'none'} />
             </motion.button>
           </div>
           
-          {/* FULL BLEED BACKGROUND IMAGE */}
           <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
             <div className="pc-image-carousel" 
               onMouseEnter={startImageCycle} 
@@ -377,17 +457,15 @@ const PropertyCard = memo(({
                 <img 
                   key={activeImgIdx}
                   src={getOptimizedImg(displayImages[activeImgIdx % displayImages.length])} 
-                  alt={`${title} in ${location} - ${type}`} 
-                  loading={id === 0 || id === 1 ? 'eager' : 'lazy'}
-                  fetchpriority={id === 0 || id === 1 ? 'high' : 'auto'}
-                  width="400"
-                  height="300"
+                  alt={title}
+                  loading="lazy"
+                  decoding="async"
                   style={{ 
                     position: 'absolute', inset: 0, width: '100%', height: '100%', 
                     objectFit: 'cover', cursor: 'grab', 
-                    transition: 'opacity 0.3s ease-out' 
+                    filter: 'brightness(0.9)',
+                    transition: 'transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1)'
                   }}
-                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
                 />
               ) : (
                 <div style={{ height: '100%', background: '#111', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -395,39 +473,14 @@ const PropertyCard = memo(({
                 </div>
               )}
 
-              {/* Holographic Gradient Overlay to ensure text pops */}
               <div style={{ pointerEvents: 'none', position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, transparent 25%, transparent 40%, rgba(5,10,20,0.95) 90%, rgba(5,10,20,1) 100%)', zIndex: 1 }} />
               
-              {/* E-Commerce Image Counter */}
               {displayImages.length > 1 && (
                 <div style={{ position: 'absolute', top: '16px', left: '16px', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)', color: 'white', padding: '4px 10px', borderRadius: '14px', fontSize: '0.65rem', fontWeight: 800, zIndex: 10, display: 'flex', alignItems: 'center', gap: '4px', border: '1px solid rgba(255,255,255,0.1)' }}>
                   <ImageIcon size={10} /> {(activeImgIdx % displayImages.length) + 1} / {displayImages.length}
                 </div>
               )}
 
-              {/* Advanced Gallery Navigation */}
-              {displayImages.length > 1 && (
-                <>
-                  <div 
-                    className="pc-nav pc-nav-left" 
-                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); setActiveImgIdx(prev => (prev - 1 + displayImages.length) % displayImages.length); }}
-                    style={{ position: 'absolute', left: 0, top: 0, bottom: '40%', width: '25%', zIndex: 5, display: 'flex', alignItems: 'center', paddingLeft: '12px', cursor: 'pointer' }}
-                  >
-                    <div className="pc-nav-btn" style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(10px)', color: 'white', borderRadius: '50%', padding: '6px', opacity: 0, transition: 'opacity 0.2s' }}><ChevronLeft size={18} /></div>
-                  </div>
-                  <div 
-                    className="pc-nav pc-nav-right" 
-                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); setActiveImgIdx(prev => (prev + 1) % displayImages.length); }}
-                    style={{ position: 'absolute', right: 0, top: 0, bottom: '40%', width: '25%', zIndex: 5, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingRight: '12px', cursor: 'pointer' }}
-                  >
-                    <div className="pc-nav-btn" style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(10px)', color: 'white', borderRadius: '50%', padding: '6px', opacity: 0, transition: 'opacity 0.2s' }}><ChevronRight size={18} /></div>
-                  </div>
-                  <style>{`.pc-image-carousel:hover .pc-nav-btn { opacity: 1 !important; }`}</style>
-                </>
-              )}
-              {/* Top Actions were moved up */}
-
-              {/* Status Labels Top Right below Actions */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'flex-end', position: 'absolute', top: '64px', right: '16px', zIndex: 10 }}>
                  {iq && <span style={{ background: 'rgba(10,15,25,0.8)', color: iq.color, border: `1px solid ${iq.color}66`, backdropFilter: 'blur(10px)', fontSize: '0.65rem', padding: '4px 10px', borderRadius: '8px', fontWeight: 700 }}>{iq.label}</span>}
                  {isVerified && (
@@ -440,59 +493,30 @@ const PropertyCard = memo(({
                      <ShieldCheck size={12} /> Verified
                    </motion.span>
                  )}
-                 {isNew && (
-                   <motion.span 
-                     animate={{ scale: [1, 1.05, 1], opacity: [0.8, 1, 0.8] }}
-                     transition={{ repeat: Infinity, duration: 2 }}
-                     style={{ background: 'rgba(255,80,80,0.2)', color: '#ff5050', border: '1px solid rgba(255,80,80,0.4)', backdropFilter: 'blur(10px)', fontWeight: 900, padding: '4px 10px', borderRadius: '8px', fontSize: '0.65rem', letterSpacing: '0.05em' }}
-                   >
-                     NEW
-                   </motion.span>
-                 )}
               </div>
 
-              {/* SNA Property Code Badge */}
               {(propertyCode || propertyId) && (
                 <div style={{ position: 'absolute', bottom: '168px', left: '14px', zIndex: 10, background: 'rgba(232,184,75,0.15)', backdropFilter: 'blur(10px)', border: '1px solid rgba(232,184,75,0.35)', color: 'var(--gold)', padding: '3px 8px', borderRadius: '8px', fontSize: '0.6rem', fontWeight: 900, letterSpacing: '0.08em' }}>
                   {propertyCode || `SNA-${(propertyId || '').toString().slice(-5).toUpperCase()}`}
                 </div>
               )}
-              {/* Dot Indicators */}
-              {finalImages.length > 1 && (
-                <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: '6px', zIndex: 10, pointerEvents: 'none' }}>
-                  {finalImages.map((_, idx) => (
-                    <div key={idx} style={{ 
-                      width: activeImgIdx === idx ? '16px' : '6px', 
-                      height: '4px', 
-                      borderRadius: '2px', 
-                      background: activeImgIdx === idx ? 'var(--gold)' : 'rgba(255,255,255,0.4)', 
-                      boxShadow: '0 2px 4px rgba(0,0,0,0.8)',
-                      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
-                    }} />
-                  ))}
-                </div>
-              )}
             </div>
           </div>
 
-          {/* FLOATING CONTENT AT BOTTOM */}
-          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: isMobile ? '0.6rem' : '0.8rem', zIndex: 40, display: 'flex', flexDirection: 'column', background: 'linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.6) 50%, transparent 100%)' }}>
+          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: isMobile ? '0.6rem' : (designTokens?.padding || '0.8rem'), zIndex: 40, display: 'flex', flexDirection: 'column', background: 'linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.6) 50%, transparent 100%)' }}>
             
-            {/* Top Row: Location & Type Badge */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem', fontWeight: 600 }}>
                 <MapPin size={10} style={{ color: 'var(--gold)' }} /> <span>{location}</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(255,255,255,0.08)', backdropFilter: 'blur(10px)', padding: '2px 6px', borderRadius: '6px', fontSize: '0.6rem', fontWeight: 800 }}>
-                <span style={{ color: typeStyle.accent }}>{typeStyle.icon}</span> <span>{tr(type) || 'ప్రాపర్టీ'}</span>
+                <span style={{ color: typeStyle.accent }}>{typeStyle.icon}</span> <span>{tr(type) || 'Property'}</span>
               </div>
             </div>
 
-            {/* Title */}
             <h3 style={{ fontFamily: 'var(--font-body)', fontSize: '1rem', fontWeight: 800, color: 'white', margin: '0 0 6px 0', lineHeight: 1.2 }}>{title}</h3>
             
-            {/* Horizontal Specs Ribbon (Z-Scan Path) */}
-            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '8px', overflowX: 'auto' }} className="hide-scrollbar">
+            <div style={{ display: 'flex', gap: designTokens?.gap || '6px', flexWrap: 'wrap', marginBottom: '8px', overflowX: 'auto' }} className="hide-scrollbar">
                {isResidential && (bhk || beds) ? (
                  <div style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.05)', padding: '3px 8px', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.65rem', color: 'white', fontWeight: 700 }}>
                    <BedDouble size={10} style={{ color: 'var(--gold)' }} /> <span>{bhk || beds} BHK</span>
@@ -508,14 +532,8 @@ const PropertyCard = memo(({
                    <Compass size={12} style={{ color: 'var(--gold)' }} /> <span>{tr(facing)}</span>
                  </div>
                )}
-               {isVerified && (
-                 <div style={{ background: 'rgba(16,217,140,0.1)', border: '1px solid rgba(16,217,140,0.2)', padding: '5px 10px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.72rem', color: '#10d98c', fontWeight: 800 }}>
-                   <ShieldCheck size={12} /> VERIFIED
-                 </div>
-               )}
             </div>
 
-            {/* Bottom Row: Price & CTAs (Shared Baseline) */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto' }}>
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.5)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Price Starts From</span>
@@ -540,16 +558,6 @@ const PropertyCard = memo(({
                   VIEW <ArrowRight size={14} />
                 </button>
               </div>
-            </div>
-
-            {/* Quick Question Trigger (Muted Overlay) */}
-            <div style={{ marginTop: '12px' }}>
-              <button 
-                onClick={(e) => { e.stopPropagation(); setQuickInquiryOpen(true); }}
-                style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px dashed rgba(255,255,255,0.15)', borderRadius: '10px', padding: '6px', color: 'rgba(255,255,255,0.4)', fontSize: '0.65rem', fontWeight: 700, cursor: 'pointer' }}
-              >
-                + ASK QUESTION
-              </button>
             </div>
           </div>
         </div>

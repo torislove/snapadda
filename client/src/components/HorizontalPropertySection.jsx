@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
 import PropertyCard from './PropertyCard';
 import { useNavigate } from 'react-router-dom';
 
-const HorizontalPropertySection = memo(({ title, eyebrow, properties, type, loading }) => {
+const HorizontalPropertySection = memo(({ title, eyebrow, properties, type, loading, designTokens }) => {
   const scrollRef = useRef(null);
   const navigate = useNavigate();
 
@@ -19,9 +19,9 @@ const HorizontalPropertySection = memo(({ title, eyebrow, properties, type, load
   if (!loading && (!properties || properties.length === 0)) return null;
 
   return (
-    <section className="horizontal-section-wrap animate-on-scroll" style={{ padding: '2.5rem 0', overflow: 'hidden' }}>
+    <section className="horizontal-section-wrap animate-on-scroll" style={{ padding: '1.5rem 0', overflow: 'hidden' }}>
       <div className="container">
-        <div className="section-head sr-head-responsive" style={{ marginBottom: '2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+        <div className="section-head sr-head-responsive" style={{ marginBottom: '1rem', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
           <div className="section-eyebrow" style={{ color: 'var(--gold)', fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.25em', marginBottom: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <span style={{ width: '20px', height: '1px', background: 'var(--gold)', marginRight: '10px', opacity: 0.5 }}></span>
             {eyebrow}
@@ -45,9 +45,9 @@ const HorizontalPropertySection = memo(({ title, eyebrow, properties, type, load
           ref={scrollRef}
           style={{ 
             display: 'flex', 
-            gap: window.innerWidth <= 600 ? '12px' : '24px', 
+            gap: window.innerWidth <= 600 ? '12px' : (designTokens?.gap || '24px'), 
             overflowX: 'auto', 
-            paddingBottom: '2.5rem',
+            paddingBottom: '1.5rem',
             scrollSnapType: 'x mandatory',
             msOverflowStyle: 'none',
             scrollbarWidth: 'none',
@@ -60,12 +60,12 @@ const HorizontalPropertySection = memo(({ title, eyebrow, properties, type, load
         >
           {loading ? (
              [...Array(4)].map((_, i) => (
-                <div key={i} style={{ minWidth: window.innerWidth <= 600 ? '280px' : '320px', height: '450px', background: 'rgba(255,255,255,0.03)', borderRadius: '24px', animate: 'pulse 2s infinite' }} />
+                <div key={i} style={{ minWidth: window.innerWidth <= 600 ? '280px' : '320px', height: '450px', background: 'rgba(255,255,255,0.03)', borderRadius: designTokens?.borderRadius || '24px', animate: 'pulse 2s infinite' }} />
              ))
           ) : (
             properties.map((p) => (
               <div key={p._id} style={{ minWidth: window.innerWidth <= 600 ? '290px' : '320px', maxWidth: window.innerWidth <= 600 ? '290px' : '320px', scrollSnapAlign: 'start', willChange: 'transform' }}>
-                <PropertyCard {...p} />
+                <PropertyCard {...p} designTokens={designTokens} />
               </div>
             ))
           )}
@@ -141,8 +141,8 @@ const HorizontalPropertySection = memo(({ title, eyebrow, properties, type, load
         @media (max-width: 768px) {
           .sr-head-responsive {
             flex-direction: column !important;
-            align-items: flex-start !important;
-            gap: 1rem !important;
+            align-items: center !important;
+            gap: 0.5rem !important;
           }
         }
       `}} />

@@ -6,6 +6,7 @@ import Header from './components/Header';
 import GlobalLoader from './components/GlobalLoader';
 import FloatingOffers from './components/FloatingOffers';
 import { useNotifications } from './hooks/useNotifications';
+import { pruneResources } from './utils/PerformanceUtilities';
 
 // Global HUD components - Symmetrically aligned (Lazy Loaded to unblock main thread)
 const UnitConverter = lazy(() => import('./components/UnitConverter'));
@@ -13,7 +14,7 @@ const ComparisonHud = lazy(() => import('./components/ComparisonHud'));
 const MobileBottomNav = lazy(() => import('./components/MobileBottomNav'));
 
 // Page components - Critical (Static previously, now Lazy for FCP)
-import Home from './pages/Home';
+const Home = lazy(() => import('./pages/Home'));
 
 // Page components - Secondary (Lazy Loaded)
 const PropertyDetails = lazy(() => import('./pages/PropertyDetails'));
@@ -61,6 +62,12 @@ function AppContent() {
   useNotifications();
   useGoogleMarketing();
   const location = useLocation();
+
+  useEffect(() => {
+    // Prune memory-heavy resources on every route change for snappy performance
+    pruneResources();
+  }, [location]);
+
   const showHeader = location.pathname !== '/login';
 
   return (

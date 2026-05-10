@@ -17,9 +17,10 @@
 
 .main-content, .admin-page-content {
   flex: 1;
-  padding: 2rem 2.5rem;
+  padding: 1.5rem;
   background: var(--bg-primary);
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   max-width: 1440px;
   width: 100%;
   margin: 0 auto;
@@ -128,8 +129,9 @@
   text-decoration: none;
   transition: all 0.18s ease;
   position: relative;
-  min-height: 42px;
+  min-height: 48px; /* High Touch Target */
   touch-action: manipulation;
+  margin: 2px 0;
 }
 .nav-item:hover {
   background: rgba(124,58,237,0.05);
@@ -370,7 +372,7 @@
   align-items: center;
   justify-content: space-around;
   z-index: 95;
-  padding: 0 0.5rem env(safe-area-inset-bottom, 0);
+  padding: 0 0.5rem calc(0.5rem + env(safe-area-inset-bottom, 0));
 }
 .admin-mobile-nav-item {
   display: flex;
@@ -385,6 +387,7 @@
   text-decoration: none;
   transition: all 0.18s;
   min-width: 48px;
+  min-height: 48px; /* High Touch Target */
   touch-action: manipulation;
 }
 .admin-mobile-nav-item.active {
@@ -412,15 +415,19 @@
 
 @media (max-width: 768px) {
   .admin-page-content {
-    padding: 1rem;
-    padding-bottom: 80px;
+    padding: 0.75rem;
+    padding-bottom: 90px;
   }
   .admin-topbar {
-    padding: 0 1rem;
-    height: 56px;
+    padding: 0 0.75rem;
+    height: 50px;
   }
   .topbar-time { display: none; }
   .topbar-divider { display: none; }
+  
+  .page-header h1 {
+    font-size: 1.25rem;
+  }
 }
 
 @media (min-width: 901px) {
@@ -471,3 +478,78 @@
 }
 .empty-state svg { margin: 0 auto 1rem; opacity: 0.4; }
 .empty-state h3 { color: var(--text-secondary); margin-bottom: 0.5rem; }
+
+/* Responsive Grid & Form Systems */
+.admin-grid-1-2-responsive {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 2rem;
+  align-items: start;
+}
+
+.property-form-card {
+  padding: 3rem;
+}
+
+.responsive-form-grid {
+  grid-template-columns: 1fr 1fr;
+}
+
+@media (max-width: 1200px) {
+  .admin-grid-1-2-responsive {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .property-form-card {
+    padding: 1.5rem;
+  }
+  
+.responsive-form-grid {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+  }
+
+  .admin-page-content {
+    padding: 1rem 1rem 7rem 1rem;
+  }
+
+  input, select, textarea {
+    min-height: 48px;
+    font-size: 16px !important; /* Prevent iOS auto-zoom */
+  }
+
+  .btn, .btn-ghost {
+    min-height: 48px;
+    padding: 0.75rem 1.25rem;
+  }
+}
+
+/* ────────────────── UTILITIES ────────────────── */
+.scroll-x-mobile {
+  overflow-x: auto !important;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+  -webkit-overflow-scrolling: touch !important;
+  display: flex !important;
+  gap: 0.75rem !important;
+  padding-bottom: 12px !important;
+  touch-action: pan-x;
+}
+
+.scroll-x-mobile::-webkit-scrollbar {
+  display: none !important;
+}
+
+.no-select {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.clickable {
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+

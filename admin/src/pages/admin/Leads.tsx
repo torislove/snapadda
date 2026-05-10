@@ -575,9 +575,9 @@ const AdminLeads = () => {
       {/* Tabs / Filters Panel */}
       <div className="glass-card" style={{ padding: '1.25rem', border: '1px solid rgba(255,255,255,0.05)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1.5rem' }}>
-          <div style={{ display: 'flex', gap: '0.5rem', background: 'rgba(255,255,255,0.03)', padding: '0.4rem', borderRadius: '12px' }}>
+          <div style={{ display: 'flex', gap: '0.4rem', background: 'rgba(255,255,255,0.03)', padding: '0.4rem', borderRadius: '12px', width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
             {[
-              { id: 'Leads', icon: Target, label: 'Lead Board', color: 'var(--emerald)', count: newLeadsCount },
+              { id: 'Leads', icon: Target, label: 'Leads', color: 'var(--emerald)', count: newLeadsCount },
               { id: 'Inquiries', icon: MessageSquare, label: 'Inquiries', color: 'var(--violet)', count: pendingInqCount }
             ].map(tab => (
               <button 
@@ -586,75 +586,76 @@ const AdminLeads = () => {
                 style={{
                   background: activeTab === tab.id ? 'rgba(255,255,255,0.07)' : 'transparent',
                   border: activeTab === tab.id ? '1px solid rgba(255,255,255,0.1)' : '1px solid transparent',
-                  padding: '0.6rem 1.25rem', borderRadius: '10px', cursor: 'pointer',
+                  padding: '0.5rem 1rem', borderRadius: '10px', cursor: 'pointer',
                   color: activeTab === tab.id ? 'white' : 'var(--text-muted)',
-                  fontWeight: 700, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '10px',
-                  transition: 'all 0.2s'
+                  fontWeight: 700, fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '8px',
+                  transition: 'all 0.2s', flexShrink: 0
                 }}
               >
-                <tab.icon size={16} /> {tab.label}
-                {tab.count > 0 && <span style={{ background: tab.color, color: 'black', borderRadius: '6px', padding: '1px 6px', fontSize: '0.65rem' }}>{tab.count}</span>}
+                <tab.icon size={14} /> {tab.label}
+                {tab.count > 0 && <span style={{ background: tab.color, color: 'black', borderRadius: '6px', padding: '1px 6px', fontSize: '0.6rem' }}>{tab.count}</span>}
               </button>
             ))}
           </div>
 
-          <div style={{ display: 'flex', gap: '1rem', flex: 1, justifyContent: 'flex-end' }}>
-             <div className="search-input-wrap" style={{ maxWidth: '300px' }}>
-                <Search size={16} />
+          <div style={{ display: 'flex', gap: '0.75rem', flex: 1, justifyContent: 'flex-start', width: '100%', flexWrap: 'wrap' }}>
+             <div className="search-input-wrap" style={{ flex: 1, minWidth: '180px' }}>
+                <Search size={14} />
                 <input
                   type="text"
-                  placeholder={`Search ${activeTab.toLowerCase()}...`}
+                  placeholder={`Search...`}
                   value={search}
                   onChange={e => setSearch(e.target.value)}
-                  style={{ fontSize: '0.9rem' }}
+                  style={{ fontSize: '0.85rem' }}
                 />
               </div>
               <select 
                 value={districtFilter}
                 onChange={e => setDistrictFilter(e.target.value)}
-                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: '10px', padding: '0 1rem', fontSize: '0.8rem', fontWeight: 700, outline: 'none' }}
+                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: '10px', padding: '0 0.75rem', fontSize: '0.8rem', fontWeight: 700, outline: 'none', minHeight: '44px' }}
               >
-                <option value="All">All Districts</option>
+                <option value="All">Districts</option>
                 <option value="Vijayawada">Vijayawada</option>
                 <option value="Amaravati">Amaravati</option>
                 <option value="Visakhapatnam">Visakhapatnam</option>
                 <option value="Guntur">Guntur</option>
                 <option value="Tirupati">Tirupati</option>
               </select>
-              <button onClick={fetchAllData} className="btn btn-ghost" style={{ padding: '0 1rem', borderRadius: '10px' }}>Refresh</button>
           </div>
         </div>
       </div>
 
       {/* Main Content Area */}
-      <div style={{ display: 'flex', gap: '2rem', alignItems: 'flex-start' }}>
-        <div style={{ flex: 1 }}>
+      <div style={{ display: 'flex', gap: '2rem', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
         {loading ? (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.25rem' }}>
             {[1,2,3,4].map(i => <div key={i} style={{ height: '300px', borderRadius: '18px', background: 'var(--bg-glass)', border: '1px solid var(--border)', animation: 'pulse 1.5s infinite' }} />)}
           </div>
         ) : (activeTab === 'Leads' ? (
           /* Kanban Board View */
-          <div style={{ 
+          <div className="kanban-scroll-container" style={{ 
             display: 'flex', 
             gap: '1.5rem', 
             overflowX: 'auto', 
             paddingBottom: '1rem',
-            minHeight: '600px'
+            minHeight: '600px',
+            WebkitOverflowScrolling: 'touch'
           }}>
             {['New', 'Contacted', 'Qualified', 'Lost'].map(status => {
               const columnLeads = filteredLeads.filter(l => (l.status || 'New') === status);
               return (
-                <div key={status} style={{ minWidth: '300px', flex: 1 }}>
+                <div key={status} style={{ minWidth: '280px', flex: 1 }}>
                   <div style={{ 
                     display: 'flex', justifyContent: 'space-between', alignItems: 'center', 
                     padding: '0.75rem 1rem', marginBottom: '1.25rem', 
                     background: 'rgba(255,255,255,0.03)', borderRadius: '12px',
-                    border: '1px solid rgba(255,255,255,0.05)'
+                    border: '1px solid rgba(255,255,255,0.05)',
+                    position: 'sticky', top: 0, zIndex: 5, backdropFilter: 'blur(10px)'
                   }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                       <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: STATUS_CONFIG[status].color }} />
-                      <span style={{ fontWeight: 800, fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{status}</span>
+                      <span style={{ fontWeight: 800, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{status}</span>
                     </div>
                     <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 600 }}>{columnLeads.length}</span>
                   </div>
@@ -663,7 +664,7 @@ const AdminLeads = () => {
                     <AnimatePresence>
                       {columnLeads.length === 0 ? (
                         <div style={{ padding: '2rem', textAlign: 'center', opacity: 0.3, border: '1px dashed rgba(255,255,255,0.1)', borderRadius: '14px' }}>
-                          <span style={{ fontSize: '0.75rem' }}>No {status} leads</span>
+                          <span style={{ fontSize: '0.7rem' }}>Empty Column</span>
                         </div>
                       ) : (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -690,10 +691,10 @@ const AdminLeads = () => {
             {filteredInquiries.length === 0 ? (
               <div style={{ padding: '5rem', textAlign: 'center', background: 'var(--bg-glass)', borderRadius: '24px', border: '1px dashed var(--border)' }}>
                 <MessageSquare size={50} style={{ opacity: 0.1, marginBottom: '1.5rem', color: 'var(--violet)' }} />
-                <p style={{ color: 'var(--text-muted)' }}>No signals detected in this sector.</p>
+                <p style={{ color: 'var(--text-muted)' }}>No signals detected.</p>
               </div>
             ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '1.25rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.25rem' }}>
                 {filteredInquiries.map(inq => <InquiryCard key={inq._id} inq={inq} onAnswer={submitAnswer} />)}
               </div>
             )}
@@ -701,7 +702,9 @@ const AdminLeads = () => {
         ))}
         </div>
 
-        <ActivityPulse />
+        <div className="desktop-only" style={{ width: '300px', flexShrink: 0 }}>
+           <ActivityPulse />
+        </div>
       </div>
     </div>
   );

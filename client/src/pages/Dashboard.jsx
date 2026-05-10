@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, Heart, User, Settings, LogOut, Star, MapPin, ShieldCheck, Phone, RefreshCw, MessageSquare, Sparkles, LayoutDashboard } from 'lucide-react';
+import { Home, Heart, User, Settings, LogOut, Star, MapPin, ShieldCheck, Phone, RefreshCw, MessageSquare, Sparkles, LayoutDashboard, Building2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { getFavorites, fetchUserQuestions } from '../services/api';
+import { getFavorites, fetchUserQuestions, fetchMyProperties } from '../services/api';
 import PropertyCard from '../components/PropertyCard';
 import Logo from '../components/Logo';
 import ContactModal from '../components/ContactModal';
@@ -148,6 +148,52 @@ function Favorites({ saved, loading }) {
           <h3>No saved properties yet</h3>
           <p>Explore and save properties you love.</p>
           <Link to="/" className="hero-btn hero-btn-primary" style={{ marginTop: '0.5rem' }}>Explore Now</Link>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// My Listings tab
+function MyListings({ properties, loading }) {
+  const navigate = useNavigate();
+  const { t } = useTranslation();
+  if (loading) {
+    return <div style={{ padding: '2rem 0', textAlign: 'center' }}><RefreshCw className="animate-spin" /> Syncing with registry...</div>;
+  }
+
+  return (
+    <div style={{ padding: '2rem 0' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+        <h2 style={{ margin: 0 }}>{t('mylistings.title')}</h2>
+        <button onClick={() => navigate('/post-property')} className="btn-3d-glass" style={{ padding: '8px 20px', fontSize: '0.8rem' }}>
+          {t('mylistings.addBtn')}
+        </button>
+      </div>
+
+      {properties.length > 0 ? (
+        <div className="properties-grid">
+          {properties.map(p => (
+            <div key={p._id || p.id} style={{ position: 'relative' }}>
+              <div style={{ 
+                position: 'absolute', top: '15px', left: '15px', zIndex: 10,
+                padding: '4px 12px', borderRadius: '8px', fontSize: '0.65rem', fontWeight: 900,
+                background: p.status === 'Active' ? '#10d98c' : (p.status === 'Pending' ? '#e8b84b' : '#f5397b'),
+                color: 'black', textTransform: 'uppercase', letterSpacing: '0.05em',
+                boxShadow: '0 4px 15px rgba(0,0,0,0.3)'
+              }}>
+                {p.status === 'Active' ? t('mylistings.live') : (p.status === 'Pending' ? t('mylistings.reviewing') : p.status)}
+              </div>
+              <PropertyCard {...p} />
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="empty-state glass-panel" style={{ padding: '5rem 2rem', textAlign: 'center', border: '1px dashed rgba(255,255,255,0.1)' }}>
+          <Building2 size={48} style={{ opacity: 0.2, marginBottom: '1.5rem' }} />
+          <h3 style={{ fontSize: '1.5rem', fontWeight: 900 }}>{t('mylistings.noAssets')}</h3>
+          <p style={{ color: 'var(--txt-muted)', marginBottom: '2rem' }}>{t('mylistings.noAssetsSub')}</p>
+          <button onClick={() => navigate('/post-property')} className="hero-btn hero-btn-primary">{t('mylistings.addBtn')}</button>
         </div>
       )}
     </div>
@@ -378,11 +424,13 @@ export default function Dashboard({ defaultTab = 'home' }) {
   const [activeTab, setActiveTab] = useState(defaultTab);
   const [modalOpen, setModalOpen] = useState(false);
   const [saved, setSaved] = useState([]);
+  const [myProperties, setMyProperties] = useState([]);
   const [recent, setRecent] = useState([]);
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [myLoading, setMyLoading] = useState(true);
   const [qLoading, setQLoading] = useState(true);
-  const [stats, setStats] = useState({ favoritesCount: 0, citiesCount: 3, inquiriesCount: 0, engagementCount: 0 });
+  const [stats, setStats] = useState({ favoritesCount: 0, citiesCount: 3, inquiriesCount: 0, engagementCount: 0, listingsCount: 0 });
 
   useEffect(() => {
     // Load recent from localStorage with safety
@@ -412,6 +460,16 @@ export default function Dashboard({ defaultTab = 'home' }) {
       .catch(console.error)
       .finally(() => setLoading(false));
 
+    setMyLoading(true);
+    fetchMyProperties(uid)
+      .then(res => {
+        const arr = Array.isArray(res?.data) ? res.data : [];
+        setMyProperties(arr);
+        setStats(prev => ({ ...prev, listingsCount: arr.length }));
+      })
+      .catch(console.error)
+      .finally(() => setMyLoading(false));
+
     fetchUserQuestions(uid)
       .then(res => {
         const questionsArr = Array.isArray(res) ? res : [];
@@ -430,9 +488,10 @@ export default function Dashboard({ defaultTab = 'home' }) {
   }, [user]);
 
   const TABS = [
-    { key: 'home', label: 'Overview', icon: <ShieldCheck size={18} /> },
-    { key: 'favorites', label: 'Saved Assets', icon: <Heart size={18} /> },
-    { key: 'profile', label: 'Executive Info', icon: <User size={18} /> },
+    { key: 'home', label: t('dashboard.overview'), icon: <ShieldCheck size={18} /> },
+    { key: 'listings', label: t('mylistings.title'), icon: <Building2 size={18} /> },
+    { key: 'favorites', label: t('dashboard.saved'), icon: <Heart size={18} /> },
+    { key: 'profile', label: t('dashboard.profile'), icon: <User size={18} /> },
   ];
 
   if (!user) return null;
@@ -487,6 +546,7 @@ export default function Dashboard({ defaultTab = 'home' }) {
         <AnimatePresence mode="wait">
           <motion.div key={activeTab} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} transition={{ duration: 0.2 }}>
             {activeTab === 'home' && <DashboardHome user={user} stats={stats} recent={recent} setModalOpen={setModalOpen} />}
+            {activeTab === 'listings' && <MyListings properties={myProperties} loading={myLoading} />}
             {activeTab === 'favorites' && <Favorites saved={saved} loading={loading} />}
             {activeTab === 'profile' && <Profile user={user} logout={logout} stats={stats} />}
           </motion.div>

@@ -247,7 +247,12 @@ const AdminDashboard = () => {
     {
       title: 'Total Shares', value: stats?.totalShares || 0,
       icon: Share2, color: '#22d9e0',
-      sub: 'Viral Reach', trend: 22, link: '/admin/properties',
+      sub: 'Viral Reach', trend: 22, link: '/admin/engagement',
+    },
+    {
+      title: 'Total Views', value: stats?.totalViews || 0,
+      icon: Activity, color: '#f5c842',
+      sub: 'Platform Visibility', trend: 31, link: '/admin/engagement',
     },
   ];
 

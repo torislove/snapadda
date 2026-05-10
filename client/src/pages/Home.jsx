@@ -26,6 +26,7 @@ import HorizontalPropertySection from '../components/HorizontalPropertySection';
 import MobileOnboarding from '../components/MobileOnboarding';
 import { useBehaviorTracker } from '../hooks/useBehaviorTracker';
 import { getCachedProperties, setCachedProperties } from '../hooks/usePropertyCache';
+import { prefetchRoute } from '../utils/PerformanceUtilities';
 
 
 // ─── Recently Sold Live Ticker ─────────────────────────────────────────────
@@ -113,18 +114,18 @@ const BUDGET_OPTIONS = (t) => [
 const PROPERTY_TYPES = (t) => [
   { label: 'Apartment', value: 'Apartment', icon: <Building2 size={24} /> },
   { label: 'Independent House', value: 'Independent House', icon: <HomeIcon size={24} /> },
-  { label: 'Villa / Duplex', value: 'Villa', icon: <HomeIcon size={24} /> },
-  { label: 'Residential Plot', value: 'Residential Plot', icon: <Square size={24} /> },
+  { label: 'Villa', value: 'Villa', icon: <HomeIcon size={24} /> },
   { label: 'Gated Community Plot', value: 'Gated Community Plot', icon: <Square size={24} /> },
+  { label: 'Residential Plot', value: 'Residential Plot', icon: <Square size={24} /> },
   { label: 'CRDA Approved Plot', value: 'CRDA Approved Plot', icon: <ShieldCheck size={24} /> },
   { label: 'Open Plot', value: 'Open Plot', icon: <Square size={24} /> },
   { label: 'Layout Plot', value: 'Layout Plot', icon: <Square size={24} /> },
   { label: 'Commercial Plot', value: 'Commercial Plot', icon: <Building2 size={24} /> },
   { label: 'Commercial Space', value: 'Commercial Space', icon: <Building2 size={24} /> },
   { label: 'Office Space', value: 'Office Space', icon: <Building2 size={24} /> },
-  { label: 'Showroom / Retail', value: 'Showroom', icon: <Building2 size={24} /> },
+  { label: 'Showroom', value: 'Showroom', icon: <Building2 size={24} /> },
   { label: 'Agricultural Land', value: 'Agricultural Land', icon: <Leaf size={24} /> },
-  { label: 'Farmhouse / Farm Villa', value: 'Farmhouse', icon: <HomeIcon size={24} /> },
+  { label: 'Farmhouse', value: 'Farmhouse', icon: <HomeIcon size={24} /> },
   { label: 'Industrial Shed', value: 'Industrial Shed', icon: <Warehouse size={24} /> },
   { label: 'Warehouse', value: 'Warehouse', icon: <Warehouse size={24} /> },
   { label: 'Factory', value: 'Factory', icon: <Factory size={24} /> },
@@ -243,6 +244,7 @@ export default function Home() {
   const [promotions, setPromotions] = useState([]);
   // Dynamic Settings
   const [heroContent, setHeroContent] = useState(null);
+  const [designTokens, setDesignTokens] = useState(null);
   const [siteStats, setSiteStats] = useState([]);
   const [seoData, setSeoData] = useState(null);
 
@@ -260,6 +262,7 @@ export default function Home() {
   const [sortBy, setSortBy] = useState('newest');
   const [showAutocomplete, setShowAutocomplete] = useState(false);
   const [filterCount, setFilterCount] = useState(0);
+  const [isSearchSticky, setIsSearchSticky] = useState(false);
 
   const [debouncedKeyword, setDebouncedKeyword] = useState(keyword);
   useEffect(() => {
@@ -272,7 +275,11 @@ export default function Home() {
   // 120Hz Smooth Geolocation & Data Sync
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
-    window.addEventListener('resize', handleResize);
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 20);
+      setIsSearchSticky(window.scrollY > 500);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
     
     if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(
@@ -293,6 +300,7 @@ export default function Home() {
     fetchSetting('hero_content').then(setHeroContent).catch(console.error);
     fetchSetting('site_stats').then(setSiteStats).catch(console.error);
     fetchSetting('seo').then(setSeoData).catch(console.error);
+    fetchSetting('design_tokens').then(setDesignTokens).catch(console.error);
     fetchPromotions('segment=hero').then(d => {
       setPromotions(d?.data || (Array.isArray(d) ? d : []));
     }).catch(console.error);
@@ -348,14 +356,52 @@ export default function Home() {
         setApiError(false); 
         let data = [...(res?.data || (Array.isArray(res) ? res : []))];
         
+        // --- ADVANCED PROXIMITY DISCOVERY ENGINE ---
+        // Hierarchy: 1. Exact City Match, 2. Same District Match, 3. Preference Match, 4. Global Fallback
         const prefs = getTopPreferences();
-        if (prefs && prefs.preferredType) {
-          data.sort((a, b) => {
-            const aScore = (a.type === prefs.preferredType ? 10 : 0) + (a.location?.includes(prefs.preferredLocation) ? 5 : 0);
-            const bScore = (b.type === prefs.preferredType ? 10 : 0) + (b.location?.includes(prefs.preferredLocation) ? 5 : 0);
-            return bScore - aScore;
-          });
-        }
+        const smart = parseSmartSearch(debouncedKeyword);
+        const searchCity = smart?.city || cityFilter;
+        
+        data.sort((a, b) => {
+          let aScore = 0;
+          let bScore = 0;
+
+          // 1. Precise Geolocation Match (Highest Priority)
+          if (userCoords && a.coordinates && b.coordinates) {
+            const getDist = (c1, c2) => Math.sqrt(Math.pow(c1.lat - c2.lat, 2) + Math.pow(c1.lng - c2.lng, 2));
+            const distA = getDist(userCoords, a.coordinates);
+            const distB = getDist(userCoords, b.coordinates);
+            if (distA < distB) aScore += 150;
+            else if (distB < distA) bScore += 150;
+          }
+
+          // 2. City Relevance
+          if (searchCity) {
+            if (a.location?.toLowerCase().includes(searchCity.toLowerCase())) aScore += 100;
+            if (b.location?.toLowerCase().includes(searchCity.toLowerCase())) bScore += 100;
+          }
+
+          // 3. District Relevance
+          const searchDist = smart?.detectedLocation?.district;
+          if (searchDist) {
+            if (a.district?.toLowerCase() === searchDist.toLowerCase()) aScore += 50;
+            if (b.district?.toLowerCase() === searchDist.toLowerCase()) bScore += 50;
+          }
+
+          // 4. User Behavioral Preferences
+          if (prefs) {
+            if (a.type === prefs.preferredType) aScore += 20;
+            if (b.type === prefs.preferredType) bScore += 20;
+            if (a.location?.includes(prefs.preferredLocation)) aScore += 10;
+            if (b.location?.includes(prefs.preferredLocation)) bScore += 10;
+          }
+
+          // 5. Featured Status
+          if (a.isFeatured) aScore += 5;
+          if (b.isFeatured) bScore += 5;
+
+          return bScore - aScore;
+        });
 
         // --- CRITICAL: Instant first render, background transitions for updates ---
         if (isInitial) {
@@ -445,6 +491,36 @@ export default function Home() {
 
   return (
     <>
+      <AnimatePresence>
+        {isSearchSticky && (
+          <motion.div 
+            initial={{ y: -100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -100, opacity: 0 }}
+            style={{ 
+              position: 'fixed', top: '15px', left: '50%', transform: 'translateX(-50%)',
+              width: '90%', maxWidth: '600px', zIndex: 9999,
+              background: 'rgba(10,15,30,0.9)', backdropFilter: 'blur(30px)',
+              border: '1px solid rgba(232,184,75,0.3)', borderRadius: '40px',
+              padding: '8px 20px', display: 'flex', alignItems: 'center', gap: '12px',
+              boxShadow: '0 20px 40px rgba(0,0,0,0.6)'
+            }}
+          >
+            <Search size={18} color="var(--gold)" />
+            <input 
+              type="text" value={keyword} onChange={(e) => setKeyword(e.target.value)}
+              placeholder="Search mandal, city, project..."
+              style={{ flex: 1, background: 'transparent', border: 'none', color: 'white', fontSize: '0.9rem', outline: 'none' }}
+            />
+            <button 
+              onClick={() => navigate(`/search?keyword=${keyword}`)}
+              style={{ background: 'var(--gold)', color: 'black', border: 'none', padding: '6px 16px', borderRadius: '20px', fontWeight: 900, fontSize: '0.75rem', cursor: 'pointer' }}
+            >
+              GO
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
       <MobileOnboarding onLocationDetected={(city) => { setKeyword(city); setDebouncedKeyword(city); }} />
       <div 
         className="app-container"
@@ -459,21 +535,21 @@ export default function Home() {
       <main style={{ flex: 1, paddingTop: 'var(--nav-h)' }}>
         <Marquee />
 
-        <section className="promo-section-top" style={{ padding: isMobile ? '1.5rem 0 0.5rem' : '1rem 0' }}>
+        <section className="promo-section-top" style={{ padding: isMobile ? '1rem 0 0.5rem' : '0.5rem 0' }}>
           <div className="container">
             <div className="section-head" style={{ textAlign: 'center', marginBottom: '1rem' }}>
               <div className="section-eyebrow" style={{ justifyContent: 'center' }}>Exclusive Deals</div>
               <h2 className="section-title" style={{ fontSize: '1.5rem', color: 'white' }}>Institutional Offers</h2>
             </div>
           </div>
-          <OfferSection />
+          <OfferSection designTokens={designTokens?.adCard} />
         </section>
 
         {/* Hero Section */}
         <section 
           className="hero-section" 
           style={{ 
-            padding: isMobile ? '60px 0 30px' : '90px 0 50px', 
+            padding: isMobile ? '40px 0 20px' : '60px 0 40px', 
             position: 'relative', 
             overflow: 'hidden',
             minHeight: isMobile ? 'auto' : '85vh',
@@ -503,9 +579,32 @@ export default function Home() {
                 border: '1px solid rgba(255,255,255,0.15)', 
                 boxShadow: '0 30px 60px rgba(0,0,0,0.5)',
                 maxWidth: '900px',
-                margin: '2rem auto'
+                margin: isMobile ? '1.25rem auto' : '1.5rem auto'
               }}
             >
+              {/* Intent Tabs */}
+              <div style={{ display: 'flex', gap: '10px', marginBottom: '1.5rem', justifyContent: isMobile ? 'center' : 'flex-start' }}>
+                {INTENT_TABS(t).map(tab => (
+                  <button
+                    key={tab.value}
+                    onClick={() => setIntent(tab.value)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '8px',
+                      padding: '10px 24px', borderRadius: '30px',
+                      background: intent === tab.value ? 'var(--gold)' : 'rgba(255,255,255,0.05)',
+                      color: intent === tab.value ? 'black' : 'white',
+                      border: '1px solid',
+                      borderColor: intent === tab.value ? 'var(--gold)' : 'rgba(255,255,255,0.1)',
+                      fontWeight: 900, fontSize: '0.85rem', cursor: 'pointer',
+                      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+                    }}
+                  >
+                    {intent === tab.value ? React.cloneElement(tab.icon, { size: 18 }) : null}
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+
               <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1.2fr 1fr 1fr', gap: isMobile ? '0.75rem' : '1.25rem', marginBottom: '1.25rem' }}>
                 <div className="search-group">
                   <label style={{ color: 'var(--gold)', fontSize: '0.65rem', fontWeight: 900, letterSpacing: '0.1em', marginBottom: '8px', display: 'block' }}>LOCATION / PROJECT</label>
@@ -702,6 +801,7 @@ export default function Home() {
             properties={latestListings} 
             type="All"
             loading={loading}
+            designTokens={designTokens?.propertyCard}
           />
 
           <HorizontalPropertySection 
@@ -710,6 +810,7 @@ export default function Home() {
             properties={villas} 
             type="Villa"
             loading={loading}
+            designTokens={designTokens?.propertyCard}
           />
           
           <HorizontalPropertySection 
@@ -718,6 +819,7 @@ export default function Home() {
             properties={apartments} 
             type="Apartment"
             loading={loading}
+            designTokens={designTokens?.propertyCard}
           />
 
           <HorizontalPropertySection 
@@ -726,6 +828,7 @@ export default function Home() {
             properties={plots} 
             type="Plot"
             loading={loading}
+            designTokens={designTokens?.propertyCard}
           />
 
           <HorizontalPropertySection 
@@ -734,6 +837,7 @@ export default function Home() {
             properties={agri} 
             type="Agriculture"
             loading={loading}
+            designTokens={designTokens?.propertyCard}
           />
 
           <HorizontalPropertySection 
@@ -742,6 +846,7 @@ export default function Home() {
             properties={commercial} 
             type="Commercial"
             loading={loading}
+            designTokens={designTokens?.propertyCard}
           />
         </section>
 
@@ -830,7 +935,7 @@ export default function Home() {
               <h2 className="section-title" style={{ fontSize: '1.5rem', color: 'white' }}>Exclusive Opportunities</h2>
             </div>
           </div>
-          <OfferSection />
+          <OfferSection designTokens={designTokens?.adCard} />
         </section>
         <section id="cities" className="section-wrap" style={{ padding: '1.5rem 0' }}>
           <div className="container">

@@ -571,6 +571,7 @@ export const publicSubmitProperty = async (req, res) => {
       verificationStatus: 'Draft',
       isVerified: false,
       isFeatured: false,
+      submittedBy: data.submittedBy || null,
       submissionMetadata: {
         submittedAt: new Date(),
         source: 'Public Portal',
@@ -582,6 +583,9 @@ export const publicSubmitProperty = async (req, res) => {
     const property = new Property(propertyData);
     await property.save();
     
+    // Invalidate cache since a new (though pending) record exists
+    invalidateCache();
+
     res.status(201).json({
       status: 'success',
       message: 'Property submitted successfully. It will be live after admin review.',
@@ -590,5 +594,25 @@ export const publicSubmitProperty = async (req, res) => {
   } catch (err) {
     console.error('PUBLIC_SUBMIT_ERROR:', err);
     res.status(500).json({ status: 'error', message: err.message });
+  }
+};
+
+export const getMyProperties = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    if (!userId) return res.status(400).json({ message: 'User ID is required' });
+
+    const properties = await Property.find({ submittedBy: userId })
+      .select(CARD_FIELDS)
+      .sort({ createdAt: -1 })
+      .lean();
+
+    res.status(200).json({
+      status: 'success',
+      data: properties
+    });
+  } catch (error) {
+    console.error('GET_MY_PROPERTIES_ERROR:', error);
+    res.status(500).json({ status: 'error', message: error.message });
   }
 };

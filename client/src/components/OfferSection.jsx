@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight, Zap, ArrowRight, Timer } from 'lucide-react'
 import { useNavigate } from 'react-router-dom';
 import { fetchPromotions, trackPromotionView, trackPromotionClick } from '../services/api';
 
-const OfferCard = ({ promo }) => {
+const OfferCard = ({ promo, designTokens }) => {
   const navigate = useNavigate();
   const cardRef = useRef(null);
   
@@ -24,6 +24,13 @@ const OfferCard = ({ promo }) => {
     }
   };
 
+  const getOptimizedImg = (url, width = designTokens?.imageWidth || 400, height = designTokens?.imageHeight || 530) => {
+    if (!url || !url.includes('cloudinary.com')) return url;
+    const parts = url.split('/upload/');
+    if (parts.length !== 2) return url;
+    return `${parts[0]}/upload/f_auto,q_auto:good,w_${width},h_${height},c_fill/${parts[1]}`;
+  };
+
   return (
     <motion.div
       whileHover={{ y: -8, scale: 1.02 }}
@@ -34,7 +41,7 @@ const OfferCard = ({ promo }) => {
         minWidth: '240px',
         width: '240px',
         height: '320px',
-        borderRadius: '24px',
+        borderRadius: designTokens?.borderRadius || '24px',
         overflow: 'hidden',
         position: 'relative',
         cursor: 'pointer',
@@ -49,7 +56,7 @@ const OfferCard = ({ promo }) => {
       {promo.image && (
         <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
           <img 
-            src={promo.image} 
+            src={getOptimizedImg(promo.image)} 
             alt={promo.title}
             loading="lazy"
             style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.7 }}
@@ -59,7 +66,7 @@ const OfferCard = ({ promo }) => {
       )}
 
       {/* Content */}
-      <div style={{ position: 'relative', zIndex: 2, height: '100%', padding: '1.25rem', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
+      <div style={{ position: 'relative', zIndex: 2, height: '100%', padding: designTokens?.padding || '1.25rem', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
           <span style={{ 
             fontSize: '0.6rem', fontWeight: 950, letterSpacing: '0.12em', textTransform: 'uppercase',
@@ -91,7 +98,7 @@ const OfferCard = ({ promo }) => {
   );
 };
 
-export default function OfferSection() {
+export default function OfferSection({ designTokens }) {
   const [promotions, setPromotions] = useState([]);
   const [loading, setLoading] = useState(true);
   const scrollRef = useRef(null);
@@ -122,7 +129,7 @@ export default function OfferSection() {
           className="hide-scrollbar"
           style={{ 
             display: 'flex', 
-            gap: '16px', 
+            gap: designTokens?.gap || '16px', 
             overflowX: 'auto', 
             padding: '10px 0 20px',
             scrollSnapType: 'x mandatory',
@@ -132,10 +139,10 @@ export default function OfferSection() {
         >
           {loading ? (
             [...Array(4)].map((_, i) => (
-              <div key={i} style={{ minWidth: '240px', height: '320px', borderRadius: '24px', background: 'rgba(255,255,255,0.03)', animation: 'pulse 1.5s infinite' }} />
+              <div key={i} style={{ minWidth: '240px', height: '320px', borderRadius: designTokens?.borderRadius || '24px', background: 'rgba(255,255,255,0.03)', animation: 'pulse 1.5s infinite' }} />
             ))
           ) : (
-            promotions.map(p => <OfferCard key={p._id} promo={p} />)
+            promotions.map(p => <OfferCard key={p._id} promo={p} designTokens={designTokens} />)
           )}
         </div>
 

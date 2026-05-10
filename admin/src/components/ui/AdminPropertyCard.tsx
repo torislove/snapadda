@@ -1,10 +1,11 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import {
   ShieldCheck, MapPin, Building2, Leaf, Square,
   Compass, CheckCircle2, Edit3, Trash2, Zap, ChevronLeft,
   ChevronRight, Image as ImageIcon, Home as HomeIcon, TrendingUp,
-  Clock, Copy, X, Play, BedDouble
+  Clock, Copy, X, Play, BedDouble, Key, EyeOff
 } from 'lucide-react';
 import HolographicWrapper from './HolographicWrapper';
 
@@ -66,6 +67,7 @@ export const AdminPropertyCard: React.FC<Props> = ({
   prop, handleEdit, updateProperty, deleteProperty, createProperty,
   loadProperties, selected, onSelect,
 }) => {
+  const { t } = useTranslation();
   const [imgIdx, setImgIdx] = useState(0);
   const [lightbox, setLightbox] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -108,6 +110,20 @@ export const AdminPropertyCard: React.FC<Props> = ({
     finally { setBusy(false); }
   }, [id, busy, updateProperty, loadProperties]);
 
+  const handleApprove = useCallback(async () => {
+    if (busy) return;
+    setBusy(true);
+    try { 
+      await updateProperty(id, { 
+        status: 'Active', 
+        verificationStatus: 'Verified',
+        isVerified: true 
+      }); 
+      loadProperties(); 
+    }
+    finally { setBusy(false); }
+  }, [id, busy, updateProperty, loadProperties]);
+
   const handleDelete = useCallback(async () => {
     if (!window.confirm(`Delete "${prop.title}"? This cannot be undone.`)) return;
     setDeleting(true);
@@ -127,7 +143,7 @@ export const AdminPropertyCard: React.FC<Props> = ({
   }, [prop, copying, createProperty, loadProperties]);
 
   const handleShareLink = useCallback(() => {
-    const url = `https://snapadda-7a6e6.web.app/property/${id}`;
+    const url = `https://snapadda.com/property/${id}`;
     navigator.clipboard.writeText(url).catch(() => {
       const ta = document.createElement('textarea');
       ta.value = url;
@@ -141,7 +157,7 @@ export const AdminPropertyCard: React.FC<Props> = ({
   }, [id]);
 
   const handleWhatsAppShare = useCallback(() => {
-    const url  = `https://snapadda-7a6e6.web.app/property/${id}`;
+    const url  = `https://snapadda.com/property/${id}`;
     const code = prop.propertyCode || `SNA-${id.toString().slice(-5).toUpperCase()}`;
     const price = fmt(prop.price);
     const msg  = `🏠 *${prop.title}*\n📍 ${prop.location}, ${prop.district}\n🏷️ Code: *${code}*\n💰 Price: *${price}*\n\n🔗 View Full Details:\n${url}\n\n_Shared via SnapAdda – Andhra's Leading Property Platform_`;
@@ -384,21 +400,89 @@ export const AdminPropertyCard: React.FC<Props> = ({
             </div>
 
             {/* Share Button Group */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '12px' }}>
-              <Btn onClick={() => handleEdit(prop)} icon={<Edit3 size={13}/>} label="Edit" />
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(80px, 1fr))', gap: '8px', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '12px' }}>
+              <Btn onClick={() => handleEdit(prop)} icon={<Edit3 size={13}/>} label={t('common.edit')} />
               
               <Btn onClick={handleCopy} icon={<Copy size={13}/>} label={copying ? '...' : 'Copy'}
                 color="rgba(155,89,245,0.1)" border="rgba(155,89,245,0.3)" textColor="#9b59f5" />
               
-              <Btn onClick={handleDelete} icon={<Trash2 size={13}/>} label={deleting ? '...' : 'Del'}
+              <Btn onClick={handleDelete} icon={<Trash2 size={13}/>} label={deleting ? '...' : t('common.delete')}
                 color="rgba(245,57,123,0.1)" border="rgba(245,57,123,0.3)" textColor="#f5397b" />
               
-              {status !== 'Sold' ? (
-                <Btn onClick={() => changeStatus('Sold')} icon={<CheckCircle2 size={13}/>} label="Set Sold"
-                  color="rgba(16,217,140,0.1)" border="rgba(16,217,140,0.3)" textColor="#10d98c" />
-              ) : (
-                <Btn onClick={() => changeStatus('Active')} icon={<TrendingUp size={13}/>} label="Set Live"
-                  color="rgba(232,184,75,0.1)" border="rgba(232,184,75,0.3)" textColor="#e8b84b" />
+              {prop.verificationStatus !== 'Verified' && (
+                <Btn 
+                  onClick={handleApprove} 
+                  icon={<ShieldCheck size={13}/>} 
+                  label="APPROVE"
+                  color="rgba(16,217,140,0.15)" 
+                  border="rgba(16,217,140,0.4)" 
+                  textColor="#10d98c" 
+                />
+              )}
+
+              {/* Status Management Toggles */}
+              {prop.status === 'Active' && (
+                <>
+                  <Btn 
+                    onClick={() => changeStatus('Sold')} 
+                    icon={<CheckCircle2 size={13}/>} 
+                    label="SOLD OUT"
+                    color="rgba(232,184,75,0.1)" 
+                    border="rgba(232,184,75,0.3)" 
+                    textColor="#e8b84b" 
+                  />
+                  {prop.purpose === 'Rent' && (
+                    <Btn 
+                      onClick={() => changeStatus('Rented')} 
+                      icon={<Key size={13}/>} 
+                      label="RENTED"
+                      color="rgba(34,217,224,0.1)" 
+                      border="rgba(34,217,224,0.3)" 
+                      textColor="#22d9e0" 
+                    />
+                  )}
+                  <Btn 
+                    onClick={() => changeStatus('Pending')} 
+                    icon={<EyeOff size={13}/>} 
+                    label="DEACTIVATE"
+                    color="rgba(255,255,255,0.05)" 
+                    border="rgba(255,255,255,0.15)" 
+                    textColor="#aaa" 
+                  />
+                </>
+              )}
+
+              {prop.status === 'Sold' && (
+                <Btn 
+                  onClick={() => changeStatus('Active')} 
+                  icon={<TrendingUp size={13}/>} 
+                  label="MARK UNSOLD"
+                  color="rgba(16,217,140,0.15)" 
+                  border="rgba(16,217,140,0.4)" 
+                  textColor="#10d98c" 
+                />
+              )}
+
+              {prop.status === 'Rented' && (
+                <Btn 
+                  onClick={() => changeStatus('Active')} 
+                  icon={<TrendingUp size={13}/>} 
+                  label="MARK UNRENTED"
+                  color="rgba(16,217,140,0.15)" 
+                  border="rgba(16,217,140,0.4)" 
+                  textColor="#10d98c" 
+                />
+              )}
+
+              {(prop.status === 'Pending' || prop.status === 'Draft') && (
+                <Btn 
+                  onClick={() => changeStatus('Active')} 
+                  icon={<Play size={13}/>} 
+                  label="ACTIVATE"
+                  color="rgba(16,217,140,0.15)" 
+                  border="rgba(16,217,140,0.4)" 
+                  textColor="#10d98c" 
+                />
               )}
 
               {/* WhatsApp Share */}
@@ -422,7 +506,7 @@ export const AdminPropertyCard: React.FC<Props> = ({
                 {linkCopied ? 'Copied!' : 'Copy Link'}
               </button>
 
-              <a href={`https://snapadda-7a6e6.web.app/property/${id}`} target="_blank" rel="noopener noreferrer"
+              <a href={`https://snapadda.com/property/${id}`} target="_blank" rel="noopener noreferrer"
                 style={{ display: 'flex', alignItems: 'center', justifyContent: 'center',
                   gap: 5, padding: '8px', background: 'rgba(34,217,224,0.1)', border: '1px solid rgba(34,217,224,0.3)',
                   borderRadius: 12, color: '#22d9e0', fontSize: '0.75rem', fontWeight: 800, textDecoration: 'none' }}>
@@ -442,9 +526,10 @@ const Btn: React.FC<{
   color?: string; border?: string; textColor?: string;
 }> = ({ onClick, icon, label, color = 'rgba(255,255,255,0.1)', border = 'rgba(255,255,255,0.2)', textColor = 'white' }) => (
   <button onClick={onClick}
-    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '8px 4px',
+    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '10px 4px',
       background: color, border: `1px solid ${border}`, borderRadius: 12, color: textColor, backdropFilter: 'blur(10px)',
-      cursor: 'pointer', fontSize: '0.75rem', fontWeight: 800, transition: 'all 0.2s' }}>
+      cursor: 'pointer', fontSize: '0.72rem', fontWeight: 900, transition: 'all 0.2s', minHeight: '44px',
+      touchAction: 'manipulation' }}>
     {icon} {label}
   </button>
 );

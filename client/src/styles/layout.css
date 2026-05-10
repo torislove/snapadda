@@ -387,9 +387,9 @@
 }
 
 section {
-  padding: 4rem 0;
+  padding: 2.5rem 0;
   content-visibility: auto;
-  contain-intrinsic-size: 1px 500px;
+  contain-intrinsic-size: 1px 400px;
 }
 
 @media (max-width: 768px) {
@@ -415,10 +415,65 @@ section {
   }
 
   section {
-    padding: 2.5rem 0 !important;
+    padding: 1.5rem 0 !important;
     content-visibility: auto;
-    contain-intrinsic-size: 1px 300px;
+    contain-intrinsic-size: 1px 250px;
   }
 }
 
 
+/* Elite Glassmorphism 3.0 & Transitions */
+.glass-premium {
+  background: rgba(15, 20, 35, 0.7) !important;
+  backdrop-filter: blur(40px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(40px) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.1) !important;
+}
+
+.pd-mobile-ribbon button {
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transform: translateZ(0);
+}
+
+.pd-mobile-ribbon button:active {
+  transform: scale(0.95) translateY(2px);
+  filter: brightness(1.2);
+}
+
+.btn-3d-glass-emerald {
+  background: rgba(37, 211, 102, 0.9) !important;
+  color: white !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.shadow-hover {
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.shadow-hover:hover {
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6), 0 0 20px rgba(232, 184, 75, 0.1) !important;
+  transform: translateY(-4px) translateZ(0);
+}
+
+/* Page Transition Shim */
+.page-enter {
+  opacity: 0;
+  transform: translateY(10px);
+}
+.page-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 400ms, transform 400ms;
+}
+
+@media (max-width: 768px) {
+  .pd-mobile-ribbon {
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    padding: 10px;
+    background: rgba(0,0,0,0.2);
+    border-radius: 30px;
+  }
+}

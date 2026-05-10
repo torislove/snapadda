@@ -104,61 +104,51 @@ export const PropertiesList: React.FC<PropertiesListProps> = ({
         )}
       </AnimatePresence>
       {/* Toolbar */}
-      <div className="glass-card" style={{ padding: '1rem 1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', borderRadius: '18px' }}>
-        <div className="flex-row-mobile-stack" style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
-          <div className="search-box" style={{ position: 'relative', flex: 1, minWidth: '240px' }}>
-            <Search size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+      <div className="glass-card" style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem', borderRadius: '18px' }}>
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', width: '100%' }}>
+          <div className="search-box" style={{ position: 'relative', flex: 1 }}>
+            <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
             <input 
               type="text" 
-              placeholder="Search properties..." 
+              placeholder="Search assets..." 
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="admin-input" 
-              style={{ width: '100%', paddingLeft: '40px', borderRadius: '12px' }}
+              style={{ width: '100%', paddingLeft: '36px', borderRadius: '12px', minHeight: '44px' }}
             />
           </div>
+          <button 
+            onClick={() => loadProperties()}
+            className="btn-elite"
+            style={{ padding: '0.75rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', color: 'white', background: 'rgba(255,255,255,0.05)', height: '44px', width: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          >
+            <RefreshCw size={16} />
+          </button>
+        </div>
 
-          <div style={{ display: 'flex', gap: '8px', background: 'rgba(255,255,255,0.04)', padding: '4px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)' }}>
+        <div style={{ display: 'flex', gap: '0.5rem', width: '100%', overflowX: 'auto', paddingBottom: '4px', WebkitOverflowScrolling: 'touch' }}>
             {['all', 'Active', 'Sold', 'Pending', 'Draft'].map(f => (
               <button 
                 key={f}
                 onClick={() => setStatusFilter(f)}
                 style={{ 
-                  padding: '6px 12px', 
-                  borderRadius: '8px', 
-                  fontSize: '0.75rem', 
+                  padding: '8px 14px', 
+                  borderRadius: '10px', 
+                  fontSize: '0.7rem', 
                   fontWeight: 800,
                   cursor: 'pointer',
-                  background: statusFilter === f ? 'var(--violet)' : 'transparent',
+                  background: statusFilter === f ? 'var(--violet)' : 'rgba(255,255,255,0.04)',
                   color: statusFilter === f ? 'white' : 'var(--text-muted)',
                   border: 'none',
-                  transition: '0.2s'
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0
                 }}
               >
                 {f.toUpperCase()}
-                {f === 'Pending' && filteredProperties.filter(p => p.status === 'Pending').length > 0 && (
-                   <span style={{ marginLeft: '6px', background: '#ff5050', color: 'white', padding: '2px 6px', borderRadius: '4px', fontSize: '0.6rem' }}>
-                     {filteredProperties.filter(p => p.status === 'Pending').length}
-                   </span>
-                )}
               </button>
             ))}
-          </div>
-
-          <button 
-            onClick={() => loadProperties()}
-            className="btn-elite"
-            style={{ padding: '0.7rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', color: 'white', cursor: 'pointer', background: 'transparent' }}
-            title="Refresh List"
-          >
-            <RefreshCw size={18} />
-          </button>
-
-          <div style={{ display: 'flex', background: 'rgba(255,255,255,0.04)', padding: '4px', borderRadius: '12px' }}>
-            <button onClick={() => setViewMode('cards')} style={{ padding: '6px', borderRadius: '8px', background: viewMode === 'cards' ? 'rgba(255,255,255,0.1)' : 'transparent', border: 'none', color: viewMode === 'cards' ? 'var(--gold)' : 'var(--text-muted)', cursor: 'pointer' }}><LayoutGrid size={18} /></button>
-            <button onClick={() => setViewMode('grid')} style={{ padding: '6px', borderRadius: '8px', background: viewMode === 'grid' ? 'rgba(255,255,255,0.1)' : 'transparent', border: 'none', color: viewMode === 'grid' ? 'var(--gold)' : 'var(--text-muted)', cursor: 'pointer' }}><List size={18} /></button>
-          </div>
         </div>
+      </div>
 
         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
           <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.35)', fontWeight: 600 }}>
@@ -213,7 +203,7 @@ export const PropertiesList: React.FC<PropertiesListProps> = ({
             </motion.button>
           )}
         </div>
-      </div>
+
 
       {/* Property Grid */}
       <div style={{

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '../../../components/ui/Button';
 import { Plus, X, Zap, Trash2 } from 'lucide-react';
@@ -51,21 +51,43 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
   addCustomFeature, removeCustomFeature, updateCustomFeature,
   realtorData, setRealtorData, realtors = []
 }) => {
+  const [viewMode, setViewMode] = useState<'Simplified' | 'Advanced'>('Simplified');
+
   return (
     <motion.div 
       key="editor"
       initial={{ opacity: 0, y: 30 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -30 }}
-      className="admin-grid-1-2"
+      className="admin-grid-1-2-responsive"
       style={{ willChange: 'transform' }}
     >
       {/* Editor Console */}
-      <div className="glass-card" style={{ padding: '3rem', borderRadius: '28px', border: '1px solid rgba(255,255,255,0.08)', transform: 'translateZ(0)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem' }}>
-          <h2 style={{ fontSize: '1.75rem', fontWeight: 800, color: 'white', fontFamily: 'var(--font-heading)' }}>
-            {isEditing ? 'Modify Property' : 'Add Property'}
-          </h2>
+      <div className="property-form-card" style={{ borderRadius: '28px', border: '1px solid rgba(255,255,255,0.08)', transform: 'translateZ(0)', background: 'var(--bg-glass)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+          <div>
+            <h2 style={{ fontSize: '1.75rem', fontWeight: 800, color: 'white', fontFamily: 'var(--font-heading)', margin: 0 }}>
+              {isEditing ? 'Modify Property' : 'Add Property'}
+            </h2>
+            <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+              {['Simplified', 'Advanced'].map((m: any) => (
+                <button 
+                  key={m}
+                  type="button"
+                  onClick={() => setViewMode(m)}
+                  style={{ 
+                    padding: '6px 16px', borderRadius: '20px', fontSize: '0.7rem', fontWeight: 900,
+                    background: viewMode === m ? 'var(--gold)' : 'rgba(255,255,255,0.05)',
+                    color: viewMode === m ? 'black' : 'rgba(255,255,255,0.6)',
+                    border: '1px solid', borderColor: viewMode === m ? 'var(--gold)' : 'rgba(255,255,255,0.1)',
+                    cursor: 'pointer'
+                  }}
+                >
+                  {m.toUpperCase()}
+                </button>
+              ))}
+            </div>
+          </div>
           <button onClick={handleCloseForm} style={{ color: 'var(--text-muted)', background: 'rgba(255,255,255,0.05)', border: 'none', padding: '10px', borderRadius: '50%', cursor: 'pointer' }}><X size={20} /></button>
         </div>
 
@@ -75,9 +97,9 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
             <h3 style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--violet)', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '1.75rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
               <div style={{ width: '20px', height: '1px', background: 'var(--violet)' }} /> STEP 1: CLASSIFICATION
             </h3>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+            <div className="responsive-form-grid" style={{ display: 'grid', gap: '1.5rem' }}>
               <div>
-                <label className="admin-label">Property Type</label>
+                <label className="admin-label">Property Type <span className="required-asterisk">*</span></label>
                 <select name="type" defaultValue={editingProperty?.type || 'Apartment'} className="admin-select"
                   onChange={(e) => setLiveData((p: any) => ({ ...p, type: e.target.value }))}
                 >
@@ -112,7 +134,7 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
               </div>
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                  <label className="admin-label" style={{ marginBottom: 0 }}>City / Area <span style={{ color: 'var(--rose)' }}>*</span></label>
+                  <label className="admin-label" style={{ marginBottom: 0 }}>City / Area <span className="required-asterisk">*</span></label>
                   <button 
                     type="button" 
                     onClick={() => {
@@ -143,7 +165,7 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
                 <input name="location" defaultValue={editingProperty?.location || ''} className="admin-input" placeholder="e.g. Mangalagiri, Vijayawada" required />
               </div>
               <div>
-                <label className="admin-label">District (AP) <span style={{ color: 'var(--rose)' }}>*</span></label>
+                <label className="admin-label">District (AP) <span className="required-asterisk">*</span></label>
                 <select name="district" defaultValue={editingProperty?.district || ''} className="admin-select" required>
                   <option value="">Select District</option>
                   {['Anantapur','Bapatla','Chittoor','East Godavari','Eluru','Guntur','Kadapa','Kakinada','Krishna','Kurnool','Nandyal','Nellore','Palnadu','Parvathipuram Manyam','Prakasam','Rajahmundry','Srikakulam','Sri Potti Sriramulu Nellore','Tirupati','Visakhapatnam','Vizianagaram','West Godavari'].map(d => (
@@ -152,7 +174,7 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
                 </select>
               </div>
               <div>
-                <label className="admin-label">Price <span style={{ color: 'var(--rose)' }}>*</span></label>
+                <label className="admin-label">Price <span className="required-asterisk">*</span></label>
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <input 
                     name="price" 
@@ -194,7 +216,7 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
                 </select>
               </div>
               <div style={{ gridColumn: 'span 2' }}>
-                <label className="admin-label">Property Title <span style={{ color: 'var(--rose)' }}>*</span></label>
+                <label className="admin-label">Property Title <span className="required-asterisk">*</span></label>
                 <input name="title" defaultValue={editingProperty?.title || ''} className="admin-input" placeholder="e.g. 6 Acres of CRM Land in Mangalagiri" required />
               </div>
               <div>
@@ -215,72 +237,74 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
             </div>
           </section>
 
-          <section>
-            <h3 style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--emerald)', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '1.75rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <div style={{ width: '20px', height: '1px', background: 'var(--emerald)' }} /> STEP 2: LOCATION & LEGAL
-            </h3>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-              <div style={{ gridColumn: '1 / -1' }}>
-                <label className="admin-label">Full Address</label>
-                <textarea name="address" defaultValue={editingProperty?.address || ''} className="admin-input" rows={2} placeholder="Near coca cola factory..." />
-              </div>
-              <div style={{ gridColumn: '1 / -1' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                  <label className="admin-label" style={{ marginBottom: 0 }}>Property Description</label>
-                  <button 
-                    type="button" 
-                    onClick={handleGenerateAIDescription}
-                    disabled={isGeneratingAI}
-                    className="btn-ghost"
-                    style={{ 
-                      fontSize: '0.65rem', padding: '4px 10px', borderRadius: '6px', 
-                      border: '1px solid var(--gold)', color: 'var(--gold)',
-                      display: 'flex', alignItems: 'center', gap: '5px',
-                      background: isGeneratingAI ? 'rgba(212,175,55,0.1)' : 'transparent'
-                    }}
-                  >
-                    <Zap size={10} fill={isGeneratingAI ? 'var(--gold)' : 'none'} /> 
-                    {isGeneratingAI ? 'GENERATING...' : 'GENERATE WITH AI'}
-                  </button>
+          {viewMode === 'Advanced' && (
+            <section>
+              <h3 style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--emerald)', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '1.75rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ width: '20px', height: '1px', background: 'var(--emerald)' }} /> STEP 2: LOCATION & LEGAL
+              </h3>
+              <div className="responsive-form-grid" style={{ display: 'grid', gap: '1.5rem' }}>
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <label className="admin-label">Full Address</label>
+                  <textarea name="address" defaultValue={editingProperty?.address || ''} className="admin-input" rows={2} placeholder="Near coca cola factory..." />
                 </div>
-                <textarea 
-                  name="description" 
-                  value={liveData.description || ''} 
-                  onChange={(e) => setLiveData((p: any) => ({ ...p, description: e.target.value }))}
-                  className="admin-input" 
-                  rows={4} 
-                  placeholder="Luxury 3BHK with panoramic views..." 
-                />
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <label className="admin-label" style={{ marginBottom: 0 }}>Property Description</label>
+                    <button 
+                      type="button" 
+                      onClick={handleGenerateAIDescription}
+                      disabled={isGeneratingAI}
+                      className="btn-ghost"
+                      style={{ 
+                        fontSize: '0.65rem', padding: '4px 10px', borderRadius: '6px', 
+                        border: '1px solid var(--gold)', color: 'var(--gold)',
+                        display: 'flex', alignItems: 'center', gap: '5px',
+                        background: isGeneratingAI ? 'rgba(212,175,55,0.1)' : 'transparent'
+                      }}
+                    >
+                      <Zap size={10} fill={isGeneratingAI ? 'var(--gold)' : 'none'} /> 
+                      {isGeneratingAI ? 'GENERATING...' : 'GENERATE WITH AI'}
+                    </button>
+                  </div>
+                  <textarea 
+                    name="description" 
+                    value={liveData.description || ''} 
+                    onChange={(e) => setLiveData((p: any) => ({ ...p, description: e.target.value }))}
+                    className="admin-input" 
+                    rows={4} 
+                    placeholder="Luxury 3BHK with panoramic views..." 
+                  />
+                </div>
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <label className="admin-label">Google Maps Link</label>
+                  <input name="googleMapsLink" defaultValue={editingProperty?.googleMapsLink || ''} className="admin-input" placeholder="Google Maps URL" />
+                </div>
+                <div>
+                  <label className="admin-label">RERA ID</label>
+                  <input name="reraId" defaultValue={editingProperty?.reraId || ''} className="admin-input" placeholder="If applicable" />
+                </div>
+                <div>
+                  <label className="admin-label">Approval Authority</label>
+                  <select name="approvalAuthority" defaultValue={editingProperty?.approvalAuthority || 'N/A'} className="admin-select" style={{ border: '1px solid var(--emerald)', background: 'rgba(16,217,140,0.05)' }}>
+                    <option value="N/A">N/A / Not Applicable</option>
+                    <option value="CRDA">CRDA (Capital Region)</option>
+                    <option value="AP CRDA">AP CRDA (Amaravati Local)</option>
+                    <option value="VMRDA">VMRDA (Visakhapatnam)</option>
+                    <option value="DTCP">DTCP Approved</option>
+                    <option value="HMDA">HMDA</option>
+                    <option value="AP RERA">AP RERA Registered</option>
+                    <option value="TUDA">TUDA (Tirupati)</option>
+                    <option value="APIIC">APIIC (Industrial)</option>
+                    <option value="Revenue">Revenue Layout</option>
+                    <option value="Gram Panchayat">Gram Panchayat</option>
+                    <option value="Municipal">Municipal / Town Planning</option>
+                    <option value="Clear Title">Patta / Clear Title Only</option>
+                    <option value="SEZ">SEZ Zone</option>
+                  </select>
+                </div>
               </div>
-              <div style={{ gridColumn: '1 / -1' }}>
-                <label className="admin-label">Google Maps Link</label>
-                <input name="googleMapsLink" defaultValue={editingProperty?.googleMapsLink || ''} className="admin-input" placeholder="Google Maps URL" />
-              </div>
-              <div>
-                <label className="admin-label">RERA ID</label>
-                <input name="reraId" defaultValue={editingProperty?.reraId || ''} className="admin-input" placeholder="If applicable" />
-              </div>
-              <div>
-                <label className="admin-label">Approval Authority</label>
-                <select name="approvalAuthority" defaultValue={editingProperty?.approvalAuthority || 'N/A'} className="admin-select" style={{ border: '1px solid var(--emerald)', background: 'rgba(16,217,140,0.05)' }}>
-                  <option value="N/A">N/A / Not Applicable</option>
-                  <option value="CRDA">CRDA (Capital Region)</option>
-                  <option value="AP CRDA">AP CRDA (Amaravati Local)</option>
-                  <option value="VMRDA">VMRDA (Visakhapatnam)</option>
-                  <option value="DTCP">DTCP Approved</option>
-                  <option value="HMDA">HMDA</option>
-                  <option value="AP RERA">AP RERA Registered</option>
-                  <option value="TUDA">TUDA (Tirupati)</option>
-                  <option value="APIIC">APIIC (Industrial)</option>
-                  <option value="Revenue">Revenue Layout</option>
-                  <option value="Gram Panchayat">Gram Panchayat</option>
-                  <option value="Municipal">Municipal / Town Planning</option>
-                  <option value="Clear Title">Patta / Clear Title Only</option>
-                  <option value="SEZ">SEZ Zone</option>
-                </select>
-              </div>
-            </div>
-          </section>
+            </section>
+          )}
 
           {liveData.type === 'Agricultural Land' && (
             <section>
@@ -418,7 +442,7 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
             </section>
           )}
 
-          {['Apartment', 'Villa', 'Farmhouse', 'Independent House', 'Commercial Space'].includes(liveData.type) && (
+          {viewMode === 'Advanced' && ['Apartment', 'Villa', 'Farmhouse', 'Independent House', 'Commercial Space'].includes(liveData.type) && (
           <section>
             <h3 style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--rose)', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '1.75rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
               <div style={{ width: '20px', height: '1px', background: 'var(--rose)' }} /> STEP 3: INTERIOR CONFIGURATION
@@ -460,127 +484,135 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
             </div>
           </section>
           )}
-          <section>
-            <h3 style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--cyan)', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '1.75rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <div style={{ width: '20px', height: '1px', background: 'var(--cyan)' }} /> STEP 4: AGE & CONDITION
-            </h3>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1.5rem' }}>
-              <div>
-                <label className="admin-label">Property Age</label>
-                <select name="propertyAge" defaultValue={editingProperty?.propertyAge || 'N/A'} className="admin-select">
-                   <option value="N/A">N/A</option>
-                   <option value="0-1 yrs">New</option>
-                   <option value="1-5 yrs">1-5 Years</option>
-                   <option value="5-10 yrs">5-10 Years</option>
-                </select>
+          {viewMode === 'Advanced' && (
+            <section>
+              <h3 style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--cyan)', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '1.75rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ width: '20px', height: '1px', background: 'var(--cyan)' }} /> STEP 4: AGE & CONDITION
+              </h3>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1.5rem' }}>
+                <div>
+                  <label className="admin-label">Property Age</label>
+                  <select name="propertyAge" defaultValue={editingProperty?.propertyAge || 'N/A'} className="admin-select">
+                    <option value="N/A">N/A</option>
+                    <option value="0-1 yrs">New</option>
+                    <option value="1-5 yrs">1-5 Years</option>
+                    <option value="5-10 yrs">5-10 Years</option>
+                  </select>
+                </div>
               </div>
-            </div>
-          </section>
+            </section>
+          )}
 
-          <section>
-            <h3 style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--cyan)', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '1.75rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <div style={{ width: '20px', height: '1px', background: 'var(--rose)' }} /> STEP 5: ADDITIONAL DETAILS
-            </h3>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
-              <div>
-                <label className="admin-label">Ownership</label>
-                <select name="ownershipType" defaultValue={editingProperty?.ownershipType || 'Freehold'} className="admin-select">
-                  <option value="Freehold">Freehold</option>
-                  <option value="Leasehold">Leasehold</option>
-                </select>
+          {viewMode === 'Advanced' && (
+            <section>
+              <h3 style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--cyan)', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '1.75rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ width: '20px', height: '1px', background: 'var(--rose)' }} /> STEP 5: ADDITIONAL DETAILS
+              </h3>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
+                <div>
+                  <label className="admin-label">Ownership</label>
+                  <select name="ownershipType" defaultValue={editingProperty?.ownershipType || 'Freehold'} className="admin-select">
+                    <option value="Freehold">Freehold</option>
+                    <option value="Leasehold">Leasehold</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="admin-label">Parking</label>
+                  <select name="parking" defaultValue={editingProperty?.parking || 'Available'} className="admin-select">
+                    <option value="Available">Available (కార్ పార్కింగ్ ఉంది)</option>
+                    <option value="None">No Dedicated Parking</option>
+                    <option value="Reserved">Reserved Basement</option>
+                    <option value="Open">Open Street Parking</option>
+                  </select>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '2rem', padding: '1rem 0', flexWrap: 'wrap' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: 'white' }}>
+                      <input name="vastuCompliant" type="checkbox" defaultChecked={editingProperty?.vastuCompliant} /> Vastu Compliant
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: 'white' }}>
+                      <input name="isGated" type="checkbox" defaultChecked={editingProperty?.isGated} /> Gated Community
+                    </label>
+                    {['Residential Plot', 'Commercial Plot', 'Agricultural Land', 'CRDA Approved Plot', 'Open Plot', 'Layout Plot'].includes(liveData.type) && (
+                      <>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: 'white' }}>
+                          <input name="cornerProperty" type="checkbox" defaultChecked={editingProperty?.cornerProperty} /> Corner Plot
+                        </label>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: 'white' }}>
+                          <input name="boundaryWall" type="checkbox" defaultChecked={editingProperty?.boundaryWall} /> Boundary Wall
+                        </label>
+                      </>
+                    )}
+                </div>
               </div>
-              <div>
-                <label className="admin-label">Parking</label>
-                <select name="parking" defaultValue={editingProperty?.parking || 'Available'} className="admin-select">
-                  <option value="Available">Available (కార్ పార్కింగ్ ఉంది)</option>
-                  <option value="None">No Dedicated Parking</option>
-                  <option value="Reserved">Reserved Basement</option>
-                  <option value="Open">Open Street Parking</option>
-                </select>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '2rem', padding: '1rem 0', flexWrap: 'wrap' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: 'white' }}>
-                    <input name="vastuCompliant" type="checkbox" defaultChecked={editingProperty?.vastuCompliant} /> Vastu Compliant
-                  </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: 'white' }}>
-                    <input name="isGated" type="checkbox" defaultChecked={editingProperty?.isGated} /> Gated Community
-                  </label>
-                  {['Residential Plot', 'Commercial Plot', 'Agricultural Land', 'CRDA Approved Plot', 'Open Plot', 'Layout Plot'].includes(liveData.type) && (
-                    <>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: 'white' }}>
-                        <input name="cornerProperty" type="checkbox" defaultChecked={editingProperty?.cornerProperty} /> Corner Plot
-                      </label>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: 'white' }}>
-                        <input name="boundaryWall" type="checkbox" defaultChecked={editingProperty?.boundaryWall} /> Boundary Wall
-                      </label>
-                    </>
-                  )}
-              </div>
-            </div>
-          </section>
+            </section>
+          )}
 
-           <section>
-             <h3 style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--gold)', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '1.75rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
-               <div style={{ width: '20px', height: '1px', background: 'var(--gold)' }} /> STEP 5: TRUST & VISIBILITY
-             </h3>
-             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
-               <div className="glass-card" style={{ padding: '1.25rem', display: 'flex', gap: '1rem', alignItems: 'center', border: isVerified ? '1px solid rgba(16,217,140,0.2)' : '1px solid rgba(255,255,255,0.05)', background: isVerified ? 'rgba(16,217,140,0.03)' : 'transparent' }}>
-                  <input type="checkbox" checked={isVerified} onChange={e => setIsVerified(e.target.checked)} style={{ width: '22px', height: '22px', cursor: 'pointer' }} />
-                  <div>
-                    <div style={{ fontSize: '0.85rem', fontWeight: 800, color: isVerified ? 'var(--emerald)' : 'white' }}>TRUST SEAL</div>
-                    <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>Verified authenticity badge.</div>
-                  </div>
+          {viewMode === 'Advanced' && (
+             <section>
+               <h3 style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--gold)', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '1.75rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                 <div style={{ width: '20px', height: '1px', background: 'var(--gold)' }} /> STEP 5: TRUST & VISIBILITY
+               </h3>
+               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
+                 <div className="glass-card" style={{ padding: '1.25rem', display: 'flex', gap: '1rem', alignItems: 'center', border: isVerified ? '1px solid rgba(16,217,140,0.2)' : '1px solid rgba(255,255,255,0.05)', background: isVerified ? 'rgba(16,217,140,0.03)' : 'transparent' }}>
+                    <input type="checkbox" checked={isVerified} onChange={e => setIsVerified(e.target.checked)} style={{ width: '22px', height: '22px', cursor: 'pointer' }} />
+                    <div>
+                      <div style={{ fontSize: '0.85rem', fontWeight: 800, color: isVerified ? 'var(--emerald)' : 'white' }}>TRUST SEAL</div>
+                      <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>Verified authenticity badge.</div>
+                    </div>
+                 </div>
+                 <div className="glass-card" style={{ padding: '1.25rem', display: 'flex', gap: '1rem', alignItems: 'center', border: isFeatured ? '1px solid rgba(245,200,66,0.2)' : '1px solid rgba(255,255,255,0.05)', background: isFeatured ? 'rgba(245,200,66,0.03)' : 'transparent' }}>
+                    <input type="checkbox" checked={isFeatured} onChange={e => setIsFeatured(e.target.checked)} style={{ width: '22px', height: '22px', cursor: 'pointer' }} />
+                    <div>
+                      <div style={{ fontSize: '0.85rem', fontWeight: 800, color: isFeatured ? 'var(--gold)' : 'white' }}>ELITE STATUS</div>
+                      <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>Priority search positioning.</div>
+                    </div>
+                 </div>
                </div>
-               <div className="glass-card" style={{ padding: '1.25rem', display: 'flex', gap: '1rem', alignItems: 'center', border: isFeatured ? '1px solid rgba(245,200,66,0.2)' : '1px solid rgba(255,255,255,0.05)', background: isFeatured ? 'rgba(245,200,66,0.03)' : 'transparent' }}>
-                  <input type="checkbox" checked={isFeatured} onChange={e => setIsFeatured(e.target.checked)} style={{ width: '22px', height: '22px', cursor: 'pointer' }} />
-                  <div>
-                    <div style={{ fontSize: '0.85rem', fontWeight: 800, color: isFeatured ? 'var(--gold)' : 'white' }}>ELITE STATUS</div>
-                    <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>Priority search positioning.</div>
-                  </div>
-               </div>
-             </div>
-          </section>
+            </section>
+          )}
 
-          <section>
-             <h3 style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--violet)', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '1.75rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
-               <div style={{ width: '20px', height: '1px', background: 'var(--violet)' }} /> STEP 6: EXTRA CUSTOM FIELDS
-             </h3>
-             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                {customFeatures.map((feat, idx) => (
-                  <div key={idx} style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                    <input 
-                      placeholder="Feature Label (e.g. Distance to Highway)" 
-                      className="admin-input" 
-                      style={{ flex: 1 }}
-                      value={feat.label}
-                      onChange={(e) => updateCustomFeature(idx, 'label', e.target.value)}
-                    />
-                    <input 
-                      placeholder="Value (e.g. 500m)" 
-                      className="admin-input" 
-                      style={{ flex: 1 }}
-                      value={feat.value}
-                      onChange={(e) => updateCustomFeature(idx, 'value', e.target.value)}
-                    />
-                    <button 
-                      type="button" 
-                      onClick={() => removeCustomFeature(idx)}
-                      style={{ background: 'rgba(245,57,123,0.1)', border: 'none', padding: '10px', borderRadius: '8px', color: 'var(--rose)', cursor: 'pointer' }}
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                ))}
-                <button 
-                  type="button" 
-                  onClick={addCustomFeature}
-                  className="btn-ghost"
-                  style={{ alignSelf: 'flex-start', display: 'flex', alignItems: 'center', gap: '8px' }}
-                >
-                  <Plus size={16} /> ADD CUSTOM FIELD
-                </button>
-             </div>
-          </section>
+          {viewMode === 'Advanced' && (
+            <section>
+              <h3 style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--violet)', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '1.75rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ width: '20px', height: '1px', background: 'var(--violet)' }} /> STEP 6: EXTRA CUSTOM FIELDS
+              </h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  {customFeatures.map((feat, idx) => (
+                    <div key={idx} style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                      <input 
+                        placeholder="Feature Label (e.g. Distance to Highway)" 
+                        className="admin-input" 
+                        style={{ flex: 1 }}
+                        value={feat.label}
+                        onChange={(e) => updateCustomFeature(idx, 'label', e.target.value)}
+                      />
+                      <input 
+                        placeholder="Value (e.g. 500m)" 
+                        className="admin-input" 
+                        style={{ flex: 1 }}
+                        value={feat.value}
+                        onChange={(e) => updateCustomFeature(idx, 'value', e.target.value)}
+                      />
+                      <button 
+                        type="button" 
+                        onClick={() => removeCustomFeature(idx)}
+                        style={{ background: 'rgba(245,57,123,0.1)', border: 'none', padding: '10px', borderRadius: '8px', color: 'var(--rose)', cursor: 'pointer' }}
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  ))}
+                  <button 
+                    type="button" 
+                    onClick={addCustomFeature}
+                    className="btn-ghost"
+                    style={{ alignSelf: 'flex-start', display: 'flex', alignItems: 'center', gap: '8px' }}
+                  >
+                    <Plus size={16} /> ADD CUSTOM FIELD
+                  </button>
+              </div>
+            </section>
+          )}
 
           {/* STEP 7: REALTOR / SOURCE INFO */}
           <section>
@@ -589,8 +621,8 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
             </h3>
             <div style={{ padding: '1.25rem', background: 'rgba(232,184,75,0.04)', borderRadius: '16px', border: '1px solid rgba(232,184,75,0.15)', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
               
-              {/* CRM Picker */}
-              {realtors.length > 0 && (
+              {/* CRM Picker - Only show in Advanced */}
+              {viewMode === 'Advanced' && realtors.length > 0 && (
                 <div>
                   <label className="admin-label">Pick from CRM Realtors</label>
                   <select
@@ -629,32 +661,36 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
                 </div>
               )}
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div className="responsive-form-grid" style={{ display: 'grid', gap: '1rem' }}>
                 <div>
-                  <label className="admin-label">Realtor Name</label>
+                  <label className="admin-label">Realtor Name <span className="required-asterisk">*</span></label>
                   <input className="admin-input" placeholder="e.g. Ravi Kumar" value={realtorData.name || ''}
-                    onChange={e => setRealtorData((p: any) => ({ ...p, name: e.target.value }))} />
+                    onChange={e => setRealtorData((p: any) => ({ ...p, name: e.target.value }))} required />
                 </div>
                 <div>
-                  <label className="admin-label">Phone / WhatsApp</label>
+                  <label className="admin-label">Phone / WhatsApp <span className="required-asterisk">*</span></label>
                   <input className="admin-input" placeholder="e.g. 9346793364" value={realtorData.phone || ''}
-                    onChange={e => setRealtorData((p: any) => ({ ...p, phone: e.target.value }))} />
+                    onChange={e => setRealtorData((p: any) => ({ ...p, phone: e.target.value }))} required />
                 </div>
-                <div>
-                  <label className="admin-label">Agency / Firm</label>
-                  <input className="admin-input" placeholder="e.g. Ravi Realty" value={realtorData.agency || ''}
-                    onChange={e => setRealtorData((p: any) => ({ ...p, agency: e.target.value }))} />
-                </div>
-                <div>
-                  <label className="admin-label">RERA License No</label>
-                  <input className="admin-input" placeholder="If applicable" value={realtorData.licenseNo || ''}
-                    onChange={e => setRealtorData((p: any) => ({ ...p, licenseNo: e.target.value }))} />
-                </div>
-                <div style={{ gridColumn: 'span 2' }}>
-                  <label className="admin-label">Email</label>
-                  <input className="admin-input" placeholder="realtor@email.com" value={realtorData.email || ''}
-                    onChange={e => setRealtorData((p: any) => ({ ...p, email: e.target.value }))} />
-                </div>
+                {viewMode === 'Advanced' && (
+                  <>
+                    <div>
+                      <label className="admin-label">Agency / Firm</label>
+                      <input className="admin-input" placeholder="e.g. Ravi Realty" value={realtorData.agency || ''}
+                        onChange={e => setRealtorData((p: any) => ({ ...p, agency: e.target.value }))} />
+                    </div>
+                    <div>
+                      <label className="admin-label">RERA License No</label>
+                      <input className="admin-input" placeholder="If applicable" value={realtorData.licenseNo || ''}
+                        onChange={e => setRealtorData((p: any) => ({ ...p, licenseNo: e.target.value }))} />
+                    </div>
+                    <div style={{ gridColumn: 'span 2' }}>
+                      <label className="admin-label">Email</label>
+                      <input className="admin-input" placeholder="realtor@email.com" value={realtorData.email || ''}
+                        onChange={e => setRealtorData((p: any) => ({ ...p, email: e.target.value }))} />
+                    </div>
+                  </>
+                )}
               </div>
 
               {realtorData.name && (

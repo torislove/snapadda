@@ -104,3 +104,28 @@ iframe {
 * {
   min-width: 0;
 }
+
+/* Performance Layer: GPU Acceleration & Culling */
+.section-wrap, .pd-section, .horizontal-scroll-container {
+  content-visibility: auto;
+  contain-intrinsic-size: 1px 500px;
+}
+
+.gpu-accelerated {
+  will-change: transform, opacity;
+  transform: translateZ(0);
+}
+
+body {
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Scroll-pruning for Mobile */
+@media (max-width: 768px) {
+  .properties-grid {
+    content-visibility: auto;
+    contain-intrinsic-size: 1px 300px;
+  }
+}

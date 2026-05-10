@@ -16,6 +16,7 @@ interface EngagementData {
   title: string;
   likeCount: number;
   shareCount: number;
+  viewCount: number;
   likeLogs: EngagementLog[];
   shareLogs: EngagementLog[];
 }
@@ -59,7 +60,20 @@ const AdminEngagement = () => {
   return (
     <div className="engagement-page" style={{ padding: '1rem' }}>
       {/* Header Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
+      <div className="responsive-form-grid" style={{ display: 'grid', gap: '1.5rem', marginBottom: '2rem' }}>
+        <div style={{ background: 'var(--bg-glass)', padding: '1.5rem', borderRadius: '20px', border: '1px solid var(--border)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
+            <div style={{ padding: '10px', background: 'rgba(232,184,75,0.1)', color: 'var(--gold)', borderRadius: '12px' }}>
+              <TrendingUp size={20} />
+            </div>
+            <div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px' }}>Total Visibility</div>
+              <div style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--text-primary)' }}>
+                {data.reduce((acc, curr) => acc + (curr.viewCount || 0), 0).toLocaleString()}
+              </div>
+            </div>
+          </div>
+        </div>
         <div style={{ background: 'var(--bg-glass)', padding: '1.5rem', borderRadius: '20px', border: '1px solid var(--border)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
             <div style={{ padding: '10px', background: 'rgba(245,57,123,0.1)', color: 'var(--rose)', borderRadius: '12px' }}>
@@ -131,7 +145,31 @@ const AdminEngagement = () => {
       </div>
 
       {/* TABLE */}
-      <div style={{ background: 'var(--bg-glass)', borderRadius: '24px', border: '1px solid var(--border)', overflow: 'hidden' }}>
+      <div className="mobile-only" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        {filteredData.map((item) => (
+          <div key={item._id} style={{ background: 'var(--bg-glass)', borderRadius: '16px', border: '1px solid var(--border)', padding: '1.25rem' }}>
+            <div style={{ fontWeight: 700, fontSize: '1rem', marginBottom: '0.5rem' }}>{item.title}</div>
+            <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <TrendingUp size={14} color="var(--gold)" /> <span>{item.viewCount || 0}</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <Heart size={14} color="var(--rose)" /> <span>{item.likeCount}</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <Share2 size={14} color="var(--violet)" /> <span>{item.shareCount}</span>
+              </div>
+            </div>
+            {item.likeLogs?.[0] && (
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                Latest: {item.likeLogs[0]?.userId?.name || 'Anonymous'} on {new Date(item.likeLogs[0]?.timestamp).toLocaleDateString()}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      <div className="desktop-only" style={{ background: 'var(--bg-glass)', borderRadius: '24px', border: '1px solid var(--border)', overflow: 'hidden' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid var(--border)' }}>
@@ -142,12 +180,12 @@ const AdminEngagement = () => {
           </thead>
           <tbody>
             <AnimatePresence>
-              {filteredData.map((item, idx) => (
+              {filteredData.map((item) => (
                 <motion.tr 
                   key={item._id}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: idx * 0.05 }}
+                  transition={{ delay: 0.1 }}
                   style={{ borderBottom: '1px solid var(--border)', transition: 'background 0.2s' }}
                   className="table-row-hover"
                 >
@@ -159,6 +197,10 @@ const AdminEngagement = () => {
                   </td>
                   <td style={{ padding: '1.25rem', textAlign: 'center' }}>
                     <div style={{ display: 'flex', justifyContent: 'center', gap: '1.5rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <TrendingUp size={14} color="var(--gold)" />
+                        <span style={{ fontWeight: 700 }}>{item.viewCount || 0}</span>
+                      </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <Heart size={14} color="var(--rose)" fill="rgba(245,57,123,0.1)" />
                         <span style={{ fontWeight: 700 }}>{item.likeCount}</span>

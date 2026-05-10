@@ -12,6 +12,7 @@ import { AdminAuthProvider } from './contexts/AdminAuthContext'
 import ErrorBoundary from './components/ErrorBoundary'
 import './styles/index.css'
 import App from './App.tsx'
+import './i18n'
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "placeholder_if_missing";
 

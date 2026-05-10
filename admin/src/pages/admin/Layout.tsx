@@ -1,14 +1,15 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import {
-  LayoutDashboard, Building, Users, MapPin, 
-  Settings, UserPlus, Menu, Contact2, Megaphone, X, LogOut, Layers, BookOpen, Activity, Search,
-  MessageSquare, Shield, Mail
+  LayoutDashboard, Building, Users, 
+  Settings, Menu, Megaphone, X, LogOut, BookOpen, Activity, Search,
+  MessageSquare
 } from 'lucide-react';
 import { Logo } from '../../components/ui/Logo';
 import { useAdminAuth } from '../../contexts/AdminAuthContext';
 import { ConnectivityBanner } from '../../components/ui/ConnectivityBanner';
 import { AdminMobileNav } from '../../components/ui/AdminMobileNav';
+import { useTranslation } from 'react-i18next';
 import { triggerHaptic } from '../../utils/haptics';
 // Styles imported via main entry point
 
@@ -42,27 +43,55 @@ const LogoutButton = ({ onLogout }: { onLogout: () => void }) => {
   );
 };
 
+const LanguageSwitcher = () => {
+  const { i18n } = useTranslation();
+  const currentLng = i18n.language || 'en';
+
+  const toggle = (lng: string) => {
+    triggerHaptic('light');
+    i18n.changeLanguage(lng);
+  };
+
+  return (
+    <div style={{ 
+      display: 'flex', gap: '4px', background: 'rgba(255,255,255,0.03)', 
+      padding: '4px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.08)',
+      marginRight: '8px'
+    }}>
+      {['en', 'te'].map(lng => (
+        <button
+          key={lng}
+          onClick={() => toggle(lng)}
+          style={{
+            padding: '4px 8px', borderRadius: '6px', border: 'none',
+            fontSize: '0.62rem', fontWeight: 900, cursor: 'pointer',
+            background: currentLng === lng ? 'var(--gold)' : 'transparent',
+            color: currentLng === lng ? '#000' : 'rgba(255,255,255,0.4)',
+            transition: '0.3s'
+          }}
+        >
+          {lng.toUpperCase()}
+        </button>
+      ))}
+    </div>
+  );
+};
+
 const NAV_ITEMS = [
-  { to: '/admin',            label: 'Dashboard',      icon: LayoutDashboard, exact: true,  activeClass: 'active-dashboard',  color: 'var(--gold)'    },
-  { to: '/admin/properties', label: 'Properties',     icon: Building,        exact: false, activeClass: 'active-properties', color: 'var(--violet)'  },
-  { to: '/admin/cities',     label: 'Regions & Cities',icon: MapPin,         exact: false, activeClass: 'active-cities',     color: 'var(--cyan)'    },
-  { to: '/admin/contacts',   label: 'CRM Contacts',   icon: Contact2,        exact: false, activeClass: 'active-contacts',   color: 'var(--rose)'    },
-  { to: '/admin/leads',      label: 'Leads',          icon: Users,           exact: false, activeClass: 'active-leads',      color: 'var(--emerald)' },
-  { to: '/admin/clients',    label: 'Clients',        icon: UserPlus,        exact: false, activeClass: 'active-clients',    color: 'var(--orange)'  },
-  { to: '/admin/promotions', label: 'Promotions',     icon: Megaphone,       exact: false, activeClass: 'active-promotions', color: 'var(--gold)'    },
-  { to: '/admin/testimonials', label: 'Testimonials', icon: MessageSquare,   exact: false, activeClass: 'active-promotions', color: 'var(--orange)'  },
-  { to: '/admin/franchise',  label: 'Franchise Mgt',  icon: Shield,          exact: false, activeClass: 'active-cities',     color: 'var(--cyan)'    },
-  { to: '/admin/engagement', label: 'User Engagement',icon: Activity,        exact: false, activeClass: 'active-engagement', color: 'var(--rose)'    },
-  { to: '/admin/marquee',    label: 'Scrolling Bands',icon: Layers,          exact: false, activeClass: 'active-promotions', color: 'var(--cyan)'    },
-  { to: '/admin/settings',   label: 'Settings',       icon: Settings,        exact: false, activeClass: 'active-settings',   color: 'var(--violet)'  },
-  { to: '/admin/questions',  label: 'Questions & FAQ',icon: MessageSquare,   exact: false, activeClass: 'active-promotions', color: 'var(--gold)'    },
-  { to: '/admin/comms',      label: 'Comms Hub',        icon: Mail,   exact: false, activeClass: 'active-settings',   color: 'var(--emerald)' },
-  { to: '/admin/guide',      label: 'System Guide',     icon: BookOpen, exact: false, activeClass: 'active-settings', color: 'var(--emerald)' },
+  { to: '/admin',            label: 'nav.dashboard',      icon: LayoutDashboard, exact: true,  activeClass: 'active-dashboard',  color: 'var(--gold)'    },
+  { to: '/admin/properties', label: 'nav.properties',     icon: Building,        exact: false, activeClass: 'active-properties', color: 'var(--violet)'  },
+  { to: '/admin/leads',      label: 'nav.leads',          icon: Users,           exact: false, activeClass: 'active-leads',      color: 'var(--emerald)' },
+  { to: '/admin/promotions', label: 'nav.engagement',     icon: Megaphone,       exact: false, activeClass: 'active-promotions', color: 'var(--gold)'    },
+  { to: '/admin/engagement', label: 'nav.analytics',      icon: Activity,        exact: false, activeClass: 'active-engagement', color: 'var(--rose)'    },
+  { to: '/admin/comms',      label: 'nav.engagement',     icon: MessageSquare,   exact: false, activeClass: 'active-settings',   color: 'var(--cyan)'    },
+  { to: '/admin/settings',   label: 'nav.settings',       icon: Settings,        exact: false, activeClass: 'active-settings',   color: 'var(--violet)'  },
+  { to: '/admin/guide',      label: 'nav.dashboard',      icon: BookOpen,        exact: false, activeClass: 'active-settings',   color: 'var(--emerald)' },
 ];
 
 
 
 const AdminLayout = () => {
+  const { t } = useTranslation();
   const location = useLocation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -99,7 +128,7 @@ const AdminLayout = () => {
 
   const getPageTitle = () => {
     const match = NAV_ITEMS.find(n => isActive(n));
-    return match?.label || 'Admin Portal';
+    return match ? t(match.label) : 'Admin Portal';
   };
 
   return (
@@ -151,7 +180,7 @@ const AdminLayout = () => {
                 <span className="nav-icon" style={active ? { color: item.color } : {}}>
                   <Icon size={17} />
                 </span>
-                {item.label}
+                {t(item.label)}
               </Link>
             );
           })}
@@ -174,7 +203,7 @@ const AdminLayout = () => {
                 <span className="nav-icon" style={active ? { color: item.color } : {}}>
                   <Icon size={17} />
                 </span>
-                {item.label}
+                {t(item.label)}
               </Link>
             );
           })}
@@ -234,6 +263,7 @@ const AdminLayout = () => {
           </div>
 
           <div className="topbar-right">
+            <LanguageSwitcher />
             {/* Live connectivity pill */}
             <ConnectivityBanner compact />
             <span className="topbar-time">

@@ -73,7 +73,7 @@ const AdminFranchise = () => {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--spacing-xl)' }}>
+      <div className="flex-row-mobile-stack" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--spacing-xl)', gap: '1rem' }}>
         <div>
           <h1>Franchise Partners</h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Manage franchise admin panels for different regions</p>

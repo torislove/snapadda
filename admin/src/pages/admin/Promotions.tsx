@@ -330,7 +330,7 @@ const StepContent = ({ activeStep, formData, setFormData, handleMediaChange }: {
         <div style={gapStyle}>
           <div>
             <label style={labelStyle}>Card Type</label>
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'0.5rem' }}>
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(80px, 1fr))', gap:'0.5rem' }}>
               {Object.entries(TYPE_CONFIG).map(([k, v]) => (
                 <button key={k} type="button"
                   onClick={() => setFormData((p: any) => ({ ...p, type: k }))}
@@ -353,7 +353,7 @@ const StepContent = ({ activeStep, formData, setFormData, handleMediaChange }: {
             <label style={labelStyle}>Subtitle</label>
             <textarea rows={2} value={formData.subtitle} onChange={e => setFormData((p: any) => ({...p, subtitle: e.target.value}))} style={{ ...inputCls, resize:'none' }} placeholder="Exclusive presale starts now." />
           </div>
-          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.75rem' }}>
+          <div className="responsive-form-grid" style={{ display:'grid', gap:'0.75rem' }}>
             <div>
               <label style={labelStyle}>CTA Text</label>
               <input type="text" value={formData.actionText} onChange={e => setFormData((p: any) => ({...p, actionText: e.target.value}))} style={inputCls} placeholder="View Details" />
@@ -387,7 +387,7 @@ const StepContent = ({ activeStep, formData, setFormData, handleMediaChange }: {
         <div style={gapStyle}>
           <div>
             <label style={labelStyle}>Color Theme</label>
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(5,1fr)', gap:'0.5rem' }}>
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(60px, 1fr))', gap:'0.5rem' }}>
               {COLOR_PRESETS.map(c => (
                 <button key={c.id} type="button" title={c.label}
                   onClick={() => setFormData((p: any) => ({...p, cardColor: c.id}))}
@@ -421,7 +421,7 @@ const StepContent = ({ activeStep, formData, setFormData, handleMediaChange }: {
         <div style={gapStyle}>
           <div>
             <label style={labelStyle}>Target Location</label>
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'0.4rem' }}>
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(100px, 1fr))', gap:'0.4rem' }}>
               {['All', 'Amaravati', 'Vijayawada', 'Guntur', 'Visakhapatnam', 'Mangalagiri'].map(loc => (
                 <button key={loc} type="button" onClick={() => setFormData((p: any) => ({...p, targetLocation: loc}))}
                   style={{
@@ -644,9 +644,8 @@ export const Promotions = () => {
           marginBottom: '0.5rem'
         }}>
           {/* Global Stats Cards */}
-          <div style={{ 
+          <div className="responsive-form-grid" style={{ 
             display: 'grid', 
-            gridTemplateColumns: 'repeat(3, 1fr)', 
             gap: '1rem' 
           }}>
             {[

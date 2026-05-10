@@ -3,12 +3,13 @@ import {
   getProperties, createProperty, getPropertyById, 
   updateProperty, deleteProperty, getSimilarProperties,
   likeProperty, shareProperty, validateProperties, getEngagementStats,
-  getNearbyProperties, publicSubmitProperty
+  getNearbyProperties, publicSubmitProperty, getMyProperties
 } from '../controllers/propertyController.js';
 
 const router = express.Router();
 
 router.get('/nearby', getNearbyProperties);
+router.get('/my/:userId', getMyProperties);
 router.get('/', getProperties);
 router.post('/validate', validateProperties);
 router.get('/engagement', getEngagementStats);

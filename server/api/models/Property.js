@@ -112,6 +112,9 @@ const propertySchema = new mongoose.Schema({
 
   // Unique property reference code (auto-generated: SNA-XXXXX)
   propertyCode: { type: String, unique: true, sparse: true, default: '' },
+
+  // Tracking for client-submitted properties
+  submittedBy: { type: String, default: null }, // Stores userId (MongoDB _id or Google UID)
 });
 
 // Auto-generate SNA property code and calculate unit prices before first save

@@ -94,7 +94,7 @@ export default function AdminQuestions() {
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', background: 'rgba(255,255,255,0.03)', padding: '0.5rem', borderRadius: '12px', width: 'max-content' }}>
+      <div className="scroll-x-mobile" style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', background: 'rgba(255,255,255,0.03)', padding: '0.5rem', borderRadius: '12px', width: 'max-content' }}>
         {['All', 'Pending', 'Answered', 'Rejected'].map(f => (
           <button
             key={f}
@@ -108,7 +108,9 @@ export default function AdminQuestions() {
               fontSize: '0.85rem',
               background: filter === f ? 'var(--gold)' : 'transparent',
               color: filter === f ? '#000' : 'var(--text-muted)',
-              transition: 'all 0.2s'
+              transition: 'all 0.2s',
+              whiteSpace: 'nowrap',
+              minHeight: '44px'
             }}
           >
             {f}

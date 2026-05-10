@@ -125,14 +125,14 @@ const AdminCities = () => {
       {isAdding && (
         <div className="glass-card" style={{ padding: '2.5rem', borderRadius: '28px', marginBottom: '2.5rem', border: '1px solid rgba(255,255,255,0.08)', transform: 'translateZ(0)' }}>
           <h2 style={{ marginBottom: '2rem', fontSize: '1.5rem', fontWeight: 800 }}>{isEditing ? `Modify Region: ${editingCity?.name}` : 'Register Strategic Region'}</h2>
-          <form onSubmit={handleAddSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--spacing-lg)' }}>
+          <form onSubmit={handleAddSubmit} className="responsive-form-grid" style={{ display: 'grid', gap: 'var(--spacing-lg)' }}>
             <div>
               <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>City/Region Name</label>
-              <input name="name" type="text" required defaultValue={editingCity?.name || ''} placeholder="e.g. Vizag" style={{ width: '100%', padding: '10px', borderRadius: '4px', backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-subtle)', color: 'white' }} />
+              <input name="name" type="text" required defaultValue={editingCity?.name || ''} placeholder="e.g. Vizag" style={{ width: '100%', padding: '10px', borderRadius: '4px', backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-subtle)', color: 'white', minHeight: '44px' }} />
             </div>
             <div>
               <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Status</label>
-              <select name="status" defaultValue={editingCity?.status || 'Active'} style={{ width: '100%', padding: '10px', borderRadius: '4px', backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-subtle)', color: 'white' }}>
+              <select name="status" defaultValue={editingCity?.status || 'Active'} style={{ width: '100%', padding: '10px', borderRadius: '4px', backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-subtle)', color: 'white', minHeight: '44px' }}>
                 <option>Active</option>
                 <option>Inactive</option>
               </select>
@@ -147,20 +147,21 @@ const AdminCities = () => {
                 />
               </div>
             </div>
-            <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'flex-end', gap: 'var(--spacing-sm)' }}>
+            <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'flex-end', gap: 'var(--spacing-sm)', flexWrap: 'wrap' }}>
               <Button type="button" variant="ghost" onClick={() => {
                 setIsEditing(false);
                 setEditingCity(null);
                 setCurrentImageUrl('');
                 setNewImageFile(null);
-              }}>Cancel</Button>
-              <Button type="submit" disabled={isUploading}>{isUploading ? 'Uploading...' : (isEditing ? 'Update Region' : 'Save Region')}</Button>
+              }} style={{ flex: 1, minWidth: '120px' }}>Cancel</Button>
+              <Button type="submit" disabled={isUploading} style={{ flex: 2, minWidth: '160px' }}>{isUploading ? 'Uploading...' : (isEditing ? 'Update Region' : 'Save Region')}</Button>
             </div>
           </form>
         </div>
       )}
 
-      <div style={{ backgroundColor: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', overflow: 'hidden', border: '1px solid var(--border-subtle)' }}>
+      {/* Desktop View */}
+      <div className="desktop-only" style={{ backgroundColor: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', overflow: 'hidden', border: '1px solid var(--border-subtle)' }}>
         <div className="table-responsive">
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
             <thead>
@@ -204,6 +205,39 @@ const AdminCities = () => {
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* Mobile View */}
+      <div className="mobile-only" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        {isLoading ? (
+          <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)' }}>Loading...</div>
+        ) : cities.length === 0 ? (
+          <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)' }}>No regions found.</div>
+        ) : cities.map((city) => (
+          <div key={city._id || city.id} className="glass-card" style={{ padding: '1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              {city.image ? (
+                <img src={city.image} alt={city.name} style={{ width: '40px', height: '40px', borderRadius: '10px', objectFit: 'cover' }} />
+              ) : (
+                <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Edit3 size={16} style={{ opacity: 0.3 }} />
+                </div>
+              )}
+              <div>
+                <div style={{ fontWeight: 800, color: 'white', fontSize: '0.9rem' }}>{city.name}</div>
+                <div style={{ 
+                  fontSize: '0.65rem', fontWeight: 900, textTransform: 'uppercase', color: city.status === 'Active' ? 'var(--emerald)' : 'var(--orange)' 
+                }}>
+                  {city.status}
+                </div>
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button onClick={() => handleEdit(city)} style={{ padding: '8px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: 'none', color: 'white' }}><Edit3 size={16} /></button>
+              <button onClick={() => handleDelete(city._id || city.id)} style={{ padding: '8px', borderRadius: '8px', background: 'rgba(245,57,123,0.1)', border: 'none', color: 'var(--rose)' }}><Trash2 size={16} /></button>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );

@@ -462,3 +462,14 @@ export const submitProperty = async (data) => {
   }
 };
 
+export const fetchMyProperties = async (userId) => {
+  try {
+    const res = await safeFetch(`${API_BASE}/properties/my/${userId}`);
+    if (!res.ok) throw new Error('Failed to fetch your properties');
+    return await res.json();
+  } catch (e) {
+    console.error('API Error:', e);
+    throw e;
+  }
+};
+

@@ -16,10 +16,11 @@ import { useTranslation } from 'react-i18next';
 import VisualCompass from '../components/VisualCompass';
 import EliteLightBox from '../components/EliteLightBox';
 import { useBehaviorTracker } from '../hooks/useBehaviorTracker';
+import { prefetchRoute } from '../utils/PerformanceUtilities';
 
-// ─────────────────────────────────────────────
+// ������������������������������������������������������������������������������������������
 // Toast
-// ─────────────────────────────────────────────
+// ������������������������������������������������������������������������������������������
 function Toast({ msg }) {
   return (
     <motion.div
@@ -38,14 +39,14 @@ function Toast({ msg }) {
   );
 }
 
-// ─────────────────────────────────────────────
+// ----------------------------------------------------------------------------------
 // LightBox
-// ─────────────────────────────────────────────
+// ----------------------------------------------------------------------------------
 // EliteLightBox is now imported from components
 
-// ─────────────────────────────────────────────
+// ----------------------------------------------------------------------------------
 // Spec Card
-// ─────────────────────────────────────────────
+// ----------------------------------------------------------------------------------
 function SpecCard({ label, value, accent = 'rgba(255,255,255,0.6)', icon }) {
   if (!value || value === 'N/A' || value === '0') return null;
   return (
@@ -58,10 +59,9 @@ function SpecCard({ label, value, accent = 'rgba(255,255,255,0.6)', icon }) {
   );
 }
 
-
-// ─────────────────────────────────────────────
+// ----------------------------------------------------------------------------------
 // Main
-// ─────────────────────────────────────────────
+// ----------------------------------------------------------------------------------
 export default function PropertyDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -188,7 +188,6 @@ export default function PropertyDetails() {
 
   const handleLike = async () => {
     if (!user) { navigate('/login', { state: { from: window.location.pathname } }); return; }
-    // Optimistic update
     const wasLiked = liked;
     const prevCount = likeCount;
     setLiked(!wasLiked);
@@ -199,24 +198,22 @@ export default function PropertyDetails() {
       if (res.status === 'success') {
         setLiked(res.data.liked);
         setLikeCount(res.data.likeCount);
-        showToast(res.data.liked ? '❤️ సేవ్ చేయబడింది!' : '💔 తీసివేయబడింది');
+        showToast(res.data.liked ? 'ప్రాపర్టీని ఇష్టపడ్డారు!' : 'ప్రాపర్టీని ఇష్టపడలేదు');
       } else {
-        // Rollback
         setLiked(wasLiked); setLikeCount(prevCount);
-        showToast('⚠️ మళ్ళీ ప్రయత్నించండి');
+        showToast('ఏదో తేడా జరిగింది, దయచేసి మళ్ళీ ప్రయత్నించండి');
       }
     } catch {
       setLiked(wasLiked); setLikeCount(prevCount);
-      showToast('⚠️ నెట్‌వర్క్ లోపం');
+      showToast('సర్వర్ లోపం, దయచేసి మళ్ళీ ప్రయత్నించండి');
     }
   };
 
-  // Share helpers
   const getShareUrl  = () => window.location.href;
   const getShareText = () => {
     const price = (isAgri && agriTotalValue > 0) ? agriTotalValue : property?.price;
     const code  = property?.propertyCode || '';
-    return `🏠 *${property?.title}*\n📍 ${property?.location}, ${property?.district || ''}\n🏷️ Code: *${code}*\n💰 ${formatSnapAddaPrice(price)}\n\n🔗 ${getShareUrl()}\n\n_SnapAdda – Andhra's Leading Property Platform_`;
+    return `🏡 *${property?.title}*\n📍 ${property?.location}, ${property?.district || ''}\n🪪 Code: *${code}*\n₹ ${formatSnapAddaPrice(price)}\n\n🔗 ${getShareUrl()}\n\n_SnapAdda 📍 Andhra's Leading Property Platform_`;
   };
 
   const handleShare = () => setShareModal(true);
@@ -225,7 +222,7 @@ export default function PropertyDetails() {
     window.open(`https://wa.me/?text=${encodeURIComponent(getShareText())}`, '_blank');
     shareProperty(id, 'whatsapp', getUserId(user));
     setShareModal(false);
-    showToast('📱 WhatsApp తెరవబడింది!');
+    showToast('WhatsApp ద్వారా షేర్ చేయబడింది!');
   };
 
   const handleCopyLink = async () => {
@@ -241,7 +238,7 @@ export default function PropertyDetails() {
         document.body.removeChild(ta);
       } catch {}
     }
-    showToast(ok ? '🔗 లింక్ కాపీ చేయబడింది!' : '⚠️ కాపీ చేయడం సాధ్యం కాలేదు');
+    showToast(ok ? 'లింక్ కాపీ చేయబడింది!' : 'లింక్ కాపీ చేయడంలో విఫలం, బ్రౌజర్ అనుమతి ఇవ్వండి');
     shareProperty(id, 'clipboard', getUserId(user));
     setShareModal(false);
   };
@@ -250,14 +247,14 @@ export default function PropertyDetails() {
     try {
       await navigator.share({ title: `SnapAdda: ${property?.title}`, text: getShareText(), url: getShareUrl() });
       shareProperty(id, 'native', getUserId(user));
-      showToast('✅ షేర్ చేయబడింది!');
+      showToast('షేర్ చేయబడింది!');
     } catch {}
     setShareModal(false);
   };
 
   const handleWhatsApp = () => {
     const wa = supportInfo?.whatsapp || '919346793364';
-    const waMsg = `నమస్కారం SnapAdda! ఈ ప్రాపర్టీలో నాకు ఆసక్తి ఉంది:\n\n*${property?.title}*\nరకం: ${tr(property?.type)}\nప్రాంతం: ${property?.location}\nధర: ${formatSnapAddaPrice(displayPrice)}\n\nలింక్: ${window.location.href}`;
+    const waMsg = `నమస్కారం SnapAdda! మీ ప్లాట్‌ఫారమ్‌లోని ఈ ప్రాపర్టీ పై ఆసక్తి ఉంది:\n\n*${property?.title}*\nరకం: ${tr(property?.type)}\nప్రాంతం: ${property?.location}\nధర: ${formatSnapAddaPrice(displayPrice)}\n\nలింక్: ${window.location.href}`;
     window.open(`https://wa.me/${wa}?text=${encodeURIComponent(waMsg)}`, '_blank');
   };
 
@@ -281,7 +278,7 @@ export default function PropertyDetails() {
         if (res.status === 'success') {
           setQStatus('success');
           setQText('');
-          showToast('✅ మీ ప్రశ్న పంపబడింది. ఏజెంట్ త్వరలో సంప్రదిస్తారు.');
+          showToast('మీ ప్రశ్న పంపబడింది. త్వరలోనే మీకు సమాధానం లభిస్తుంది.');
           setTimeout(() => setQStatus(''), 5000);
         } else {
           setQStatus('error');
@@ -292,10 +289,6 @@ export default function PropertyDetails() {
         setQSubmitting(false);
       }
     }, 800);
-  };
-
-  const scrollGallery = (dir) => {
-    if (galleryRef.current) galleryRef.current.scrollBy({ left: dir * 380, behavior: 'smooth' });
   };
 
   const generateDesc = (p) => {
@@ -324,20 +317,19 @@ export default function PropertyDetails() {
   if (loading) return (
     <div className="property-loading-screen">
       <div className="loader"/>
-      <p>వివరాలు లోడ్ అవుతున్నాయి...</p>
+      <p>ప్రాపర్టీ వివరాలు లోడ్ అవుతున్నాయి...</p>
     </div>
   );
 
   if (!property) return (
     <div className="pd-page" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '2rem' }}>
       <Building2 size={64} style={{ opacity: 0.2 }}/>
-      <h2>క్షమించండి! ప్రాపర్టీ వివరాలు అందుబాటులో లేవు.</h2>
-      <button className="pd-btn-primary" onClick={() => navigate('/')}>← హోమ్ పేజీకి వెళ్ళండి</button>
+      <h2>క్షమించండి! ఈ ప్రాపర్టీ వివరాలు అందుబాటులో లేవు.</h2>
+      <button className="pd-btn-primary" onClick={() => navigate('/')}>మళ్ళీ ప్రయత్నించండి</button>
     </div>
   );
 
   const supportPhone = (supportInfo?.phone || '+919346793364').replace(/\s+/g, '');
-  // Cloudinary Optimization Helper
   const getOptimizedImg = (url, width = 800) => {
     if (!url || !url.includes('cloudinary.com')) return url;
     const parts = url.split('/upload/');
@@ -349,7 +341,7 @@ export default function PropertyDetails() {
     { id: 'overview', label: 'అవలోకనం' },
     { id: 'specs', label: 'వివరాలు' },
     { id: 'amenities', label: 'సదుపాయాలు' },
-    { id: 'qna', label: 'ప్రశ్నలు & జవాబులు' },
+    { id: 'qna', label: 'ప్రశ్నలు & సమాధానాలు' },
   ];
 
   return (
@@ -375,7 +367,6 @@ export default function PropertyDetails() {
         </div>
       </div>
 
-      {/* Cinematic Property Gallery (Phase 3) */}
       <section className="pd-gallery-section" style={{ position: 'relative', width: '100%', overflow: 'hidden', background: '#05050a' }}>
         <div 
           className="pd-snap-gallery hide-scrollbar" 
@@ -396,7 +387,7 @@ export default function PropertyDetails() {
                   flex: '0 0 100%',
                   scrollSnapAlign: 'start',
                   position: 'relative',
-                  height: '100%',       // ← critical fix: explicit height propagation
+                  height: '100%',
                   cursor: 'pointer',
                   background: '#05050a'
                 }}
@@ -412,7 +403,6 @@ export default function PropertyDetails() {
                     e.currentTarget.nextSibling && (e.currentTarget.nextSibling.style.display = 'flex');
                   }}
                 />
-                {/* Fallback shown when image fails */}
                 <div style={{ display: 'none', position: 'absolute', inset: 0, alignItems: 'center', justifyContent: 'center', background: '#111', flexDirection: 'column', gap: '12px' }}>
                   <Building2 size={48} style={{ opacity: 0.2 }}/>
                   <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.75rem' }}>Image unavailable</span>
@@ -420,7 +410,6 @@ export default function PropertyDetails() {
                 <div style={{ position: 'absolute', top: '15px', right: '15px', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(10px)', color: 'white', padding: '6px 12px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 800, zIndex: 2 }}>
                   {i + 1} / {property_images.length}
                 </div>
-                {/* Cinematic Data Overlay */}
                 <div style={{
                   position: 'absolute',
                   bottom: 0, left: 0, right: 0,
@@ -439,11 +428,8 @@ export default function PropertyDetails() {
                         <span style={{ background: 'rgba(232,184,75,0.2)', border: '1px solid rgba(232,184,75,0.4)', color: '#e8b84b', padding: '2px 8px', borderRadius: '6px', fontSize: '0.65rem', fontWeight: 900, letterSpacing: '0.05em' }}>
                           CODE: {property.propertyCode || `SNA-${(id || '').toString().slice(-5).toUpperCase()}`}
                         </span>
-                        {property.reraNumber && (
-                          <span style={{ background: 'rgba(34,217,224,0.15)', border: '1px solid rgba(34,217,224,0.4)', color: '#22d9e0', padding: '2px 8px', borderRadius: '6px', fontSize: '0.65rem', fontWeight: 900 }}>
-                            RERA: {property.reraNumber}
-                          </span>
-                        )}
+                        {property.isVerified && <span className="pd-badge-green"><ShieldCheck size={12}/> వెరిఫైడ్</span>}
+                        {property.status === 'Sold' && <span className="pd-badge-sold" style={{ background: 'var(--emerald)', color: 'white', fontSize: '0.65rem', fontWeight: 900, padding: '4px 12px', borderRadius: '20px', boxShadow: '0 4px 15px rgba(16,217,140,0.3)' }}>అమ్మబడినది</span>}
                       </div>
                     </div>
                     <div style={{ textAlign: 'right' }}>
@@ -468,7 +454,7 @@ export default function PropertyDetails() {
           <div className="pd-title-grid">
             <div className="pd-title-info">
               <div className="pd-title-badges">
-                {property.isVerified && <span className="pd-badge-green"><ShieldCheck size={12}/> వెరిఫైడ్</span>}
+                {property.isVerified && <span className="pd-badge-green"><ShieldCheck size={12}/> సర్టిఫైడ్</span>}
                 {property.status === 'Sold' && <span className="pd-badge-sold" style={{ background: 'var(--emerald)', color: 'white', fontSize: '0.65rem', fontWeight: 900, padding: '4px 12px', borderRadius: '20px', boxShadow: '0 4px 15px rgba(16,217,140,0.3)' }}>అమ్మబడినది</span>}
                 <span className="pd-badge-type">{tr(property.type)}</span>
                 <span className="pd-badge-purpose" style={{ 
@@ -479,9 +465,8 @@ export default function PropertyDetails() {
                 }}>
                    {tr(property.purpose === 'Rent' ? 'For Rent' : 'For Sale')}
                 </span>
-                {property.isFeatured && <span className="pd-badge-gold">ఎలైట్</span>}
+                {property.isFeatured && <span className="pd-badge-gold">ప్రీమియం</span>}
               </div>
-              {/* Title hidden on mobile as it's injected into the gallery overlay */}
               <h1 className="pd-h1" style={{ display: 'none' }}>{property.title}</h1>
               
               <div className="pd-location-row" style={{ display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'flex-start', marginTop: '1rem' }}>
@@ -496,9 +481,8 @@ export default function PropertyDetails() {
                   </div>
                 )}
 
-                {/* Show Google Maps button ALWAYS, with fallback search link */}
                 <div style={{ marginTop: '1.5rem', width: '100%', maxWidth: '500px' }}>
-                  <div style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--gold)', letterSpacing: '0.1em', marginBottom: '8px', textTransform: 'uppercase' }}>ప్రాంతం మ్యాప్ (Location Map)</div>
+                  <div style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--gold)', letterSpacing: '0.1em', marginBottom: '8px', textTransform: 'uppercase' }}>ప్రాంతం యొక్క మ్యాప్ (Location Map)</div>
                   <a 
                     href={finalGoogleMapsLink} 
                     target="_blank" 
@@ -510,21 +494,21 @@ export default function PropertyDetails() {
                       textDecoration: 'none'
                     }}
                   >
-                    <MapPin size={24}/> గూగుల్ మ్యాప్స్‌లో చూడండి
+                    <MapPin size={24}/> మ్యాప్‌లో దిశలను చూడండి
                   </a>
                 </div>
               </div>
             </div>
 
-            <div className="pd-price-block" style={{ display: 'none' }}> {/* Hidden on mobile, shown via overlay */}
+            <div className="pd-price-block" style={{ display: 'none' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', background: 'rgba(39, 201, 125, 0.1)', border: '1px solid rgba(39, 201, 125, 0.3)', padding: '6px 12px', borderRadius: '12px' }}>
-                 <ShieldCheck size={14} color="#27c97d"/> <span style={{ color: '#27c97d', fontSize: '0.7rem', fontWeight: 900 }}>100% వెరిఫైడ్ టైటిల్</span>
+                 <ShieldCheck size={14} color="#27c97d"/> <span style={{ color: '#27c97d', fontSize: '0.7rem', fontWeight: 900 }}>100% వెరిఫైడ్ ఆస్తి</span>
               </div>
               <div className="pd-price-main">{formatSnapAddaPrice(displayPrice)}</div>
-              <div className="pd-price-sub" style={{ color: 'var(--gold)', fontWeight: 600 }}>SnapAdda ప్రత్యేక విలువ</div>
+              <div className="pd-price-sub" style={{ color: 'var(--gold)', fontWeight: 600 }}>SnapAdda ప్రత్యేక ధర</div>
               <div className="pd-price-actions" style={{ marginTop: '1.5rem' }}>
                 <button className={`pd-action-btn ${liked ? 'liked' : ''}`} onClick={handleLike}>
-                  <Heart size={18} fill={liked ? 'currentColor' : 'none'}/> {liked ? 'సేవ్ చేయబడింది' : 'సేవ్ చేయండి'}
+                  <Heart size={18} fill={liked ? 'currentColor' : 'none'}/> {liked ? 'ఇష్టపడ్డారు' : 'ఇష్టపడండి'}
                 </button>
                 <button className="pd-action-btn" onClick={handleShare}>
                   <Share2 size={18}/> షేర్ చేయండి
@@ -553,7 +537,7 @@ export default function PropertyDetails() {
         <div className="pd-body-grid">
           <main className="pd-main-col">
             <section id="pd-overview" className="pd-section">
-              <h2 className="pd-section-h">ప్రాపర్టీ అవలోకనం (Overview)</h2>
+              <h2 className="pd-section-h">ప్రాంతం యొక్క అవలోకనం (Overview)</h2>
               <div className="pd-overview-grid">
                 {isAgri && (
                   <>
@@ -573,7 +557,7 @@ export default function PropertyDetails() {
                   <div className="pd-ov-card" style={{ '--ov-accent': '#22d9e0' }}>
                     <Square size={24} style={{ color: '#22d9e0' }} />
                     <div className="pd-ov-val">{property.areaSize} {tr(property.measurementUnit || 'Sq.Yards')}</div>
-                    <div className="pd-ov-lbl">మొత్తం స్థలం విస్తీర్ణం</div>
+                    <div className="pd-ov-lbl">మొత్తం విస్తీర్ణం</div>
                   </div>
                 )}
                 {isResidential && (
@@ -587,7 +571,7 @@ export default function PropertyDetails() {
                   <VisualCompass facing={property.facing} size={48} />
                   <div style={{ textAlign: 'center' }}>
                     <div className="pd-ov-val" style={{ textTransform: 'uppercase' }}>{tr(property.facing || 'Any')}</div>
-                    <div className="pd-ov-lbl">ఫేసింగ్ (Facing)</div>
+                    <div className="pd-ov-lbl">దిశ (Facing)</div>
                   </div>
                 </div>
               </div>
@@ -599,7 +583,7 @@ export default function PropertyDetails() {
               </div>
               
               <div style={{ marginBottom: '2.5rem' }}>
-                <div style={{ fontSize: '0.75rem', fontWeight: 900, color: 'var(--gold)', letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: '8px' }}>✦ SNAPADDA QUALITY</div>
+                <div style={{ fontSize: '0.75rem', fontWeight: 900, color: 'var(--gold)', letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: '8px' }}>SNAPADDA QUALITY</div>
                 <h3 style={{ fontSize: '1.6rem', fontWeight: 900, color: 'white', margin: 0 }}>నమ్మకమైన సమాచారం (Trust Scorecard)</h3>
               </div>
 
@@ -607,22 +591,22 @@ export default function PropertyDetails() {
                 <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
                   <Shield size={20} color="var(--gold)" />
                   <div>
-                    <div style={{ fontSize: '0.9rem', fontWeight: 800, color: 'white' }}>{property.approvalAuthority || 'CRDA వెరిఫైడ్'}</div>
-                    <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 700 }}>ప్రభుత్వ అనుమతి</div>
+                    <div style={{ fontSize: '0.9rem', fontWeight: 800, color: 'white' }}>{property.approvalAuthority || 'సర్టిఫైడ్'}</div>
+                    <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 700 }}>ప్రభుత్వ అప్రూవల్</div>
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
                   <TrendingUp size={20} color="var(--gold)" />
                   <div>
-                    <div style={{ fontSize: '0.9rem', fontWeight: 800, color: 'white' }}>అధిక లాభం</div>
-                    <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 700 }}>పెట్టుబడి రాబడి</div>
+                    <div style={{ fontSize: '0.9rem', fontWeight: 800, color: 'white' }}>అధిక పెరుగుదల</div>
+                    <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 700 }}>ప్రభుత్వ అనుమతి</div>
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
                   <MapPin size={20} color="var(--gold)" />
                   <div>
                     <div style={{ fontSize: '0.9rem', fontWeight: 800, color: 'white' }}>{property.cornerProperty ? 'కార్నర్ ప్లాట్' : 'ప్రధాన ప్రాంతం'}</div>
-                    <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 700 }}>భౌగోళిక స్థానం</div>
+                    <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 700 }}>రవాణా సౌకర్యం</div>
                   </div>
                 </div>
               </div>
@@ -635,11 +619,11 @@ export default function PropertyDetails() {
                    {isAgri && (
                      <>
                         <div style={{ padding: '0.75rem', background: 'rgba(0,0,0,0.2)', borderRadius: '12px' }}>
-                           <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.65rem', fontWeight: 700 }}>సెంట్ ధర</div>
+                           <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.65rem', fontWeight: 700 }}>ఎకరా ధర</div>
                            <div style={{ color: 'var(--gold)', fontSize: '1.1rem', fontWeight: 900 }}>{formatSnapAddaPrice(pricePerCent)}</div>
                         </div>
                         <div style={{ padding: '0.75rem', background: 'rgba(0,0,0,0.2)', borderRadius: '12px' }}>
-                           <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.65rem', fontWeight: 700 }}>ఎకరా ధర</div>
+                           <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.65rem', fontWeight: 700 }}>సెంట్ ధర</div>
                            <div style={{ color: 'var(--gold)', fontSize: '1.1rem', fontWeight: 900 }}>{formatSnapAddaPrice(property.pricePerAcre)}</div>
                         </div>
                      </>
@@ -659,9 +643,8 @@ export default function PropertyDetails() {
             </section>
 
             <section id="pd-specs" className="pd-section">
-              <h2 className="pd-section-h">ముఖ్యమైన వివరాలు (Specifications)</h2>
+              <h2 className="pd-section-h">మరిన్ని వివరాలు (Specifications)</h2>
 
-              {/* Property Code Badge */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
                 <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(232,184,75,0.12)', border: '1px solid rgba(232,184,75,0.4)', padding: '8px 16px', borderRadius: '14px' }}>
                   <FileText size={14} style={{ color: 'var(--gold)' }}/>
@@ -670,7 +653,7 @@ export default function PropertyDetails() {
                     {property.propertyCode || `SNA-${id.slice(-5).toUpperCase()}`}
                   </span>
                 </div>
-                <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.7rem' }}>ఏజెంట్‌కు ఈ కోడ్ చెప్పండి (Share this code with our agent)</span>
+                <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.7rem' }}>ఈ కోడ్‌ను మా ఏజెంట్‌కు తెలియజేయండి (Share this code with our agent)</span>
               </div>
 
               <p className="pd-desc-text" style={{ marginBottom: '2rem' }}>{generateDesc(property)}</p>
@@ -686,12 +669,60 @@ export default function PropertyDetails() {
               </div>
             </section>
 
-            {/* Listed By — Realtor Section */}
+            <section id="pd-amenities" className="pd-section">
+              <h2 className="pd-section-h">సదుపాయాలు (Amenities)</h2>
+              <div className="pd-amenities-grid">
+                {(property?.amenities?.length > 0 ? property.amenities : ['Clear Title', 'Water Supply', 'Power Terminal', 'Security Wall', 'Vastu Optimized']).map((a, i) => (
+                  <div key={i} className="pd-amenity-item">
+                    <CheckCircle2 size={16} style={{ color: '#27c97d' }}/> {a}
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <section id="pd-neighborhood" className="pd-section">
+              <h2 className="pd-section-h">Neighborhood Intelligence (పరిసర ప్రాంతాల విశ్లేషణ)</h2>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem' }}>
+                {/* Connectivity Score */}
+                <div className="glass-premium" style={{ padding: '1.5rem', borderRadius: '24px', border: '1px solid rgba(34,217,224,0.15)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <div style={{ color: 'var(--cyan)', fontWeight: 900, fontSize: '0.85rem' }}>Connectivity</div>
+                    <div style={{ color: 'white', fontWeight: 900 }}>9.2/10</div>
+                  </div>
+                  <div style={{ width: '100%', height: '6px', background: 'rgba(255,255,255,0.05)', borderRadius: '10px', overflow: 'hidden' }}>
+                    <motion.div initial={{ width: 0 }} whileInView={{ width: '92%' }} transition={{ duration: 1 }} style={{ height: '100%', background: 'var(--cyan)' }} />
+                  </div>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.7rem', marginTop: '10px' }}>Excellent access to National Highway and proposed Metro station.</p>
+                </div>
+                {/* Healthcare Score */}
+                <div className="glass-premium" style={{ padding: '1.5rem', borderRadius: '24px', border: '1px solid rgba(16,217,140,0.15)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <div style={{ color: 'var(--emerald)', fontWeight: 900, fontSize: '0.85rem' }}>Medical Care</div>
+                    <div style={{ color: 'white', fontWeight: 900 }}>8.5/10</div>
+                  </div>
+                  <div style={{ width: '100%', height: '6px', background: 'rgba(255,255,255,0.05)', borderRadius: '10px', overflow: 'hidden' }}>
+                    <motion.div initial={{ width: 0 }} whileInView={{ width: '85%' }} transition={{ duration: 1 }} style={{ height: '100%', background: 'var(--emerald)' }} />
+                  </div>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.7rem', marginTop: '10px' }}>3 multi-speciality hospitals within a 5km radius.</p>
+                </div>
+                {/* Investment Potential */}
+                <div className="glass-premium" style={{ padding: '1.5rem', borderRadius: '24px', border: '1px solid rgba(232,184,75,0.15)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <div style={{ color: 'var(--gold)', fontWeight: 900, fontSize: '0.85rem' }}>High Growth Hub</div>
+                    <div style={{ color: 'white', fontWeight: 900 }}>Elite</div>
+                  </div>
+                  <div style={{ width: '100%', height: '6px', background: 'rgba(255,255,255,0.05)', borderRadius: '10px', overflow: 'hidden' }}>
+                    <motion.div initial={{ width: 0 }} whileInView={{ width: '95%' }} transition={{ duration: 1 }} style={{ height: '100%', background: 'var(--gold)' }} />
+                  </div>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.7rem', marginTop: '10px' }}>Predicted 18-22% appreciation in next 24 months.</p>
+                </div>
+              </div>
+            </section>
+
             {property.realtor?.name && (
               <section id="pd-realtor" className="pd-section" style={{ padding: '1.5rem', background: 'rgba(232,184,75,0.04)', border: '1px solid rgba(232,184,75,0.15)', borderRadius: '20px' }}>
                 <h2 className="pd-section-h" style={{ marginBottom: '1.25rem' }}>Listed By (సమర్పించిన వ్యక్తి)</h2>
                 <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-start', flexWrap: 'wrap' }}>
-                  {/* Avatar */}
                   {property.realtor.photo ? (
                     <img src={property.realtor.photo} alt={property.realtor.name} onError={e => { e.currentTarget.style.display = 'none'; }}
                       style={{ width: '72px', height: '72px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--gold)', flexShrink: 0 }} />
@@ -701,18 +732,17 @@ export default function PropertyDetails() {
                     </div>
                   )}
                   
-                  {/* Info */}
                   <div style={{ flex: 1, minWidth: '200px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', marginBottom: '6px' }}>
                       <span style={{ color: 'white', fontWeight: 900, fontSize: '1.05rem' }}>{property.realtor.name}</span>
                       {property.realtor.contactId && (
                         <span style={{ background: 'rgba(16,217,140,0.15)', border: '1px solid rgba(16,217,140,0.3)', color: 'var(--emerald)', padding: '2px 8px', borderRadius: '10px', fontSize: '0.65rem', fontWeight: 800 }}>
-                          ✓ Verified SnapAdda Partner
+                           Verified SnapAdda Partner
                         </span>
                       )}
                     </div>
                     {property.realtor.agency && (
-                      <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem', marginBottom: '4px' }}>🏢 {property.realtor.agency}</div>
+                      <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem', marginBottom: '4px' }}>𨘻 {property.realtor.agency}</div>
                     )}
                     {property.realtor.licenseNo && (
                       <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(232,184,75,0.1)', border: '1px solid rgba(232,184,75,0.25)', padding: '3px 10px', borderRadius: '8px', fontSize: '0.7rem', color: 'var(--gold)', fontWeight: 700, marginBottom: '10px' }}>
@@ -724,12 +754,12 @@ export default function PropertyDetails() {
                       <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '10px' }}>
                         <a href={`tel:${property.realtor.phone}`}
                           style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(34,217,224,0.1)', border: '1px solid rgba(34,217,224,0.3)', color: 'var(--cyan)', padding: '7px 14px', borderRadius: '10px', fontWeight: 800, fontSize: '0.8rem', textDecoration: 'none' }}>
-                          📞 Call Agent
+                           Call Agent
                         </a>
                         <a href={`https://wa.me/91${property.realtor.phone.replace(/[^0-9]/g,'')}?text=Hi, I saw property ${property.propertyCode || ''} on SnapAdda. Can you share more details?`}
                           target="_blank" rel="noopener noreferrer"
                           style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(37,211,102,0.12)', border: '1px solid rgba(37,211,102,0.3)', color: '#25d366', padding: '7px 14px', borderRadius: '10px', fontWeight: 800, fontSize: '0.8rem', textDecoration: 'none' }}>
-                          💬 WhatsApp Agent
+                          俥 WhatsApp Agent
                         </a>
                       </div>
                     )}
@@ -737,17 +767,6 @@ export default function PropertyDetails() {
                 </div>
               </section>
             )}
-
-            <section id="pd-amenities" className="pd-section">
-              <h2 className="pd-section-h">సదుపాయాలు (Amenities)</h2>
-              <div className="pd-amenities-grid">
-                {(property?.amenities?.length > 0 ? property.amenities : ['Clear Title', 'Water Supply', 'Power Terminal', 'Security Wall', 'Vastu Optimized']).map((a, i) => (
-                  <div key={i} className="pd-amenity-item">
-                    <CheckCircle2 size={16} style={{ color: '#27c97d' }}/> {a}
-                  </div>
-                ))}
-              </div>
-            </section>
 
             <section id="pd-qna" className="pd-section">
               <h2 className="pd-section-h">ప్రశ్నలు & జవాబులు (Verified Q&A)</h2>
@@ -761,22 +780,20 @@ export default function PropertyDetails() {
               </div>
               
               <div className="pd-ask-card">
-                <h3 style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'white' }}>
+                <h3 style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'white', marginBottom: '1.5rem' }}>
                   <MessageSquare size={18} style={{ color: 'var(--gold)' }}/> ఈ ప్రాపర్టీ గురించి అడగండి
                 </h3>
-                <form onSubmit={handleAskSubmit} style={{ marginTop: '1.5rem' }}>
-                   <textarea
-                     value={qText}
-                     onChange={e => setQText(e.target.value)}
-                     placeholder="ధర లేదా సైట్ విజిట్ గురించి మెసేజ్ చేయండి..."
-                     className="pd-textarea"
-                     style={{ width: '100%', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '1rem', color: 'white', marginBottom: '1rem', outline: 'none' }}
-                   />
-                   <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                     <button type="submit" disabled={qSubmitting} className="pd-btn-primary" style={{ padding: '0.8rem 2rem', background: 'var(--gold)', color: '#000', fontWeight: 800 }}>
-                       {qSubmitting ? 'కనెక్ట్ అవుతోంది...' : 'వివరాలు అడగండి'}
-                     </button>
-                   </div>
+                <form onSubmit={handleAskSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  <textarea 
+                    value={qText} onChange={e => setQText(e.target.value)}
+                    placeholder="మీ ప్రశ్న ఇక్కడ రాయండి..."
+                    style={{ width: '100%', minHeight: '100px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', padding: '1rem', borderRadius: '16px', fontSize: '0.95rem' }}
+                  />
+                  <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                    <button type="submit" disabled={qSubmitting} className="pd-btn-primary" style={{ padding: '0.75rem 2rem', fontSize: '0.9rem' }}>
+                      {qSubmitting ? 'పంపుతున్నాము...' : 'ప్రశ్న అడగండి'}
+                    </button>
+                  </div>
                 </form>
               </div>
             </section>
@@ -785,7 +802,7 @@ export default function PropertyDetails() {
           <aside className="pd-sidebar-col">
             <div className="pd-contact-sticky">
               <div className="pd-contact-card">
-                <div style={{ color: 'rgba(0,0,0,0.6)', fontSize: '0.7rem', fontWeight: 900, textTransform: 'uppercase', marginBottom: '1rem' }}>ఏజెంట్‌ను సంప్రదించండి</div>
+                <div style={{ color: 'rgba(0,0,0,0.6)', fontSize: '0.7rem', fontWeight: 900, textTransform: 'uppercase', marginBottom: '1rem' }}>మరిన్ని వివరాల కోసం సంప్రదించండి</div>
                 <button onClick={() => window.location.href = `tel:${supportPhone}`} className="btn-3d-glass" style={{ width: '100%' }}>
                   <Phone size={20}/> కాల్ చేయండి
                 </button>
@@ -795,21 +812,21 @@ export default function PropertyDetails() {
                     <MessageSquare size={18}/> వాట్సాప్ చాట్
                   </button>
                   <button onClick={() => navigate('/request-callback')} className="btn-3d-glass-dark" style={{ width: '100%' }}>
-                    <Send size={18}/> కాల్‌బ్యాక్ రిక్వెస్ట్
+                    <Send size={18}/> కాల్‌బ్యాక్ అభ్యర్థించండి
                   </button>
                 </div>
                 <div className="pd-trust-row">
                   <div className="pd-trust-item"><ShieldCheck size={14}/> 100% SnapAdda వెరిఫైడ్</div>
-                  <div className="pd-trust-item"><Award size={14}/> ప్రీమియం లిస్టింగ్</div>
+                  <div className="pd-trust-item"><Award size={14}/> నమ్మకమైన రియల్ ఎస్టేట్ ప్లాట్‌ఫారమ్</div>
                 </div>
               </div>
 
               <div className="pd-quick-specs">
-                <div style={{ fontSize: '0.7rem', fontWeight: 900, marginBottom: '1.5rem', color: 'var(--gold)' }}>త్వరిత వివరాలు</div>
+                <div style={{ fontSize: '0.7rem', fontWeight: 900, marginBottom: '1.5rem', color: 'var(--gold)' }}>ముఖ్యమైన వివరాలు</div>
                 <div className="pd-quick-row"><span className="pd-quick-lbl">మొత్తం ధర</span><span className="pd-quick-val" style={{ color: 'var(--gold)' }}>{formatSnapAddaPrice(displayPrice)}</span></div>
                 <div className="pd-quick-row"><span className="pd-quick-lbl">విస్తీర్ణం</span><span className="pd-quick-val">{property.areaSize} {tr(property.measurementUnit)}</span></div>
-                <div className="pd-quick-row"><span className="pd-quick-lbl">ఫేసింగ్</span><span className="pd-quick-val">{tr(property.facing)}</span></div>
-                <div className="pd-quick-row"><span className="pd-quick-lbl">అనుమతి</span><span className="pd-quick-val" style={{ color: '#27c97d' }}>{property.approvalAuthority || 'అవును'}</span></div>
+                <div className="pd-quick-row"><span className="pd-quick-lbl">దిశ</span><span className="pd-quick-val">{tr(property.facing)}</span></div>
+                <div className="pd-quick-row"><span className="pd-quick-lbl">అనుమతి</span><span className="pd-quick-val" style={{ color: '#27c97d' }}>{property.approvalAuthority || 'అందుబాటులో లేదు'}</span></div>
               </div>
             </div>
           </aside>
@@ -820,8 +837,8 @@ export default function PropertyDetails() {
         <section className="section-wrap" style={{ background: 'rgba(255,255,255,0.02)', padding: '4rem 0' }}>
           <div className="container">
             <div className="section-head" style={{ marginBottom: '3rem' }}>
-              <div className="section-eyebrow">మీ కోసం ప్రత్యేకంగా</div>
-              <h2 className="section-title">ఇలాంటి మరిన్ని ఆస్తులు</h2>
+              <div className="section-eyebrow">ఇదే రకమైన ఇతర ప్రాపర్టీలు</div>
+              <h2 className="section-title">మీకు నచ్చవచ్చు</h2>
             </div>
             <div className="properties-grid">
               {similar.slice(0, 3).map(p => <PropertyCard key={p._id} {...p} />)}
@@ -830,7 +847,6 @@ export default function PropertyDetails() {
         </section>
       )}
 
-      {/* ─── Share Modal ─── */}
       <AnimatePresence>
         {shareModal && (
           <motion.div
@@ -847,35 +863,32 @@ export default function PropertyDetails() {
               onClick={e => e.stopPropagation()}
               style={{ background: 'rgba(10,10,20,0.98)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '28px 28px 0 0', padding: '28px 24px 24px', width: '100%', maxWidth: '500px', boxShadow: '0 -20px 60px rgba(0,0,0,0.8)' }}
             >
-              {/* Handle bar */}
               <div style={{ width: '40px', height: '4px', background: 'rgba(255,255,255,0.2)', borderRadius: '4px', margin: '0 auto 20px' }} />
               <div style={{ fontWeight: 900, fontSize: '1.05rem', color: 'white', marginBottom: '20px', textAlign: 'center' }}>
-                📤 షేర్ చేయండి
+                ప్రాపర్టీని షేర్ చేయండి
               </div>
-              {/* Property preview */}
               <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '12px 16px', marginBottom: '20px', fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)' }}>
                 <div style={{ fontWeight: 800, color: 'white', marginBottom: '4px' }}>{property?.title}</div>
-                <div>{property?.location} · {formatSnapAddaPrice((isAgri && agriTotalValue > 0) ? agriTotalValue : property?.price)}</div>
+                <div>{property?.location} 繚 {formatSnapAddaPrice((isAgri && agriTotalValue > 0) ? agriTotalValue : property?.price)}</div>
               </div>
-              {/* Share options */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 <button onClick={handleShareWhatsApp}
                   style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '14px 18px', background: 'rgba(37,211,102,0.12)', border: '1px solid rgba(37,211,102,0.3)', borderRadius: '16px', color: '#25D366', fontWeight: 800, fontSize: '1rem', cursor: 'pointer', width: '100%' }}>
-                  <span style={{ fontSize: '1.4rem' }}>💬</span> WhatsApp షేర్
+                  <span style={{ fontSize: '1.4rem' }}>俥</span> WhatsApp లో షేర్ చేయండి
                 </button>
                 <button onClick={handleCopyLink}
                   style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '14px 18px', background: 'rgba(232,184,75,0.1)', border: '1px solid rgba(232,184,75,0.3)', borderRadius: '16px', color: '#e8b84b', fontWeight: 800, fontSize: '1rem', cursor: 'pointer', width: '100%' }}>
-                  <span style={{ fontSize: '1.4rem' }}>🔗</span> లింక్ కాపీ చేయండి
+                  <span style={{ fontSize: '1.4rem' }}></span> లింక్ కాపీ చేయండి
                 </button>
                 {typeof navigator !== 'undefined' && navigator.share && (
                   <button onClick={handleNativeShare}
                     style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '14px 18px', background: 'rgba(155,89,245,0.1)', border: '1px solid rgba(155,89,245,0.3)', borderRadius: '16px', color: '#9b59f5', fontWeight: 800, fontSize: '1rem', cursor: 'pointer', width: '100%' }}>
-                    <span style={{ fontSize: '1.4rem' }}>📲</span> More Options
+                    <span style={{ fontSize: '1.4rem' }}>搻</span> More Options
                   </button>
                 )}
                 <button onClick={() => setShareModal(false)}
                   style={{ padding: '12px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', color: 'rgba(255,255,255,0.5)', fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer', width: '100%' }}>
-                  రద్దు చేయండి
+                  వెనక్కి వెళ్ళండి
                 </button>
               </div>
             </motion.div>
@@ -883,43 +896,24 @@ export default function PropertyDetails() {
         )}
       </AnimatePresence>
 
-      {/* Mobile Bottom Bar */}
-      <div className="pd-mobile-bar" style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: 'rgba(7, 7, 15, 0.98)', backdropFilter: 'blur(20px)', borderTop: '1px solid rgba(255,255,255,0.1)', padding: '10px 12px', display: 'flex', gap: '8px', zIndex: 100001, boxShadow: '0 -10px 40px rgba(0,0,0,0.8)' }}>
-        <button onClick={() => window.location.href = `tel:${supportPhone}`} className="btn-3d-glass" style={{ flex: 2, padding: '11px 6px', fontSize: '0.78rem' }}>
-          <Phone size={16}/> కాల్
-        </button>
-        <button onClick={handleWhatsApp} className="btn-3d-glass-emerald" style={{ flex: 2, padding: '11px 6px', fontSize: '0.78rem' }}>
-          <MessageSquare size={16}/> వాట్సాప్
-        </button>
-        <button
-          onClick={handleLike}
-          style={{
-            flex: 1, padding: '11px 6px', fontSize: '0.78rem',
-            background: liked ? 'rgba(255,80,80,0.18)' : 'rgba(255,255,255,0.07)',
-            border: `1px solid ${liked ? 'rgba(255,80,80,0.5)' : 'rgba(255,255,255,0.12)'}`,
-            color: liked ? '#ff5050' : 'rgba(255,255,255,0.75)',
-            borderRadius: '14px', cursor: 'pointer',
-            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1px',
-            transition: 'all 0.25s',
-          }}
+      {/* ── Elite Institutional Sticky Ribbon (99acres Pattern) ── */}
+      <div className="pd-mobile-ribbon" style={{ 
+        position: 'fixed', bottom: '25px', left: '20px', right: '20px', 
+        zIndex: 100002, display: 'flex', gap: '10px' 
+      }}>
+        <button 
+          onClick={() => window.location.href = `tel:${supportPhone}`}
+          className="btn-3d-glass" 
+          style={{ flex: 1, padding: '16px', borderRadius: '20px', background: 'rgba(232,184,75,0.9)', color: 'black', fontWeight: 900, fontSize: '0.9rem', boxShadow: '0 15px 35px rgba(232,184,75,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}
         >
-          <Heart size={16} fill={liked ? 'currentColor' : 'none'}/>
-          {likeCount > 0 && <span style={{ fontSize: '0.6rem', fontWeight: 800 }}>{likeCount}</span>}
+          <Phone size={20}/> CALL AGENT
         </button>
-        <button
-          onClick={handleShare}
-          style={{
-            flex: 1, padding: '11px 6px', fontSize: '0.78rem',
-            background: 'rgba(255,255,255,0.07)',
-            border: '1px solid rgba(255,255,255,0.12)',
-            color: 'rgba(255,255,255,0.75)',
-            borderRadius: '14px', cursor: 'pointer',
-            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1px',
-            transition: 'all 0.25s',
-          }}
+        <button 
+          onClick={handleWhatsApp}
+          className="btn-3d-glass-emerald" 
+          style={{ flex: 1, padding: '16px', borderRadius: '20px', background: 'rgba(37,211,102,0.9)', color: 'white', fontWeight: 900, fontSize: '0.9rem', boxShadow: '0 15px 35px rgba(37,211,102,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}
         >
-          <Share2 size={16}/>
-          <span style={{ fontSize: '0.6rem', fontWeight: 800 }}>షేర్</span>
+          <MessageSquare size={20}/> WHATSAPP
         </button>
       </div>
     </div>

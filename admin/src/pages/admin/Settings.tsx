@@ -14,6 +14,7 @@ import {
 } from '../../services/api';
 import { useAdminAuth } from '../../contexts/AdminAuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
+import { triggerHaptic } from '../../utils/haptics';
 
 type SaveStatus = 'idle' | 'saving' | 'success' | 'error';
 
@@ -164,7 +165,7 @@ const AdminSettings = () => {
   const [marketingStatus, setMarketingStatus] = useState<SaveStatus>('idle');
 
   const [activeSection, setActiveSection] = useState<
-    'appearance' | 'hero' | 'seo' | 'marketing' | 'profile' | 'password' | 'support' | 'whatsapp' | 'questions' | 'automation' | 'danger'
+    'appearance' | 'design' | 'hero' | 'seo' | 'marketing' | 'profile' | 'password' | 'support' | 'whatsapp' | 'questions' | 'automation' | 'danger'
   >('appearance');
 
   // Hero section state
@@ -180,6 +181,26 @@ const AdminSettings = () => {
   // Stats section state
   const [siteStats, setSiteStats] = useState<{ label: string; value: string; icon: string }[]>([]);
   const [statsStatus, setStatsStatus] = useState<SaveStatus>('idle');
+
+  // Design Tokens state
+  const [designTokens, setDesignTokens] = useState({
+    propertyCard: {
+      padding: '16px',
+      borderRadius: '12px',
+      aspectRatio: '4/3',
+      gap: '12px',
+      imageWidth: 600,
+      imageHeight: 450
+    },
+    adCard: {
+      padding: '20px',
+      borderRadius: '16px',
+      aspectRatio: '16/9',
+      imageWidth: 1200,
+      imageHeight: 675
+    }
+  });
+  const [designStatus, setDesignStatus] = useState<SaveStatus>('idle');
 
   // Load data
   useEffect(() => {
@@ -198,10 +219,11 @@ const AdminSettings = () => {
           fetchSetting('seo'),
           fetchSetting('onboarding_questions'),
           fetchSetting('automation_settings'),
-          fetchSetting('marketing_settings')
+          fetchSetting('marketing_settings'),
+          fetchSetting('design_tokens')
         ]);
 
-        const [wa, app, sup, hero, stats, seo, quest, auto, mkt] = results.map(r => r.status === 'fulfilled' ? r.value : null);
+        const [wa, app, sup, hero, stats, seo, quest, auto, mkt, dTokens] = results.map(r => r.status === 'fulfilled' ? r.value : null);
 
         if (wa?.data) { setWaNumber(wa.data.number || ''); setWaMessage(wa.data.message || ''); }
         if (app?.data) {
@@ -243,6 +265,9 @@ const AdminSettings = () => {
           setGa4Id(mkt.data.ga4Id || '');
           setGtmId(mkt.data.gtmId || '');
           setGoogleBusinessLink(mkt.data.googleBusinessLink || '');
+        }
+        if (dTokens?.data) {
+          setDesignTokens(dTokens.data);
         }
         
       } finally {
@@ -506,6 +531,31 @@ const AdminSettings = () => {
     }
   };
 
+  const updateDesignToken = (category: 'propertyCard' | 'adCard', field: string, value: string | number) => {
+    setDesignTokens(prev => ({
+      ...prev,
+      [category]: {
+        ...prev[category],
+        [field]: value
+      }
+    }));
+  };
+
+  const handleDesignSave = async (ev: React.FormEvent) => {
+    ev.preventDefault();
+    setDesignStatus('saving');
+    try {
+      await saveSetting('design_tokens', designTokens);
+      setDesignStatus('success');
+      showToast('Design tokens updated!');
+      setTimeout(() => setDesignStatus('idle'), 3000);
+    } catch {
+      setDesignStatus('error');
+      showToast('Failed to save design tokens', 'error');
+      setTimeout(() => setDesignStatus('idle'), 4000);
+    }
+  };
+
   /* ── Styles ── */
   const card = (accent: string) => ({
     background: 'var(--bg-glass)', border: '1px solid rgba(255,255,255,0.07)',
@@ -522,7 +572,16 @@ const AdminSettings = () => {
   };
 
   return (
-    <div style={{ display:'flex', flexDirection:'column', gap:'1.5rem', maxWidth:'720px', paddingBottom:'4rem', position: 'relative' }}>
+    <div style={{ 
+      display:'flex', 
+      flexDirection:'column', 
+      gap:'1.5rem', 
+      maxWidth:'720px', 
+      paddingBottom:'4rem', 
+      position: 'relative', 
+      width: '100%',
+      touchAction: 'pan-y'
+    }}>
       
       <AnimatePresence>
         {toast && (
@@ -573,8 +632,11 @@ const AdminSettings = () => {
             <button
               type="button"
               key={section.key}
-              onClick={() => setActiveSection(section.key as any)}
-              className="btn"
+              onClick={() => {
+                triggerHaptic('light');
+                setActiveSection(section.key as any);
+              }}
+              className="btn clickable"
               style={{
                 width: 'auto',
                 minWidth: '120px',
@@ -586,7 +648,8 @@ const AdminSettings = () => {
                 background: isActive ? 'rgba(212,175,55,0.14)' : 'rgba(255,255,255,0.03)',
                 color: isActive ? 'var(--text-primary)' : 'var(--text-muted)',
                 fontWeight: isActive ? 700 : 500,
-                cursor: 'pointer'
+                cursor: 'pointer',
+                touchAction: 'manipulation'
               }}
             >
               {section.label}
@@ -627,7 +690,7 @@ const AdminSettings = () => {
               <p style={{ fontSize:'0.7rem', color:'var(--text-muted)', marginTop:'8px' }}>Large landscape images (1920x1080+) work best for parallax.</p>
             </div>
 
-            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'1.25rem' }}>
+            <div className="responsive-form-grid" style={{ display:'grid', gap:'1.25rem' }}>
               {/* Theme Mode & Brand Color Container */}
               <div style={{ display:'flex', flexDirection:'column', gap:'1.25rem' }}>
                 <div>
@@ -688,6 +751,69 @@ const AdminSettings = () => {
         </div>
       )}
 
+      {activeSection === 'design' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          <div style={card('var(--gold)')}>
+            {cardHeader(<Palette size={17} />, 'Property Card Design', 'Fine-tune padding, rounding, and media dimensions for listing cards.', 'var(--gold-dim)', 'var(--gold)')}
+            <form onSubmit={handleDesignSave} style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              <div className="responsive-form-grid" style={{ display: 'grid', gap: '1.25rem' }}>
+                <div>
+                  <label style={lbl}>Internal Padding (px)</label>
+                  <input type="text" value={designTokens.propertyCard.padding} onChange={e => updateDesignToken('propertyCard', 'padding', e.target.value)} style={{ ...inp, paddingLeft: '1rem' }} placeholder="e.g. 16px" />
+                </div>
+                <div>
+                  <label style={lbl}>Border Radius (px)</label>
+                  <input type="text" value={designTokens.propertyCard.borderRadius} onChange={e => updateDesignToken('propertyCard', 'borderRadius', e.target.value)} style={{ ...inp, paddingLeft: '1rem' }} placeholder="e.g. 12px" />
+                </div>
+              </div>
+              <div className="responsive-form-grid" style={{ display: 'grid', gap: '1.25rem' }}>
+                <div>
+                  <label style={lbl}>Media Width (px)</label>
+                  <input type="number" value={designTokens.propertyCard.imageWidth} onChange={e => updateDesignToken('propertyCard', 'imageWidth', parseInt(e.target.value))} style={{ ...inp, paddingLeft: '1rem' }} />
+                </div>
+                <div>
+                  <label style={lbl}>Media Height (px)</label>
+                  <input type="number" value={designTokens.propertyCard.imageHeight} onChange={e => updateDesignToken('propertyCard', 'imageHeight', parseInt(e.target.value))} style={{ ...inp, paddingLeft: '1rem' }} />
+                </div>
+              </div>
+              <StatusAlert status={designStatus} successMsg="Design tokens saved!" errorMsg="Failed to save design tokens." />
+              <button type="submit" disabled={designStatus === 'saving'} className="btn btn-gold" style={{ alignSelf: 'flex-start' }}>
+                {designStatus === 'saving' ? 'Saving...' : 'Save Design Tokens'}
+              </button>
+            </form>
+          </div>
+
+          <div style={card('var(--violet)')}>
+            {cardHeader(<ImageIcon size={17} />, 'Advertisement Card Design', 'Control dimensions and spacing for promotion banners.', 'var(--violet-dim)', 'var(--violet)')}
+            <form onSubmit={handleDesignSave} style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              <div className="responsive-form-grid" style={{ display: 'grid', gap: '1.25rem' }}>
+                <div>
+                  <label style={lbl}>Internal Padding (px)</label>
+                  <input type="text" value={designTokens.adCard.padding} onChange={e => updateDesignToken('adCard', 'padding', e.target.value)} style={{ ...inp, paddingLeft: '1rem' }} placeholder="e.g. 20px" />
+                </div>
+                <div>
+                  <label style={lbl}>Border Radius (px)</label>
+                  <input type="text" value={designTokens.adCard.borderRadius} onChange={e => updateDesignToken('adCard', 'borderRadius', e.target.value)} style={{ ...inp, paddingLeft: '1rem' }} placeholder="e.g. 16px" />
+                </div>
+              </div>
+              <div className="responsive-form-grid" style={{ display: 'grid', gap: '1.25rem' }}>
+                <div>
+                  <label style={lbl}>Media Width (px)</label>
+                  <input type="number" value={designTokens.adCard.imageWidth} onChange={e => updateDesignToken('adCard', 'imageWidth', parseInt(e.target.value))} style={{ ...inp, paddingLeft: '1rem' }} />
+                </div>
+                <div>
+                  <label style={lbl}>Media Height (px)</label>
+                  <input type="number" value={designTokens.adCard.imageHeight} onChange={e => updateDesignToken('adCard', 'imageHeight', parseInt(e.target.value))} style={{ ...inp, paddingLeft: '1rem' }} />
+                </div>
+              </div>
+              <button type="submit" disabled={designStatus === 'saving'} className="btn btn-violet" style={{ alignSelf: 'flex-start' }}>
+                {designStatus === 'saving' ? 'Saving...' : 'Save Ad Design Tokens'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
       {activeSection === 'hero' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           <div style={card('var(--gold)')}>
@@ -705,7 +831,7 @@ const AdminSettings = () => {
                 <label style={lbl}>Hero Subtitle</label>
                 <textarea value={heroSubtitle} onChange={e => setHeroSubtitle(e.target.value)} rows={3} style={{ ...inp, paddingLeft: '1rem', height: 'auto', resize: 'vertical', paddingTop: '0.65rem' }} placeholder="Tell your visitors why they should choose SnapAdda..." required />
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div className="responsive-form-grid" style={{ display: 'grid', gap: '1rem' }}>
                 <div>
                   <label style={lbl}>Primary CTA Text</label>
                   <input type="text" value={heroCTA1Text} onChange={e => setHeroCTA1Text(e.target.value)} style={{ ...inp, paddingLeft: '1rem' }} placeholder="e.g. BROWSE PROPERTIES" />
@@ -715,7 +841,7 @@ const AdminSettings = () => {
                   <input type="text" value={heroCTA1Url} onChange={e => setHeroCTA1Url(e.target.value)} style={{ ...inp, paddingLeft: '1rem' }} placeholder="e.g. #search" />
                 </div>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div className="responsive-form-grid" style={{ display: 'grid', gap: '1rem' }}>
                 <div>
                   <label style={lbl}>Secondary CTA Text</label>
                   <input type="text" value={heroCTA2Text} onChange={e => setHeroCTA2Text(e.target.value)} style={{ ...inp, paddingLeft: '1rem' }} placeholder="e.g. CALL EXPERT" />
@@ -735,7 +861,7 @@ const AdminSettings = () => {
           <div style={card('var(--violet)')}>
             {cardHeader(<Activity size={17} />, 'Site Statistics', 'Display impressive numbers on your home page.', 'var(--violet-dim)', 'var(--violet)')}
             <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+              <div className="responsive-form-grid" style={{ display: 'grid', gap: '1.25rem' }}>
                 {siteStats.map((stat, i) => (
                   <div key={i} style={{ padding: '1rem', borderRadius: '14px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
@@ -847,7 +973,7 @@ const AdminSettings = () => {
           </div>
           <div style={{ padding:'1.5rem', display:'flex', flexDirection:'column', gap:'1rem' }}>
           {onboardingQuestions.map((question, index) => (
-            <div key={question.id} style={{ display:'grid', gap:'0.85rem', padding:'0.95rem 0', borderBottom: index < onboardingQuestions.length - 1 ? '1px solid rgba(255,255,255,0.08)' : 'none' }}>
+            <div key={question.id} style={{ display:'flex', flexDirection: 'column', gap:'0.85rem', padding:'0.95rem 0', borderBottom: index < onboardingQuestions.length - 1 ? '1px solid rgba(255,255,255,0.08)' : 'none' }}>
               <div style={{ display:'flex', justifyContent:'space-between', gap:'1rem', alignItems:'flex-start' }}>
                 <div style={{ flex:'1 1 0' }}>
                   <input
@@ -1000,7 +1126,7 @@ const AdminSettings = () => {
         <div style={card('var(--violet)')}>
         {cardHeader(<Activity size={17}/>, 'Support & Contact Information', 'Manage public contact details.', 'rgba(155,89,245,0.1)', 'var(--violet)')}
         <form onSubmit={handleSupportSave} style={{ padding:'1.5rem', display:'flex', flexDirection:'column', gap:'1.25rem' }}>
-          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'1rem' }}>
+          <div className="responsive-form-grid" style={{ display:'grid', gap:'1rem' }}>
             <div>
               <label style={lbl}>Support Phone</label>
               {inputWrap(<Phone size={14}/>, <input type="text" value={supportPhone} onChange={e => setSupportPhone(e.target.value)} style={inp} placeholder="+91 999 999 9999" />)}

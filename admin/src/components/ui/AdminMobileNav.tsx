@@ -8,10 +8,10 @@ export const AdminMobileNav = () => {
   const navigate = useNavigate();
 
   const navItems = [
-    { id: 'dashboard', icon: LayoutDashboard, label: 'Dash', path: '/' },
-    { id: 'properties', icon: Building2, label: 'Assets', path: '/properties' },
-    { id: 'leads', icon: Users, label: 'Clients', path: '/clients' },
-    { id: 'settings', icon: FileText, label: 'Pages', path: '/pages' },
+    { id: 'dashboard', icon: LayoutDashboard, label: 'Dash', path: '/admin' },
+    { id: 'properties', icon: Building2, label: 'Assets', path: '/admin/properties' },
+    { id: 'leads', icon: Users, label: 'CRM', path: '/admin/leads' },
+    { id: 'settings', icon: FileText, label: 'Configs', path: '/admin/settings' },
   ];
 
   // Only show on mobile

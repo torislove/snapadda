@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Mail, Calendar, Search, Users, UserCheck, Clock, Download, MapPin } from 'lucide-react';
+import { Mail, Calendar, Search, Users, UserCheck, Clock, Download } from 'lucide-react';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -114,26 +114,25 @@ const AdminClients = () => {
         </div>
       </div>
 
-      {/* Table */}
-      <div style={{ background: 'var(--bg-glass)', border: '1px solid var(--border)', borderRadius: '18px', overflow: 'hidden' }}>
+      {/* Desktop Table View */}
+      <div className="desktop-only" style={{ background: 'var(--bg-glass)', border: '1px solid var(--border)', borderRadius: '18px', overflow: 'hidden' }}>
         <div className="table-responsive">
           <table className="admin-table">
             <thead>
               <tr>
                 <th>Client Profile</th>
                 <th>Role</th>
-                <th>Property Requirement</th>
+                <th>Requirement</th>
                 <th>Budget</th>
-                <th>Target Area</th>
                 <th>Joined</th>
                 <th>Status</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={7} style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>Loading clients...</td></tr>
+                <tr><td colSpan={6} style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>Loading clients...</td></tr>
               ) : filtered.length === 0 ? (
-                <tr><td colSpan={7} style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>No clients found.</td></tr>
+                <tr><td colSpan={6} style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>No clients found.</td></tr>
               ) : (
                 filtered.map((client, idx) => {
                   const roleStyle = getRoleColor(client.role);
@@ -180,17 +179,6 @@ const AdminClients = () => {
                       <td style={{ fontFamily: 'var(--font-mono)', fontSize: '0.82rem', color: 'var(--gold)' }}>
                         {client.preferences?.budget || '—'}
                       </td>
-                      <td style={{ fontSize: '0.78rem' }}>
-                        {client.preferences?.locations?.length > 0 ? (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--cyan)' }}>
-                            <MapPin size={11} />
-                            {client.preferences.locations.slice(0, 2).join(', ')}
-                            {client.preferences.locations.length > 2 && <span style={{ color: 'var(--text-muted)' }}>+{client.preferences.locations.length - 2}</span>}
-                          </div>
-                        ) : (
-                          <span style={{ color: 'var(--text-muted)' }}>Any Location</span>
-                        )}
-                      </td>
                       <td>
                         <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '5px' }}>
                           <Calendar size={12} />
@@ -210,6 +198,63 @@ const AdminClients = () => {
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* Mobile Card List View */}
+      <div className="mobile-only" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        {loading ? (
+          <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>Syncing encrypted records...</div>
+        ) : filtered.length === 0 ? (
+          <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>Zero matches found.</div>
+        ) : (
+          filtered.map((client) => {
+            const roleStyle = getRoleColor(client.role);
+            return (
+              <div key={client._id} className="glass-card" style={{ padding: '1.25rem', borderLeft: `3px solid ${getAvatarBorderColor(client)}` }}>
+                <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
+                  <img
+                    src={client.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(client.name || 'U')}&background=111&color=9b59f5&bold=true`}
+                    alt={client.name}
+                    style={{
+                      width: '44px', height: '44px', borderRadius: '12px', objectFit: 'cover',
+                      border: `2px solid ${getAvatarBorderColor(client)}`,
+                    }}
+                  />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 800, color: 'white', fontSize: '0.95rem' }}>{client.name || 'Unknown'}</div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '4px' }}>{client.email}</div>
+                    <span style={{
+                      fontSize: '0.6rem', fontWeight: 900, textTransform: 'uppercase',
+                      padding: '2px 8px', borderRadius: '4px',
+                      background: roleStyle.bg, color: roleStyle.color, border: `1px solid ${roleStyle.border}`,
+                    }}>{client.role || 'client'}</span>
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', background: 'rgba(255,255,255,0.03)', padding: '0.75rem', borderRadius: '10px' }}>
+                  <div>
+                    <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', fontWeight: 800, marginBottom: '2px' }}>REQUIREMENT</div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--violet)', fontWeight: 700 }}>{client.preferences?.propertyType || 'Unspecified'}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', fontWeight: 800, marginBottom: '2px' }}>BUDGET</div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--gold)', fontWeight: 700 }}>{client.preferences?.budget || '—'}</div>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem' }}>
+                   <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <Calendar size={12} /> Joined {client.createdAt ? new Date(client.createdAt).toLocaleDateString() : '—'}
+                   </div>
+                   {client.onboardingCompleted
+                      ? <span style={{ fontSize:'0.65rem', fontWeight:800, color:'var(--emerald)' }}>✓ ACTIVE</span>
+                      : <span style={{ fontSize:'0.65rem', fontWeight:800, color:'var(--orange)' }}>⏳ PENDING</span>
+                   }
+                </div>
+              </div>
+            );
+          })
+        )}
       </div>
     </div>
   );

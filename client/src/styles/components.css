@@ -450,3 +450,25 @@
   color: rgba(255, 255, 255, 0.9);
   white-space: nowrap;
 }
+
+.required-asterisk {
+  color: var(--rose);
+  margin-left: 4px;
+  font-weight: 900;
+}
+
+.elite-lbl {
+  display: flex;
+  align-items: center;
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--gold);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 0.8rem;
+}
+
+.field-group.error .elite-input {
+  border-color: var(--rose) !important;
+  box-shadow: 0 0 15px rgba(225, 29, 72, 0.2) !important;
+}

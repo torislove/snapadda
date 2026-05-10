@@ -124,7 +124,7 @@ const DocumentationCard = ({ category, title, icon, features, styles, database, 
                 </ul>
               </div>
 
-              <div className="doc-row" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '1rem' }}>
+              <div className="responsive-form-grid" style={{ display: 'grid', gap: '1rem' }}>
                 <div className="doc-info-block" style={{ padding: '1rem', background: 'rgba(0,0,0,0.2)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', color: 'var(--cyan)', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase' }}>
                     <Database size={14} /> Database (MongoDB)
@@ -174,6 +174,58 @@ export default function SystemGuide() {
   };
 
   const coreCards = [
+    {
+      id: 'domain-redirection',
+      category: 'Infrastructure',
+      title: 'Unified Domain Redirection',
+      icon: <Globe size={24} />,
+      features: [
+        'Production Domain: snapadda.com', 'Unified Client Redirection', 
+        'Direct Property Deep-linking', 'WhatsApp Share URL Synchronization'
+      ],
+      styles: [
+        'Hardcoded legacy URLs (web.app) migrated to primary domain',
+        'Standardized HTTPS protocol enforcement',
+        'Clean link generation in AdminPropertyCard.tsx'
+      ],
+      database: 'Property IDs used in URL construction: snapadda.com/property/:id.',
+      logic: 'Uses window.open for external redirects and navigator.clipboard for link sharing.'
+    },
+    {
+      id: 'property-lifecycle',
+      category: 'Workflow',
+      title: 'Simplified Property Lifecycle',
+      icon: <TrendingUp size={24} />,
+      features: [
+        'Explicit APPROVE Action (Verify + Live)', 'One-Click SOLD OUT / RENTED States', 
+        'MARK UNSOLD / UNRENTED Recovery Actions', 'DEACTIVATE (Hide) Toggle',
+        'Simplified vs Advanced Form Toggles', 'Bulk Upload Efficiency Mode'
+      ],
+      styles: [
+        'High-contrast action buttons: Emerald (Approve/Live), Gold (Sold Out), Cyan (Rented), Gray (Inactive)',
+        'Simplified view hides 60% of technical fields for rapid entry',
+        'Advanced view enables Legal (RERA), Technicals, and Custom Fields'
+      ],
+      database: 'Updates "status" (Active/Sold/Rented) and "verificationStatus" (Verified/Pending) fields.',
+      logic: 'handleApprove() atomically updates three fields to ensure immediate client-side visibility.'
+    },
+    {
+      id: 'permissions-access',
+      category: 'Security',
+      title: 'Access Control & Permissions',
+      icon: <ShieldCheck size={24} />,
+      features: [
+        'Role-Based Property Posting', 'Admin-Only Verification Power', 
+        'Creator Ownership Tracking', 'Client Submission Queue'
+      ],
+      styles: [
+        'Action buttons hidden based on user.role authorization',
+        'Visual status indicators for Pending vs Verified listings',
+        'Secure API route protection via authMiddleware.js'
+      ],
+      database: 'Users collection stores "role" (admin, user, partner). Property collection tracks "submittedBy" UID.',
+      logic: 'Validation logic prevents non-admins from manually setting verificationStatus to "Verified".'
+    },
     {
       id: 'engagement-tracking',
       category: 'Analytics',
@@ -446,9 +498,8 @@ export default function SystemGuide() {
       </div>
 
       {/* CORE CARDS GRID */}
-      <div style={{ 
+      <div className="responsive-form-grid" style={{ 
         display: 'grid', 
-        gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', 
         gap: '1.5rem', 
         padding: '1rem' 
       }}>
