@@ -63,10 +63,10 @@ try {
         Write-Host "   Updating $path..." -ForegroundColor Gray
         
         # Performance & Consistency: Use relative paths for Hosting->Functions connectivity
-        $currentApi = $PROD_API_URL
-        if ($path -match "client") { $currentApi = "/api" }
-        
-        Set-EnvVar $path "VITE_API_URL" $currentApi
+        # Use relative paths for production to avoid CORS and multi-domain issues
+        $env:VITE_API_URL = "/api"
+        Write-Host ">>> Building portal with Relative API: $env:VITE_API_URL" -ForegroundColor Cyan
+        Set-EnvVar $path "VITE_API_URL" $env:VITE_API_URL
         Set-EnvVar $path "VITE_APP_VERSION" $DEPLOY_VERSION
         
         foreach ($key in $FIREBASE_PROD.Keys) {

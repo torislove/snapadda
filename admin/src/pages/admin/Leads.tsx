@@ -1,11 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
 import { 
-  MessageSquare, Search, ChevronDown, ChevronUp, Target, Send, 
-  MoreHorizontal, User, Calendar, Building, Bot, Sparkles, AlertCircle, RefreshCcw,
-  Star
+  MessageSquare, Search, Target, 
+  MoreHorizontal, User, Bot, Sparkles, AlertCircle, RefreshCcw,
+  Star, LayoutGrid, List
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Activity, TrendingUp, Zap, Clock, PieChart } from 'lucide-react';
+import { Activity, Zap, Clock } from 'lucide-react';
 import { ConnectivityBanner } from '../../components/ui/ConnectivityBanner';
 import { triggerHaptic } from '../../utils/haptics';
 
@@ -75,7 +75,7 @@ const LeadAIInsight = ({ text }: { text: string }) => {
         onMouseEnter={e => (e.currentTarget.style.background = 'rgba(16,217,140,0.1)')}
         onMouseLeave={e => (e.currentTarget.style.background = 'rgba(16,217,140,0.05)')}
       >
-        <Sparkles size={12} /> GET AI INSIGHT
+        <Sparkles size={12} /> AI ANALYSIS
       </button>
     );
   }
@@ -98,7 +98,7 @@ const LeadAIInsight = ({ text }: { text: string }) => {
         <>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.65rem', fontWeight: 800, color: 'var(--gold)' }}>
-              <Bot size={12} /> GEMMA ANALYTICS
+              <Bot size={12} /> AI REPORT
             </div>
             <span style={{ 
               fontSize: '0.55rem', padding: '1px 6px', borderRadius: '4px',
@@ -189,25 +189,25 @@ const LeadCard = ({ lead, onDelete, onStatusChange, onFlag }: {
       exit={{ opacity: 0, scale: 0.9 }}
       className="glass-card"
       style={{
-        padding: '1.25rem',
-        marginBottom: '1rem',
+        padding: '1rem',
+        marginBottom: '0.75rem',
         opacity: updating ? 0.6 : 1,
         borderLeft: `3px solid ${STATUS_CONFIG[lead.status]?.color || 'var(--violet)'}`
       }}
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
         <div>
-          <div style={{ fontWeight: 700, color: 'white', fontSize: '0.9rem' }}>{lead.name}</div>
+          <div style={{ fontWeight: 800, color: 'white', fontSize: '0.875rem' }}>{lead.name}</div>
           <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
-             <User size={10} style={{ color: 'var(--gold)' }}/> Assigned: {lead.assignedTo || 'Super Admin'}
+             <User size={10} style={{ color: 'var(--gold)' }}/> {lead.assignedTo || 'Super Admin'}
           </div>
         </div>
-        <div style={{ position: 'relative' }}>
+        <div style={{ position: 'relative', display: 'flex', gap: '8px', alignItems: 'center' }}>
           <Star 
-            size={16} 
+            size={14} 
             fill={lead.followUpFlag ? 'var(--gold)' : 'none'} 
-            color={lead.followUpFlag ? 'var(--gold)' : 'var(--text-muted)'} 
-            style={{ cursor: 'pointer', opacity: lead.followUpFlag ? 1 : 0.3 }}
+            color={lead.followUpFlag ? 'var(--gold)' : 'rgba(255,255,255,0.2)'} 
+            style={{ cursor: 'pointer', transition: 'all 0.2s' }}
             onClick={(e) => { 
               e.stopPropagation(); 
               triggerHaptic('light');
@@ -216,9 +216,9 @@ const LeadCard = ({ lead, onDelete, onStatusChange, onFlag }: {
           />
           <button 
             onClick={() => setShowActions(!showActions)}
-            style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}
+            style={{ background: 'rgba(255,255,255,0.05)', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '6px', borderRadius: '8px' }}
           >
-            <MoreHorizontal size={16} />
+            <MoreHorizontal size={14} />
           </button>
           
           <AnimatePresence>
@@ -229,29 +229,27 @@ const LeadCard = ({ lead, onDelete, onStatusChange, onFlag }: {
                 exit={{ opacity: 0, scale: 0.9, y: 10 }}
                 style={{
                   position: 'absolute', top: '100%', right: 0, zIndex: 10,
-                  background: 'rgba(14,14,26,0.95)', backdropFilter: 'blur(10px)',
-                  border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px',
-                  padding: '0.5rem', width: '160px', boxShadow: '0 10px 30px rgba(0,0,0,0.5)'
+                  background: '#0a0a14', backdropFilter: 'blur(20px)',
+                  border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px',
+                  padding: '0.6rem', width: '180px', boxShadow: '0 20px 40px rgba(0,0,0,0.5)'
                 }}
               >
-                <div style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', padding: '0.5rem', borderBottom: '1px solid rgba(255,255,255,0.05)', marginBottom: '0.5rem' }}>Move Status</div>
+                <div style={{ fontSize: '0.6rem', fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', padding: '0.5rem', borderBottom: '1px solid rgba(255,255,255,0.05)', marginBottom: '0.4rem', letterSpacing: '0.1em' }}>Move Pipeline</div>
                 {['New', 'Contacted', 'Qualified', 'Lost'].filter(s => s !== lead.status).map(s => (
                   <button 
                     key={s}
                     onClick={() => handleStatusChange(s)}
-                    style={{ width: '100%', textAlign: 'left', padding: '0.5rem 0.75rem', borderRadius: '8px', border: 'none', background: 'none', color: 'var(--text-secondary)', fontSize: '0.8rem', cursor: 'pointer' }}
+                    style={{ width: '100%', textAlign: 'left', padding: '0.6rem 0.75rem', borderRadius: '10px', border: 'none', background: 'none', color: 'rgba(255,255,255,0.7)', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}
                     onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
                     onMouseLeave={e => (e.currentTarget.style.background = 'none')}
                   >
                     {s}
                   </button>
                 ))}
-                <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.5rem', paddingTop: '0.5rem' }}>
+                <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.4rem', paddingTop: '0.4rem' }}>
                   <button 
                     onClick={() => { if(window.confirm('Delete lead?')) onDelete(lead._id); }}
-                    style={{ width: '100%', textAlign: 'left', padding: '0.5rem 0.75rem', borderRadius: '8px', border: 'none', background: 'none', color: 'var(--rose)', fontSize: '0.8rem', cursor: 'pointer' }}
-                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(245,57,123,0.1)')}
-                    onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+                    style={{ width: '100%', textAlign: 'left', padding: '0.6rem 0.75rem', borderRadius: '10px', border: 'none', background: 'none', color: 'var(--rose)', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}
                   >
                     Delete Lead
                   </button>
@@ -262,40 +260,47 @@ const LeadCard = ({ lead, onDelete, onStatusChange, onFlag }: {
         </div>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-        <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <User size={14} style={{ opacity: 0.6 }} /> {lead.phone}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+        <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)', display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-primary)', fontWeight: 600 }}>
+            📞 {lead.phone}
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-             <span style={{ fontSize: '0.6rem', fontWeight: 800, color: leadScore > 70 ? 'var(--emerald)' : 'var(--text-muted)' }}>SCORE: {leadScore}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+             <span style={{ fontSize: '0.6rem', fontWeight: 900, color: leadScore > 70 ? 'var(--emerald)' : 'var(--text-muted)' }}>{leadScore} Pts</span>
              <div style={{ width: '30px', height: '4px', background: 'rgba(255,255,255,0.05)', borderRadius: '2px', overflow: 'hidden' }}>
                <div style={{ width: `${leadScore}%`, height: '100%', background: leadScore > 70 ? 'var(--emerald)' : 'var(--gold)' }} />
              </div>
           </div>
         </div>
         {lead.propertyId?.title && (
-          <div style={{ fontSize: '0.78rem', color: 'var(--violet)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <Building size={14} /> {lead.propertyId.title}
+          <div style={{ fontSize: '0.75rem', color: 'var(--gold)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
+            🏠 {lead.propertyId.title}
           </div>
         )}
-        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', background: 'rgba(255,255,255,0.03)', padding: '0.5rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
-          {lead.message || 'No specific inquiries.'}
+        <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.4)', background: 'rgba(255,255,255,0.02)', padding: '0.6rem', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.04)', lineHeight: 1.5 }}>
+          {lead.message || 'Standard Inquiry Received.'}
         </div>
         
-        <button 
-          onClick={(e) => { e.stopPropagation(); setShowTimeline(!showTimeline); }}
-          style={{ width: '100%', padding: '6px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.03)', color: 'var(--text-muted)', fontSize: '0.65rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
-        >
-          <Clock size={12} /> {showTimeline ? 'HIDE TIMELINE' : 'VIEW JOURNEY'}
-        </button>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <button 
+            onClick={(e) => { e.stopPropagation(); setShowTimeline(!showTimeline); triggerHaptic('light'); }}
+            style={{ flex: 1, padding: '7px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.03)', color: 'rgba(255,255,255,0.6)', fontSize: '0.65rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+          >
+            <Clock size={12} /> {showTimeline ? 'HIDE' : 'HISTORY'}
+          </button>
+          <a 
+            href={`tel:${lead.phone}`}
+            style={{ flex: 1, textDecoration: 'none', padding: '7px', borderRadius: '10px', border: '1px solid var(--emerald)', background: 'rgba(16,217,140,0.1)', color: 'var(--emerald)', fontSize: '0.65rem', fontWeight: 800, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          >
+            CALL NOW
+          </a>
+        </div>
 
         {showTimeline && <LeadTimeline lead={lead} />}
-        
         {lead.message && <LeadAIInsight text={lead.message} />}
 
-        <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
-          <Calendar size={12} /> {new Date(lead.createdAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
+        <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.25)', fontWeight: 600, marginTop: '2px' }}>
+          {new Date(lead.createdAt).toLocaleDateString()} at {new Date(lead.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
         </div>
       </div>
     </motion.div>
@@ -325,57 +330,48 @@ const InquiryCard = ({ inq, onAnswer }: { inq: any; onAnswer: (id: string, text:
       style={{
         overflow: 'hidden',
         borderLeft: `4px solid ${isPending ? 'var(--orange)' : 'var(--emerald)'}`,
-        background: isPending ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.015)'
+        background: isPending ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.015)',
+        marginBottom: '0.75rem'
       }}
     >
-      {/* Card header — always visible */}
       <div
-        onClick={() => setExpanded(e => !e)}
-        style={{ padding: '1.25rem', cursor: 'pointer', display: 'flex', gap: '1rem', alignItems: 'flex-start' }}
+        onClick={() => { setExpanded(e => !e); triggerHaptic('light'); }}
+        style={{ padding: '1rem', cursor: 'pointer', display: 'flex', gap: '0.875rem', alignItems: 'flex-start' }}
       >
         <div style={{
-          width: '42px', height: '42px', borderRadius: '12px', flexShrink: 0,
+          width: '38px', height: '38px', borderRadius: '10px', flexShrink: 0,
           background: isPending ? 'rgba(255,140,66,0.1)' : 'rgba(16,217,140,0.1)',
           color: isPending ? '#ff8c42' : '#10d98c',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          boxShadow: `0 0 15px ${isPending ? 'rgba(255,140,66,0.1)' : 'rgba(16,217,140,0.1)'}`
         }}>
-          <MessageSquare size={18} />
+          <MessageSquare size={16} />
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.3rem' }}>
-            <div style={{ fontWeight: 700, color: 'white', fontSize: '0.95rem' }}>{inq.clientName || 'Market Inquirer'}</div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.4rem', marginBottom: '0.2rem' }}>
+            <div style={{ fontWeight: 800, color: 'white', fontSize: '0.9rem' }}>{inq.clientName || 'Inquirer'}</div>
             <StatusBadge status={inq.status || 'Pending'} />
           </div>
-          <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem', display: 'flex', flexWrap: 'wrap', gap: '1rem' }}>
-            {inq.clientContact && <span>📞 {inq.clientContact}</span>}
-            {inq.propertyId?.title && <span style={{ color: 'var(--violet)' }}>🏠 {inq.propertyId.title}</span>}
+          <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', marginBottom: '0.4rem' }}>
+            📞 {inq.clientContact}
           </div>
-          <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', fontStyle: 'italic', background: 'rgba(255,255,255,0.03)', padding: '0.75rem', borderRadius: '8px' }}>
+          <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)', fontStyle: 'italic', background: 'rgba(255,255,255,0.02)', padding: '0.6rem', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.03)' }}>
             "{inq.question}"
           </div>
         </div>
-        <div style={{ color: 'var(--text-muted)', marginTop: '4px' }}>
-          {expanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-        </div>
       </div>
 
-      {/* Expanded body */}
       <AnimatePresence>
         {expanded && (
           <motion.div 
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            style={{ borderTop: '1px solid rgba(255,255,255,0.05)', padding: '1.25rem', background: 'rgba(0,0,0,0.2)' }}
+            style={{ borderTop: '1px solid rgba(255,255,255,0.05)', padding: '1rem', background: 'rgba(0,0,0,0.2)' }}
           >
             {inq.answer ? (
-              <div style={{
-                background: 'rgba(16,217,140,0.06)', border: '1px solid rgba(16,217,140,0.15)',
-                borderRadius: '12px', padding: '1rem',
-              }}>
-                <p style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--emerald)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>✓ Official Response</p>
-                <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>{inq.answer}</p>
+              <div style={{ background: 'rgba(16,217,140,0.05)', border: '1px solid rgba(16,217,140,0.1)', borderRadius: '10px', padding: '0.875rem' }}>
+                <p style={{ fontSize: '0.6rem', fontWeight: 900, color: 'var(--emerald)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>OFFICIAL RESPONSE</p>
+                <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', lineHeight: 1.5 }}>{inq.answer}</p>
               </div>
             ) : (
               <div>
@@ -383,20 +379,16 @@ const InquiryCard = ({ inq, onAnswer }: { inq: any; onAnswer: (id: string, text:
                   value={answerText}
                   onChange={e => setAnswerText(e.target.value)}
                   rows={4}
-                  placeholder="Provide a formal response to this inquiry..."
+                  placeholder="Draft your professional response..."
                   style={{
-                    width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)',
-                    color: 'var(--text-primary)', borderRadius: '12px', padding: '1rem',
-                    fontSize: '0.9rem', outline: 'none', resize: 'none', marginBottom: '1rem',
-                    fontFamily: 'var(--font-body)',
+                    width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+                    color: 'white', borderRadius: '12px', padding: '0.875rem',
+                    fontSize: '0.875rem', outline: 'none', resize: 'none', marginBottom: '0.875rem',
                   }}
                 />
-                <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
-                  <button type="button" onClick={() => setExpanded(false)} className="btn btn-ghost btn-sm">
-                    Cancel
-                  </button>
-                  <button type="button" onClick={handleSave} disabled={saving || !answerText.trim()} className="btn btn-violet btn-sm">
-                    {saving ? 'Transmitting...' : <><Send size={14} /> Send Official Answer</>}
+                <div style={{ display: 'flex', gap: '0.6rem', justifyContent: 'flex-end' }}>
+                  <button type="button" onClick={handleSave} disabled={saving || !answerText.trim()} className="btn btn-violet btn-sm" style={{ padding: '0.6rem 1.2rem', borderRadius: '10px', fontSize: '0.75rem' }}>
+                    {saving ? 'SENDING...' : 'TRANSMIT ANSWER'}
                   </button>
                 </div>
               </div>
@@ -419,7 +411,7 @@ const ActivityPulse = () => {
   return (
     <div className="glass-card" style={{ padding: '1.5rem', width: '300px', flexShrink: 0, height: 'fit-content', position: 'sticky', top: '2rem' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1.5rem', color: 'var(--gold)', fontSize: '0.75rem', fontWeight: 900, letterSpacing: '0.1em' }}>
-        <Activity size={16} className="pulse-primary" /> INSTITUTIONAL PULSE
+        <Activity size={16} className="pulse-primary" /> LIVE ACTIVITY
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
         {activities.map((a, i) => (
@@ -447,6 +439,7 @@ const AdminLeads = () => {
   const [inquiries, setInquiries] = useState<any[]>([]);
   const [leads, setLeads] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<'Inquiries' | 'Leads'>('Leads');
+  const [viewMode, setViewMode] = useState<'Kanban' | 'List'>('Kanban');
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [districtFilter, setDistrictFilter] = useState('All');
@@ -536,85 +529,74 @@ const AdminLeads = () => {
   const newLeadsCount = leads.filter(l => l.status === 'New').length;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', paddingBottom: '5rem' }}>
       <ConnectivityBanner />
 
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1.5rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
-          <div style={{ fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--emerald)', marginBottom: '0.5rem', fontFamily: 'var(--font-mono)' }}>✦ CRM INTELLIGENCE</div>
-          <h1 style={{ fontSize: '2.4rem', fontWeight: 800, background: 'linear-gradient(135deg,#10d98c,#22d9e0)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: '0.3rem', fontFamily: 'var(--font-heading)' }}>Leads & CRM</h1>
-          <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Real-time conversion pipeline and client communication matrix.</p>
+          <div style={{ fontSize: '0.65rem', fontWeight: 900, letterSpacing: '0.2rem', textTransform: 'uppercase', color: 'var(--emerald)', marginBottom: '0.4rem', fontFamily: 'var(--font-mono)' }}>✦ CRM HUB</div>
+          <h1 style={{ fontSize: '2.2rem', fontWeight: 900, background: 'linear-gradient(135deg,#fff,#10d98c)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: '0.2rem', fontFamily: 'var(--font-heading)', letterSpacing: '-0.02em' }}>Management</h1>
+        </div>
+        <div style={{ display: 'flex', gap: '0.5rem', background: 'rgba(255,255,255,0.03)', padding: '4px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+          <button 
+            onClick={() => { setViewMode('Kanban'); triggerHaptic('light'); }}
+            style={{ padding: '8px 12px', borderRadius: '8px', border: 'none', background: viewMode === 'Kanban' ? 'rgba(255,255,255,0.1)' : 'transparent', color: viewMode === 'Kanban' ? 'white' : 'rgba(255,255,255,0.3)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', fontWeight: 700 }}
+          >
+            <LayoutGrid size={14} /> Kanban
+          </button>
+          <button 
+            onClick={() => { setViewMode('List'); triggerHaptic('light'); }}
+            style={{ padding: '8px 12px', borderRadius: '8px', border: 'none', background: viewMode === 'List' ? 'rgba(255,255,255,0.1)' : 'transparent', color: viewMode === 'List' ? 'white' : 'rgba(255,255,255,0.3)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', fontWeight: 700 }}
+          >
+            <List size={14} /> List
+          </button>
         </div>
       </div>
 
-      {/* Dash Stats Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
-         <div className="glass-card" style={{ padding: '1.75rem', borderTop: '3px solid var(--emerald)' }}>
-            <div style={{ color: 'var(--emerald)', marginBottom: '0.75rem' }}><TrendingUp size={22} /></div>
-            <div style={{ fontSize: '1.75rem', fontWeight: 900, color: 'white', fontFamily: 'var(--font-heading)' }}>₹2.4 Cr</div>
-            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 800, letterSpacing: '0.1em' }}>PIPELINE ALPHA</div>
-         </div>
-         <div className="glass-card" style={{ padding: '1.75rem', borderTop: '3px solid var(--violet)' }}>
-            <div style={{ color: 'var(--violet)', marginBottom: '0.75rem' }}><Zap size={22} /></div>
-            <div style={{ fontSize: '1.75rem', fontWeight: 900, color: 'white', fontFamily: 'var(--font-heading)' }}>88%</div>
-            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 800, letterSpacing: '0.1em' }}>CONVERSION VELOCITY</div>
-         </div>
-         <div className="glass-card" style={{ padding: '1.75rem', borderTop: '3px solid var(--gold)' }}>
-            <div style={{ color: 'var(--gold)', marginBottom: '0.75rem' }}><PieChart size={22} /></div>
-            <div style={{ fontSize: '1.75rem', fontWeight: 900, color: 'white', fontFamily: 'var(--font-heading)' }}>{leads.length}</div>
-            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 800, letterSpacing: '0.1em' }}>STRATEGIC NODES</div>
-         </div>
-         <div className="glass-card" style={{ padding: '1.75rem', borderTop: '3px solid var(--rose)' }}>
-            <div style={{ color: 'var(--rose)', marginBottom: '0.75rem' }}><Clock size={22} /></div>
-            <div style={{ fontSize: '1.75rem', fontWeight: 900, color: 'white', fontFamily: 'var(--font-heading)' }}>1.2h</div>
-            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 800, letterSpacing: '0.1em' }}>SIGNAL LATENCY</div>
-         </div>
-      </div>
-
       {/* Tabs / Filters Panel */}
-      <div className="glass-card" style={{ padding: '1.25rem', border: '1px solid rgba(255,255,255,0.05)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1.5rem' }}>
-          <div style={{ display: 'flex', gap: '0.4rem', background: 'rgba(255,255,255,0.03)', padding: '0.4rem', borderRadius: '12px', width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+      <div className="glass-card" style={{ padding: '1rem', border: '1px solid rgba(255,255,255,0.05)' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <div style={{ display: 'flex', gap: '0.4rem', background: 'rgba(255,255,255,0.03)', padding: '0.3rem', borderRadius: '14px', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
             {[
               { id: 'Leads', icon: Target, label: 'Leads', color: 'var(--emerald)', count: newLeadsCount },
               { id: 'Inquiries', icon: MessageSquare, label: 'Inquiries', color: 'var(--violet)', count: pendingInqCount }
             ].map(tab => (
               <button 
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
+                onClick={() => { setActiveTab(tab.id as any); triggerHaptic('light'); }}
                 style={{
-                  background: activeTab === tab.id ? 'rgba(255,255,255,0.07)' : 'transparent',
-                  border: activeTab === tab.id ? '1px solid rgba(255,255,255,0.1)' : '1px solid transparent',
-                  padding: '0.5rem 1rem', borderRadius: '10px', cursor: 'pointer',
-                  color: activeTab === tab.id ? 'white' : 'var(--text-muted)',
-                  fontWeight: 700, fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '8px',
-                  transition: 'all 0.2s', flexShrink: 0
+                  background: activeTab === tab.id ? 'rgba(255,255,255,0.08)' : 'transparent',
+                  border: 'none',
+                  padding: '0.6rem 1.25rem', borderRadius: '12px', cursor: 'pointer',
+                  color: activeTab === tab.id ? 'white' : 'rgba(255,255,255,0.3)',
+                  fontWeight: 800, fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '10px',
+                  transition: 'all 0.2s', flex: 1, justifyContent: 'center'
                 }}
               >
-                <tab.icon size={14} /> {tab.label}
-                {tab.count > 0 && <span style={{ background: tab.color, color: 'black', borderRadius: '6px', padding: '1px 6px', fontSize: '0.6rem' }}>{tab.count}</span>}
+                <tab.icon size={16} /> {tab.label}
+                {tab.count > 0 && <span style={{ background: tab.color, color: 'black', borderRadius: '6px', padding: '1px 6px', fontSize: '0.6rem', fontWeight: 900 }}>{tab.count}</span>}
               </button>
             ))}
           </div>
 
-          <div style={{ display: 'flex', gap: '0.75rem', flex: 1, justifyContent: 'flex-start', width: '100%', flexWrap: 'wrap' }}>
-             <div className="search-input-wrap" style={{ flex: 1, minWidth: '180px' }}>
-                <Search size={14} />
+          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+             <div className="search-input-wrap" style={{ flex: 1, minWidth: '180px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '14px', display: 'flex', alignItems: 'center', padding: '0 1rem' }}>
+                <Search size={14} style={{ opacity: 0.4 }} />
                 <input
                   type="text"
-                  placeholder={`Search...`}
+                  placeholder={`Search registry...`}
                   value={search}
                   onChange={e => setSearch(e.target.value)}
-                  style={{ fontSize: '0.85rem' }}
+                  style={{ border: 'none', background: 'none', color: 'white', padding: '12px', fontSize: '0.9rem', width: '100%', outline: 'none' }}
                 />
               </div>
               <select 
                 value={districtFilter}
                 onChange={e => setDistrictFilter(e.target.value)}
-                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: '10px', padding: '0 0.75rem', fontSize: '0.8rem', fontWeight: 700, outline: 'none', minHeight: '44px' }}
+                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', color: 'white', borderRadius: '14px', padding: '0 1rem', fontSize: '0.85rem', fontWeight: 700, outline: 'none', minHeight: '48px', appearance: 'none', cursor: 'pointer' }}
               >
-                <option value="All">Districts</option>
+                <option value="All">All Districts</option>
                 <option value="Vijayawada">Vijayawada</option>
                 <option value="Amaravati">Amaravati</option>
                 <option value="Visakhapatnam">Visakhapatnam</option>
@@ -626,49 +608,49 @@ const AdminLeads = () => {
       </div>
 
       {/* Main Content Area */}
-      <div style={{ display: 'flex', gap: '2rem', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: '2rem', alignItems: 'flex-start' }}>
         <div style={{ flex: 1, minWidth: 0 }}>
         {loading ? (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.25rem' }}>
-            {[1,2,3,4].map(i => <div key={i} style={{ height: '300px', borderRadius: '18px', background: 'var(--bg-glass)', border: '1px solid var(--border)', animation: 'pulse 1.5s infinite' }} />)}
+            {[1,2,3,4].map(i => <div key={i} style={{ height: '240px', borderRadius: '20px', background: 'var(--bg-glass)', border: '1px solid var(--border)', animation: 'pulse 1.5s infinite' }} />)}
           </div>
         ) : (activeTab === 'Leads' ? (
-          /* Kanban Board View */
-          <div className="kanban-scroll-container" style={{ 
-            display: 'flex', 
-            gap: '1.5rem', 
-            overflowX: 'auto', 
-            paddingBottom: '1rem',
-            minHeight: '600px',
-            WebkitOverflowScrolling: 'touch'
-          }}>
-            {['New', 'Contacted', 'Qualified', 'Lost'].map(status => {
-              const columnLeads = filteredLeads.filter(l => (l.status || 'New') === status);
-              return (
-                <div key={status} style={{ minWidth: '280px', flex: 1 }}>
-                  <div style={{ 
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center', 
-                    padding: '0.75rem 1rem', marginBottom: '1.25rem', 
-                    background: 'rgba(255,255,255,0.03)', borderRadius: '12px',
-                    border: '1px solid rgba(255,255,255,0.05)',
-                    position: 'sticky', top: 0, zIndex: 5, backdropFilter: 'blur(10px)'
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: STATUS_CONFIG[status].color }} />
-                      <span style={{ fontWeight: 800, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{status}</span>
+          viewMode === 'Kanban' ? (
+            /* Kanban Board View */
+            <div className="kanban-scroll-container" style={{ 
+              display: 'flex', 
+              gap: '1rem', 
+              overflowX: 'auto', 
+              paddingBottom: '1rem',
+              minHeight: '600px',
+              WebkitOverflowScrolling: 'touch'
+            }}>
+              {['New', 'Contacted', 'Qualified', 'Lost'].map(status => {
+                const columnLeads = filteredLeads.filter(l => (l.status || 'New') === status);
+                return (
+                  <div key={status} style={{ minWidth: '280px', maxWidth: '320px', flex: 1 }}>
+                    <div style={{ 
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center', 
+                      padding: '0.875rem 1.25rem', marginBottom: '1rem', 
+                      background: 'rgba(255,255,255,0.02)', borderRadius: '16px',
+                      border: '1px solid rgba(255,255,255,0.04)',
+                      position: 'sticky', top: 0, zIndex: 5, backdropFilter: 'blur(10px)'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: STATUS_CONFIG[status].color, boxShadow: `0 0 10px ${STATUS_CONFIG[status].color}` }} />
+                        <span style={{ fontWeight: 900, fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{status}</span>
+                      </div>
+                      <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.75rem', fontWeight: 800 }}>{columnLeads.length}</span>
                     </div>
-                    <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 600 }}>{columnLeads.length}</span>
-                  </div>
-                  
-                  <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <AnimatePresence>
-                      {columnLeads.length === 0 ? (
-                        <div style={{ padding: '2rem', textAlign: 'center', opacity: 0.3, border: '1px dashed rgba(255,255,255,0.1)', borderRadius: '14px' }}>
-                          <span style={{ fontSize: '0.7rem' }}>Empty Column</span>
-                        </div>
-                      ) : (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                          {filteredLeads.filter(l => (l.status || 'New') === status).map(lead => (
+                    
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                      <AnimatePresence>
+                        {columnLeads.length === 0 ? (
+                          <div style={{ padding: '3rem 1rem', textAlign: 'center', opacity: 0.2, border: '2px dashed rgba(255,255,255,0.05)', borderRadius: '20px' }}>
+                            <span style={{ fontSize: '0.65rem', fontWeight: 700 }}>RESTING</span>
+                          </div>
+                        ) : (
+                          columnLeads.map(lead => (
                             <LeadCard 
                               key={lead._id} 
                               lead={lead} 
@@ -676,27 +658,44 @@ const AdminLeads = () => {
                               onStatusChange={updateLeadStatus}
                               onFlag={updateLeadFlag}
                             />
-                          ))}
-                        </div>
-                      )}
-                    </AnimatePresence>
+                          ))
+                        )}
+                      </AnimatePresence>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          ) : (
+            /* List View for Leads */
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+               {filteredLeads.length === 0 ? (
+                 <div style={{ padding: '5rem', textAlign: 'center', background: 'rgba(255,255,255,0.02)', borderRadius: '24px' }}>
+                   <p style={{ opacity: 0.3 }}>No leads found.</p>
+                 </div>
+               ) : (
+                 filteredLeads.map(lead => (
+                   <LeadCard 
+                      key={lead._id} 
+                      lead={lead} 
+                      onDelete={deleteLead} 
+                      onStatusChange={updateLeadStatus}
+                      onFlag={updateLeadFlag}
+                   />
+                 ))
+               )}
+            </div>
+          )
         ) : (
           /* Inquiries List View */
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(340px, 100%), 1fr))', gap: '1rem' }}>
             {filteredInquiries.length === 0 ? (
-              <div style={{ padding: '5rem', textAlign: 'center', background: 'var(--bg-glass)', borderRadius: '24px', border: '1px dashed var(--border)' }}>
-                <MessageSquare size={50} style={{ opacity: 0.1, marginBottom: '1.5rem', color: 'var(--violet)' }} />
-                <p style={{ color: 'var(--text-muted)' }}>No signals detected.</p>
+              <div style={{ padding: '5rem', textAlign: 'center', background: 'rgba(255,255,255,0.02)', borderRadius: '24px', gridColumn: '1 / -1' }}>
+                <MessageSquare size={40} style={{ opacity: 0.1, marginBottom: '1rem', color: 'var(--violet)' }} />
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Registry is empty.</p>
               </div>
             ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.25rem' }}>
-                {filteredInquiries.map(inq => <InquiryCard key={inq._id} inq={inq} onAnswer={submitAnswer} />)}
-              </div>
+              filteredInquiries.map(inq => <InquiryCard key={inq._id} inq={inq} onAnswer={submitAnswer} />)
             )}
           </div>
         ))}

@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { fetchProperties, createProperty, updateProperty, deleteProperty, uploadMedia } from '../../../services/api';
 import { adminAIService } from '../../../services/aiService';
+import { toast } from 'react-hot-toast';
 
 export const usePropertyManager = () => {
   const [properties, setProperties] = useState<any[]>([]);
@@ -160,6 +161,7 @@ export const usePropertyManager = () => {
         const uploadResult = await uploadMedia(newImageFiles);
         if (uploadResult.status === 'success') {
           uploadedUrls = [...uploadedUrls, ...uploadResult.data];
+          toast.success(`${newImageFiles.length} media files uploaded!`);
         } else {
           throw new Error(uploadResult.message || 'Media server rejected the files');
         }
@@ -200,15 +202,17 @@ export const usePropertyManager = () => {
 
       if (isEditing && editingProperty) {
         await updateProperty(editingProperty._id || editingProperty.id, payload);
+        toast.success("Listing updated!");
       } else {
         await createProperty(payload);
+        toast.success("Listing published live!");
       }
       
       loadProperties();
       handleCloseForm();
     } catch (err: any) {
       console.error("Save failed:", err);
-      alert(`FAILED: ${err.message}`);
+      toast.error(`Error: ${err.message}`);
     } finally {
       setIsUploading(false);
     }

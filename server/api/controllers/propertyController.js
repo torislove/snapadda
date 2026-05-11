@@ -3,6 +3,7 @@ import { db } from '../firebase.js';
 import SiteSetting from '../models/SiteSetting.js';
 import { getCitiesNearby } from '../data/apCoordinates.js';
 import { getCached, setCached, invalidateCache, buildCacheKey } from '../cache/propertyCache.js';
+import { cleanPropertyData } from '../utils/propertyCleaner.js';
 
 // Lean projection for card list views (avoids fetching 50+ unused fields)
 const CARD_FIELDS = 'title price priceDisplay pricePerUnit pricePerAcre totalAcres location district type purpose subType images image status isVerified isFeatured bhk beds baths areaSize measurementUnit facing furnishing constructionStatus approvalAuthority isGated vastuCompliant listerType propertyCode createdAt likeCount';
@@ -245,81 +246,8 @@ export const getNearbyProperties = async (req, res) => {
 // Create a new property
 export const createProperty = async (req, res) => {
   try {
-    let propertyData = { ...req.body };
-
-    // 1. CLEANUP: Ensure basic sanitization for incoming data
-    Object.keys(propertyData).forEach(key => {
-      if (propertyData[key] === null || propertyData[key] === undefined) {
-        delete propertyData[key];
-      }
-    });
-
-    // 2. NUMERIC SANITIZATION: Parse numeric fields from form strings
-    const numericFields = ['price', 'pricePerUnit', 'pricePerAcre', 'totalAcres', 'areaSize', 'bhk', 'beds', 'baths', 'totalFloors', 'floorNo', 'carpetArea', 'superBuiltupArea', 'roadWidth'];
-    numericFields.forEach(f => {
-      if (propertyData[f] !== undefined && propertyData[f] !== null && propertyData[f] !== '') {
-        propertyData[f] = Number(propertyData[f]);
-        if (isNaN(propertyData[f])) propertyData[f] = 0;
-      } else {
-        propertyData[f] = 0; // Default to 0 for any missing/empty numeric field
-      }
-    });
-
-    // 3. BOOLEAN PARSING
-    const boolFields = ['isVerified', 'isFeatured', 'vastuCompliant', 'isGated', 'cornerProperty', 'boundaryWall'];
-    boolFields.forEach(f => {
-      if (propertyData[f] !== undefined) {
-        propertyData[f] = propertyData[f] === true || propertyData[f] === 'true';
-      } else {
-        propertyData[f] = false;
-      }
-    });
-
-    // 4. ID SANITIZATION: Clean up potential ObjectId fields if they are empty strings
-    const idFields = ['cityId', 'franchiseId'];
-    idFields.forEach(f => {
-      if (propertyData[f] === '' || propertyData[f] === 'null' || propertyData[f] === 'undefined') {
-        delete propertyData[f];
-      }
-    });
-
-    // 4. JSON PARSING for complex fields
-    if (typeof propertyData.customFeatures === 'string' && propertyData.customFeatures.trim() !== '') {
-      try { propertyData.customFeatures = JSON.parse(propertyData.customFeatures); } catch { propertyData.customFeatures = []; }
-    }
-    if (typeof propertyData.amenities === 'string' && propertyData.amenities.trim() !== '') {
-      try { propertyData.amenities = JSON.parse(propertyData.amenities); } catch { propertyData.amenities = []; }
-    }
-
-    // 5. SMART DEFAULTS based on type
-    const landTypes = ['Agricultural Land', 'CRDA Approved Plot', 'Open Plot', 'Farmhouse', 'Residential Plot', 'Commercial Plot', 'Open Plot', 'Layout Plot'];
-    const industrialTypes = ['Industrial Shed', 'Warehouse', 'Factory / Unit'];
+    const propertyData = cleanPropertyData(req.body, false);
     
-    if (landTypes.includes(propertyData.type)) {
-      propertyData.measurementUnit = propertyData.measurementUnit || (propertyData.type === 'Agricultural Land' ? 'Acres' : 'Sq.Yards');
-      propertyData.bhk = propertyData.bhk || 0;
-      propertyData.furnishing = propertyData.furnishing || 'N/A';
-    } else if (industrialTypes.includes(propertyData.type)) {
-      propertyData.measurementUnit = propertyData.measurementUnit || 'SqFt';
-      propertyData.bhk = propertyData.bhk || 0;
-    }
-
-    // 6. VERIFICATION SYNC
-    if (!propertyData.verificationStatus) {
-      propertyData.verificationStatus = propertyData.isVerified ? 'Verified' : 'Under Review';
-    }
-
-    // 7. AUTO DESCRIPTION (Institutional Grade)
-    if (!propertyData.description || propertyData.description.trim() === '') {
-      const { type, purpose, bhk, furnishing, facing, location, district } = propertyData;
-      let generatedDesc = `A premium ${type || 'property'} located in ${location || 'Andhra Pradesh'}${district ? ', ' + district : ''}. `;
-      if (bhk > 0) generatedDesc += `This ${bhk} BHK asset is optimized for modern living and available for ${purpose || 'Sale'}. `;
-      if (furnishing && furnishing !== 'N/A') generatedDesc += `The property is ${furnishing} and maintained to high standards. `;
-      if (facing && facing !== 'Any') generatedDesc += `Strategically ${facing}-facing to maximize natural lighting and ventilation. `;
-      generatedDesc += `Ideal investment opportunity with high regional liquidity. Contact SnapAdda for a private site visit.`;
-      propertyData.description = generatedDesc;
-    }
-
     const newProperty = new Property(propertyData);
     await newProperty.save();
     
@@ -332,12 +260,10 @@ export const createProperty = async (req, res) => {
     res.status(201).json({ status: 'success', data: newProperty });
   } catch (error) {
     console.error('CREATE_PROPERTY_ERROR:', error);
-    // Return detailed error if in dev, but always return status 400 for validation issues
     res.status(400).json({ 
       status: 'error', 
       message: 'Property Validation Failed', 
-      details: error.message,
-      tip: 'Check if all numeric fields (Price, Area) are valid numbers and no special characters are in ID fields.'
+      details: error.message 
     });
   }
 };
@@ -377,44 +303,7 @@ export const getPropertyById = async (req, res) => {
 // Update a property
 export const updateProperty = async (req, res) => {
   try {
-    let updateData = { ...req.body };
-
-    // 1. CLEANUP: Ensure no empty strings for enum fields
-    const enumFields = [
-      'condition', 'furnishing', 'constructionStatus', 'propertyAge', 
-      'transactionType', 'parking', 'waterSupply', 'electricityStatus', 
-      'ownershipType', 'overlooking', 'status', 'verificationStatus'
-    ];
-    enumFields.forEach(f => {
-      if (updateData[f] === '' || updateData[f] === null) {
-        delete updateData[f];
-      }
-    });
-
-    // 2. NUMERIC SANITIZATION
-    const numericFields = ['price', 'pricePerUnit', 'pricePerAcre', 'totalAcres', 'areaSize', 'bhk', 'beds', 'baths', 'totalFloors', 'floorNo', 'carpetArea', 'superBuiltupArea', 'roadWidth'];
-    numericFields.forEach(f => {
-      if (updateData[f] !== undefined && updateData[f] !== null && updateData[f] !== '') {
-        updateData[f] = Number(updateData[f]);
-        if (isNaN(updateData[f])) delete updateData[f];
-      }
-    });
-
-    // 3. BOOLEAN PARSING
-    const boolFields = ['isVerified', 'isFeatured', 'vastuCompliant', 'isGated', 'cornerProperty', 'boundaryWall'];
-    boolFields.forEach(f => {
-      if (updateData[f] !== undefined) {
-        updateData[f] = updateData[f] === true || updateData[f] === 'true';
-      }
-    });
-
-    // 4. JSON PARSING
-    if (typeof updateData.customFeatures === 'string' && updateData.customFeatures.trim() !== '') {
-      try { updateData.customFeatures = JSON.parse(updateData.customFeatures); } catch { delete updateData.customFeatures; }
-    }
-    if (typeof updateData.amenities === 'string' && updateData.amenities.trim() !== '') {
-      try { updateData.amenities = JSON.parse(updateData.amenities); } catch { delete updateData.amenities; }
-    }
+    const updateData = cleanPropertyData(req.body, false);
 
     const property = await Property.findByIdAndUpdate(req.params.id, updateData, { new: true, runValidators: true });
     if (!property) return res.status(404).json({ message: 'Property not found' });
@@ -564,22 +453,8 @@ export const getEngagementStats = async (req, res) => {
 
 export const publicSubmitProperty = async (req, res) => {
   try {
-    const data = req.body;
-    const propertyData = {
-      ...data,
-      status: 'Pending',
-      verificationStatus: 'Draft',
-      isVerified: false,
-      isFeatured: false,
-      submittedBy: data.submittedBy || null,
-      submissionMetadata: {
-        submittedAt: new Date(),
-        source: 'Public Portal',
-        posterName: data.posterName || 'Unknown',
-        posterPhone: data.posterPhone || 'Unknown'
-      }
-    };
-
+    const propertyData = cleanPropertyData(req.body, true);
+    
     const property = new Property(propertyData);
     await property.save();
     

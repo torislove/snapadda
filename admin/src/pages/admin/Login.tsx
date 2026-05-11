@@ -4,8 +4,6 @@ import { useAdminAuth } from '../../contexts/AdminAuthContext';
 import { KeyRound, Mail, Loader2, Eye, EyeOff, ShieldCheck } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Logo } from '../../components/ui/Logo';
-import { GoogleLogin } from '@react-oauth/google';
-import { jwtDecode } from 'jwt-decode';
 import './Login.css';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
@@ -31,8 +29,12 @@ const AdminLogin = () => {
     setIsLoading(true);
     setError('');
 
+    // Force absolute path if we detect we're on snapaddaadmin.web.app but fetch is failing
+    const targetUrl = `${API_URL}/admin/login`;
+    
     try {
-      const res = await fetch(`${API_URL}/admin/login`, {
+      console.log(`ATTEMPTING_LOGIN: ${targetUrl}`);
+      const res = await fetch(targetUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -45,40 +47,36 @@ const AdminLogin = () => {
       } else {
         setError(data.message || 'Authentication Failed');
       }
-    } catch (err) {
-      setError('Network Error. Ensure backend is running.');
+    } catch (err: any) {
+      console.error('LOGIN_NETWORK_ERROR:', err);
+      
+      // Fallback: If relative /api fails, try talking to the main domain directly
+      if (API_URL === '/api') {
+        try {
+          setError('Retrying via primary node...');
+          const fallbackUrl = `https://snapadda-7a6e6.web.app/api/admin/login`;
+          const res = await fetch(fallbackUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password }),
+          });
+          const data = await res.json();
+          if (res.ok && data.token) {
+            adminLogin(data.user, data.token);
+            navigate('/admin');
+            return;
+          }
+        } catch (fErr) {
+          console.error('FALLBACK_FAILED:', fErr);
+        }
+      }
+      
+      setError(`Network Error. Backend unreachable at ${targetUrl}. Check your connection.`);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleGoogleSuccess = async (credentialResponse: any) => {
-    setIsLoading(true);
-    setError('');
-    try {
-      const decoded: any = jwtDecode(credentialResponse.credential);
-      // We use the same user/authGoogle endpoint but check for 'admin' role in the backend
-      const res = await fetch(`${API_URL}/users/auth`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ payload: decoded }),
-      });
-      const data = await res.json();
-      
-      if (data.status === 'success') {
-        if (data.user.role === 'admin') {
-          adminLogin(data.user, credentialResponse.credential);
-          navigate('/admin');
-        } else {
-          setError('Unauthorized: System identifies you as a client account.');
-        }
-      }
-    } catch (err) {
-      setError('Google verification failed.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   return (
     <div className="admin-login-page">
@@ -126,31 +124,6 @@ const AdminLogin = () => {
             {error}
           </motion.div>
         )}
-
-        {/* Google Login Section */}
-        <motion.div 
-          className="mb-8"
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-        >
-          <div className="google-btn-container">
-            <GoogleLogin
-              onSuccess={handleGoogleSuccess}
-              onError={() => setError('Google Authentication Failed')}
-              theme="filled_black"
-              shape="circle"
-              size="large"
-              width="100%"
-            />
-          </div>
-          
-          <div className="flex items-center gap-4 my-8">
-            <div className="flex-1 h-px bg-white/5" />
-            <span className="text-[10px] text-gray-600 font-bold uppercase tracking-[0.2em]">Or use secondary keys</span>
-            <div className="flex-1 h-px bg-white/5" />
-          </div>
-        </motion.div>
 
         <form onSubmit={handleLogin} className="space-y-6">
           <motion.div 
@@ -208,7 +181,7 @@ const AdminLogin = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.7 }}
           >
-            {isLoading ? <Loader2 className="animate-spin" size={20} /> : 'Initialize Session'}
+            {isLoading ? <Loader2 className="animate-spin" size={20} /> : 'LOGIN'}
           </motion.button>
         </form>
       </motion.div>

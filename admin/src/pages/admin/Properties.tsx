@@ -26,7 +26,7 @@ const AdminProperties = () => {
       {/* Header Section */}
       <div className="flex-row-mobile-stack" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1.5rem' }}>
         <div>
-          <div style={{ fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.18em', color: 'var(--gold)', marginBottom: '0.6rem', fontFamily: 'var(--font-mono)' }}>✦ ASSET INTELLIGENCE</div>
+          <div style={{ fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.18em', color: 'var(--gold)', marginBottom: '0.6rem', fontFamily: 'var(--font-mono)' }}>✦ PROPERTY REGISTRY</div>
           <h1 style={{ 
             lineHeight: 1.2, 
             fontWeight: 800, 
@@ -37,9 +37,9 @@ const AdminProperties = () => {
             fontFamily: 'var(--font-heading)', 
             letterSpacing: '-0.02em' 
           }}>
-            Property Command
+            All Assets
           </h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', maxWidth: '600px' }}>Simple management of property assets across the SnapAdda regional network.</p>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', maxWidth: '600px' }}>Unified view of all property assets across the SnapAdda network.</p>
         </div>
         {!manager.isAdding && (
           <div className="flex-row-mobile-stack" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
@@ -48,21 +48,21 @@ const AdminProperties = () => {
               className="btn btn-ghost" 
               style={{ padding: '0.6rem 1.2rem', borderRadius: '12px', fontSize: '0.8rem', border: '1px solid var(--violet)', color: 'var(--violet)' }}
             >
-              + ADD FLAT
+              + NEW FLAT
             </button>
             <button 
               onClick={() => { manager.setLiveData({ type: 'Agricultural Land' }); manager.setIsAdding(true); }}
               className="btn btn-ghost" 
               style={{ padding: '0.6rem 1.2rem', borderRadius: '12px', fontSize: '0.8rem', border: '1px solid var(--emerald)', color: 'var(--emerald)' }}
             >
-              + ADD LAND
+              + NEW LAND
             </button>
             <button 
               onClick={() => manager.setIsAdding(true)}
               className="btn btn-violet btn-3d-liquid" 
               style={{ padding: '0.85rem 2.5rem', borderRadius: '14px', fontSize: '1rem', fontWeight: 900, boxShadow: '0 15px 35px rgba(155,89,245,0.3)', background: 'var(--violet)' }}
             >
-              <Plus size={22} /> CREATE NEW ASSET
+              <Plus size={22} /> ADD NEW
             </button>
           </div>
         )}

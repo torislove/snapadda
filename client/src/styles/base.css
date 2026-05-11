@@ -1,131 +1,124 @@
 *,
-:before,
-:after {
+::before,
+::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  /* GPU compositing for all transforms */
+  -webkit-tap-highlight-color: transparent;
 }
 
 html {
   scroll-behavior: smooth;
   overscroll-behavior-y: none;
   overflow-x: hidden;
+  /* Prevent font scaling on orientation change */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 body {
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior-y: auto;
-  scroll-behavior: smooth;
   font-family: var(--font-body);
   background-color: var(--midnight);
   color: var(--txt-primary);
-  background-image: radial-gradient(
-      circle at 0% 0%,
-      rgba(6, 78, 59, 0.5) 0%,
-      transparent 50%
-    ),
-    radial-gradient(
-      circle at 100% 100%,
-      rgba(212, 175, 55, 0.15) 0%,
-      transparent 60%
-    );
+  background-image:
+    radial-gradient(circle at 0% 0%, rgba(6, 78, 59, 0.4) 0%, transparent 50%),
+    radial-gradient(circle at 100% 100%, rgba(212, 175, 55, 0.12) 0%, transparent 60%);
   background-size: 200% 200%;
   animation: bgDrift 20s ease-in-out infinite alternate;
   min-height: 100vh;
+  min-height: 100dvh;
   line-height: 1.6;
   overflow-x: hidden;
-  box-shadow: inset 0 0 200px rgba(0, 0, 0, 0.95);
+  box-shadow: inset 0 0 200px rgba(0, 0, 0, 0.9);
   width: 100%;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* Momentum scrolling on iOS */
+  -webkit-overflow-scrolling: touch;
 }
 
+/* ── Container ── */
 .container {
   width: 100%;
   max-width: var(--container-max);
-  padding: 0 var(--sp-precision);
+  padding: 0 1rem;
   margin: 0 auto;
 }
 
-@media (width<=768px) {
-  .container {
-    padding: 0 var(--sp-4);
-  }
-}
+@media (min-width: 640px)  { .container { padding: 0 1.25rem; } }
+@media (min-width: 1024px) { .container { padding: 0 1.5rem; } }
+@media (min-width: 1440px) { .container { max-width: 1380px; } }
 
-@media (width>=769px) and (width<=1024px) {
-  .container {
-    padding: 0 1.5rem;
-  }
-}
-
-@media (width>=1025px) {
-  .container {
-    padding: 0 2rem;
-  }
-}
-
-@media (width>=1440px) {
-  .container {
-    max-width: 1380px;
-  }
-}
-
-.scene-3d {
-  perspective: var(--perspective);
-}
-
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
+/* ── Typography ── */
+h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-serif);
   color: var(--txt-primary);
+  line-height: 1.2;
   opacity: 1 !important;
   visibility: visible !important;
-  -webkit-text-fill-color: initial !important; /* Prevent transparent gradient failures */
 }
 
-.font-calligraphy {
-  font-family: "Great Vibes", cursive;
-}
-
-.font-handwritten {
-  font-family: "MonteCarlo", cursive;
-}
-
-img,
-video,
-iframe {
+img, video, iframe {
   max-width: 100%;
   height: auto;
+  display: block;
 }
 
-* {
-  min-width: 0;
+/* Prevent overflow */
+* { min-width: 0; }
+
+/* ── Touch targets ── */
+button, a, [role="button"] {
+  touch-action: manipulation;
+  cursor: pointer;
 }
 
-/* Performance Layer: GPU Acceleration & Culling */
-.section-wrap, .pd-section, .horizontal-scroll-container {
-  content-visibility: auto;
-  contain-intrinsic-size: 1px 500px;
+/* All interactive elements minimum touch size */
+button:not([class*="icon-only"]) {
+  min-height: var(--touch-min);
 }
 
-.gpu-accelerated {
+/* ── GPU Acceleration Utilities ── */
+.gpu-accelerated,
+.marquee-track,
+.mobile-bottom-nav,
+.app-nav {
   will-change: transform, opacity;
   transform: translateZ(0);
 }
 
-body {
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+/* ── Content visibility for off-screen sections ── */
+.section-wrap, .pd-section, .horizontal-scroll-container {
+  content-visibility: auto;
+  contain-intrinsic-size: 1px 400px;
 }
 
-/* Scroll-pruning for Mobile */
-@media (max-width: 768px) {
-  .properties-grid {
-    content-visibility: auto;
-    contain-intrinsic-size: 1px 300px;
+/* ── Reduced motion ── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
+}
+
+/* ── Global scrollbar ── */
+::-webkit-scrollbar { width: 0; height: 0; }
+* { scrollbar-width: none; }
+
+/* ── Utility: hide scrollbar (keep scroll) ── */
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.hide-scrollbar::-webkit-scrollbar { display: none; }
+
+/* ── Gradient text helper ── */
+.text-gradient-gold {
+  background: linear-gradient(135deg, var(--gold), var(--gold-light));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }

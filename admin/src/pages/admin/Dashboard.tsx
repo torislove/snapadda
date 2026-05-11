@@ -12,6 +12,7 @@ import { useAdminAuth } from '../../contexts/AdminAuthContext';
 import { WelcomeOverlay } from '../../components/ui/WelcomeOverlay';
 import { ConnectivityBanner } from '../../components/ui/ConnectivityBanner';
 import { useServerHealth } from '../../hooks/useServerHealth';
+import './Dashboard.css';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -46,19 +47,22 @@ const AnimatedNumber = ({ target }: { target: number }) => {
 
 /* ─── Elite Metric Card ─── */
 const MetricCard = ({ title, value, icon: Icon, color, sub, trend, link, index }: any) => (
-  <div
-    className={`card hover-lift animate-slide-up stagger-${Math.min(index + 1, 6)}`}
-    style={{ borderTop: `3px solid ${color}`, padding: '1.5rem' }}
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ delay: index * 0.05 }}
+    className={`glass-card hover-lift metric-card`}
+    style={{ borderTop: `3px solid ${color}`, padding: '1.25rem' }}
   >
-    <a href={link || '#'} style={{ textDecoration: 'none', display: 'block' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+    <Link to={link || '#'} style={{ textDecoration: 'none', display: 'block' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
         <div style={{
-          width: '44px', height: '44px', borderRadius: '12px',
+          width: '40px', height: '40px', borderRadius: '12px',
           background: `${color}12`,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           color: color,
         }}>
-          <Icon size={22} />
+          <Icon size={20} />
         </div>
         {trend && (
           <span className={`metric-trend ${trend > 0 ? 'up' : 'down'}`}>
@@ -66,11 +70,15 @@ const MetricCard = ({ title, value, icon: Icon, color, sub, trend, link, index }
           </span>
         )}
       </div>
-      <div className="metric-value"><AnimatedNumber target={value} /></div>
-      <div className="metric-label">{title}</div>
-      {sub && <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>{sub}</div>}
-    </a>
-  </div>
+      <div className="metric-value" style={{ fontSize: '1.75rem', fontWeight: 900, color: 'white', letterSpacing: '-0.02em' }}>
+        <AnimatedNumber target={value} />
+      </div>
+      <div className="metric-label" style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: '4px' }}>
+        {title}
+      </div>
+      {sub && <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)', marginTop: '4px', fontWeight: 500 }}>{sub}</div>}
+    </Link>
+  </motion.div>
 );
 
 
@@ -79,43 +87,46 @@ const ActivityRow = ({ icon: Icon, color, title, sub, time, badge }: any) => (
   <div style={{
     display: 'flex', alignItems: 'center', gap: '0.875rem',
     padding: '0.875rem 0',
-    borderBottom: '1px solid rgba(0,0,0,0.05)',
+    borderBottom: '1px solid rgba(255,255,255,0.05)',
     transition: 'background 0.15s',
   }}>
     <div style={{
-      width: '40px', height: '40px', borderRadius: '10px',
+      width: '36px', height: '36px', borderRadius: '10px',
       background: `${color}10`,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       color, flexShrink: 0,
     }}>
-      <Icon size={18} />
+      <Icon size={16} />
     </div>
     <div style={{ flex: 1, minWidth: 0 }}>
       <div style={{ 
-        fontSize: '0.9rem', 
+        fontSize: '0.85rem', 
         fontWeight: 600, 
-        color: 'var(--text-primary)', 
-        marginBottom: '2px'
+        color: 'white', 
+        marginBottom: '2px',
+        whiteSpace: 'nowrap',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis'
       }}>{title}</div>
       <div style={{ 
-        fontSize: '0.75rem', 
+        fontSize: '0.7rem', 
         color: 'var(--text-muted)',
         whiteSpace: 'nowrap',
         overflow: 'hidden',
         textOverflow: 'ellipsis'
       }}>{sub}</div>
     </div>
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px', flexShrink: 0 }}>
       {badge && (
         <span style={{
-          fontSize: '0.6rem', fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase',
-          padding: '2px 8px', borderRadius: '4px',
+          fontSize: '0.55rem', fontWeight: 900, letterSpacing: '0.05em', textTransform: 'uppercase',
+          padding: '2px 6px', borderRadius: '4px',
           background: badge === 'Answered' || badge === 'Verified' ? 'rgba(16,217,140,0.1)' : 'rgba(255,140,66,0.1)',
           color: badge === 'Answered' || badge === 'Verified' ? '#10d98c' : '#ff8c42',
           border: `1px solid ${badge === 'Verified' ? 'rgba(16,217,140,0.2)' : 'rgba(255,140,66,0.2)'}`,
         }}>{badge}</span>
       )}
-      <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 500 }}>{time}</div>
+      <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', fontWeight: 500 }}>{time}</div>
     </div>
   </div>
 );
@@ -126,26 +137,26 @@ const QuickAction = ({ icon: Icon, label, color, to }: any) => (
     <motion.div 
       whileHover={{ scale: 1.03, translateY: -3 }}
       whileTap={{ scale: 0.97 }}
+      className="glass-card"
       style={{
-        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem',
-        padding: '1.25rem 1rem',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.6rem',
+        padding: '1rem',
         background: 'rgba(255,255,255,0.02)',
         border: `1px solid rgba(255,255,255,0.06)`,
-        borderRadius: '16px',
+        borderRadius: '20px',
         cursor: 'pointer',
         textAlign: 'center',
-        transition: 'border-color 0.3s',
+        transition: 'all 0.3s',
       }}
     >
       <div style={{
-        width: '46px', height: '46px', borderRadius: '13px',
+        width: '40px', height: '40px', borderRadius: '12px',
         background: `${color}12`, color,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        boxShadow: `0 8px 16px ${color}08`,
       }}>
-        <Icon size={22} />
+        <Icon size={20} />
       </div>
-      <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.01em' }}>{label}</span>
+      <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.02em', textTransform: 'uppercase' }}>{label}</span>
     </motion.div>
   </Link>
 );
@@ -206,7 +217,7 @@ const AdminDashboard = () => {
       })
       .catch(() => {
         if (!cachedStats) {
-          setStats({ propertyCount: 12, leadCount: 48, inquiryCount: 24, verifiedCount: 8, activeCount: 10, pendingInquiries: 5, totalLikes: 0, totalShares: 0, recentProperties: [], recentInquiries: [], recentLeads: [] });
+          setStats({ propertyCount: 0, leadCount: 0, inquiryCount: 0, verifiedCount: 0, activeCount: 0, pendingInquiries: 0, totalLikes: 0, totalShares: 0, recentProperties: [], recentInquiries: [], recentLeads: [] });
         }
       })
       .finally(() => setLoading(false));
@@ -277,66 +288,60 @@ if (loading) return (
         />
       )}
       
-      <motion.div 
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}
-      >
+      <div className="dashboard-container">
 
       {/* ── Header ── */}
-      <div className="flex-row-mobile-stack" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '1.5rem' }}>
-        <div>
+      <div className="flex-row-mobile-stack dashboard-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '1.5rem' }}>
+        <div style={{ flex: 1, minWidth: '280px' }}>
           <ConnectivityBanner compact />
           <motion.div 
             initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}
-            style={{ fontSize: '0.8rem', fontWeight: 900, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--gold)', marginBottom: '0.75rem', fontFamily: 'var(--font-mono)' }}
+            style={{ fontSize: '0.7rem', fontWeight: 900, letterSpacing: '0.25rem', textTransform: 'uppercase', color: 'var(--gold)', marginBottom: '0.5rem', fontFamily: 'var(--font-mono)' }}
           >
-            ✦ STRATEGIC COMMAND HUB
+            ✦ DASHBOARD
           </motion.div>
           <motion.h1 
             initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-            style={{ fontSize: '2.75rem', lineHeight: 1.1, fontWeight: 900, background: 'linear-gradient(135deg, #fff 30%, var(--gold) 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: '0.75rem', fontFamily: 'var(--font-heading)', letterSpacing: '-0.04em' }}
+            style={{ fontSize: '2.5rem', lineHeight: 1, fontWeight: 900, background: 'linear-gradient(135deg, #fff 30%, var(--gold) 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: '0.5rem', fontFamily: 'var(--font-heading)', letterSpacing: '-0.04em' }}
           >
-            {greeting}, snapadda_admin
+            {greeting}, {adminUser?.name?.split(' ')[0] || 'Admin'}
           </motion.h1>
-          <p style={{ fontSize: '1rem', color: 'var(--text-muted)', maxWidth: '500px', lineHeight: 1.6 }}>
-            Market dynamics are currently <strong style={{ color: health.allOk ? 'var(--emerald)' : '#f5c842' }}>{health.allOk ? 'Positive (+8.4%)' : 'Monitoring...'}</strong>. {health.allOk ? 'All estate systems are operational and performing at peak efficiency.' : 'Some services may be degraded. Check connectivity status.'}
+          <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', maxWidth: '450px', lineHeight: 1.5 }}>
+            System is <strong style={{ color: health.allOk ? 'var(--emerald)' : '#f5c842' }}>{health.allOk ? 'Live' : 'Degraded'}</strong>. Pipeline activity is stable.
           </p>
         </div>
         <Link to="/admin/properties">
           <motion.button 
             whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-            className="btn btn-violet" style={{ gap: '10px', padding: '0.8rem 1.75rem', borderRadius: '14px', boxShadow: '0 10px 30px rgba(155,89,245,0.25)' }}
+            className="btn btn-violet" style={{ gap: '10px', padding: '0.75rem 1.5rem', borderRadius: '16px', boxShadow: '0 10px 30px rgba(155,89,245,0.2)' }}
           >
-            <Plus size={18} strokeWidth={3} /> Add Listing
+            <Plus size={18} strokeWidth={3} /> Post Property
           </motion.button>
         </Link>
       </div>
 
       {/* ── Metrics Grid ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(240px, 100%), 1fr))', gap: '1.5rem' }}>
+      <div className="metrics-grid">
         {METRICS.map((m, i) => <MetricCard key={m.title} index={i} {...m} />)}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(310px, 100%), 1fr))', gap: '2rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(320px, 100%), 1fr))', gap: '1.5rem' }}>
         {/* Engagement Analytics */}
         <motion.div 
           initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
-          className="glass-card" style={{ padding: '2rem', background: 'rgba(255,255,255,0.01)' }}
+          className="glass-card" style={{ padding: '1.5rem' }}
         >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
             <div>
-              <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'white', marginBottom: '0.25rem' }}>Engagement Pulse</h3>
-              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Daily traffic & lead conversion metrics</p>
+              <h3 style={{ fontSize: '1rem', fontWeight: 800, color: 'white', marginBottom: '0.15rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Traffic Pulse</h3>
+              <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>Daily unique platform interactions</p>
             </div>
-            <div style={{ display: 'flex', gap: '1rem' }}>
-               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                 <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--violet)' }} />
-                 <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 600 }}>VIEWS</span>
-               </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--violet)' }} />
+              <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)', fontWeight: 700 }}>VIEWS</span>
             </div>
           </div>
-          <div style={{ height: '280px', width: '100%' }}>
+          <div style={{ height: '250px', width: '100%' }}>
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={chartData}>
                 <defs>
@@ -345,9 +350,9 @@ if (loading) return (
                     <stop offset="95%" stopColor="var(--violet)" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                <XAxis dataKey="name" stroke="rgba(255,255,255,0.3)" fontSize={10} tickLine={false} axisLine={false} dy={10} />
-                <Tooltip contentStyle={{ background: 'rgba(8,8,18,0.95)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', fontSize: '12px', backdropFilter: 'blur(10px)' }} />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" vertical={false} />
+                <XAxis dataKey="name" stroke="rgba(255,255,255,0.2)" fontSize={9} tickLine={false} axisLine={false} dy={10} />
+                <Tooltip contentStyle={{ background: 'rgba(8,8,18,0.95)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', fontSize: '11px', backdropFilter: 'blur(10px)' }} />
                 <Area type="monotone" dataKey="views" stroke="var(--violet)" strokeWidth={3} fillOpacity={1} fill="url(#colorViews)" />
               </AreaChart>
             </ResponsiveContainer>
@@ -357,76 +362,72 @@ if (loading) return (
         {/* Rapid Operations */}
         <motion.div 
           initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
-          className="glass-card" style={{ padding: '2rem' }}
+          className="glass-card" style={{ padding: '1.5rem' }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
-            <Zap size={20} style={{ color: 'var(--gold)' }} fill="var(--gold)" />
-            <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'white', margin: 0 }}>Rapid Operations</h3>
+            <Zap size={18} style={{ color: 'var(--gold)' }} fill="var(--gold)" />
+            <h3 style={{ fontSize: '1rem', fontWeight: 800, color: 'white', margin: 0, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Rapid Portal</h3>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '1rem' }}>
-            <QuickAction icon={Building} label="New Property" color="var(--violet)" to="/admin/properties" />
-            <QuickAction icon={MapPin} label="Geo Zone" color="var(--cyan)" to="/admin/cities" />
-            <QuickAction icon={Users} label="Lead Board" color="var(--emerald)" to="/admin/leads" />
-            <QuickAction icon={Contact2} label="CRM" color="var(--rose)" to="/admin/contacts" />
+          <div className="quick-actions-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }}>
+            <QuickAction icon={Building} label="Listings" color="var(--violet)" to="/admin/properties" />
+            <QuickAction icon={MapPin} label="Territory" color="var(--cyan)" to="/admin/cities" />
+            <QuickAction icon={Users} label="Prospects" color="var(--emerald)" to="/admin/leads" />
+            <QuickAction icon={Contact2} label="Comm Hub" color="var(--rose)" to="/admin/contacts" />
           </div>
-          <div style={{ marginTop: '1.5rem', padding: '1rem', borderRadius: '12px', background: 'rgba(245,200,66,0.05)', border: '1px solid rgba(245,200,66,0.1)', display: 'flex', gap: '12px' }}>
-            <Activity size={20} style={{ color: 'var(--gold)' }} />
-            <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.7)', lineHeight: 1.5 }}>
-              <strong>Tip:</strong> Holographic Command Hub is now active.
+          <div style={{ marginTop: '1.25rem', padding: '1rem', borderRadius: '16px', background: 'rgba(232,184,75,0.03)', border: '1px solid rgba(232,184,75,0.08)', display: 'flex', gap: '10px', alignItems: 'center' }}>
+            <Activity size={18} style={{ color: 'var(--gold)', flexShrink: 0 }} />
+            <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.5)', lineHeight: 1.4 }}>
+              SnapAdda Console is optimized for <strong>Touch Interface</strong>.
             </span>
           </div>
         </motion.div>
       </div>
 
       {/* ── Network Intelligence (Adaptive Carousel) ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(400px, 100%), 1fr))', gap: '2rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(320px, 100%), 1fr))', gap: '1.5rem' }}>
         
         {/* Listings Pulse */}
         <motion.div 
           initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.6 }}
-          className="glass-card" style={{ padding: '1.75rem' }}
+          className="glass-card" style={{ padding: '1.5rem' }}
         >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <Building size={20} style={{ color: 'var(--violet)' }} />
-              <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700 }}>Listing Registry</h3>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+              <Building size={18} style={{ color: 'var(--violet)' }} />
+              <h3 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 800, textTransform: 'uppercase' }}>Recent Assets</h3>
             </div>
-            <Link to="/admin/properties" style={{ fontSize: '0.8rem', color: 'var(--violet)', fontWeight: 700 }}>Manage All</Link>
+            <Link to="/admin/properties" style={{ fontSize: '0.7rem', color: 'var(--violet)', fontWeight: 800 }}>VIEW ALL</Link>
           </div>
           
-          <div className="holographic-carousel-container">
+          <div className="activity-stream">
             {(stats?.recentProperties || []).length > 0 ? stats.recentProperties.map((p: any, i: number) => (
-              <div key={i} className="holographic-carousel-item">
-                <ActivityRow icon={Building} color="var(--violet)" title={p.title} sub={p.location} time={p.price || 'Market Val'} badge={p.isVerified ? 'Verified' : 'Pending'} />
-              </div>
-            )) : <p style={{ opacity: 0.5, fontSize: '0.8rem' }}>No recent assets.</p>}
+              <ActivityRow key={i} icon={Building} color="var(--violet)" title={p.title} sub={p.location} time={p.price || 'Market Val'} badge={p.isVerified ? 'Verified' : 'Draft'} />
+            )) : <p style={{ opacity: 0.4, fontSize: '0.75rem', textAlign: 'center', padding: '2rem 0' }}>No recent asset activity detected.</p>}
           </div>
         </motion.div>
 
         {/* Lead Stream */}
         <motion.div 
           initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.7 }}
-          className="glass-card" style={{ padding: '1.75rem' }}
+          className="glass-card" style={{ padding: '1.5rem' }}
         >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <Target size={20} style={{ color: 'var(--cyan)' }} />
-              <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700 }}>Lead Stream</h3>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+              <Target size={18} style={{ color: 'var(--cyan)' }} />
+              <h3 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 800, textTransform: 'uppercase' }}>Lead Registry</h3>
             </div>
-            <Link to="/admin/leads" style={{ fontSize: '0.8rem', color: 'var(--cyan)', fontWeight: 700 }}>Open CRM</Link>
+            <Link to="/admin/leads" style={{ fontSize: '0.7rem', color: 'var(--cyan)', fontWeight: 800 }}>CRM HUB</Link>
           </div>
           
-          <div className="holographic-carousel-container">
+          <div className="activity-stream">
             {(stats?.recentLeads || []).length > 0 ? stats.recentLeads.map((lead: any, i: number) => (
-              <div key={i} className="holographic-carousel-item">
-                <ActivityRow icon={Target} color="var(--cyan)" title={lead.name || 'Anonymous Lead'} sub={lead.message || 'No specific message'} time={new Date(lead.createdAt).toLocaleDateString()} badge={lead.status} />
-              </div>
-            )) : <p style={{ opacity: 0.5, fontSize: '0.8rem' }}>No recent leads.</p>}
+              <ActivityRow key={i} icon={Target} color="var(--cyan)" title={lead.name || 'Inquirer'} sub={lead.message || 'Intent expressed'} time={new Date(lead.createdAt).toLocaleDateString()} badge={lead.status} />
+            )) : <p style={{ opacity: 0.4, fontSize: '0.75rem', textAlign: 'center', padding: '2rem 0' }}>Lead stream is currently quiet.</p>}
           </div>
         </motion.div>
       </div>
 
-      </motion.div>
+      </div>
     </>
   );
 };

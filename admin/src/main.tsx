@@ -7,23 +7,18 @@ registerSW({
   onOfflineReady() {},
 })
 import { createRoot } from 'react-dom/client'
-import { GoogleOAuthProvider } from '@react-oauth/google'
 import { AdminAuthProvider } from './contexts/AdminAuthContext'
 import ErrorBoundary from './components/ErrorBoundary'
 import './styles/index.css'
 import App from './App.tsx'
 import './i18n'
 
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "placeholder_if_missing";
-
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ErrorBoundary>
-      <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-        <AdminAuthProvider>
-          <App />
-        </AdminAuthProvider>
-      </GoogleOAuthProvider>
+      <AdminAuthProvider>
+        <App />
+      </AdminAuthProvider>
     </ErrorBoundary>
   </StrictMode>,
 )

@@ -1,110 +1,103 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MapPin, Phone, User, LogOut, LayoutDashboard, Building2, Globe, ChevronDown, UserCircle2, PlusCircle } from 'lucide-react';
+import {
+  MapPin, Phone, User, LogOut, LayoutDashboard, Building2, Globe,
+  ChevronDown, UserCircle2, PlusCircle, Search, X
+} from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import Logo from './Logo';
 
-// ─── Avatar Dropdown ────────────────────────────────────────────────────────
+// ─── Avatar Dropdown ─────────────────────────────────────────────────────────
 function AvatarDropdown({ user, logout }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
   const navigate = useNavigate();
 
-  // Close on outside click
   useEffect(() => {
-    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    const handler = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener('pointerdown', handler);
+    return () => document.removeEventListener('pointerdown', handler);
   }, []);
 
   const avatarUrl = user?.picture || user?.avatar || user?.photo ||
     `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'U')}&background=e8b84b&color=000&bold=true&size=128`;
+
+  const menuItems = [
+    { icon: <UserCircle2 size={15} />, label: 'My Profile',  action: () => { navigate('/dashboard'); setOpen(false); } },
+    { icon: <LayoutDashboard size={15} />, label: 'Dashboard', action: () => { navigate('/dashboard'); setOpen(false); } },
+  ];
 
   return (
     <div ref={ref} style={{ position: 'relative' }}>
       <button
         onClick={() => setOpen(o => !o)}
         aria-label="User menu"
+        aria-expanded={open}
         style={{
-          display: 'flex', alignItems: 'center', gap: '8px',
-          padding: '3px 10px 3px 3px',
-          borderRadius: '40px',
-          background: open ? 'rgba(232,184,75,0.15)' : 'rgba(255,255,255,0.06)',
-          border: `1px solid ${open ? 'rgba(232,184,75,0.4)' : 'rgba(255,255,255,0.1)'}`,
-          cursor: 'pointer',
-          transition: 'all 0.2s',
+          display: 'flex', alignItems: 'center', gap: '7px',
+          padding: '4px 10px 4px 4px', borderRadius: '40px',
+          background: open ? 'rgba(232,184,75,0.12)' : 'rgba(255,255,255,0.06)',
+          border: `1px solid ${open ? 'rgba(232,184,75,0.35)' : 'rgba(255,255,255,0.1)'}`,
+          cursor: 'pointer', transition: 'all 0.2s',
+          minHeight: '40px',
         }}
       >
         <img
-          src={avatarUrl}
-          alt={user?.name || 'Profile'}
-          style={{ width: '34px', height: '34px', borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(232,184,75,0.5)' }}
-          onError={(e) => { e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'U')}&background=e8b84b&color=000&bold=true`; }}
+          src={avatarUrl} alt={user?.name || 'Profile'}
+          style={{ width: '30px', height: '30px', borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(232,184,75,0.4)' }}
+          onError={(e) => { e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'U')}&background=e8b84b&color=000`; }}
         />
-        <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#fff', maxWidth: '80px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {user?.name?.split(' ')[0] || 'Profile'}
+        <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#fff', maxWidth: '72px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {user?.name?.split(' ')[0] || 'Me'}
         </span>
-        <ChevronDown size={13} style={{ color: 'rgba(255,255,255,0.5)', transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', flexShrink: 0 }} />
+        <ChevronDown size={12} style={{ color: 'rgba(255,255,255,0.4)', transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', flexShrink: 0 }} />
       </button>
 
       <AnimatePresence>
         {open && (
           <motion.div
-            initial={{ opacity: 0, y: 8, scale: 0.95 }}
+            initial={{ opacity: 0, y: 6, scale: 0.96 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 8, scale: 0.95 }}
-            transition={{ duration: 0.15 }}
+            exit={{ opacity: 0, y: 6, scale: 0.96 }}
+            transition={{ duration: 0.14 }}
             style={{
-              position: 'absolute', top: 'calc(100% + 10px)', right: 0,
-              width: '220px', background: 'rgba(10,10,22,0.98)',
-              backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: '18px', padding: '8px', zIndex: 9999,
-              boxShadow: '0 20px 60px rgba(0,0,0,0.7)',
+              position: 'absolute', top: 'calc(100% + 8px)', right: 0,
+              width: '210px', background: 'rgba(8,10,22,0.98)',
+              backdropFilter: 'blur(24px)', border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: '18px', padding: '6px', zIndex: 9999,
+              boxShadow: '0 16px 48px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.04)',
             }}
           >
-            {/* User Info */}
-            <div style={{ padding: '12px 14px', borderBottom: '1px solid rgba(255,255,255,0.06)', marginBottom: '6px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <img src={avatarUrl} alt="" style={{ width: '38px', height: '38px', borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(232,184,75,0.4)' }} onError={(e) => { e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'U')}&background=e8b84b&color=000&bold=true`; }} />
-                <div>
-                  <div style={{ fontWeight: 800, fontSize: '0.85rem', color: '#fff' }}>{user?.name || 'User'}</div>
-                  <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.4)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '130px' }}>{user?.email}</div>
-                </div>
+            {/* User info */}
+            <div style={{ padding: '10px 12px', borderBottom: '1px solid rgba(255,255,255,0.06)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <img src={avatarUrl} alt="" style={{ width: '34px', height: '34px', borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(232,184,75,0.35)', flexShrink: 0 }} onError={(e) => { e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'U')}&background=e8b84b&color=000`; }} />
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontWeight: 800, fontSize: '0.82rem', color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user?.name || 'User'}</div>
+                <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.35)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user?.email}</div>
               </div>
             </div>
 
-            {/* Menu Items */}
-            {[
-              { icon: <UserCircle2 size={15} />, label: 'My Profile', action: () => { navigate('/dashboard'); setOpen(false); } },
-              { icon: <LayoutDashboard size={15} />, label: 'Dashboard', action: () => { navigate('/dashboard'); setOpen(false); } },
-            ].map(item => (
-              <button key={item.label} onClick={item.action} style={{
-                width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
-                padding: '10px 14px', borderRadius: '12px', border: 'none',
-                background: 'transparent', color: 'rgba(255,255,255,0.8)', fontSize: '0.82rem',
-                fontWeight: 600, cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s',
-              }}
-                onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.06)'}
-                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+            {menuItems.map(item => (
+              <button key={item.label} onClick={item.action}
+                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '9px', padding: '9px 12px', borderRadius: '12px', border: 'none', background: 'transparent', color: 'rgba(255,255,255,0.8)', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', textAlign: 'left', transition: 'background 0.15s', minHeight: '40px' }}
+                onPointerEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.06)'}
+                onPointerLeave={e => e.currentTarget.style.background = 'transparent'}
               >
-                <span style={{ color: 'var(--gold)' }}>{item.icon}</span>
-                {item.label}
+                <span style={{ color: 'var(--gold)' }}>{item.icon}</span>{item.label}
               </button>
             ))}
 
-            <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', marginTop: '6px', paddingTop: '6px' }}>
-              <button onClick={() => { logout(); setOpen(false); }} style={{
-                width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
-                padding: '10px 14px', borderRadius: '12px', border: 'none',
-                background: 'transparent', color: '#f5397b', fontSize: '0.82rem',
-                fontWeight: 700, cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s',
-              }}
-                onMouseEnter={e => e.currentTarget.style.background = 'rgba(245,57,123,0.08)'}
-                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+            <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', marginTop: '4px', paddingTop: '4px' }}>
+              <button onClick={() => { logout(); setOpen(false); }}
+                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '9px', padding: '9px 12px', borderRadius: '12px', border: 'none', background: 'transparent', color: '#f0515f', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer', minHeight: '40px' }}
+                onPointerEnter={e => e.currentTarget.style.background = 'rgba(240,81,95,0.08)'}
+                onPointerLeave={e => e.currentTarget.style.background = 'transparent'}
               >
-                <LogOut size={15} /> Sign Out
+                <LogOut size={14} /> Sign Out
               </button>
             </div>
           </motion.div>
@@ -114,7 +107,7 @@ function AvatarDropdown({ user, logout }) {
   );
 }
 
-// ─── Main Header ─────────────────────────────────────────────────────────────
+// ─── Main Header ──────────────────────────────────────────────────────────────
 export default function Header() {
   const { user, logout } = useAuth();
   const { t, i18n } = useTranslation();
@@ -130,120 +123,104 @@ export default function Header() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Close mobile menu on route change
   useEffect(() => { setMobileMenuOpen(false); }, [location]);
 
   const navLinks = [
-    { label: t('nav.properties', 'Browse'), path: '/#properties', icon: <Building2 size={18} /> },
-    { label: t('nav.post', 'Post Property'), path: '/post-property', icon: <PlusCircle size={18} /> },
-    { label: t('nav.locations', 'Locations'), path: '/#cities', icon: <MapPin size={18} /> },
-    { label: t('nav.callback', 'VIP Callback'), path: '/request-callback', icon: <Phone size={18} /> },
+    { label: t('nav.properties', 'Browse'), path: '/#properties', icon: <Building2 size={17} /> },
+    { label: t('nav.post', 'Add Listing'), path: '/post-property', icon: <PlusCircle size={17} /> },
+    { label: t('nav.locations', 'Areas'), path: '/#cities', icon: <MapPin size={17} /> },
+    { label: t('nav.callback', 'Help'), path: '/request-callback', icon: <Phone size={17} /> },
   ];
-  if (user) {
-    navLinks.push({ label: t('nav.dashboard', 'Dashboard'), path: '/dashboard', icon: <LayoutDashboard size={18} /> });
-  }
 
   const avatarUrl = user?.picture || user?.avatar || user?.photo ||
     `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'U')}&background=e8b84b&color=000&bold=true&size=128`;
 
   return (
     <>
-      {/* ─── TOP NAVIGATION BAR ─── */}
+      {/* ─── TOP NAV BAR ─── */}
       <header
         className={`app-nav ${scrolled ? 'is-sticky' : ''}`}
-        style={{
-          background: scrolled || mobileMenuOpen ? 'rgba(5, 5, 10, 0.98)' : 'rgba(5, 5, 10, 0.85)',
-          backdropFilter: 'blur(30px)',
-          WebkitBackdropFilter: 'blur(30px)',
-          borderBottom: scrolled || mobileMenuOpen ? '1px solid rgba(212,175,55,0.25)' : '1px solid rgba(212,175,55,0.1)',
-          boxShadow: scrolled ? '0 4px 30px rgba(0,0,0,0.4)' : 'none',
-          transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-          zIndex: 9998, 
-          position: 'fixed', top: 0, left: 0, right: 0, 
-          height: scrolled ? '60px' : '70px',
-          willChange: 'transform, background, height'
-        }}
+        role="banner"
       >
-        <div className="container nav-inner" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '100%', padding: '0 15px' }}>
-
-          {/* ─── LOGO ─── */}
-          <Link to="/" className="nav-logo-wrap" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', flexShrink: 0 }}>
-            <Logo size={28} showText={!scrolled} />
+        <div className="nav-inner">
+          {/* Logo */}
+          <Link to="/" aria-label="SnapAdda Home" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', flexShrink: 0 }}>
+            <Logo size={scrolled ? 26 : 30} showText />
           </Link>
 
-          {/* ─── STICKY SEARCH TRIGGER ─── */}
-          <div className="nav-search-trigger">
-            <div 
-              onClick={() => navigate('/search')}
-              style={{ 
-                background: 'rgba(255,255,255,0.05)', 
-                border: '1px solid rgba(255,255,255,0.1)', 
-                borderRadius: '12px', 
-                padding: '8px 16px', 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: '10px',
-                cursor: 'pointer',
-                color: 'rgba(255,255,255,0.5)',
-                fontSize: '0.85rem'
-              }}
-            >
-              <Building2 size={14} style={{ color: 'var(--gold)' }} />
-              <span>Search properties...</span>
-            </div>
-          </div>
-
-          {/* ─── DESKTOP NAV LINKS ─── */}
-          <nav className="nav-links-center desktop-only" style={{ display: 'flex', gap: '2rem', alignItems: 'center' }}>
+          {/* Desktop center links */}
+          <nav className="nav-links-center desktop-only" aria-label="Site navigation" style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
             {navLinks.map((link) => (
               <a
                 key={link.label}
                 href={link.path.startsWith('/#') ? link.path.substring(1) : link.path}
-                className="nav-link"
                 style={{
-                  color: location.pathname === link.path ? 'var(--gold)' : 'var(--txt-secondary)',
-                  textDecoration: 'none', fontSize: '0.88rem', fontWeight: 600,
-                  letterSpacing: '0.02em', transition: 'color 0.2s',
+                  color: location.pathname === link.path.split('#')[0] ? 'var(--gold)' : 'rgba(255,255,255,0.6)',
+                  textDecoration: 'none',
+                  fontSize: '0.78rem',
+                  fontWeight: 700,
+                  letterSpacing: '0.06em',
+                  padding: '6px 12px',
+                  borderRadius: '10px',
+                  transition: 'all 0.2s',
+                  textTransform: 'uppercase',
+                  display: 'flex', alignItems: 'center', gap: '5px',
+                  minHeight: '36px',
                 }}
+                onPointerEnter={e => { e.currentTarget.style.color = 'var(--gold)'; e.currentTarget.style.background = 'rgba(232,184,75,0.07)'; }}
+                onPointerLeave={e => { e.currentTarget.style.color = location.pathname === link.path.split('#')[0] ? 'var(--gold)' : 'rgba(255,255,255,0.6)'; e.currentTarget.style.background = 'transparent'; }}
               >
                 {link.label}
               </a>
             ))}
           </nav>
 
-          {/* ─── RIGHT SIDE ─── */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-            {/* Language toggle */}
+          {/* Right side */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', flexShrink: 0 }}>
+            {/* Language toggle — desktop */}
             <button
               onClick={toggleLang}
-              aria-label={`Switch to ${i18n.language === 'en' ? 'Telugu' : 'English'}`}
-              className="btn-3d-liquid desktop-only"
+              aria-label="Toggle language"
+              className="desktop-only"
               style={{
-                background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
-                color: 'white', padding: '0.4rem 0.8rem', borderRadius: '10px',
-                fontSize: '0.7rem', fontWeight: 800, minHeight: '40px', cursor: 'pointer',
+                background: 'rgba(255,255,255,0.05)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                color: 'rgba(255,255,255,0.7)',
+                padding: '0 12px',
+                borderRadius: '10px',
+                fontSize: '0.68rem',
+                fontWeight: 800,
+                cursor: 'pointer',
+                letterSpacing: '0.04em',
+                transition: 'all 0.2s',
+                display: 'flex', alignItems: 'center', gap: '5px',
+                minHeight: '36px',
               }}
             >
-              {i18n.language === 'en' ? 'తెలుగు' : 'EN'}
+              <Globe size={13} />
+              {i18n.language === 'en' ? 'తెలుగు' : 'ENG'}
             </button>
 
-            {/* Auth: Logged-in avatar OR Sign In button */}
+            {/* Auth area */}
             {user ? (
               <AvatarDropdown user={user} logout={logout} />
             ) : (
               <Link
                 to="/login"
                 style={{
-                  display: 'flex', alignItems: 'center', gap: '7px',
-                  padding: '8px 20px', borderRadius: '40px',
-                  background: 'linear-gradient(135deg, #e8b84b, #c89a32)',
-                  color: '#07070f', fontWeight: 800, fontSize: '0.82rem',
-                  textDecoration: 'none', letterSpacing: '0.04em',
-                  boxShadow: '0 4px 20px rgba(232,184,75,0.35)',
+                  display: 'flex', alignItems: 'center', gap: '6px',
+                  padding: '0 16px', borderRadius: '40px',
+                  background: 'var(--gold)', color: '#000',
+                  fontWeight: 900, fontSize: '0.75rem',
+                  textDecoration: 'none',
+                  boxShadow: '0 6px 16px rgba(232,184,75,0.25)',
                   transition: 'all 0.2s',
                   whiteSpace: 'nowrap',
+                  minHeight: '38px',
                 }}
               >
-                <User size={15} /> Sign In
+                <User size={13} /> LOGIN
               </Link>
             )}
 
@@ -251,88 +228,117 @@ export default function Header() {
             <button
               className="mobile-only"
               onClick={() => setMobileMenuOpen(o => !o)}
-              aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+              aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
+              aria-expanded={mobileMenuOpen}
               style={{
                 width: '40px', height: '40px', borderRadius: '12px',
-                background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
+                background: mobileMenuOpen ? 'rgba(232,184,75,0.1)' : 'rgba(255,255,255,0.06)',
+                border: `1px solid ${mobileMenuOpen ? 'rgba(232,184,75,0.3)' : 'rgba(255,255,255,0.1)'}`,
                 color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                cursor: 'pointer', flexShrink: 0,
+                cursor: 'pointer', flexShrink: 0, transition: 'all 0.2s',
               }}
             >
-              <div style={{ width: '18px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <span style={{ display: 'block', height: '2px', background: 'white', borderRadius: '2px', transform: mobileMenuOpen ? 'rotate(45deg) translate(4px, 6px)' : 'none', transition: '0.25s' }} />
-                <span style={{ display: 'block', height: '2px', background: 'white', borderRadius: '2px', opacity: mobileMenuOpen ? 0 : 1, transition: '0.25s' }} />
-                <span style={{ display: 'block', height: '2px', background: 'white', borderRadius: '2px', transform: mobileMenuOpen ? 'rotate(-45deg) translate(4px, -6px)' : 'none', transition: '0.25s' }} />
-              </div>
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.div
+                  key={mobileMenuOpen ? 'x' : 'menu'}
+                  initial={{ rotate: -90, opacity: 0 }}
+                  animate={{ rotate: 0, opacity: 1 }}
+                  exit={{ rotate: 90, opacity: 0 }}
+                  transition={{ duration: 0.15 }}
+                >
+                  {mobileMenuOpen ? <X size={18} /> : (
+                    <div style={{ width: '18px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <span style={{ display: 'block', height: '2px', background: 'white', borderRadius: '2px' }} />
+                      <span style={{ display: 'block', height: '2px', background: 'white', borderRadius: '2px', width: '75%', marginLeft: 'auto' }} />
+                      <span style={{ display: 'block', height: '2px', background: 'white', borderRadius: '2px' }} />
+                    </div>
+                  )}
+                </motion.div>
+              </AnimatePresence>
             </button>
           </div>
         </div>
       </header>
 
-      {/* ─── MOBILE FULLSCREEN MENU OVERLAY ─── */}
+      {/* ─── MOBILE SLIDE-DOWN MENU ─── */}
       <AnimatePresence>
         {mobileMenuOpen && (
           <motion.div
-            initial={{ opacity: 0, y: -10 }}
+            initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.22, ease: 'easeOut' }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
             style={{
-              position: 'fixed', top: '70px', left: 0, right: 0, bottom: 0,
-              background: 'rgba(4, 4, 10, 0.98)', backdropFilter: 'blur(30px)',
-              WebkitBackdropFilter: 'blur(30px)', zIndex: 9997,
-              padding: '1.25rem 1.5rem', overflowY: 'auto', display: 'flex', flexDirection: 'column',
+              position: 'fixed',
+              top: '52px', left: 0, right: 0,
+              background: 'rgba(4, 4, 10, 0.97)',
+              backdropFilter: 'blur(28px)',
+              WebkitBackdropFilter: 'blur(28px)',
+              zIndex: 9997,
+              padding: '1rem 1.25rem',
+              borderBottom: '1px solid rgba(255,255,255,0.06)',
+              boxShadow: '0 20px 40px rgba(0,0,0,0.6)',
             }}
           >
-            {/* User info strip (mobile) */}
+            {/* User strip */}
             {user && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '1rem', background: 'rgba(255,255,255,0.04)', borderRadius: '16px', marginBottom: '1rem', border: '1px solid rgba(232,184,75,0.15)' }}>
-                <img src={avatarUrl} alt="" style={{ width: '44px', height: '44px', borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(232,184,75,0.5)' }} onError={(e) => { e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'U')}&background=e8b84b&color=000&bold=true`; }} />
-                <div>
-                  <div style={{ fontWeight: 800, color: '#fff', fontSize: '0.95rem' }}>{user.name}</div>
-                  <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)' }}>{user.email}</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '0.75rem', background: 'rgba(232,184,75,0.06)', borderRadius: '14px', marginBottom: '0.875rem', border: '1px solid rgba(232,184,75,0.12)' }}>
+                <img src={avatarUrl} alt="" style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(232,184,75,0.4)', flexShrink: 0 }} onError={(e) => { e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'U')}&background=e8b84b&color=000`; }} />
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontWeight: 800, color: '#fff', fontSize: '0.875rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.name}</div>
+                  <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.35)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.email}</div>
                 </div>
               </div>
             )}
 
-            {navLinks.map((link, i) => (
-              <motion.a
-                key={link.label}
-                href={link.path.startsWith('/#') ? link.path.substring(1) : link.path}
-                initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.06 }}
-                onClick={() => setMobileMenuOpen(false)}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: '0.85rem',
-                  padding: '1rem 0.5rem', borderBottom: '1px solid rgba(255,255,255,0.06)',
-                  color: '#fff', textDecoration: 'none', fontSize: '1.05rem', fontWeight: 600,
-                }}
-              >
-                <span style={{ color: 'var(--gold)', opacity: 0.8 }}>{link.icon}</span>
-                {link.label}
-              </motion.a>
-            ))}
+            {/* Nav links */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginBottom: '0.875rem' }}>
+              {navLinks.map((link, i) => (
+                <motion.a
+                  key={link.label}
+                  href={link.path.startsWith('/#') ? link.path.substring(1) : link.path}
+                  initial={{ opacity: 0, x: -12 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.05 }}
+                  onClick={() => setMobileMenuOpen(false)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '12px',
+                    padding: '14px 12px', borderRadius: '12px',
+                    color: '#fff', textDecoration: 'none',
+                    fontSize: '0.95rem', fontWeight: 600,
+                    transition: 'background 0.15s',
+                    minHeight: '48px',
+                  }}
+                  onPointerEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                  onPointerLeave={e => e.currentTarget.style.background = 'transparent'}
+                >
+                  <span style={{ color: 'var(--gold)', opacity: 0.85 }}>{link.icon}</span>
+                  {link.label}
+                </motion.a>
+              ))}
+            </div>
 
-            <div style={{ marginTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              {/* Language toggle in mobile */}
-              <button onClick={toggleLang} style={{ padding: '0.9rem', background: 'rgba(255,255,255,0.04)', color: 'white', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '14px', cursor: 'pointer', fontWeight: 700, fontSize: '0.9rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                <Globe size={16} /> {i18n.language === 'en' ? 'తెలుగు లో చదవండి' : 'Switch to English'}
+            {/* Footer actions */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <button onClick={toggleLang}
+                style={{ padding: '12px', background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.7)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', cursor: 'pointer', fontWeight: 700, fontSize: '0.875rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', minHeight: '48px' }}
+              >
+                <Globe size={15} /> {i18n.language === 'en' ? 'తెలుగు లో చదవండి' : 'Switch to English'}
               </button>
 
               {user ? (
-                <button
-                  onClick={() => { logout(); setMobileMenuOpen(false); }}
-                  style={{ width: '100%', padding: '0.9rem', background: 'rgba(245,57,123,0.1)', color: '#f5397b', border: '1px solid rgba(245,57,123,0.3)', borderRadius: '14px', cursor: 'pointer', fontWeight: 700, fontSize: '0.9rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                <button onClick={() => { logout(); setMobileMenuOpen(false); }}
+                  style={{ padding: '12px', background: 'rgba(240,81,95,0.08)', color: '#f0515f', border: '1px solid rgba(240,81,95,0.25)', borderRadius: '12px', cursor: 'pointer', fontWeight: 700, fontSize: '0.875rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', minHeight: '48px' }}
                 >
-                  <LogOut size={16} /> Sign Out
+                  <LogOut size={15} /> Sign Out
                 </button>
               ) : (
                 <Link
                   to="/login"
                   onClick={() => setMobileMenuOpen(false)}
-                  style={{ width: '100%', padding: '0.9rem', background: 'linear-gradient(135deg, #e8b84b, #b9933a)', color: '#07070f', borderRadius: '14px', fontWeight: 800, fontSize: '0.95rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', textDecoration: 'none' }}
+                  style={{ padding: '14px', background: 'var(--gold)', color: '#000', borderRadius: '12px', fontWeight: 900, fontSize: '0.95rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', textDecoration: 'none', minHeight: '48px' }}
                 >
-                  <User size={16} /> Sign In with Google
+                  <User size={16} /> Sign In
                 </Link>
               )}
             </div>

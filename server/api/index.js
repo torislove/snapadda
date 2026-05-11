@@ -36,9 +36,13 @@ const allowedOrigins = [
   'https://snapadda-7a6e6.web.app',
   'https://snapadda-7a6e6.firebaseapp.com',
   'https://snapaddaadmin.web.app',
+  'https://snapaddaadmin.firebaseapp.com',
+  'https://www.snapadda.com',
+  'https://snapadda.com',
   'http://localhost:3000',
   'http://localhost:5173',
-  'http://localhost:5174'
+  'http://localhost:5174',
+  'http://localhost:5175'
 ];
 
 app.use(cors({
@@ -331,7 +335,17 @@ export const api = onRequest({
 // Only run the server if explicitly started via 'npm start' and NOT in a Firebase/Function environment
 if (process.env.npm_lifecycle_event === 'start' && !process.env.FUNCTIONS_EMULATOR && !process.env.FIREBASE_CONFIG) {
   const PORT = process.env.PORT || 5000;
-  app.listen(PORT, () => {
-    console.log(`🚀 Server fully running locally on port ${PORT}`);
-  });
+  try {
+    app.listen(PORT, () => {
+      console.log(`🚀 Server fully running locally on port ${PORT}`);
+    }).on('error', (err) => {
+      if (err.code === 'EADDRINUSE') {
+        console.error(`❌ PORT_ERROR: Port ${PORT} is already in use. Try: Stop-Process -Id (Get-NetTCPConnection -LocalPort ${PORT}).OwningProcess -Force`);
+      } else {
+        console.error('❌ SERVER_START_ERROR:', err);
+      }
+    });
+  } catch (err) {
+    console.error('❌ FATAL_START_ERROR:', err);
+  }
 }

@@ -285,22 +285,27 @@ export default function SearchResults() {
       {/* Facing */}
       <div>
         <label className="sr-filter-label">{t('filter.facing', 'Facing')}</label>
-        <select className="dropdown-3d-glass" value={facing} onChange={e => { setFacing(e.target.value); setPage(1); }} style={{ width: '100%', fontSize: '0.82rem', boxSizing: 'border-box' }}>
-          <option value="">Any Direction</option>
-          <option>East</option><option>North</option><option>West</option>
-          <option>South</option><option>North-East</option><option>South-West</option>
-        </select>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+          {['', 'East', 'North', 'West', 'South', 'North-East', 'South-West'].map(f => (
+            <button key={f} onClick={() => { setFacing(f); setPage(1); }}
+              style={{ flex: '1 1 calc(33% - 8px)', padding: '8px', borderRadius: '8px', fontSize: '0.72rem', fontWeight: 800, cursor: 'pointer', border: facing === f ? '1px solid var(--gold)' : '1px solid rgba(255,255,255,0.1)', background: facing === f ? 'rgba(232,184,75,0.15)' : 'rgba(255,255,255,0.04)', color: facing === f ? 'var(--gold)' : 'rgba(255,255,255,0.7)', transition: 'all 0.15s' }}>
+              {f || 'Any'}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Approval */}
       <div>
         <label className="sr-filter-label">{t('filter.approval', 'Approval Authority')}</label>
-        <select className="dropdown-3d-glass" value={approval} onChange={e => { setApproval(e.target.value); setPage(1); }} style={{ width: '100%', fontSize: '0.82rem', boxSizing: 'border-box' }}>
-          <option value="">Any / All</option>
-          <option>AP CRDA</option><option>AP RERA</option>
-          <option>VMRDA</option><option>DTCP</option>
-          <option>TUDA</option><option>Panchayat</option>
-        </select>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+          {['', 'AP CRDA', 'AP RERA', 'VMRDA', 'DTCP', 'TUDA', 'Panchayat'].map(a => (
+            <button key={a} onClick={() => { setApproval(a); setPage(1); }}
+              style={{ flex: '1 1 calc(50% - 8px)', padding: '8px', borderRadius: '8px', fontSize: '0.72rem', fontWeight: 800, cursor: 'pointer', border: approval === a ? '1px solid var(--gold)' : '1px solid rgba(255,255,255,0.1)', background: approval === a ? 'rgba(232,184,75,0.15)' : 'rgba(255,255,255,0.04)', color: approval === a ? 'var(--gold)' : 'rgba(255,255,255,0.7)', transition: 'all 0.15s' }}>
+              {a || 'Any / All'}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Toggles */}

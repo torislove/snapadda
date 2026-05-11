@@ -67,7 +67,7 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
           <div>
             <h2 style={{ fontSize: '1.75rem', fontWeight: 800, color: 'white', fontFamily: 'var(--font-heading)', margin: 0 }}>
-              {isEditing ? 'Modify Property' : 'Add Property'}
+              {isEditing ? 'Update Asset' : 'New Asset'}
             </h2>
             <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
               {['Simplified', 'Advanced'].map((m: any) => (
@@ -95,9 +95,9 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
           
           <section>
             <h3 style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--violet)', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '1.75rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <div style={{ width: '20px', height: '1px', background: 'var(--violet)' }} /> STEP 1: CLASSIFICATION
+              <div style={{ width: '20px', height: '1px', background: 'var(--violet)' }} /> 1. BASIC INFO
             </h3>
-            <div className="responsive-form-grid" style={{ display: 'grid', gap: '1.5rem' }}>
+            <div className="responsive-form-grid">
               <div>
                 <label className="admin-label">Property Type <span className="required-asterisk">*</span></label>
                 <select name="type" defaultValue={editingProperty?.type || 'Apartment'} className="admin-select"
@@ -215,7 +215,7 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
                   <option value="Rented">Rented Out</option>
                 </select>
               </div>
-              <div style={{ gridColumn: 'span 2' }}>
+              <div className="col-span-full">
                 <label className="admin-label">Property Title <span className="required-asterisk">*</span></label>
                 <input name="title" defaultValue={editingProperty?.title || ''} className="admin-input" placeholder="e.g. 6 Acres of CRM Land in Mangalagiri" required />
               </div>
@@ -240,9 +240,9 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
           {viewMode === 'Advanced' && (
             <section>
               <h3 style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--emerald)', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '1.75rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div style={{ width: '20px', height: '1px', background: 'var(--emerald)' }} /> STEP 2: LOCATION & LEGAL
+                <div style={{ width: '20px', height: '1px', background: 'var(--emerald)' }} /> 2. LOCATION & DESC
               </h3>
-              <div className="responsive-form-grid" style={{ display: 'grid', gap: '1.5rem' }}>
+              <div className="responsive-form-grid">
                 <div style={{ gridColumn: '1 / -1' }}>
                   <label className="admin-label">Full Address</label>
                   <textarea name="address" defaultValue={editingProperty?.address || ''} className="admin-input" rows={2} placeholder="Near coca cola factory..." />
@@ -318,7 +318,7 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
                 </div>
               )}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1.5rem' }}>
-                <div style={{ gridColumn: 'span 2' }}>
+                <div className="col-span-full">
                   <label className="admin-label">Total Acres (ఎకరాలు)</label>
                   <input 
                     type="number" 
@@ -445,7 +445,7 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
           {viewMode === 'Advanced' && ['Apartment', 'Villa', 'Farmhouse', 'Independent House', 'Commercial Space'].includes(liveData.type) && (
           <section>
             <h3 style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--rose)', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '1.75rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <div style={{ width: '20px', height: '1px', background: 'var(--rose)' }} /> STEP 3: INTERIOR CONFIGURATION
+              <div style={{ width: '20px', height: '1px', background: 'var(--rose)' }} /> 3. SPECIFICATIONS
             </h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1.5rem' }}>
               <div>
@@ -487,7 +487,7 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
           {viewMode === 'Advanced' && (
             <section>
               <h3 style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--cyan)', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '1.75rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div style={{ width: '20px', height: '1px', background: 'var(--cyan)' }} /> STEP 4: AGE & CONDITION
+                <div style={{ width: '20px', height: '1px', background: 'var(--cyan)' }} /> 4. ASSET STATUS
               </h3>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1.5rem' }}>
                 <div>
@@ -506,7 +506,7 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
           {viewMode === 'Advanced' && (
             <section>
               <h3 style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--cyan)', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '1.75rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div style={{ width: '20px', height: '1px', background: 'var(--rose)' }} /> STEP 5: ADDITIONAL DETAILS
+                <div style={{ width: '20px', height: '1px', background: 'var(--rose)' }} /> 5. FEATURES
               </h3>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
                 <div>
@@ -574,7 +574,7 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
           {viewMode === 'Advanced' && (
             <section>
               <h3 style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--violet)', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '1.75rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div style={{ width: '20px', height: '1px', background: 'var(--violet)' }} /> STEP 6: EXTRA CUSTOM FIELDS
+                <div style={{ width: '20px', height: '1px', background: 'var(--violet)' }} /> 6. CUSTOM FIELDS
               </h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                   {customFeatures.map((feat, idx) => (
@@ -617,7 +617,7 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
           {/* STEP 7: REALTOR / SOURCE INFO */}
           <section>
             <h3 style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--gold)', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '1.75rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <div style={{ width: '20px', height: '1px', background: 'var(--gold)' }} /> STEP 7: REALTOR / SOURCE INFO
+              <div style={{ width: '20px', height: '1px', background: 'var(--gold)' }} /> 7. CONTACT INFO
             </h3>
             <div style={{ padding: '1.25rem', background: 'rgba(232,184,75,0.04)', borderRadius: '16px', border: '1px solid rgba(232,184,75,0.15)', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
               
@@ -661,7 +661,7 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
                 </div>
               )}
 
-              <div className="responsive-form-grid" style={{ display: 'grid', gap: '1rem' }}>
+              <div className="responsive-form-grid">
                 <div>
                   <label className="admin-label">Realtor Name <span className="required-asterisk">*</span></label>
                   <input className="admin-input" placeholder="e.g. Ravi Kumar" value={realtorData.name || ''}
@@ -702,7 +702,7 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
           </section>
 
           <div style={{ gridColumn: '1 / -1' }}>
-            <label className="admin-label">STEP 8: VISUAL ASSETS (MULTI-SELECT)</label>
+            <label className="admin-label">8. MEDIA ASSETS (UP TO 12)</label>
             <MediaManager 
               existingUrls={currentImageUrls}
               onImagesChange={handleMediaChange}
@@ -713,7 +713,7 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
            <div style={{ display: 'flex', gap: '1.5rem' }}>
               <Button type="button" onClick={handleCloseForm} className="btn-ghost" style={{ flex: 1, padding: '1rem' }}>CANCEL</Button>
               <Button type="submit" disabled={isUploading} className="btn-violet" style={{ flex: 2, padding: '1rem' }}>
-               {isUploading ? 'SAVING...' : 'ADD PROPERTY'}
+               {isUploading ? 'SAVING...' : (isEditing ? 'UPDATE PROPERTY' : 'ADD PROPERTY')}
               </Button>
            </div>
 

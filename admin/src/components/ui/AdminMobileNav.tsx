@@ -1,76 +1,102 @@
-
 import { useLocation, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { LayoutDashboard, Building2, Users, FileText } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { LayoutDashboard, Building2, Users, Settings, MessageSquare } from 'lucide-react';
 
-export const AdminMobileNav = () => {
+interface AdminMobileNavProps {
+  isVisible?: boolean;
+}
+
+const navItems = [
+  { id: 'dashboard',   icon: LayoutDashboard, label: 'Home',      path: '/admin' },
+  { id: 'properties',  icon: Building2,       label: 'Listings',  path: '/admin/properties' },
+  { id: 'leads',       icon: Users,           label: 'Leads',     path: '/admin/leads' },
+  { id: 'contacts',    icon: MessageSquare,   label: 'Contacts',  path: '/admin/contacts' },
+  { id: 'settings',    icon: Settings,        label: 'Settings',  path: '/admin/settings' },
+];
+
+export const AdminMobileNav: React.FC<AdminMobileNavProps> = ({ isVisible = true }) => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const navItems = [
-    { id: 'dashboard', icon: LayoutDashboard, label: 'Dash', path: '/admin' },
-    { id: 'properties', icon: Building2, label: 'Assets', path: '/admin/properties' },
-    { id: 'leads', icon: Users, label: 'CRM', path: '/admin/leads' },
-    { id: 'settings', icon: FileText, label: 'Configs', path: '/admin/settings' },
-  ];
+  if (!isVisible) return null;
 
-  // Only show on mobile
   return (
     <nav
       className="admin-mobile-nav"
-      style={{
-        position: 'fixed', bottom: '15px', left: '15px', right: '15px',
-        height: '68px',
-        background: 'rgba(10, 10, 20, 0.95)',
-        backdropFilter: 'blur(30px) saturate(200%)',
-        WebkitBackdropFilter: 'blur(30px) saturate(200%)',
-        border: '1px solid rgba(255, 255, 255, 0.12)',
-        borderRadius: '24px',
-        display: 'flex', justifyContent: 'space-around', alignItems: 'center',
-        zIndex: 9999, padding: '0 10px',
-        boxShadow: '0 20px 40px rgba(0,0,0,0.8), inset 0 1px 1px rgba(255,255,255,0.1)',
-        transform: 'translateZ(0)',
-      }}
+      role="navigation"
+      aria-label="Admin navigation"
     >
       {navItems.map((item) => {
-        const isActive = location.pathname === item.path ||
-          (item.path !== '/' && location.pathname.startsWith(item.path));
-          
+        const isActive =
+          item.path === '/admin'
+            ? location.pathname === '/admin'
+            : location.pathname.startsWith(item.path);
+
+        const Icon = item.icon;
+
         return (
           <motion.button
             key={item.id}
             onClick={() => {
-              if (navigator.vibrate) navigator.vibrate(40);
+              if (navigator.vibrate) navigator.vibrate(30);
               navigate(item.path);
             }}
             whileTap={{ scale: 0.88 }}
-            style={{
-              flex: 1, display: 'flex', flexDirection: 'column',
-              alignItems: 'center', justifyContent: 'center', gap: '4px',
-              border: 'none', background: 'none',
-              color: isActive ? 'var(--gold)' : 'rgba(255,255,255,0.4)',
-              transition: 'all 0.3s ease', position: 'relative', height: '100%', cursor: 'pointer',
-            }}
+            className={`admin-mobile-nav-item ${isActive ? 'active' : ''}`}
+            aria-label={item.label}
+            aria-current={isActive ? 'page' : undefined}
+            style={{ border: 'none', cursor: 'pointer', background: 'none' }}
           >
-            {isActive && (
-              <motion.div
-                layoutId="admin-nav-bg-glow"
-                style={{ position: 'absolute', width: '45px', height: '45px', background: 'rgba(232,184,75,0.12)', borderRadius: '16px', filter: 'blur(10px)', zIndex: -1 }}
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              {/* Active glow bg */}
+              <AnimatePresence>
+                {isActive && (
+                  <motion.div
+                    layoutId="admin-nav-glow"
+                    initial={{ opacity: 0, scale: 0.6 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.6 }}
+                    style={{
+                      position: 'absolute', inset: '-8px',
+                      background: 'rgba(124,58,237,0.1)',
+                      borderRadius: '12px', zIndex: 0,
+                    }}
+                  />
+                )}
+              </AnimatePresence>
+
+              {/* Active top indicator */}
+              <AnimatePresence>
+                {isActive && (
+                  <motion.div
+                    layoutId="admin-nav-dot"
+                    initial={{ opacity: 0, scaleX: 0 }}
+                    animate={{ opacity: 1, scaleX: 1 }}
+                    exit={{ opacity: 0, scaleX: 0 }}
+                    style={{
+                      position: 'absolute', top: '-12px', left: '50%',
+                      transform: 'translateX(-50%)',
+                      width: '20px', height: '2.5px',
+                      background: 'var(--violet)',
+                      borderRadius: '0 0 4px 4px',
+                    }}
+                  />
+                )}
+              </AnimatePresence>
+
+              <Icon
+                size={20}
+                strokeWidth={isActive ? 2.5 : 1.75}
+                style={{ position: 'relative', zIndex: 1 }}
               />
-            )}
-            <item.icon
-              size={22} strokeWidth={isActive ? 2.5 : 1.8}
-              style={{ filter: isActive ? 'drop-shadow(0 0 10px rgba(232,184,75,0.6))' : 'none', transform: isActive ? 'translateY(-2px)' : 'none', transition: 'all 0.3s ease' }}
-            />
-            <span style={{ fontSize: '0.62rem', fontWeight: isActive ? 900 : 600, letterSpacing: '0.04em', textTransform: 'uppercase', opacity: isActive ? 1 : 0.7 }}>
+            </div>
+
+            <span style={{
+              fontSize: '0.57rem', fontWeight: isActive ? 700 : 500,
+              letterSpacing: '0.03em',
+            }}>
               {item.label}
             </span>
-            {isActive && (
-              <motion.div
-                layoutId="admin-nav-indicator"
-                style={{ position: 'absolute', bottom: '6px', width: '4px', height: '4px', background: 'var(--gold)', borderRadius: '50%', boxShadow: '0 0 8px var(--gold)' }}
-              />
-            )}
           </motion.button>
         );
       })}

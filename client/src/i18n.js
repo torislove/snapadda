@@ -5,13 +5,13 @@ const resources = {
   en: {
     translation: {
       "nav": {
-        "properties": "Properties",
-        "locations": "Locations",
-        "about": "About Us",
+        "properties": "Inventory",
+        "locations": "Areas",
+        "about": "About",
         "contact": "Contact",
         "signIn": "SIGN IN",
         "signOut": "SIGN OUT",
-        "dashboard": "Client Panel"
+        "dashboard": "Portal"
       },
       "hero": {
         "eyebrow": "Andhra Pradesh's #1 Property Platform",
@@ -146,18 +146,18 @@ const resources = {
       },
       "dashboard": {
         "welcome": "Welcome back",
-        "overview": "Overview",
-        "saved": "Saved",
-        "inquiries": "Inquiries",
-        "profile": "Profile",
-        "backToSite": "Back to Site",
+        "overview": "Insights",
+        "saved": "Shortlist",
+        "inquiries": "Leads",
+        "profile": "Account",
+        "backToSite": "Exit to Site",
         "memberSince": "Member Since",
-        "noSaved": "No saved properties yet",
-        "noInquiries": "No inquiries found",
-        "recentViews": "Recently Viewed",
-        "savedProps": "Saved Properties",
-        "myInquiries": "My Inquiries",
-        "myProfile": "My Profile",
+        "noSaved": "No shortlisted assets",
+        "noInquiries": "No leads found",
+        "recentViews": "Recent Views",
+        "savedProps": "Shortlisted",
+        "myInquiries": "My Leads",
+        "myProfile": "My Account",
         "signOut": "Sign Out"
       },
       "pd": {

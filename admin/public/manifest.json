@@ -1,7 +1,6 @@
 {
-  "short_name": "SnapAdda",
-  "name": "SnapAdda | Elite Real Estate Platform",
-  "description": "Premium real estate platform for Andhra Pradesh. Buy, sell, and invest in elite properties.",
+  "short_name": "SnapAdda Admin",
+  "name": "SnapAdda Administrative Console",
   "icons": [
     {
       "src": "favicon-round.png",
@@ -10,9 +9,8 @@
       "purpose": "any maskable"
     }
   ],
-  "start_url": "/",
+  "start_url": "/admin",
   "display": "standalone",
-  "orientation": "portrait",
   "theme_color": "#05050a",
   "background_color": "#05050a"
 }

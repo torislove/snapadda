@@ -49,8 +49,8 @@ export default defineConfig({
         background_color: '#0a0a0a',
         display: 'standalone',
         icons: [
-          { src: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
-          { src: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }
+          { src: '/favicon-round.png', sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
+          { src: '/favicon-round.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' }
         ]
       }
     })

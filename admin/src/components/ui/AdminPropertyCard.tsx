@@ -1,12 +1,12 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useTranslation } from 'react-i18next';
 import {
   ShieldCheck, MapPin, Building2, Leaf, Square,
   Compass, CheckCircle2, Edit3, Trash2, Zap, ChevronLeft,
   ChevronRight, Image as ImageIcon, Home as HomeIcon, TrendingUp,
-  Clock, Copy, X, Play, BedDouble, Key, EyeOff
+  Clock, Copy, X, Play, BedDouble, EyeOff, CheckCircle
 } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 import HolographicWrapper from './HolographicWrapper';
 
 interface Props {
@@ -20,11 +20,12 @@ interface Props {
   onSelect?: (id: string) => void;
 }
 
-const fmt = (p: number) => {
-  if (!p) return 'Price on Request';
-  if (p >= 10000000) return `₹${(p / 10000000).toFixed(2)} Cr`;
-  if (p >= 100000) return `₹${(p / 100000).toFixed(1)} L`;
-  return `₹${p.toLocaleString('en-IN')}`;
+const fmt = (p: any) => {
+  const val = Number(p);
+  if (!val || isNaN(val)) return 'Price on Request';
+  if (val >= 10000000) return `₹${(val / 10000000).toFixed(2)} Cr`;
+  if (val >= 100000) return `₹${(val / 100000).toFixed(1)} L`;
+  return `₹${val.toLocaleString('en-IN')}`;
 };
 
 const validImg = (s: string) =>
@@ -67,14 +68,20 @@ export const AdminPropertyCard: React.FC<Props> = ({
   prop, handleEdit, updateProperty, deleteProperty, createProperty,
   loadProperties, selected, onSelect,
 }) => {
-  const { t } = useTranslation();
   const [imgIdx, setImgIdx] = useState(0);
   const [lightbox, setLightbox] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [copying, setCopying] = useState(false);
   const [busy, setBusy] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const timerRef = useRef<any>(null);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const id = prop._id || prop.id;
   const imgs = [...(prop.images||[]), prop.image].filter(validImg).slice(0, 8);
@@ -98,59 +105,85 @@ export const AdminPropertyCard: React.FC<Props> = ({
     : null;
 
   const startCycle = () => {
-    if (imgs.length > 1)
-      timerRef.current = setInterval(() => setImgIdx(p => (p+1) % imgs.length), 1800);
+    if (imgs.length <= 1) return;
+    stopCycle();
+    timerRef.current = setInterval(() => {
+      setImgIdx(p => (p + 1) % imgs.length);
+    }, 2500);
   };
-  const stopCycle = () => { clearInterval(timerRef.current); setImgIdx(0); };
 
-  const changeStatus = useCallback(async (s: string) => {
-    if (busy) return;
-    setBusy(true);
-    try { await updateProperty(id, { status: s }); loadProperties(); }
-    finally { setBusy(false); }
-  }, [id, busy, updateProperty, loadProperties]);
+  const stopCycle = () => {
+    if (timerRef.current) clearInterval(timerRef.current);
+  };
 
   const handleApprove = useCallback(async () => {
     if (busy) return;
     setBusy(true);
-    try { 
-      await updateProperty(id, { 
-        status: 'Active', 
-        verificationStatus: 'Verified',
-        isVerified: true 
-      }); 
-      loadProperties(); 
-    }
-    finally { setBusy(false); }
+    const loadingToast = toast.loading("Verifying listing...");
+    try {
+      await updateProperty(id, { verificationStatus: 'Verified', isVerified: true });
+      toast.success("Property Verified!", { id: loadingToast });
+      loadProperties();
+    } catch {
+      toast.error("Verification failed", { id: loadingToast });
+    } finally { setBusy(false); }
+  }, [id, busy, updateProperty, loadProperties]);
+
+  const changeStatus = useCallback(async (newStatus: string) => {
+    if (busy) return;
+    setBusy(true);
+    const loadingToast = toast.loading(`Updating status to ${newStatus}...`);
+    try {
+      await updateProperty(id, { status: newStatus });
+      toast.success(`Status updated to ${newStatus}`, { id: loadingToast });
+      loadProperties();
+    } catch {
+      toast.error("Status update failed", { id: loadingToast });
+    } finally { setBusy(false); }
   }, [id, busy, updateProperty, loadProperties]);
 
   const handleDelete = useCallback(async () => {
-    if (!window.confirm(`Delete "${prop.title}"? This cannot be undone.`)) return;
+    if (deleting) return;
+    if (!window.confirm(`Delete property: ${prop.title}?`)) return;
     setDeleting(true);
-    try { await deleteProperty(id); loadProperties(); }
-    catch { setDeleting(false); }
+    const loadingToast = toast.loading("Deleting property...");
+    try {
+      await deleteProperty(id);
+      toast.success("Property Deleted", { id: loadingToast });
+      loadProperties(); 
+    } catch { 
+      toast.error("Delete failed", { id: loadingToast });
+      setDeleting(false); 
+    }
   }, [id, prop.title, deleteProperty, loadProperties]);
 
   const handleCopy = useCallback(async () => {
     if (copying || !createProperty) return;
     setCopying(true);
+    const loadingToast = toast.loading("Cloning listing...");
     try {
       const { _id, id: _id2, createdAt, likeCount, shareCount, likeLogs, shareLogs, ...rest } = prop;
       await createProperty({ ...rest, title: `[COPY] ${prop.title}`, status: 'Draft' });
+      toast.success("Listing Cloned! Look for '[COPY]' title.", { id: loadingToast });
       loadProperties();
-    } catch(e) { console.error(e); }
-    finally { setCopying(false); }
+    } catch(e) { 
+      toast.error("Clone failed", { id: loadingToast });
+      console.error(e); 
+    } finally { setCopying(false); }
   }, [prop, copying, createProperty, loadProperties]);
 
   const handleShareLink = useCallback(() => {
     const url = `https://snapadda.com/property/${id}`;
-    navigator.clipboard.writeText(url).catch(() => {
+    navigator.clipboard.writeText(url).then(() => {
+      toast.success("Link copied to clipboard!");
+    }).catch(() => {
       const ta = document.createElement('textarea');
       ta.value = url;
       document.body.appendChild(ta);
       ta.select();
       document.execCommand('copy');
       document.body.removeChild(ta);
+      toast.success("Link copied!");
     });
     setLinkCopied(true);
     setTimeout(() => setLinkCopied(false), 2000);
@@ -165,7 +198,22 @@ export const AdminPropertyCard: React.FC<Props> = ({
   }, [id, prop]);
 
   const scoreColor = score >= 80 ? '#10d98c' : score >= 50 ? '#e8b84b' : '#f5397b';
-  const isMobile = window.innerWidth <= 600;
+
+  const Btn: React.FC<{
+    onClick: () => void; icon: React.ReactNode; label: string;
+    color?: string; border?: string; textColor?: string;
+  }> = ({ onClick, icon, label, color = 'rgba(255,255,255,0.08)', border = 'rgba(255,255,255,0.15)', textColor = 'white' }) => (
+    <button onClick={onClick}
+      style={{ 
+        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, 
+        padding: isMobile ? '8px 2px' : '10px 4px',
+        background: color, border: `1px solid ${border}`, borderRadius: 10, color: textColor, backdropFilter: 'blur(10px)',
+        cursor: 'pointer', fontSize: isMobile ? '0.62rem' : '0.7rem', fontWeight: 900, transition: 'all 0.2s', minHeight: isMobile ? '38px' : '42px',
+        touchAction: 'manipulation', width: '100%' 
+      }}>
+      {icon} {label}
+    </button>
+  );
 
   return (
     <>
@@ -179,45 +227,39 @@ export const AdminPropertyCard: React.FC<Props> = ({
             style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.95)', zIndex: 9999,
               display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(10px)' }}
           >
-            <button onClick={() => setLightbox(false)}
-              style={{ position: 'absolute', top: 20, right: 20, background: 'rgba(255,255,255,0.1)',
-                border: 'none', borderRadius: '50%', padding: 10, color: 'white', cursor: 'pointer' }}>
-              <X size={20} />
-            </button>
-            <button onClick={(e) => { e.stopPropagation(); setImgIdx(p => (p - 1 + imgs.length) % imgs.length); }}
-              style={{ position: 'absolute', left: 20, background: 'rgba(255,255,255,0.1)', border: 'none',
-                borderRadius: '50%', padding: 14, color: 'white', cursor: 'pointer' }}>
-              <ChevronLeft size={22} />
-            </button>
-            <img src={imgs[imgIdx % imgs.length]} onClick={e => e.stopPropagation()}
-              style={{ maxWidth: '90vw', maxHeight: '85vh', objectFit: 'contain', borderRadius: 12,
-                boxShadow: '0 20px 60px rgba(0,0,0,0.8)' }} alt="" />
-            <button onClick={(e) => { e.stopPropagation(); setImgIdx(p => (p + 1) % imgs.length); }}
-              style={{ position: 'absolute', right: 20, background: 'rgba(255,255,255,0.1)', border: 'none',
-                borderRadius: '50%', padding: 14, color: 'white', cursor: 'pointer' }}>
-              <ChevronRight size={22} />
-            </button>
-            <div style={{ position: 'absolute', bottom: 20, display: 'flex', gap: 8 }}>
-              {imgs.map((_, i) => (
-                <div key={i} onClick={(e) => { e.stopPropagation(); setImgIdx(i); }}
-                  style={{ width: imgIdx === i ? 24 : 8, height: 8, borderRadius: 4, cursor: 'pointer',
-                    background: imgIdx === i ? '#e8b84b' : 'rgba(255,255,255,0.4)', transition: 'all 0.3s' }} />
-              ))}
+            <motion.img
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              src={imgs[imgIdx % imgs.length]}
+              style={{ maxWidth: '90%', maxHeight: '80%', borderRadius: '12px', boxShadow: '0 20px 60px rgba(0,0,0,0.8)' }}
+            />
+            
+            <div style={{ position: 'absolute', bottom: '40px', display: 'flex', gap: '20px' }}>
+              <button onClick={(e) => { e.stopPropagation(); setImgIdx(p => (p - 1 + imgs.length) % imgs.length); }} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white', padding: '15px', borderRadius: '50%', cursor: 'pointer' }}>
+                <ChevronLeft size={32} />
+              </button>
+              <button onClick={(e) => { e.stopPropagation(); setImgIdx(p => (p + 1) % imgs.length); }} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white', padding: '15px', borderRadius: '50%', cursor: 'pointer' }}>
+                <ChevronRight size={32} />
+              </button>
             </div>
+            
+            <button onClick={() => setLightbox(false)} style={{ position: 'absolute', top: '40px', right: '40px', background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}>
+              <X size={32} />
+            </button>
           </motion.div>
         )}
       </AnimatePresence>
 
       <motion.div
         layout
-        initial={{ opacity: 0, y: 0 }}
+        initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95 }}
-        transition={{ duration: 0.4, ease: 'easeOut' }}
+        whileHover={isMobile ? {} : { y: -8, transition: { duration: 0.3 } }}
         whileTap={{ scale: 0.98 }}
         style={{
-          margin: isMobile ? '0 4px' : '0',
-          height: isMobile ? '460px' : '520px',
+          margin: isMobile ? '0 0.5rem 1rem' : '0',
+          height: isMobile ? 'auto' : '540px',
+          minHeight: isMobile ? '380px' : '540px',
         }}
       >
         <HolographicWrapper
@@ -232,14 +274,19 @@ export const AdminPropertyCard: React.FC<Props> = ({
           background: '#050a14',
           border: isMobile ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(255,255,255,0.1)',
           boxShadow: '0 15px 35px rgba(0,0,0,0.4)',
-          overflow: 'hidden',
-          position: 'relative',
           display: 'flex',
-          flexDirection: 'column'
+          flexDirection: 'column',
+          position: 'relative'
         }}>
           
-          {/* FULL BLEED BACKGROUND IMAGE */}
-          <div style={{ position: 'absolute', inset: 0, zIndex: 0 }} onMouseEnter={startCycle} onMouseLeave={stopCycle}>
+          {/* CARD IMAGE CONTAINER */}
+          <div style={{ 
+            position: isMobile ? 'relative' : 'absolute', 
+            inset: isMobile ? 'unset' : 0, 
+            height: isMobile ? '200px' : '100%',
+            zIndex: 0,
+            overflow: 'hidden'
+          }} onMouseEnter={startCycle} onMouseLeave={stopCycle}>
             <AnimatePresence initial={false}>
               {imgs.length > 0 ? (
                 <motion.img key={imgIdx} src={getOptimizedImg(imgs[imgIdx % imgs.length])}
@@ -261,59 +308,62 @@ export const AdminPropertyCard: React.FC<Props> = ({
             <div style={{ pointerEvents: 'none', position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, transparent 25%, transparent 40%, rgba(5,10,20,0.95) 80%, rgba(5,10,20,1) 100%)', zIndex: 1 }} />
             
             {/* Top Bar Badges */}
-            <div style={{ position: 'absolute', top: 16, left: 16, right: 16, display: 'flex', justifyContent: 'space-between', zIndex: 10 }}>
+            <div style={{ position: 'absolute', top: 12, left: 12, right: 12, display: 'flex', justifyContent: 'space-between', zIndex: 10 }}>
               <div style={{ display: 'flex', gap: '6px' }}>
                 {imgs.length > 1 && (
-                  <div style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)', color: 'white', padding: '4px 10px', borderRadius: '14px', fontSize: '0.65rem', fontWeight: 800, border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <div style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)', color: 'white', padding: '3px 8px', borderRadius: '10px', fontSize: '0.6rem', fontWeight: 800, border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', gap: '4px' }}>
                     <ImageIcon size={10} /> {(imgIdx % imgs.length) + 1}/{imgs.length}
                   </div>
                 )}
                 {vids.length > 0 && (
-                  <div style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)', color: '#22d9e0', padding: '4px 10px', borderRadius: '14px', fontSize: '0.65rem', fontWeight: 800, border: '1px solid rgba(34,217,224,0.3)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <div style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)', color: '#22d9e0', padding: '3px 8px', borderRadius: '10px', fontSize: '0.6rem', fontWeight: 800, border: '1px solid rgba(34,217,224,0.3)', display: 'flex', alignItems: 'center', gap: '4px' }}>
                     <Play size={10} fill="#22d9e0" /> VIDEO
                   </div>
                 )}
               </div>
 
-              {/* Admin Select & Score */}
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <div style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)', color: scoreColor, padding: '4px 8px', borderRadius: '8px', fontSize: '0.6rem', fontWeight: 800, border: `1px solid ${scoreColor}44` }}>
-                  {score}% HEALTH
+                <div style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)', color: scoreColor, padding: '3px 6px', borderRadius: '6px', fontSize: '0.55rem', fontWeight: 800, border: `1px solid ${scoreColor}44` }}>
+                  {score}%
                 </div>
                 {onSelect && (
                   <div onClick={(e) => { e.stopPropagation(); onSelect(id); }}
-                    style={{ width: 24, height: 24, borderRadius: 6, border: selected ? 'none' : '2px solid rgba(255,255,255,0.6)', background: selected ? '#e8b84b' : 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', backdropFilter: 'blur(8px)' }}>
-                    {selected && <CheckCircle2 size={16} color="#07070f" />}
+                    style={{ width: 22, height: 22, borderRadius: 6, border: selected ? 'none' : '2px solid rgba(255,255,255,0.6)', background: selected ? '#e8b84b' : 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', backdropFilter: 'blur(8px)' }}>
+                    {selected && <CheckCircle2 size={14} color="#07070f" />}
                   </div>
                 )}
               </div>
             </div>
 
-            {/* Status Labels Top Right below Actions */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'flex-end', position: 'absolute', top: 60, right: 16, zIndex: 10 }}>
-              <div style={{ background: sc.bg, color: sc.color, border: `1px solid ${sc.color}44`, padding: '4px 10px', borderRadius: '8px', fontSize: '0.65rem', fontWeight: 800, letterSpacing: '0.05em', backdropFilter: 'blur(10px)' }}>
+            {/* Status Labels Top Right */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-end', position: 'absolute', top: 48, right: 12, zIndex: 10 }}>
+              <div style={{ background: sc.bg, color: sc.color, border: `1px solid ${sc.color}44`, padding: '3px 8px', borderRadius: '6px', fontSize: '0.6rem', fontWeight: 800, letterSpacing: '0.05em', backdropFilter: 'blur(10px)' }}>
                 {sc.label}
               </div>
-              {daysAgo !== null && daysAgo <= 1 && (
-                <div style={{ background: 'rgba(255,80,80,0.2)', color: '#ff5050', border: '1px solid rgba(255,80,80,0.4)', padding: '4px 10px', borderRadius: '8px', fontSize: '0.65rem', fontWeight: 900, letterSpacing: '0.05em', backdropFilter: 'blur(10px)', animation: 'pulse 2s infinite' }}>
-                  NEW
-                </div>
-              )}
               {prop.isVerified && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(212,175,55,0.15)', color: 'var(--gold)', border: '1px solid rgba(212,175,55,0.3)', backdropFilter: 'blur(10px)', fontWeight: 700, padding: '4px 10px', borderRadius: '8px', fontSize: '0.65rem' }}>
-                  <ShieldCheck size={12} /> Verified
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(212,175,55,0.15)', color: 'var(--gold)', border: '1px solid rgba(212,175,55,0.3)', backdropFilter: 'blur(10px)', fontWeight: 700, padding: '3px 8px', borderRadius: '6px', fontSize: '0.6rem' }}>
+                  <ShieldCheck size={10} /> Verified
                 </div>
               )}
             </div>
 
-            {/* Completeness Bar at bottom of image overlay */}
-            <div style={{ position: 'absolute', bottom: '170px', left: 0, right: 0, height: 2, background: 'rgba(255,255,255,0.05)', zIndex: 10 }}>
+            {/* Completeness Bar */}
+            <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 2, background: 'rgba(255,255,255,0.05)', zIndex: 10 }}>
               <motion.div initial={{ width: 0 }} animate={{ width: `${score}%` }} style={{ height: '100%', background: scoreColor, boxShadow: `0 0 8px ${scoreColor}` }} />
             </div>
           </div>
 
-          {/* FLOATING CONTENT AT BOTTOM */}
-          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '1.25rem', zIndex: 20, display: 'flex', flexDirection: 'column' }}>
+          {/* CONTENT AREA */}
+          <div style={{ 
+            position: isMobile ? 'relative' : 'absolute', 
+            bottom: 0, left: 0, right: 0, 
+            padding: isMobile ? '0.875rem' : '1.25rem', 
+            zIndex: 20, 
+            display: 'flex', 
+            flexDirection: 'column',
+            background: isMobile ? '#050a14' : 'transparent',
+            marginTop: '0'
+          }}>
             
             {/* Price Row */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '8px' }}>
@@ -380,73 +430,70 @@ export const AdminPropertyCard: React.FC<Props> = ({
 
 
             {/* Advanced Specs Grid */}
-            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '16px' }}>
                {isResidential && (prop.bhk > 0 || prop.beds > 0) ? (
-                 <div style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(12px)', padding: '4px 10px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.7rem', color: 'white', fontWeight: 600 }}>
-                   <BedDouble size={12} style={{ color: 'var(--gold)' }} /> <span>{prop.bhk || prop.beds} BHK</span>
+                 <div style={{ background: 'rgba(255,255,255,0.08)', backdropFilter: 'blur(12px)', padding: '5px 10px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.68rem', color: 'white', fontWeight: 700, border: '1px solid rgba(255,255,255,0.1)' }}>
+                   <BedDouble size={11} style={{ color: 'var(--gold)' }} /> <span>{prop.bhk || prop.beds} BHK</span>
                  </div>
                ) : null}
                {(prop.areaSize > 0 || prop.totalAcres > 0) && (
-                 <div style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(12px)', padding: '4px 10px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.7rem', color: 'white', fontWeight: 600 }}>
-                   {isAgri ? <Leaf size={12} style={{ color: '#10d98c' }}/> : <Square size={12} style={{ color: '#22d9e0' }}/>} 
-                   <span>{isAgri ? `${Number(prop.totalAcres||0).toFixed(2)} Ac` : `${prop.areaSize} ${prop.measurementUnit||'Sq.Ft'}`}</span>
+                 <div style={{ background: 'rgba(255,255,255,0.08)', backdropFilter: 'blur(12px)', padding: '5px 10px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.68rem', color: 'white', fontWeight: 700, border: '1px solid rgba(255,255,255,0.1)' }}>
+                   {isAgri ? <Leaf size={11} style={{ color: '#10d98c' }}/> : <Square size={11} style={{ color: '#22d9e0' }}/>} 
+                   <span>{isAgri ? `${Number(prop.totalAcres||0).toFixed(2)} Ac` : `${prop.areaSize} ${prop.measurementUnit||'Sq.Yards'}`}</span>
                  </div>
                )}
                {prop.facing && !['Any','N/A'].includes(prop.facing) && (
-                 <div style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(12px)', padding: '4px 10px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.7rem', color: 'white', fontWeight: 600 }}>
-                   <Compass size={12} style={{ color: 'var(--gold)' }} /> <span>{prop.facing}</span>
+                 <div style={{ background: 'rgba(255,255,255,0.08)', backdropFilter: 'blur(12px)', padding: '5px 10px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.68rem', color: 'white', fontWeight: 700, border: '1px solid rgba(255,255,255,0.1)' }}>
+                   <Compass size={11} style={{ color: 'var(--gold)' }} /> <span>{prop.facing} Facing</span>
                  </div>
                )}
             </div>
 
-            {/* Share Button Group */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(80px, 1fr))', gap: '8px', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '12px' }}>
-              <Btn onClick={() => handleEdit(prop)} icon={<Edit3 size={13}/>} label={t('common.edit')} />
-              
-              <Btn onClick={handleCopy} icon={<Copy size={13}/>} label={copying ? '...' : 'Copy'}
-                color="rgba(155,89,245,0.1)" border="rgba(155,89,245,0.3)" textColor="#9b59f5" />
-              
-              <Btn onClick={handleDelete} icon={<Trash2 size={13}/>} label={deleting ? '...' : t('common.delete')}
-                color="rgba(245,57,123,0.1)" border="rgba(245,57,123,0.3)" textColor="#f5397b" />
+            {/* Action Button Group */}
+            <div style={{ 
+              display: 'grid', 
+              gridTemplateColumns: isMobile ? '1fr 1fr 1fr' : 'repeat(auto-fit, minmax(90px, 1fr))', 
+              gap: isMobile ? '8px' : '10px', 
+              borderTop: '1px solid rgba(255,255,255,0.08)', 
+              paddingTop: '12px',
+              width: '100%'
+            }}>
+              <Btn onClick={() => handleEdit(prop)} icon={<Edit3 size={12}/>} label="Edit" />
               
               {prop.verificationStatus !== 'Verified' && (
                 <Btn 
                   onClick={handleApprove} 
-                  icon={<ShieldCheck size={13}/>} 
-                  label="APPROVE"
-                  color="rgba(16,217,140,0.15)" 
-                  border="rgba(16,217,140,0.4)" 
+                  icon={<ShieldCheck size={12}/>} 
+                  label="Verify"
+                  color="rgba(16,217,140,0.08)" 
+                  border="rgba(16,217,140,0.2)" 
                   textColor="#10d98c" 
                 />
               )}
 
+              <Btn onClick={handleCopy} icon={<Copy size={12}/>} label={copying ? '...' : 'Clone'}
+                color="rgba(155,89,245,0.08)" border="rgba(155,89,245,0.2)" textColor="#9b59f5" />
+              
+              <Btn onClick={handleDelete} icon={<Trash2 size={12}/>} label={deleting ? '...' : 'Delete'}
+                color="rgba(245,57,123,0.08)" border="rgba(245,57,123,0.2)" textColor="#f5397b" />
+              
               {/* Status Management Toggles */}
               {prop.status === 'Active' && (
                 <>
                   <Btn 
                     onClick={() => changeStatus('Sold')} 
-                    icon={<CheckCircle2 size={13}/>} 
-                    label="SOLD OUT"
-                    color="rgba(232,184,75,0.1)" 
-                    border="rgba(232,184,75,0.3)" 
+                    icon={<CheckCircle size={12}/>} 
+                    label="Sold"
+                    color="rgba(232,184,75,0.08)" 
+                    border="rgba(232,184,75,0.2)" 
                     textColor="#e8b84b" 
                   />
-                  {prop.purpose === 'Rent' && (
-                    <Btn 
-                      onClick={() => changeStatus('Rented')} 
-                      icon={<Key size={13}/>} 
-                      label="RENTED"
-                      color="rgba(34,217,224,0.1)" 
-                      border="rgba(34,217,224,0.3)" 
-                      textColor="#22d9e0" 
-                    />
-                  )}
                   <Btn 
                     onClick={() => changeStatus('Pending')} 
-                    icon={<EyeOff size={13}/>} 
-                    label="DEACTIVATE"
-                    color="rgba(255,255,255,0.05)" 
-                    border="rgba(255,255,255,0.15)" 
+                    icon={<EyeOff size={12}/>} 
+                    label="Hide"
+                    color="rgba(255,255,255,0.04)" 
+                    border="rgba(255,255,255,0.1)" 
                     textColor="#aaa" 
                   />
                 </>
@@ -455,21 +502,10 @@ export const AdminPropertyCard: React.FC<Props> = ({
               {prop.status === 'Sold' && (
                 <Btn 
                   onClick={() => changeStatus('Active')} 
-                  icon={<TrendingUp size={13}/>} 
-                  label="MARK UNSOLD"
-                  color="rgba(16,217,140,0.15)" 
-                  border="rgba(16,217,140,0.4)" 
-                  textColor="#10d98c" 
-                />
-              )}
-
-              {prop.status === 'Rented' && (
-                <Btn 
-                  onClick={() => changeStatus('Active')} 
-                  icon={<TrendingUp size={13}/>} 
-                  label="MARK UNRENTED"
-                  color="rgba(16,217,140,0.15)" 
-                  border="rgba(16,217,140,0.4)" 
+                  icon={<TrendingUp size={12}/>} 
+                  label="Re-list"
+                  color="rgba(16,217,140,0.08)" 
+                  border="rgba(16,217,140,0.2)" 
                   textColor="#10d98c" 
                 />
               )}
@@ -477,42 +513,47 @@ export const AdminPropertyCard: React.FC<Props> = ({
               {(prop.status === 'Pending' || prop.status === 'Draft') && (
                 <Btn 
                   onClick={() => changeStatus('Active')} 
-                  icon={<Play size={13}/>} 
-                  label="ACTIVATE"
-                  color="rgba(16,217,140,0.15)" 
-                  border="rgba(16,217,140,0.4)" 
+                  icon={<Play size={12}/>} 
+                  label="Live"
+                  color="rgba(16,217,140,0.08)" 
+                  border="rgba(16,217,140,0.2)" 
                   textColor="#10d98c" 
                 />
               )}
 
-              {/* WhatsApp Share */}
               <Btn
                 onClick={handleWhatsAppShare}
-                icon={<span style={{ fontSize: '13px' }}>📱</span>}
-                label="WA Share"
-                color="rgba(37,211,102,0.1)" border="rgba(37,211,102,0.35)" textColor="#25d366"
+                icon={<span style={{ fontSize: '10px' }}>📱</span>}
+                label="WA"
+                color="rgba(37,211,102,0.06)" border="rgba(37,211,102,0.2)" textColor="#25d366"
               />
 
-              {/* Copy Link + Open Client — full width row */}
               <button
                 onClick={handleShareLink}
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
-                  padding: '8px', background: linkCopied ? 'rgba(16,217,140,0.15)' : 'rgba(232,184,75,0.12)',
-                  border: `1px solid ${linkCopied ? 'rgba(16,217,140,0.4)' : 'rgba(232,184,75,0.3)'}`,
-                  borderRadius: 12, color: linkCopied ? '#10d98c' : '#e8b84b',
-                  fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer', backdropFilter: 'blur(10px)', transition: 'all 0.3s' }}
+                style={{ 
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
+                  padding: '8px 2px', background: linkCopied ? 'rgba(16,217,140,0.1)' : 'rgba(232,184,75,0.08)',
+                  border: `1px solid ${linkCopied ? 'rgba(16,217,140,0.25)' : 'rgba(232,184,75,0.2)'}`,
+                  borderRadius: 10, color: linkCopied ? '#10d98c' : '#e8b84b',
+                  fontSize: '0.65rem', fontWeight: 800, cursor: 'pointer', backdropFilter: 'blur(10px)', transition: 'all 0.2s', minHeight: '38px' 
+                }}
               >
-                <Zap size={13} fill={linkCopied ? '#10d98c' : '#e8b84b'}/>
-                {linkCopied ? 'Copied!' : 'Copy Link'}
+                <Zap size={11} fill={linkCopied ? '#10d98c' : '#e8b84b'}/>
+                {linkCopied ? 'Done' : 'Link'}
               </button>
-
-              <a href={`https://snapadda.com/property/${id}`} target="_blank" rel="noopener noreferrer"
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  gap: 5, padding: '8px', background: 'rgba(34,217,224,0.1)', border: '1px solid rgba(34,217,224,0.3)',
-                  borderRadius: 12, color: '#22d9e0', fontSize: '0.75rem', fontWeight: 800, textDecoration: 'none' }}>
-                🖥 Client
-              </a>
             </div>
+
+            <a href={`https://snapadda.com/property/${id}`} target="_blank" rel="noopener noreferrer"
+              style={{ 
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                gap: 5, padding: '10px', background: 'rgba(34,217,224,0.08)', 
+                border: '1px solid rgba(34,217,224,0.25)',
+                borderRadius: 12, color: '#22d9e0', fontSize: '0.7rem', 
+                fontWeight: 900, textDecoration: 'none', minHeight: '44px',
+                marginTop: '10px', transition: 'all 0.2s'
+              }}>
+              🖥 Client View
+            </a>
           </div>
         </div>
         </HolographicWrapper>
@@ -520,18 +561,5 @@ export const AdminPropertyCard: React.FC<Props> = ({
     </>
   );
 };
-
-const Btn: React.FC<{
-  onClick: () => void; icon: React.ReactNode; label: string;
-  color?: string; border?: string; textColor?: string;
-}> = ({ onClick, icon, label, color = 'rgba(255,255,255,0.1)', border = 'rgba(255,255,255,0.2)', textColor = 'white' }) => (
-  <button onClick={onClick}
-    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '10px 4px',
-      background: color, border: `1px solid ${border}`, borderRadius: 12, color: textColor, backdropFilter: 'blur(10px)',
-      cursor: 'pointer', fontSize: '0.72rem', fontWeight: 900, transition: 'all 0.2s', minHeight: '44px',
-      touchAction: 'manipulation' }}>
-    {icon} {label}
-  </button>
-);
 
 export default AdminPropertyCard;

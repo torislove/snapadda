@@ -183,18 +183,27 @@ const EliteLightBox = ({ images = [], videos = [], startIdx = 0, onClose, title 
               )
             ) : (
               <div style={{ width: '92vw', maxWidth: '900px', aspectRatio: '16/9', borderRadius: '12px', overflow: 'hidden', background: '#111' }}>
-                <iframe
-                  src={current.url.includes('youtube.com/watch?v=')
-                    ? current.url.replace('watch?v=', 'embed/')
-                    : current.url.includes('youtu.be/')
-                      ? current.url.replace('youtu.be/', 'www.youtube.com/embed/')
-                      : current.url}
-                  width="100%" height="100%"
-                  frameBorder="0"
-                  allow="autoplay; fullscreen"
-                  allowFullScreen
-                  title={`Video ${page + 1}`}
-                />
+                {current.url.includes('youtube.com') || current.url.includes('youtu.be') ? (
+                  <iframe
+                    src={current.url.includes('youtube.com/watch?v=')
+                      ? current.url.replace('watch?v=', 'embed/')
+                      : current.url.includes('youtu.be/')
+                        ? current.url.replace('youtu.be/', 'www.youtube.com/embed/')
+                        : current.url}
+                    width="100%" height="100%"
+                    frameBorder="0"
+                    allow="autoplay; fullscreen"
+                    allowFullScreen
+                    title={`Video ${page + 1}`}
+                  />
+                ) : (
+                  <video 
+                    src={current.url} 
+                    controls 
+                    autoPlay
+                    style={{ width: '100%', height: '100%', objectFit: 'contain' }} 
+                  />
+                )}
               </div>
             )}
           </motion.div>

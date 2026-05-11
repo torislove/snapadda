@@ -26,6 +26,7 @@ import HorizontalPropertySection from '../components/HorizontalPropertySection';
 import MobileOnboarding from '../components/MobileOnboarding';
 import { useBehaviorTracker } from '../hooks/useBehaviorTracker';
 import { getCachedProperties, setCachedProperties } from '../hooks/usePropertyCache';
+import { useRealtimeProperties } from '../hooks/useRealtimeProperties';
 import { prefetchRoute } from '../utils/PerformanceUtilities';
 
 
@@ -176,7 +177,7 @@ const WhyMarquee = ({ cards }) => {
   }, [cards]);
 
   return (
-    <div className="why-marquee-container" style={{ overflow: 'hidden', padding: '2rem 0', position: 'relative' }}>
+    <div className="why-marquee-container" style={{ overflow: 'hidden', padding: '1rem 0', position: 'relative' }}>
       <div style={{ position: 'absolute', inset: 0, zIndex: 2, pointerEvents: 'none', background: 'linear-gradient(to right, var(--bg-deep) 0%, transparent 15%, transparent 85%, var(--bg-deep) 100%)' }} />
       <motion.div 
         ref={trackRef}
@@ -188,7 +189,7 @@ const WhyMarquee = ({ cards }) => {
       >
         {[...cards, ...cards, ...cards].map((card, i) => (
           <div key={i} className="why-card glass-premium"
-            style={{ width: '380px', padding: '2.5rem', borderRadius: '32px', border: '1px solid rgba(255,255,255,0.05)', background: 'rgba(10,12,20,0.4)', borderTop: `2px solid ${card.color}`, flexShrink: 0 }}>
+            style={{ width: '280px', padding: '1.5rem', borderRadius: '22px', border: '1px solid rgba(255,255,255,0.05)', background: 'rgba(10,12,20,0.4)', borderTop: `2px solid ${card.color}`, flexShrink: 0 }}>
             <div style={{ color: card.color, marginBottom: '1.5rem', transform: 'scale(1.2)', transformOrigin: 'left' }}>{card.icon}</div>
             <h3 style={{ fontSize: '1.4rem', marginBottom: '0.75rem', color: 'white' }}>{card.title}</h3>
             <p style={{ color: 'var(--txt-secondary)', fontSize: '0.95rem', lineHeight: '1.6' }}>{card.desc}</p>
@@ -317,6 +318,33 @@ export default function Home() {
       }
     } catch {}
   }, []);
+
+  const { data: liveList } = useRealtimeProperties();
+
+  useEffect(() => {
+    if (liveList && liveList.length > 0) {
+      setProperties(prev => {
+        const prevMap = new Map((prev || []).map(p => [p._id || p.id, p]));
+        let hasChanges = false;
+        
+        liveList.forEach(lp => {
+          const id = lp._id || lp.id;
+          const existing = prevMap.get(id);
+          // Only update if data is different or new
+          if (!existing || JSON.stringify(existing) !== JSON.stringify(lp)) {
+            prevMap.set(id, { ...(existing || {}), ...lp });
+            hasChanges = true;
+          }
+        });
+        
+        if (!hasChanges) return prev;
+        
+        return Array.from(prevMap.values()).sort((a, b) => 
+          new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
+        );
+      });
+    }
+  }, [liveList]);
 
   useEffect(() => {
     let n = 0;
@@ -549,10 +577,9 @@ export default function Home() {
         <section 
           className="hero-section" 
           style={{ 
-            padding: isMobile ? '40px 0 20px' : '60px 0 40px', 
+            padding: isMobile ? '24px 0 12px' : '40px 0 24px', 
             position: 'relative', 
             overflow: 'hidden',
-            minHeight: isMobile ? 'auto' : '85vh',
             display: 'flex',
             alignItems: 'center'
           }}
@@ -574,16 +601,16 @@ export default function Home() {
             <motion.div 
               className="search-platform-card glass-premium" 
               style={{ 
-                padding: isMobile ? '1.25rem' : '1.75rem', 
-                borderRadius: '24px', 
-                border: '1px solid rgba(255,255,255,0.15)', 
-                boxShadow: '0 30px 60px rgba(0,0,0,0.5)',
+                padding: isMobile ? '1rem' : '1.5rem', 
+                borderRadius: '20px', 
+                border: '1px solid rgba(255,255,255,0.12)', 
+                boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
                 maxWidth: '900px',
-                margin: isMobile ? '1.25rem auto' : '1.5rem auto'
+                margin: isMobile ? '0.875rem auto' : '1.25rem auto'
               }}
             >
               {/* Intent Tabs */}
-              <div style={{ display: 'flex', gap: '10px', marginBottom: '1.5rem', justifyContent: isMobile ? 'center' : 'flex-start' }}>
+              <div style={{ display: 'flex', gap: '8px', marginBottom: '1rem', justifyContent: isMobile ? 'center' : 'flex-start' }}>
                 {INTENT_TABS(t).map(tab => (
                   <button
                     key={tab.value}
@@ -605,7 +632,7 @@ export default function Home() {
                 ))}
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1.2fr 1fr 1fr', gap: isMobile ? '0.75rem' : '1.25rem', marginBottom: '1.25rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1.2fr 1fr 1fr', gap: isMobile ? '0.625rem' : '1rem', marginBottom: '1rem' }}>
                 <div className="search-group">
                   <label style={{ color: 'var(--gold)', fontSize: '0.65rem', fontWeight: 900, letterSpacing: '0.1em', marginBottom: '8px', display: 'block' }}>LOCATION / PROJECT</label>
                   <div style={{ position: 'relative', display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.05)', borderRadius: '12px', padding: '0 12px', border: '1px solid rgba(255,255,255,0.1)' }}>

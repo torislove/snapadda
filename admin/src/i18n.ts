@@ -5,94 +5,96 @@ const resources = {
   en: {
     translation: {
       nav: {
-        dashboard: 'Executive Overview',
-        properties: 'Asset Portfolio',
-        leads: 'Lead Pipeline',
-        clients: 'Investor Registry',
-        analytics: 'Market Intel',
-        settings: 'System Configuration',
-        engagement: 'Engagement Hub'
+        dashboard: 'Overview',
+        properties: 'Inventory',
+        leads: 'Inquiries',
+        clients: 'Customers',
+        analytics: 'Insights',
+        settings: 'Prefs',
+        engagement: 'Campaigns',
+        messages: 'Messages',
+        help: 'Help'
       },
       dashboard: {
-        welcome: 'Welcome, Executive',
+        welcome: 'Welcome',
         stats: {
-          active: 'Live Assets',
-          pending: 'Pending Audit',
-          totalLeads: 'Gross Leads',
-          revenue: 'Projected Value'
+          active: 'Active Listings',
+          pending: 'Pending Review',
+          totalLeads: 'Total Leads',
+          revenue: 'Total Value'
         },
-        recentActivity: 'Recent Registry Movements'
+        recentActivity: 'Recent Updates'
       },
       properties: {
-        title: 'Institutional Asset Management',
-        addBtn: 'NEW ASSET',
+        title: 'Property List',
+        addBtn: 'Add New',
         filters: {
-          all: 'ALL CATEGORIES',
-          pending: 'PENDING AUDIT',
-          active: 'LIVE ASSETS',
-          sold: 'OFF-MARKET'
+          all: 'Show All',
+          pending: 'Drafts',
+          active: 'Live',
+          sold: 'Sold'
         },
         table: {
-          asset: 'Asset',
+          asset: 'Property',
           status: 'Status',
-          value: 'Market Value',
-          health: 'Data Health',
-          actions: 'Operations'
+          value: 'Price',
+          health: 'Score',
+          actions: 'Manage'
         }
       },
       common: {
-        save: 'COMMIT CHANGES',
-        cancel: 'DISCARD',
-        delete: 'REMOVE',
-        edit: 'MODIFY',
-        loading: 'SYNCING...'
+        save: 'Save Changes',
+        cancel: 'Cancel',
+        delete: 'Delete',
+        edit: 'Edit',
+        loading: 'Loading...'
       }
     }
   },
   te: {
     translation: {
       nav: {
-        dashboard: 'నిర్వహణ అవలోకనం',
-        properties: 'ఆస్తుల జాబితా',
-        leads: 'లీడ్స్ పైప్‌లైన్',
-        clients: 'పెట్టుబడిదారుల రిజిస్ట్రీ',
-        analytics: 'మార్కెట్ విశ్లేషణ',
-        settings: 'సిస్టమ్ కాన్ఫిగరేషన్',
-        engagement: 'ఎంగేజ్‌మెంట్ హబ్'
+        dashboard: 'హోమ్',
+        properties: 'ఆస్తులు',
+        leads: 'లీడ్స్',
+        clients: 'కస్టమర్లు',
+        analytics: 'పనితీరు',
+        settings: 'సెట్టింగ్స్',
+        engagement: 'మార్కెటింగ్'
       },
       dashboard: {
-        welcome: 'స్వాగతం, ఎగ్జిక్యూటివ్',
+        welcome: 'స్వాగతం',
         stats: {
           active: 'లైవ్ ఆస్తులు',
-          pending: 'ఆడిట్ పెండింగ్‌లో ఉన్నాయి',
+          pending: 'పెండింగ్‌లో ఉన్నవి',
           totalLeads: 'మొత్తం లీడ్స్',
-          revenue: 'అంచనా విలువ'
+          revenue: 'మొత్తం విలువ'
         },
-        recentActivity: 'ఇటీవలి రిజిస్ట్రీ కదలికలు'
+        recentActivity: 'ఇటీవలి అప్‌డేట్లు'
       },
       properties: {
-        title: 'సంస్థాగత ఆస్తి నిర్వహణ',
-        addBtn: 'కొత్త ఆస్తి',
+        title: 'ఆస్తుల జాబితా',
+        addBtn: 'కొత్తది చేర్చు',
         filters: {
-          all: 'అన్ని వర్గాలు',
-          pending: 'ఆడిట్ పెండింగ్',
-          active: 'లైవ్ ఆస్తులు',
+          all: 'అన్నీ',
+          pending: 'డ్రాఫ్ట్స్',
+          active: 'లైవ్',
           sold: 'అమ్ముడైనవి'
         },
         table: {
           asset: 'ఆస్తి',
           status: 'స్థితి',
-          value: 'మార్కెట్ విలువ',
-          health: 'డేటా హెల్త్',
-          actions: 'చర్యలు'
+          value: 'ధర',
+          health: 'స్కోర్',
+          actions: 'మేనేజ్'
         }
       },
       common: {
-        save: 'మార్పులను సేవ్ చేయండి',
-        cancel: 'రద్దు చేయండి',
+        save: 'సేవ్ చేయండి',
+        cancel: 'రద్దు',
         delete: 'తొలగించు',
         edit: 'సవరించు',
-        loading: 'సింక్ అవుతోంది...'
+        loading: 'లోడ్ అవుతోంది...'
       }
     }
   }

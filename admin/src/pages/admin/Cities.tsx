@@ -118,13 +118,13 @@ const AdminCities = () => {
           }}
         >
           {isAdding ? <X size={20} /> : <Plus size={20} />}
-          {isAdding ? ' CLOSE CONSOLE' : ' ADD NEW REGION'}
+          {isAdding ? ' CLOSE' : ' ADD LOCATION'}
         </Button>
       </div>
 
       {isAdding && (
         <div className="glass-card" style={{ padding: '2.5rem', borderRadius: '28px', marginBottom: '2.5rem', border: '1px solid rgba(255,255,255,0.08)', transform: 'translateZ(0)' }}>
-          <h2 style={{ marginBottom: '2rem', fontSize: '1.5rem', fontWeight: 800 }}>{isEditing ? `Modify Region: ${editingCity?.name}` : 'Register Strategic Region'}</h2>
+          <h2 style={{ marginBottom: '2rem', fontSize: '1.5rem', fontWeight: 800 }}>{isEditing ? `Edit Location: ${editingCity?.name}` : 'Add New Location'}</h2>
           <form onSubmit={handleAddSubmit} className="responsive-form-grid" style={{ display: 'grid', gap: 'var(--spacing-lg)' }}>
             <div>
               <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>City/Region Name</label>

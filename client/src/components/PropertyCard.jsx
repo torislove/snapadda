@@ -21,6 +21,7 @@ import { logUserActivity, ACTIONS } from '../services/activityTracker';
 import { triggerHaptic } from '../utils/haptics';
 import { prefetchPropertyData, prioritizeImage } from '../utils/PerformanceUtilities';
 import { fetchProperty } from '../services/api';
+import { useRealtimeProperties } from '../hooks/useRealtimeProperties';
 
 const Toast = memo(({ msg, onDone }) => {
   return (
@@ -36,19 +37,26 @@ const Toast = memo(({ msg, onDone }) => {
   );
 });
 
-const PropertyCard = memo(({
-  id, _id, image, images, gallery, title, price, location, beds, baths, sqft,
-  type = 'Apartment', purpose, measurementUnit = 'Sq.Yds', approval, approvalAuthority, facing,
-  areaSize, totalAcres, pricePerAcre, bhk, floorNo, totalFloors,
-  isVerified = false, isFeatured = false, vastuCompliant = false,
-  listerType = 'Individual Owner', googleMapsLink = '',
-  createdAt, likeCount: initialLikeCount = 0, initialLiked = false,
-  isGated, cornerProperty, constructionStatus,
-  supportPhone = '+919346793364', supportWA = '919346793364',
-  status: propStatus = 'Active', pricePerSqYd, address,
-  holographic = true, iridescent = false, propertyCode,
-  designTokens // Dynamic Institutional Tokens
-}) => {
+const PropertyCard = memo((props) => {
+  // Real-time synchronization
+  const { data: liveData } = useRealtimeProperties(props.id || props._id);
+  
+  // Merge live data with initial props
+  const p = liveData ? { ...props, ...liveData } : props;
+  
+  const {
+    id, _id, image, images, gallery, title, price, location, beds, baths, sqft,
+    type = 'Apartment', purpose, measurementUnit = 'Sq.Yds', approval, approvalAuthority, facing,
+    areaSize, totalAcres, pricePerAcre, bhk, floorNo, totalFloors,
+    isVerified = false, isFeatured = false, vastuCompliant = false,
+    listerType = 'Individual Owner', googleMapsLink = '',
+    createdAt, likeCount: initialLikeCount = 0, initialLiked = false,
+    isGated, cornerProperty, constructionStatus,
+    supportPhone = '+919346793364', supportWA = '919346793364',
+    status: propStatus = 'Active', pricePerSqYd, address,
+    holographic = true, iridescent = false, propertyCode,
+    designTokens // Dynamic Institutional Tokens
+  } = p;
   const [activeImgIdx, setActiveImgIdx] = useState(0);
   const [liked, setLiked] = useState(initialLiked);
   const [likeCount, setLikeCount] = useState(initialLikeCount);

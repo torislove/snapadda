@@ -5,7 +5,8 @@ import {
   ArrowLeft, MapPin, Share2, Heart, Shield, ShieldCheck, Phone, MessageSquare,
   ChevronLeft, ChevronRight, Eye, CheckCircle2, Building2, User,
   BedDouble, Bath, Square, Compass, Award, Send, Star, Leaf, Maximize2,
-  Droplets, Truck, FileText, ZoomIn, X, TreePine, TrendingUp, IndianRupee
+  Droplets, Truck, FileText, ZoomIn, X, TreePine, TrendingUp, IndianRupee,
+  LayoutGrid, Play
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { fetchProperty, fetchSetting, askQuestion, fetchPropertyFAQs, likeProperty, shareProperty, fetchSimilarProperties } from '../services/api';
@@ -17,6 +18,7 @@ import VisualCompass from '../components/VisualCompass';
 import EliteLightBox from '../components/EliteLightBox';
 import { useBehaviorTracker } from '../hooks/useBehaviorTracker';
 import { prefetchRoute } from '../utils/PerformanceUtilities';
+import { useRealtimeProperties } from '../hooks/useRealtimeProperties';
 
 // ������������������������������������������������������������������������������������������
 // Toast
@@ -47,14 +49,23 @@ function Toast({ msg }) {
 // ----------------------------------------------------------------------------------
 // Spec Card
 // ----------------------------------------------------------------------------------
-function SpecCard({ label, value, accent = 'rgba(255,255,255,0.6)', icon }) {
+function SpecCard({ label, value, accent = 'white', icon }) {
   if (!value || value === 'N/A' || value === '0') return null;
   return (
-    <div className="pd-spec-item" style={{ '--ov-accent': accent }}>
-      <div className="pd-spec-lbl">
+    <div className="pd-spec-item" style={{ 
+      '--ov-accent': accent, 
+      padding: '1.25rem', 
+      background: 'rgba(255,255,255,0.03)', 
+      border: '1px solid rgba(255,255,255,0.08)', 
+      borderRadius: '20px', 
+      display: 'flex', 
+      flexDirection: 'column', 
+      gap: '6px' 
+    }}>
+      <div className="pd-spec-lbl" style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
         {icon} {label}
       </div>
-      <div className="pd-spec-val" style={{ color: accent }}>{value}</div>
+      <div className="pd-spec-val" style={{ color: accent, fontSize: '0.95rem', fontWeight: 900 }}>{value}</div>
     </div>
   );
 }
@@ -87,6 +98,17 @@ export default function PropertyDetails() {
   const [qText, setQText] = useState('');
   const [qStatus, setQStatus] = useState('');
   const [qSubmitting, setQSubmitting] = useState(false);
+
+  // Real-time synchronization
+  const { data: liveData } = useRealtimeProperties(id);
+
+  // Sync liveData to property state
+  useEffect(() => {
+    if (liveData) {
+      setProperty(prev => ({ ...prev, ...liveData }));
+      if (liveData.likeCount !== undefined) setLikeCount(liveData.likeCount);
+    }
+  }, [liveData]);
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
 
@@ -169,8 +191,10 @@ export default function PropertyDetails() {
   const uniqueVideos = [...new Set(validVideos)];
 
   // Final gallery set for the scroller
-  const property_images = uniquePhotos;
-  const property_videos = uniqueVideos;
+  const galleryMedia = [
+    ...uniquePhotos.map(url => ({ type: 'image', url })),
+    ...uniqueVideos.map(url => ({ type: 'video', url }))
+  ];
 
   // Fallback Google Maps Link generation if missing
   const finalGoogleMapsLink = property?.googleMapsLink || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${property?.title} ${property?.location} ${property?.district || ''}`)}`;
@@ -350,8 +374,8 @@ export default function PropertyDetails() {
       <AnimatePresence>
         {lightbox && (
           <EliteLightBox 
-            images={property_images.map(img => getOptimizedImg(img, 1200))} 
-            videos={property_videos} 
+            images={uniquePhotos.map(img => getOptimizedImg(img, 1200))} 
+            videos={uniqueVideos} 
             startIdx={imgIdx} 
             title={property.title}
             onClose={() => setLightbox(false)}
@@ -359,12 +383,21 @@ export default function PropertyDetails() {
         )}
       </AnimatePresence>
 
-      <div className="pd-back-bar">
-        <div className="container">
-          <button className="pd-back-btn" onClick={() => navigate(-1)}>
-            <ArrowLeft size={16}/> వెనక్కి వెళ్ళండి
-          </button>
-        </div>
+      <div className="pd-back-bar" style={{ position: 'absolute', top: '15px', left: '15px', zIndex: 100 }}>
+        <button 
+          className="pd-back-btn" 
+          onClick={() => navigate(-1)}
+          style={{ 
+            background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(10px)', 
+            border: '1px solid rgba(255,255,255,0.2)', color: 'white', 
+            padding: '8px 16px', borderRadius: '20px', 
+            display: 'flex', alignItems: 'center', gap: '6px', 
+            fontWeight: 700, fontSize: '0.85rem',
+            cursor: 'pointer'
+          }}
+        >
+          <ArrowLeft size={16}/> వెనక్కి వెళ్ళండి
+        </button>
       </div>
 
       <section className="pd-gallery-section" style={{ position: 'relative', width: '100%', overflow: 'hidden', background: '#05050a' }}>
@@ -375,12 +408,13 @@ export default function PropertyDetails() {
             overflowX: 'auto', 
             scrollSnapType: 'x mandatory', 
             WebkitOverflowScrolling: 'touch',
-            height: '55vh',
-            minHeight: '400px'
+            height: 'clamp(300px, 55vh, 700px)',
+            width: '100%',
+            background: '#05050a'
           }}
         >
-          {property_images.length > 0 ? (
-            property_images.map((img, i) => (
+          {galleryMedia.length > 0 ? (
+            galleryMedia.map((media, i) => (
               <div
                 key={i}
                 style={{
@@ -393,49 +427,77 @@ export default function PropertyDetails() {
                 }}
                 onClick={() => { setImgIdx(i); setLightbox(true); }}
               >
-                <img
-                  src={getOptimizedImg(img, 800)}
-                  alt={`${property.title} - ${i + 1}`}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                  loading={i === 0 ? 'eager' : 'lazy'}
-                  onError={(e) => {
-                    e.currentTarget.style.display = 'none';
-                    e.currentTarget.nextSibling && (e.currentTarget.nextSibling.style.display = 'flex');
-                  }}
-                />
+                {media.type === 'image' ? (
+                  <img
+                    src={getOptimizedImg(media.url, 1200)}
+                    alt={`${property.title} - ${i + 1}`}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                    loading={i === 0 ? 'eager' : 'lazy'}
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                      e.currentTarget.nextSibling && (e.currentTarget.nextSibling.style.display = 'flex');
+                    }}
+                  />
+                ) : (
+                  <div style={{ width: '100%', height: '100%', position: 'relative' }}>
+                    <video 
+                      src={media.url} 
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      muted
+                      playsInline
+                      loop
+                      autoPlay
+                    />
+                    <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.2)' }}>
+                      <Play size={48} color="white" style={{ filter: 'drop-shadow(0 0 10px rgba(0,0,0,0.5))' }} />
+                    </div>
+                  </div>
+                )}
                 <div style={{ display: 'none', position: 'absolute', inset: 0, alignItems: 'center', justifyContent: 'center', background: '#111', flexDirection: 'column', gap: '12px' }}>
                   <Building2 size={48} style={{ opacity: 0.2 }}/>
                   <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.75rem' }}>Image unavailable</span>
                 </div>
-                <div style={{ position: 'absolute', top: '15px', right: '15px', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(10px)', color: 'white', padding: '6px 12px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 800, zIndex: 2 }}>
-                  {i + 1} / {property_images.length}
+                
+                {/* Image Counter */}
+                <div style={{ 
+                  position: 'absolute', top: '20px', right: '20px', 
+                  background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(10px)', 
+                  color: 'white', padding: '6px 14px', borderRadius: '20px', 
+                  fontSize: '0.7rem', fontWeight: 900, zIndex: 10,
+                  border: '1px solid rgba(255,255,255,0.15)'
+                }}>
+                  {i + 1} / {galleryMedia.length}
                 </div>
+
                 <div style={{
                   position: 'absolute',
                   bottom: 0, left: 0, right: 0,
-                  background: 'linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.7) 40%, transparent 100%)',
-                  padding: '40px 20px 20px',
+                  background: 'linear-gradient(to top, rgba(0,0,0,0.98) 0%, rgba(0,0,0,0.8) 50%, transparent 100%)',
+                  padding: '60px 20px 25px',
                   display: 'flex', flexDirection: 'column', gap: '8px'
                 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-                    <div>
-                      <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
-                        {property.isVerified && <span style={{ background: 'var(--gold)', color: 'black', fontSize: '0.65rem', fontWeight: 900, padding: '4px 8px', borderRadius: '12px' }}><ShieldCheck size={10} style={{ display: 'inline', verticalAlign: 'text-top' }}/> VERIFIED</span>}
-                        <span style={{ background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(10px)', color: 'white', fontSize: '0.65rem', fontWeight: 900, padding: '4px 8px', borderRadius: '12px' }}>{tr(property.type)}</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: '15px' }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', gap: '8px', marginBottom: '10px', flexWrap: 'wrap' }}>
+                        {property.isVerified && <span style={{ background: 'var(--gold)', color: 'black', fontSize: '0.62rem', fontWeight: 900, padding: '4px 10px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}><ShieldCheck size={10}/> VERIFIED</span>}
+                        <span style={{ background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(10px)', color: 'white', fontSize: '0.62rem', fontWeight: 900, padding: '4px 10px', borderRadius: '12px' }}>{tr(property.type)}</span>
+                        {property.status === 'Sold' && <span style={{ background: 'var(--emerald)', color: 'white', fontSize: '0.62rem', fontWeight: 900, padding: '4px 10px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(16,217,140,0.3)' }}>అమ్మబడినది</span>}
                       </div>
-                      <h1 style={{ color: 'white', fontSize: '1.5rem', fontWeight: 900, margin: 0, textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>{property.title}</h1>
-                      <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
-                        <span style={{ background: 'rgba(232,184,75,0.2)', border: '1px solid rgba(232,184,75,0.4)', color: '#e8b84b', padding: '2px 8px', borderRadius: '6px', fontSize: '0.65rem', fontWeight: 900, letterSpacing: '0.05em' }}>
+                      <h1 style={{ color: 'white', fontSize: 'clamp(1.2rem, 4vw, 1.75rem)', fontWeight: 900, margin: 0, textShadow: '0 2px 8px rgba(0,0,0,0.8)', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{property.title}</h1>
+                      <div style={{ display: 'flex', gap: '8px', marginTop: '8px', alignItems: 'center' }}>
+                        <span style={{ background: 'rgba(232,184,75,0.15)', border: '1px solid rgba(232,184,75,0.3)', color: '#e8b84b', padding: '3px 10px', borderRadius: '8px', fontSize: '0.6rem', fontWeight: 900, letterSpacing: '0.08em' }}>
                           CODE: {property.propertyCode || `SNA-${(id || '').toString().slice(-5).toUpperCase()}`}
                         </span>
-                        {property.isVerified && <span className="pd-badge-green"><ShieldCheck size={12}/> వెరిఫైడ్</span>}
-                        {property.status === 'Sold' && <span className="pd-badge-sold" style={{ background: 'var(--emerald)', color: 'white', fontSize: '0.65rem', fontWeight: 900, padding: '4px 12px', borderRadius: '20px', boxShadow: '0 4px 15px rgba(16,217,140,0.3)' }}>అమ్మబడినది</span>}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'rgba(255,255,255,0.6)', fontSize: '0.75rem', fontWeight: 600 }}>
+                          <MapPin size={12} color="var(--gold)" /> {property.location}
+                        </div>
                       </div>
                     </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{ color: 'var(--gold)', fontSize: '1.4rem', fontWeight: 900, textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>
+                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                      <div style={{ color: 'var(--gold)', fontSize: '1.6rem', fontWeight: 950, textShadow: '0 2px 10px rgba(0,0,0,0.8)', lineHeight: 1 }}>
                         {formatSnapAddaPrice(displayPrice)}
                       </div>
+                      <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.65rem', fontWeight: 800, marginTop: '4px' }}>SNAPADDA EXCLUSIVE</div>
                     </div>
                   </div>
                 </div>
@@ -445,6 +507,51 @@ export default function PropertyDetails() {
             <div style={{ flex: '0 0 100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#111' }}>
               <Building2 size={64} style={{ opacity: 0.2 }}/>
             </div>
+          )}
+        </div>
+
+        {/* --- Floating Gallery Controls (Moved to avoid overlap) --- */}
+        <div style={{
+          position: 'absolute', top: '20px', left: '20px',
+          display: 'flex', flexDirection: 'column', gap: '12px', zIndex: 20
+        }}>
+          {galleryMedia.length > 0 && (
+            <>
+              <button 
+                onClick={() => { setImgIdx(0); setLightbox(true); }}
+                style={{
+                  width: '42px', height: '42px', borderRadius: '14px',
+                  background: 'rgba(0,0,0,0.5)', color: 'white',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  backdropFilter: 'blur(12px)',
+                  border: '1px solid rgba(255,255,255,0.2)', cursor: 'pointer',
+                  transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                  boxShadow: '0 8px 20px rgba(0,0,0,0.3)'
+                }}
+                title="Expand Gallery"
+                onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1)'}
+                onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+              >
+                <Maximize2 size={18} />
+              </button>
+              {/* Added Grid View Button */}
+              <button 
+                onClick={() => { setImgIdx(0); setLightbox(true); }}
+                style={{
+                  width: '42px', height: '42px', borderRadius: '14px',
+                  background: 'var(--gold)', color: 'black',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  border: 'none', cursor: 'pointer',
+                  transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                  boxShadow: '0 8px 25px rgba(232,184,75,0.4)'
+                }}
+                title="View All Photos"
+                onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1)'}
+                onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+              >
+                <LayoutGrid size={18} strokeWidth={3} />
+              </button>
+            </>
           )}
         </div>
       </section>
@@ -467,7 +574,7 @@ export default function PropertyDetails() {
                 </span>
                 {property.isFeatured && <span className="pd-badge-gold">ప్రీమియం</span>}
               </div>
-              <h1 className="pd-h1" style={{ display: 'none' }}>{property.title}</h1>
+              <h1 className="pd-h1" style={{ fontSize: '2rem', fontWeight: 950, marginBottom: '0.5rem', color: 'white' }}>{property.title}</h1>
               
               <div className="pd-location-row" style={{ display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'flex-start', marginTop: '1rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -500,18 +607,18 @@ export default function PropertyDetails() {
               </div>
             </div>
 
-            <div className="pd-price-block" style={{ display: 'none' }}>
+            <div className="pd-price-block">
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', background: 'rgba(39, 201, 125, 0.1)', border: '1px solid rgba(39, 201, 125, 0.3)', padding: '6px 12px', borderRadius: '12px' }}>
-                 <ShieldCheck size={14} color="#27c97d"/> <span style={{ color: '#27c97d', fontSize: '0.7rem', fontWeight: 900 }}>100% వెరిఫైడ్ ఆస్తి</span>
+                 <ShieldCheck size={14} color="#27c97d"/> <span style={{ color: '#27c97d', fontSize: '0.7rem', fontWeight: 900 }}>100% VERIFIED ASSET</span>
               </div>
-              <div className="pd-price-main">{formatSnapAddaPrice(displayPrice)}</div>
-              <div className="pd-price-sub" style={{ color: 'var(--gold)', fontWeight: 600 }}>SnapAdda ప్రత్యేక ధర</div>
-              <div className="pd-price-actions" style={{ marginTop: '1.5rem' }}>
-                <button className={`pd-action-btn ${liked ? 'liked' : ''}`} onClick={handleLike}>
-                  <Heart size={18} fill={liked ? 'currentColor' : 'none'}/> {liked ? 'ఇష్టపడ్డారు' : 'ఇష్టపడండి'}
+              <div className="pd-price-main" style={{ fontSize: '2.5rem', fontWeight: 950, color: 'var(--gold)' }}>{formatSnapAddaPrice(displayPrice)}</div>
+              <div className="pd-price-sub" style={{ color: 'var(--txt-muted)', fontWeight: 600, fontSize: '0.85rem' }}>SnapAdda Exclusive Valuation</div>
+              <div className="pd-price-actions" style={{ marginTop: '1.5rem', display: 'flex', gap: '1rem' }}>
+                <button className={`pd-action-btn ${liked ? 'liked' : ''}`} onClick={handleLike} style={{ flex: 1, padding: '12px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', background: liked ? 'var(--gold)' : 'rgba(255,255,255,0.05)', color: liked ? 'black' : 'white', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                  <Heart size={18} fill={liked ? 'currentColor' : 'none'}/> {liked ? 'Liked' : 'Like'}
                 </button>
-                <button className="pd-action-btn" onClick={handleShare}>
-                  <Share2 size={18}/> షేర్ చేయండి
+                <button className="pd-action-btn" onClick={handleShare} style={{ flex: 1, padding: '12px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: 'white', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                  <Share2 size={18}/> Share
                 </button>
               </div>
             </div>
@@ -658,7 +765,7 @@ export default function PropertyDetails() {
 
               <p className="pd-desc-text" style={{ marginBottom: '2rem' }}>{generateDesc(property)}</p>
               
-              <div className="pd-specs-grid">
+              <div className="pd-specs-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px' }}>
                 <SpecCard label="యాజమాన్యం" value={tr(property.ownershipType)} accent="white"/>
                 <SpecCard label="లావాదేవీ రకం" value={tr(property.transactionType)} accent="white"/>
                 <SpecCard label="ఫర్నిషింగ్" value={tr(property.furnishing)} accent="var(--gold)"/>
@@ -896,24 +1003,27 @@ export default function PropertyDetails() {
         )}
       </AnimatePresence>
 
-      {/* ── Elite Institutional Sticky Ribbon (99acres Pattern) ── */}
+      {/* ── Elite Floating Bento Pill Ribbon ── */}
       <div className="pd-mobile-ribbon" style={{ 
         position: 'fixed', bottom: '25px', left: '20px', right: '20px', 
-        zIndex: 100002, display: 'flex', gap: '10px' 
+        zIndex: 100002, display: 'flex', gap: '10px',
+        background: 'rgba(10,12,20,0.85)', backdropFilter: 'blur(20px)',
+        padding: '10px', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.1)',
+        boxShadow: '0 20px 50px rgba(0,0,0,0.8)'
       }}>
         <button 
           onClick={() => window.location.href = `tel:${supportPhone}`}
           className="btn-3d-glass" 
-          style={{ flex: 1, padding: '16px', borderRadius: '20px', background: 'rgba(232,184,75,0.9)', color: 'black', fontWeight: 900, fontSize: '0.9rem', boxShadow: '0 15px 35px rgba(232,184,75,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}
+          style={{ flex: 1, padding: '14px', borderRadius: '16px', background: 'rgba(232,184,75,0.9)', color: 'black', fontWeight: 900, fontSize: '0.85rem', boxShadow: '0 10px 25px rgba(232,184,75,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', border: 'none' }}
         >
-          <Phone size={20}/> CALL AGENT
+          <Phone size={18}/> CALL AGENT
         </button>
         <button 
           onClick={handleWhatsApp}
           className="btn-3d-glass-emerald" 
-          style={{ flex: 1, padding: '16px', borderRadius: '20px', background: 'rgba(37,211,102,0.9)', color: 'white', fontWeight: 900, fontSize: '0.9rem', boxShadow: '0 15px 35px rgba(37,211,102,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}
+          style={{ flex: 1, padding: '14px', borderRadius: '16px', background: 'rgba(37,211,102,0.9)', color: 'white', fontWeight: 900, fontSize: '0.85rem', boxShadow: '0 10px 25px rgba(37,211,102,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', border: 'none' }}
         >
-          <MessageSquare size={20}/> WHATSAPP
+          <MessageSquare size={18}/> WHATSAPP
         </button>
       </div>
     </div>

@@ -1,4 +1,15 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const getApiUrl = () => {
+  const envUrl = import.meta.env.VITE_API_URL;
+  if (envUrl && envUrl !== 'undefined') return envUrl;
+  // Production fallback: If we are on a .web.app or .firebaseapp.com domain, default to /api
+  if (typeof window !== 'undefined' && (window.location.hostname.includes('web.app') || window.location.hostname.includes('firebaseapp.com') || window.location.hostname.includes('snapadda.com'))) {
+    return '/api';
+  }
+  return 'http://localhost:5000/api';
+};
+
+const API_URL = getApiUrl();
+console.log(`[Elite-API] Initialized with Base: ${API_URL}`);
 
 const getAuthHeaders = (isFormData = false) => {
   const token = localStorage.getItem('snapadda_admin_token');
@@ -10,8 +21,16 @@ const getAuthHeaders = (isFormData = false) => {
 
 /* ─────────────── Properties ─────────────── */
 export const fetchProperties = async (params?: any) => {
-  const query = params ? '?' + new URLSearchParams(params).toString() : '';
-  const res = await fetch(`${API_URL}/properties${query}`, { headers: getAuthHeaders() });
+  const queryParams = new URLSearchParams(params || {});
+  queryParams.set('_t', Date.now().toString()); // Cache busting
+  const query = '?' + queryParams.toString();
+  const res = await fetch(`${API_URL}/properties${query}`, { 
+    headers: {
+      ...getAuthHeaders(),
+      'Cache-Control': 'no-cache',
+      'Pragma': 'no-cache'
+    } 
+  });
   if (!res.ok) throw new Error('Failed to fetch properties');
   return res.json();
 };

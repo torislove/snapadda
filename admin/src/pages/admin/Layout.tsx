@@ -3,7 +3,7 @@ import { Outlet, Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Building, Users, 
   Settings, Menu, Megaphone, X, LogOut, BookOpen, Activity, Search,
-  MessageSquare
+  MessageSquare, Plus
 } from 'lucide-react';
 import { Logo } from '../../components/ui/Logo';
 import { useAdminAuth } from '../../contexts/AdminAuthContext';
@@ -83,9 +83,9 @@ const NAV_ITEMS = [
   { to: '/admin/leads',      label: 'nav.leads',          icon: Users,           exact: false, activeClass: 'active-leads',      color: 'var(--emerald)' },
   { to: '/admin/promotions', label: 'nav.engagement',     icon: Megaphone,       exact: false, activeClass: 'active-promotions', color: 'var(--gold)'    },
   { to: '/admin/engagement', label: 'nav.analytics',      icon: Activity,        exact: false, activeClass: 'active-engagement', color: 'var(--rose)'    },
-  { to: '/admin/comms',      label: 'nav.engagement',     icon: MessageSquare,   exact: false, activeClass: 'active-settings',   color: 'var(--cyan)'    },
+  { to: '/admin/comms',      label: 'nav.messages',       icon: MessageSquare,   exact: false, activeClass: 'active-settings',   color: 'var(--cyan)'    },
   { to: '/admin/settings',   label: 'nav.settings',       icon: Settings,        exact: false, activeClass: 'active-settings',   color: 'var(--violet)'  },
-  { to: '/admin/guide',      label: 'nav.dashboard',      icon: BookOpen,        exact: false, activeClass: 'active-settings',   color: 'var(--emerald)' },
+  { to: '/admin/guide',      label: 'nav.help',           icon: BookOpen,        exact: false, activeClass: 'active-settings',   color: 'var(--emerald)' },
 ];
 
 
@@ -95,9 +95,26 @@ const AdminLayout = () => {
   const location = useLocation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const { adminLogout, adminUser } = useAdminAuth();
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') setDeferredPrompt(null);
+  };
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -149,7 +166,7 @@ const AdminLayout = () => {
             <Logo size={30} />
             <div>
               <div className="logo-text">Snap<span>Adda</span></div>
-              <span className="sidebar-badge">Admin Portal</span>
+              <span className="sidebar-badge">Control Center</span>
             </div>
           </a>
           <button 
@@ -162,7 +179,7 @@ const AdminLayout = () => {
         </div>
 
         <nav className="sidebar-nav">
-          <div className="nav-section-label">Main Menu</div>
+          <div className="nav-section-label">PROPERTIES</div>
 
           {NAV_ITEMS.slice(0, 4).map(item => {
             const Icon = item.icon;
@@ -185,7 +202,7 @@ const AdminLayout = () => {
             );
           })}
 
-          <div className="nav-section-label" style={{ marginTop: '0.5rem' }}>Management</div>
+          <div className="nav-section-label" style={{ marginTop: '1rem' }}>RESOURCES</div>
 
           {NAV_ITEMS.slice(4).map(item => {
             const Icon = item.icon;
@@ -229,6 +246,21 @@ const AdminLayout = () => {
               </div>
             </div>
             <LogoutButton onLogout={adminLogout} />
+            
+            {deferredPrompt && (
+              <button
+                onClick={handleInstallClick}
+                style={{
+                  width: '100%', marginTop: '0.75rem', padding: '0.5rem', borderRadius: '8px', cursor: 'pointer',
+                  background: 'rgba(232,184,75,0.1)', color: 'var(--gold)',
+                  border: '1px solid rgba(232,184,75,0.3)', fontSize: '0.78rem', fontWeight: 800,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                  transition: 'all 0.2s',
+                }}
+              >
+                <Plus size={13} style={{ transform: 'rotate(45deg)' }} /> Install App
+              </button>
+            )}
           </div>
         </div>
       </aside>
@@ -283,12 +315,15 @@ const AdminLayout = () => {
           <Outlet />
         </div>
 
-        {/* Mobile Floating Action Button (FAB) for rapid property entry */}
-        <Link to="/admin/properties" className="admin-fab mobile-only" style={{ bottom: '90px' }}>
-          <Building size={24} />
-        </Link>
+        {/* Mobile Floating Action Button (FAB) - Hidden on Properties page as it has its own FAB */}
+        {location.pathname !== '/admin/properties' && (
+          <Link to="/admin/properties" className="admin-fab mobile-only" style={{ bottom: '90px', zIndex: 100 }}>
+            <Building size={24} />
+          </Link>
+        )}
+        
         <div className="mobile-only">
-           <AdminMobileNav />
+           <AdminMobileNav isVisible={!isSidebarOpen} />
         </div>
       </main>
     </div>

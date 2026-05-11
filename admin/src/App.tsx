@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAdminAuth } from './contexts/AdminAuthContext';
+import { Toaster } from 'react-hot-toast';
 
 // Page components - Critical
 import AdminLayout from './pages/admin/Layout';
@@ -26,13 +27,52 @@ const AdminCommsHub = lazy(() => import('./pages/admin/CommsHub'));
 const AdminLoader = () => (
   <div style={{ 
     height: '100vh', 
+    width: '100vw',
     display: 'flex', 
+    flexDirection: 'column',
     alignItems: 'center', 
     justifyContent: 'center', 
-    backgroundColor: '#0a0a0a', 
-    color: 'var(--gold)' 
+    backgroundColor: '#05050a', 
+    color: '#e8b84b',
+    gap: '2rem',
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    zIndex: 9999
   }}>
-    <div className="shimmer" style={{ width: '120px', height: '4px', background: 'var(--gold)', borderRadius: '4px' }} />
+    <div style={{ position: 'relative', width: '120px', height: '120px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div className="shimmer-ring" style={{ 
+        position: 'absolute', 
+        inset: -10, 
+        border: '2px solid rgba(232,184,75,0.05)', 
+        borderTop: '2px solid #e8b84b', 
+        borderRadius: '50%',
+        animation: 'spin 1.5s cubic-bezier(0.5, 0.1, 0.4, 0.9) infinite'
+      }} />
+      <img 
+        src="/favicon-round.png" 
+        alt="SnapAdda" 
+        style={{ width: '80px', height: '80px', objectFit: 'contain', animation: 'pulse-glow 2s infinite alternate', borderRadius: '50%', boxShadow: '0 0 30px rgba(232,184,75,0.3)' }} 
+      />
+    </div>
+    <div style={{ textAlign: 'center' }}>
+      <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.65rem', fontWeight: 900, letterSpacing: '0.4em', textTransform: 'uppercase', marginBottom: '16px' }}>
+        SnapAdda Console
+      </div>
+      <div style={{ width: '200px', height: '2px', background: 'rgba(255,255,255,0.03)', borderRadius: '10px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.05)' }}>
+        <div style={{ 
+          height: '100%', 
+          width: '60%',
+          background: 'linear-gradient(90deg, transparent, var(--gold), transparent)',
+          animation: 'shimmer-bar 2s infinite ease-in-out'
+        }} />
+      </div>
+    </div>
+    <style>{`
+      @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+      @keyframes shimmer-bar { 0% { transform: translateX(-100%); } 100% { transform: translateX(200%); } }
+      @keyframes pulse-glow { 0% { filter: drop-shadow(0 0 5px rgba(232,184,75,0.2)); opacity: 0.8; transform: scale(1); } 100% { filter: drop-shadow(0 0 20px rgba(232,184,75,0.5)); opacity: 1; transform: scale(1.05); } }
+    `}</style>
   </div>
 );
 
@@ -80,6 +120,9 @@ function App() {
 
   return (
     <BrowserRouter>
+      <Toaster position="top-right" toastOptions={{
+        style: { background: '#111', color: '#fff', border: '1px solid rgba(255,255,255,0.1)' }
+      }} />
       <Suspense fallback={<AdminLoader />}>
         <Routes>
           <Route path="/" element={<Navigate to="/admin" replace />} />

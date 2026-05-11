@@ -185,18 +185,20 @@ export const PropertiesList: React.FC<PropertiesListProps> = ({
             </button>
           )}
 
-          {/* Mobile-only FAB (Floating Action Button) */}
-          {setIsAdding && (
+          {/* Mobile-only FAB (Floating Action Button) - Moved higher to clear bottom nav */}
+          {setIsAdding && selectedIds.length === 0 && (
             <motion.button
               className="mobile-only-btn"
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
               whileTap={{ scale: 0.9 }}
               onClick={() => setIsAdding(true)}
               style={{
-                position: 'fixed', bottom: '20px', right: '20px',
-                width: '60px', height: '60px', borderRadius: '30px',
+                position: 'fixed', bottom: '110px', right: '15px',
+                width: '64px', height: '64px', borderRadius: '32px',
                 background: 'linear-gradient(135deg, #e8b84b, #b9933a)',
                 color: 'black', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                boxShadow: '0 10px 25px rgba(0,0,0,0.4)', zIndex: 1000, border: 'none', cursor: 'pointer'
+                boxShadow: '0 10px 25px rgba(0,0,0,0.5)', zIndex: 100, border: 'none', cursor: 'pointer'
               }}
             >
               <Plus size={32} strokeWidth={2.5} />
@@ -222,7 +224,7 @@ export const PropertiesList: React.FC<PropertiesListProps> = ({
           ) : (
             finalFiltered.map((prop) => (
               <AdminPropertyCard
-                key={prop._id || prop.id}
+                key={(prop._id || prop.id)?.toString()}
                 prop={prop}
                 handleEdit={handleEdit}
                 updateProperty={updateProperty}
