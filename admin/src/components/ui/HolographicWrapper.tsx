@@ -48,17 +48,9 @@ const HolographicWrapper: React.FC<Props> = ({
   };
 
   useEffect(() => {
-    if (!tilt) return; // skip when tilt disabled — saves battery
-
-    const handleOrientation = (e: DeviceOrientationEvent) => {
-      const gamma = e.gamma || 0;
-      const beta = e.beta || 0;
-      x.set(Math.min(Math.max(gamma / 30, -0.5), 0.5));
-      y.set(Math.min(Math.max((beta - 45) / 30, -0.5), 0.5));
-    };
-    window.addEventListener('deviceorientation', handleOrientation);
-    return () => window.removeEventListener('deviceorientation', handleOrientation);
-  }, [tilt, x, y]);
+    // Gyroscope effect removed as requested
+    return () => {};
+  }, []);
 
   return (
     <motion.div

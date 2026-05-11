@@ -1,7 +1,7 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  ShieldCheck, MapPin, Building2, Leaf, Square,
+  ShieldCheck, MapPin, Building, Leaf, Square,
   Compass, CheckCircle2, Edit3, Trash2, Zap, ChevronLeft,
   ChevronRight, Image as ImageIcon, Home as HomeIcon, TrendingUp,
   Clock, Copy, X, Play, BedDouble, EyeOff, CheckCircle
@@ -45,12 +45,12 @@ const STATUS: Record<string, { label: string; color: string; bg: string }> = {
 
 const getTypeStyle = (t: string) => {
   const low = (t || '').toLowerCase();
-  if (low.includes('apartment')) return { icon: <Building2 size={12}/>, accent: '#9b59f5' };
+  if (low.includes('apartment')) return { icon: <Building size={12}/>, accent: '#9b59f5' };
   if (low.includes('villa')) return { icon: <HomeIcon size={12}/>, accent: '#e8b84b' };
   if (low.includes('crda') || low.includes('plot') || low.includes('layout')) return { icon: <Square size={12}/>, accent: '#22d9e0' };
   if (low.includes('agri') || low.includes('farm')) return { icon: <Leaf size={12}/>, accent: '#10d98c' };
   if (low.includes('house')) return { icon: <HomeIcon size={12}/>, accent: '#ff8c42' };
-  return { icon: <Building2 size={12}/>, accent: '#fff' };
+  return { icon: <Building size={12}/>, accent: '#fff' };
 };
 
 const completeness = (p: any) => {
@@ -298,7 +298,7 @@ export const AdminPropertyCard: React.FC<Props> = ({
                   onError={(e: any) => { e.currentTarget.style.display = 'none'; }} />
               ) : (
                 <div style={{ height: '100%', background: '#111', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', opacity: 0.5 }}>
-                  <Building2 size={44} />
+                  <Building size={44} />
                   <div style={{ fontSize: '0.68rem', marginTop: 8, color: '#aaa' }}>No Images</div>
                 </div>
               )}

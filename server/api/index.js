@@ -211,6 +211,7 @@ import testimonialRoutes from './routes/testimonialRoutes.js';
 import questionRoutes from './routes/questionRoutes.js';
 import automationRoutes from './routes/automationRoutes.js';
 import activityRoutes from './routes/activityRoutes.js';
+import { getSitemap } from './controllers/sitemapController.js';
 
 import { automationService } from './modules/automationService.js';
 
@@ -234,6 +235,7 @@ apiRouter.use('/testimonials', testimonialRoutes);
 apiRouter.use('/questions', questionRoutes);
 apiRouter.use('/automation', automationRoutes);
 apiRouter.use('/activity', activityRoutes);
+apiRouter.get('/sitemap.xml', getSitemap);
 
 // Attach the unified router to both prefixed and root paths
 app.use('/api', apiRouter);

@@ -14,12 +14,16 @@ import ErrorBoundary from './components/ErrorBoundary';
 import App from './App';
 import './i18n';
 
+import { HelmetProvider } from 'react-helmet-async';
+
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <ErrorBoundary>
       <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID || "placeholder_if_missing"}>
         <AuthProvider>
-          <App />
+          <HelmetProvider>
+            <App />
+          </HelmetProvider>
         </AuthProvider>
       </GoogleOAuthProvider>
     </ErrorBoundary>

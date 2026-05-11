@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 const DEFAULT_FILTERS = {
   bhk: '', minPrice: '', maxPrice: '', facing: 'Any', furnishing: 'N/A',
   constructionStatus: 'N/A', verified: false, approval: 'All',
-  propertyType: 'All', keyword: '', vastu: false, listerType: 'All',
+  type: 'All', keyword: '', vastu: false, listerType: 'All',
   highwayFrontage: false
 };
 
@@ -156,8 +156,8 @@ export default function FilterSidebar({ isOpen, onClose, filters, setFilters, on
                     <label style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.65rem', fontWeight: 800, letterSpacing: '0.1em', display: 'block', marginBottom: '8px' }}>{t('filter.category')}</label>
                     <select
                       className="dropdown-3d-glass"
-                      value={filters.propertyType || 'All'}
-                      onChange={e => set('propertyType', e.target.value)}
+                      value={filters.type || 'All'}
+                      onChange={e => set('type', e.target.value)}
                       style={{ width: '100%' }}
                     >
                       <option value="All">{t('filter.items')}</option>
@@ -222,12 +222,12 @@ export default function FilterSidebar({ isOpen, onClose, filters, setFilters, on
                       style={{ width: '100%' }}
                     >
                       <option value="All">{t('filter.any')}</option>
-                      <option value="AP CRDA">AP CRDA</option>
-                      <option value="AP RERA">AP RERA</option>
-                      <option value="VMRDA">VMRDA</option>
+                      <option value="CRDA">CRDA Approved</option>
                       <option value="DTCP">DTCP</option>
-                      <option value="TUDA">TUDA</option>
-                      <option value="Panchayat">Panchayat</option>
+                      <option value="VMRDA">VMRDA</option>
+                      <option value="Gram Panchayat">Gram Panchayat</option>
+                      <option value="Revenue">Revenue Layout</option>
+                      <option value="N/A">Others / N/A</option>
                     </select>
                   </div>
                 </div>

@@ -94,12 +94,13 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          'vendor-core': ['react', 'react-dom', 'react-router-dom'],
           'vendor-framer': ['framer-motion'],
-          'vendor-ui': ['lucide-react'],
-          'vendor-i18n': ['react-i18next', 'i18next'],
+          'vendor-icons': ['lucide-react'],
+          'vendor-utils': ['axios', 'i18next', 'react-i18next'],
+          'vendor-firebase': ['firebase/app', 'firebase/auth', 'firebase/firestore', 'firebase/storage'],
+          'vendor-charts': ['recharts'],
           'vendor-google': ['@react-oauth/google'],
-          'vendor-recharts': ['recharts'],
         }
       }
     }

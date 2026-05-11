@@ -2,9 +2,14 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '../../../components/ui/Button';
 import { Plus, X, Zap, Trash2 } from 'lucide-react';
+
 import { MediaManager } from '../../../components/ui/MediaManager';
 import { LivePreviewCard } from '../../../components/ui/LivePreviewCard';
 import { smartAreaConverter, calcPricePerCent } from '../../../utils/priceUtils';
+
+import { getFuzzySuggestions } from '../../../services/SearchParser';
+import { Search, Sparkles } from 'lucide-react';
+
 
 interface PropertyFormProps {
   isEditing: boolean;
@@ -51,7 +56,50 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
   addCustomFeature, removeCustomFeature, updateCustomFeature,
   realtorData, setRealtorData, realtors = []
 }) => {
-  const [viewMode, setViewMode] = useState<'Simplified' | 'Advanced'>('Simplified');
+  const [locInput, setLocInput] = useState(editingProperty?.location || '');
+
+  const [suggestions, setSuggestions] = useState<any[]>([]);
+
+  const handleLocSearch = (val: string) => {
+    setLocInput(val);
+    if (val.length >= 2) {
+      const results = getFuzzySuggestions(val);
+      setSuggestions(results);
+    } else {
+      setSuggestions([]);
+    }
+  };
+
+  const selectLoc = (loc: any) => {
+    setLocInput(loc.name);
+    setSuggestions([]);
+    
+    // Comprehensive Auto-Fill
+    setLiveData((p: any) => ({ 
+      ...p, 
+      location: loc.name,
+      district: loc.district || p.district,
+      mandal: loc.mandal || loc.name,
+      pincode: loc.pincode || '',
+      state: loc.state || 'Andhra Pradesh'
+    }));
+
+    // Manually sync DOM if needed (form usually handles via name/value)
+    setTimeout(() => {
+      const fields = ['location', 'district', 'mandal', 'pincode', 'state'];
+      fields.forEach(f => {
+        const el = document.querySelector(`[name="${f}"]`) as HTMLInputElement | HTMLSelectElement;
+        if (el) {
+          if (f === 'location') el.value = loc.name;
+          else if (f === 'district') el.value = loc.district || '';
+          else if (f === 'mandal') el.value = loc.mandal || loc.name;
+          else if (f === 'pincode') el.value = loc.pincode || '';
+          else if (f === 'state') el.value = loc.state || 'Andhra Pradesh';
+        }
+      });
+    }, 0);
+  };
+
 
   return (
     <motion.div 
@@ -69,25 +117,8 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
             <h2 style={{ fontSize: '1.75rem', fontWeight: 800, color: 'white', fontFamily: 'var(--font-heading)', margin: 0 }}>
               {isEditing ? 'Update Asset' : 'New Asset'}
             </h2>
-            <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
-              {['Simplified', 'Advanced'].map((m: any) => (
-                <button 
-                  key={m}
-                  type="button"
-                  onClick={() => setViewMode(m)}
-                  style={{ 
-                    padding: '6px 16px', borderRadius: '20px', fontSize: '0.7rem', fontWeight: 900,
-                    background: viewMode === m ? 'var(--gold)' : 'rgba(255,255,255,0.05)',
-                    color: viewMode === m ? 'black' : 'rgba(255,255,255,0.6)',
-                    border: '1px solid', borderColor: viewMode === m ? 'var(--gold)' : 'rgba(255,255,255,0.1)',
-                    cursor: 'pointer'
-                  }}
-                >
-                  {m.toUpperCase()}
-                </button>
-              ))}
-            </div>
           </div>
+
           <button onClick={handleCloseForm} style={{ color: 'var(--text-muted)', background: 'rgba(255,255,255,0.05)', border: 'none', padding: '10px', borderRadius: '50%', cursor: 'pointer' }}><X size={20} /></button>
         </div>
 
@@ -162,17 +193,84 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
                     📍 AUTO-DETECT
                   </button>
                 </div>
-                <input name="location" defaultValue={editingProperty?.location || ''} className="admin-input" placeholder="e.g. Mangalagiri, Vijayawada" required />
+                <div style={{ position: 'relative' }}>
+                  <input 
+                    name="location" 
+                    value={locInput}
+                    onChange={(e) => handleLocSearch(e.target.value)}
+                    className="admin-input" 
+                    placeholder="e.g. Mangalagiri, Vijayawada" 
+                    autoComplete="off"
+                    required 
+                  />
+                  {suggestions.length > 0 && (
+                    <div style={{ 
+                      position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 100,
+                      background: 'rgba(15,20,35,0.98)', backdropFilter: 'blur(10px)',
+                      border: '1px solid rgba(255,255,255,0.1)',
+                      borderRadius: '16px', marginTop: '8px', overflow: 'hidden',
+                      boxShadow: '0 20px 40px rgba(0,0,0,0.6)'
+                    }}>
+                      {suggestions.map((loc, idx) => (
+                        <div 
+                          key={idx}
+                          onClick={() => selectLoc(loc)}
+                          style={{ 
+                            padding: '12px 18px', cursor: 'pointer', borderBottom: idx === suggestions.length - 1 ? 'none' : '1px solid rgba(255,255,255,0.05)',
+                            display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                          }}
+                          onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(232,184,75,0.1)'}
+                          onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <Search size={14} style={{ color: 'var(--gold)', opacity: 0.6 }} />
+                            <div>
+                              <div style={{ fontSize: '0.85rem', color: 'white', fontWeight: 700 }}>
+                                {loc.name} {loc.pincode && <span style={{ color: 'var(--gold)', fontWeight: 500 }}>({loc.pincode})</span>}
+                              </div>
+                              <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                {loc.type} {loc.district ? `• ${loc.district}` : ''}
+                              </div>
+                            </div>
+                          </div>
+                          <Sparkles size={12} style={{ color: 'var(--gold)', opacity: 0.3 }} />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
+
+              <div>
+                <label className="admin-label">Pincode <span className="required-asterisk">*</span></label>
+                <input name="pincode" defaultValue={editingProperty?.pincode || ''} className="admin-input" placeholder="6-digit code" required maxLength={6} />
+              </div>
+
+              <div>
+                <label className="admin-label">Mandal / Tahsil</label>
+                <input name="mandal" defaultValue={editingProperty?.mandal || ''} className="admin-input" placeholder="e.g. Mangalagiri" />
+              </div>
+
+              <div>
+                <label className="admin-label">Village / Locality</label>
+                <input name="village" defaultValue={editingProperty?.village || ''} className="admin-input" placeholder="e.g. Navuluru" />
+              </div>
+
               <div>
                 <label className="admin-label">District (AP) <span className="required-asterisk">*</span></label>
                 <select name="district" defaultValue={editingProperty?.district || ''} className="admin-select" required>
                   <option value="">Select District</option>
-                  {['Anantapur','Bapatla','Chittoor','East Godavari','Eluru','Guntur','Kadapa','Kakinada','Krishna','Kurnool','Nandyal','Nellore','Palnadu','Parvathipuram Manyam','Prakasam','Rajahmundry','Srikakulam','Sri Potti Sriramulu Nellore','Tirupati','Visakhapatnam','Vizianagaram','West Godavari'].map(d => (
+                  {['Anantapur','Annamayya','Alluri Sitharama Raju','Bapatla','Chittoor','East Godavari','Eluru','Guntur','Kadapa','Kakinada','Konaseema','Krishna','Kurnool','Nandyal','Nellore','NTR','Palnadu','Parvathipuram Manyam','Prakasam','Srikakulam','Sri Sathya Sai','Tirupati','Visakhapatnam','Vizianagaram','West Godavari','YSR Kadapa'].map(d => (
                     <option key={d} value={d}>{d}</option>
                   ))}
                 </select>
               </div>
+
+              <div>
+                <label className="admin-label">State</label>
+                <input name="state" defaultValue={editingProperty?.state || 'Andhra Pradesh'} className="admin-input" readOnly />
+              </div>
+
               <div>
                 <label className="admin-label">Price <span className="required-asterisk">*</span></label>
                 <div style={{ display: 'flex', gap: '8px' }}>
@@ -237,8 +335,8 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
             </div>
           </section>
 
-          {viewMode === 'Advanced' && (
-            <section>
+          <section>
+
               <h3 style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--emerald)', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '1.75rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <div style={{ width: '20px', height: '1px', background: 'var(--emerald)' }} /> 2. LOCATION & DESC
               </h3>
@@ -304,7 +402,7 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
                 </div>
               </div>
             </section>
-          )}
+
 
           {liveData.type === 'Agricultural Land' && (
             <section>
@@ -442,8 +540,9 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
             </section>
           )}
 
-          {viewMode === 'Advanced' && ['Apartment', 'Villa', 'Farmhouse', 'Independent House', 'Commercial Space'].includes(liveData.type) && (
+          {['Apartment', 'Villa', 'Farmhouse', 'Independent House', 'Commercial Space'].includes(liveData.type) && (
           <section>
+
             <h3 style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--rose)', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '1.75rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
               <div style={{ width: '20px', height: '1px', background: 'var(--rose)' }} /> 3. SPECIFICATIONS
             </h3>
@@ -484,8 +583,9 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
             </div>
           </section>
           )}
-          {viewMode === 'Advanced' && (
-            <section>
+
+          <section>
+
               <h3 style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--cyan)', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '1.75rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <div style={{ width: '20px', height: '1px', background: 'var(--cyan)' }} /> 4. ASSET STATUS
               </h3>
@@ -501,13 +601,13 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
                 </div>
               </div>
             </section>
-          )}
 
-          {viewMode === 'Advanced' && (
+
             <section>
               <h3 style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--cyan)', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '1.75rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <div style={{ width: '20px', height: '1px', background: 'var(--rose)' }} /> 5. FEATURES
               </h3>
+
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
                 <div>
                   <label className="admin-label">Ownership</label>
@@ -545,10 +645,10 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
                 </div>
               </div>
             </section>
-          )}
 
-          {viewMode === 'Advanced' && (
+
              <section>
+
                <h3 style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--gold)', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '1.75rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
                  <div style={{ width: '20px', height: '1px', background: 'var(--gold)' }} /> STEP 5: TRUST & VISIBILITY
                </h3>
@@ -569,13 +669,13 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
                  </div>
                </div>
             </section>
-          )}
 
-          {viewMode === 'Advanced' && (
+
             <section>
               <h3 style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--violet)', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '1.75rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <div style={{ width: '20px', height: '1px', background: 'var(--violet)' }} /> 6. CUSTOM FIELDS
               </h3>
+
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                   {customFeatures.map((feat, idx) => (
                     <div key={idx} style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
@@ -612,7 +712,7 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
                   </button>
               </div>
             </section>
-          )}
+
 
           {/* STEP 7: REALTOR / SOURCE INFO */}
           <section>
@@ -622,7 +722,8 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
             <div style={{ padding: '1.25rem', background: 'rgba(232,184,75,0.04)', borderRadius: '16px', border: '1px solid rgba(232,184,75,0.15)', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
               
               {/* CRM Picker - Only show in Advanced */}
-              {viewMode === 'Advanced' && realtors.length > 0 && (
+              {realtors.length > 0 && (
+
                 <div>
                   <label className="admin-label">Pick from CRM Realtors</label>
                   <select
@@ -672,25 +773,22 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
                   <input className="admin-input" placeholder="e.g. 9346793364" value={realtorData.phone || ''}
                     onChange={e => setRealtorData((p: any) => ({ ...p, phone: e.target.value }))} required />
                 </div>
-                {viewMode === 'Advanced' && (
-                  <>
-                    <div>
-                      <label className="admin-label">Agency / Firm</label>
-                      <input className="admin-input" placeholder="e.g. Ravi Realty" value={realtorData.agency || ''}
-                        onChange={e => setRealtorData((p: any) => ({ ...p, agency: e.target.value }))} />
-                    </div>
-                    <div>
-                      <label className="admin-label">RERA License No</label>
-                      <input className="admin-input" placeholder="If applicable" value={realtorData.licenseNo || ''}
-                        onChange={e => setRealtorData((p: any) => ({ ...p, licenseNo: e.target.value }))} />
-                    </div>
-                    <div style={{ gridColumn: 'span 2' }}>
-                      <label className="admin-label">Email</label>
-                      <input className="admin-input" placeholder="realtor@email.com" value={realtorData.email || ''}
-                        onChange={e => setRealtorData((p: any) => ({ ...p, email: e.target.value }))} />
-                    </div>
-                  </>
-                )}
+                <div>
+
+                  <label className="admin-label">Agency / Firm</label>
+                  <input className="admin-input" placeholder="e.g. Ravi Realty" value={realtorData.agency || ''}
+                    onChange={e => setRealtorData((p: any) => ({ ...p, agency: e.target.value }))} />
+                </div>
+                <div>
+                  <label className="admin-label">RERA License No</label>
+                  <input className="admin-input" placeholder="If applicable" value={realtorData.licenseNo || ''}
+                    onChange={e => setRealtorData((p: any) => ({ ...p, licenseNo: e.target.value }))} />
+                </div>
+                <div style={{ gridColumn: 'span 2' }}>
+                  <label className="admin-label">Email</label>
+                  <input className="admin-input" placeholder="realtor@email.com" value={realtorData.email || ''}
+                    onChange={e => setRealtorData((p: any) => ({ ...p, email: e.target.value }))} />
+                </div>
               </div>
 
               {realtorData.name && (
@@ -703,6 +801,7 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
 
           <div style={{ gridColumn: '1 / -1' }}>
             <label className="admin-label">8. MEDIA ASSETS (UP TO 12)</label>
+
             <MediaManager 
               existingUrls={currentImageUrls}
               onImagesChange={handleMediaChange}

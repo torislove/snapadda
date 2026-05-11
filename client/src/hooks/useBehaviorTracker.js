@@ -16,6 +16,8 @@ export const useBehaviorTracker = () => {
     };
   });
 
+  const [showModal, setShowModal] = useState(false);
+
   // Call this when a user views a property
   const logPropertyView = (propertyType, location) => {
     if (!propertyType || !location) return;
@@ -32,6 +34,11 @@ export const useBehaviorTracker = () => {
       
       newProfile.totalViews += 1;
 
+      // TRIGGER: If 3+ views and not captured yet
+      if (newProfile.totalViews >= 3 && !sessionStorage.getItem('snapadda_lead_captured')) {
+        setShowModal(true);
+      }
+
       // Persist to local storage
       localStorage.setItem('snapadda_behavior_profile', JSON.stringify(newProfile));
       return newProfile;
@@ -40,7 +47,7 @@ export const useBehaviorTracker = () => {
 
   // Analyze profile to get the top preferred property type and location
   const getTopPreferences = () => {
-    if (profile.totalViews < 2) return null; // Not enough data yet
+    if (profile.totalViews < 1) return null;
 
     // Get top type
     const topType = Object.entries(profile.viewedTypes)
@@ -57,5 +64,5 @@ export const useBehaviorTracker = () => {
     };
   };
 
-  return { profile, logPropertyView, getTopPreferences };
+  return { profile, logPropertyView, getTopPreferences, showModal, setShowModal };
 };

@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { 
   MessageSquare, Search, Target, 
   MoreHorizontal, User, Bot, Sparkles, AlertCircle, RefreshCcw,
@@ -197,7 +198,22 @@ const LeadCard = ({ lead, onDelete, onStatusChange, onFlag }: {
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
         <div>
-          <div style={{ fontWeight: 800, color: 'white', fontSize: '0.875rem' }}>{lead.name}</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ fontWeight: 800, color: 'white', fontSize: '0.875rem' }}>{lead.name}</div>
+            {(lead.intentProfile?.length > 0 || lead.source?.includes('Intent')) && (
+              <motion.span
+                animate={{ opacity: [1, 0.5, 1], scale: [1, 1.05, 1] }}
+                transition={{ repeat: Infinity, duration: 2 }}
+                style={{
+                  fontSize: '0.55rem', fontWeight: 900, background: 'var(--gold)', color: 'black',
+                  padding: '1px 6px', borderRadius: '4px', display: 'flex', alignItems: 'center', gap: '3px',
+                  boxShadow: '0 0 10px rgba(232,184,75,0.4)'
+                }}
+              >
+                <Zap size={8} fill="currentColor" /> HOT
+              </motion.span>
+            )}
+          </div>
           <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
              <User size={10} style={{ color: 'var(--gold)' }}/> {lead.assignedTo || 'Super Admin'}
           </div>
@@ -436,6 +452,7 @@ const ActivityPulse = () => {
 
 /* ── MAIN ── */
 const AdminLeads = () => {
+  const { t } = useTranslation();
   const [inquiries, setInquiries] = useState<any[]>([]);
   const [leads, setLeads] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<'Inquiries' | 'Leads'>('Leads');
@@ -536,7 +553,7 @@ const AdminLeads = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <div style={{ fontSize: '0.65rem', fontWeight: 900, letterSpacing: '0.2rem', textTransform: 'uppercase', color: 'var(--emerald)', marginBottom: '0.4rem', fontFamily: 'var(--font-mono)' }}>✦ CRM HUB</div>
-          <h1 style={{ fontSize: '2.2rem', fontWeight: 900, background: 'linear-gradient(135deg,#fff,#10d98c)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: '0.2rem', fontFamily: 'var(--font-heading)', letterSpacing: '-0.02em' }}>Management</h1>
+          <h1 style={{ fontSize: '2.2rem', fontWeight: 900, background: 'linear-gradient(135deg,#fff,#10d98c)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: '0.2rem', fontFamily: 'var(--font-heading)', letterSpacing: '-0.02em' }}>{t('leads.title', 'Management')}</h1>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem', background: 'rgba(255,255,255,0.03)', padding: '4px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
           <button 
@@ -559,8 +576,8 @@ const AdminLeads = () => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <div style={{ display: 'flex', gap: '0.4rem', background: 'rgba(255,255,255,0.03)', padding: '0.3rem', borderRadius: '14px', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
             {[
-              { id: 'Leads', icon: Target, label: 'Leads', color: 'var(--emerald)', count: newLeadsCount },
-              { id: 'Inquiries', icon: MessageSquare, label: 'Inquiries', color: 'var(--violet)', count: pendingInqCount }
+              { id: 'Leads', icon: Target, label: t('nav.leads', 'Leads'), color: 'var(--emerald)', count: newLeadsCount },
+              { id: 'Inquiries', icon: MessageSquare, label: t('nav.messages', 'Inquiries'), color: 'var(--violet)', count: pendingInqCount }
             ].map(tab => (
               <button 
                 key={tab.id}

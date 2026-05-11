@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, Heart, User, Settings, LogOut, Star, MapPin, ShieldCheck, Phone, RefreshCw, MessageSquare, Sparkles, LayoutDashboard, Building2 } from 'lucide-react';
+import { Home, Heart, User, Settings, LogOut, Star, MapPin, ShieldCheck, Phone, RefreshCw, MessageSquare, Sparkles, LayoutDashboard, Building } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { getFavorites, fetchUserQuestions, fetchMyProperties } from '../services/api';
 import PropertyCard from '../components/PropertyCard';
@@ -9,6 +9,7 @@ import Logo from '../components/Logo';
 import ContactModal from '../components/ContactModal';
 import { useTranslation } from 'react-i18next';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+import { useNotifications } from '../hooks/useNotifications';
 
 // Dashboard home tab
 function DashboardHome({ user, stats, recent, setModalOpen }) {
@@ -190,7 +191,7 @@ function MyListings({ properties, loading }) {
         </div>
       ) : (
         <div className="empty-state glass-panel" style={{ padding: '5rem 2rem', textAlign: 'center', border: '1px dashed rgba(255,255,255,0.1)' }}>
-          <Building2 size={48} style={{ opacity: 0.2, marginBottom: '1.5rem' }} />
+          <Building size={48} style={{ opacity: 0.2, marginBottom: '1.5rem' }} />
           <h3 style={{ fontSize: '1.5rem', fontWeight: 900 }}>{t('mylistings.noAssets')}</h3>
           <p style={{ color: 'var(--txt-muted)', marginBottom: '2rem' }}>{t('mylistings.noAssetsSub')}</p>
           <button onClick={() => navigate('/post-property')} className="hero-btn hero-btn-primary">{t('mylistings.addBtn')}</button>
@@ -206,6 +207,7 @@ function Profile({ user, logout, stats }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const { registerToken, permission } = useNotifications();
 
   const avatarUrl = user?.picture || user?.avatar || user?.photo ||
     `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'U')}&background=e8b84b&color=000&bold=true&size=200`;
@@ -230,6 +232,45 @@ function Profile({ user, logout, stats }) {
 
   return (
     <div style={{ padding: '2rem 0', maxWidth: '860px' }}>
+      {/* ── Notification Status ──────────────────────────────────────── */}
+      <motion.div
+        initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+        style={{ 
+          background: 'rgba(232,184,75,0.03)', 
+          border: '1px solid rgba(232,184,75,0.15)', 
+          borderRadius: '24px', padding: '1.5rem', 
+          marginBottom: '1.5rem', display: 'flex', 
+          alignItems: 'center', justifyContent: 'space-between',
+          gap: '1rem', flexWrap: 'wrap'
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <div style={{ 
+            width: '48px', height: '48px', borderRadius: '14px', 
+            background: permission === 'granted' ? 'rgba(16,217,140,0.1)' : 'rgba(255,255,255,0.05)', 
+            display: 'flex', alignItems: 'center', justifyContent: 'center' 
+          }}>
+            <Sparkles size={24} style={{ color: permission === 'granted' ? '#10d98c' : 'var(--gold)' }} />
+          </div>
+          <div>
+            <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#fff' }}>
+              {permission === 'granted' ? 'Smart Alerts Active' : 'Enable Real-time Alerts'}
+            </div>
+            <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)', fontWeight: 600 }}>
+              {permission === 'granted' ? 'You are receiving instant market updates.' : 'Get notified when new assets match your profile.'}
+            </div>
+          </div>
+        </div>
+        {permission !== 'granted' && (
+          <button 
+            onClick={registerToken}
+            className="btn-3d-glass" 
+            style={{ padding: '10px 20px', fontSize: '0.75rem', borderRadius: '12px' }}
+          >
+            ENABLE NOTIFICATIONS
+          </button>
+        )}
+      </motion.div>
 
       {/* ── Hero Profile Card ─────────────────────────────────────────── */}
       <motion.div
@@ -416,7 +457,6 @@ function Profile({ user, logout, stats }) {
   );
 }
 
-
 export default function Dashboard({ defaultTab = 'home' }) {
   const { t } = useTranslation();
   const { user, logout } = useAuth();
@@ -489,7 +529,7 @@ export default function Dashboard({ defaultTab = 'home' }) {
 
   const TABS = [
     { key: 'home', label: t('dashboard.overview'), icon: <ShieldCheck size={18} /> },
-    { key: 'listings', label: t('mylistings.title'), icon: <Building2 size={18} /> },
+    { key: 'listings', label: t('mylistings.title'), icon: <Building size={18} /> },
     { key: 'favorites', label: t('dashboard.saved'), icon: <Heart size={18} /> },
     { key: 'profile', label: t('dashboard.profile'), icon: <User size={18} /> },
   ];

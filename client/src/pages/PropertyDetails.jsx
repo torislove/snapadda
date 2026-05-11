@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft, MapPin, Share2, Heart, Shield, ShieldCheck, Phone, MessageSquare,
-  ChevronLeft, ChevronRight, Eye, CheckCircle2, Building2, User,
+  ChevronLeft, ChevronRight, Eye, CheckCircle2, Building, User,
   BedDouble, Bath, Square, Compass, Award, Send, Star, Leaf, Maximize2,
   Droplets, Truck, FileText, ZoomIn, X, TreePine, TrendingUp, IndianRupee,
   LayoutGrid, Play
@@ -19,6 +19,10 @@ import EliteLightBox from '../components/EliteLightBox';
 import { useBehaviorTracker } from '../hooks/useBehaviorTracker';
 import { prefetchRoute } from '../utils/PerformanceUtilities';
 import { useRealtimeProperties } from '../hooks/useRealtimeProperties';
+import { Helmet } from 'react-helmet-async';
+import PropertyMap from '../components/PropertyMap';
+import ShareControlCenter from '../components/ShareControlCenter';
+import { DOMAIN } from '../utils/shareUtils';
 
 // ������������������������������������������������������������������������������������������
 // Toast
@@ -242,40 +246,6 @@ export default function PropertyDetails() {
 
   const handleShare = () => setShareModal(true);
 
-  const handleShareWhatsApp = () => {
-    window.open(`https://wa.me/?text=${encodeURIComponent(getShareText())}`, '_blank');
-    shareProperty(id, 'whatsapp', getUserId(user));
-    setShareModal(false);
-    showToast('WhatsApp ద్వారా షేర్ చేయబడింది!');
-  };
-
-  const handleCopyLink = async () => {
-    const url = getShareUrl();
-    let ok = false;
-    try { await navigator.clipboard.writeText(url); ok = true; } catch {}
-    if (!ok) {
-      try {
-        const ta = document.createElement('textarea');
-        ta.value = url; ta.style.position = 'fixed'; ta.style.opacity = '0';
-        document.body.appendChild(ta); ta.focus(); ta.select();
-        ok = document.execCommand('copy');
-        document.body.removeChild(ta);
-      } catch {}
-    }
-    showToast(ok ? 'లింక్ కాపీ చేయబడింది!' : 'లింక్ కాపీ చేయడంలో విఫలం, బ్రౌజర్ అనుమతి ఇవ్వండి');
-    shareProperty(id, 'clipboard', getUserId(user));
-    setShareModal(false);
-  };
-
-  const handleNativeShare = async () => {
-    try {
-      await navigator.share({ title: `SnapAdda: ${property?.title}`, text: getShareText(), url: getShareUrl() });
-      shareProperty(id, 'native', getUserId(user));
-      showToast('షేర్ చేయబడింది!');
-    } catch {}
-    setShareModal(false);
-  };
-
   const handleWhatsApp = () => {
     const wa = supportInfo?.whatsapp || '919346793364';
     const waMsg = `నమస్కారం SnapAdda! మీ ప్లాట్‌ఫారమ్‌లోని ఈ ప్రాపర్టీ పై ఆసక్తి ఉంది:\n\n*${property?.title}*\nరకం: ${tr(property?.type)}\nప్రాంతం: ${property?.location}\nధర: ${formatSnapAddaPrice(displayPrice)}\n\nలింక్: ${window.location.href}`;
@@ -347,7 +317,7 @@ export default function PropertyDetails() {
 
   if (!property) return (
     <div className="pd-page" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '2rem' }}>
-      <Building2 size={64} style={{ opacity: 0.2 }}/>
+      <Building size={64} style={{ opacity: 0.2 }}/>
       <h2>క్షమించండి! ఈ ప్రాపర్టీ వివరాలు అందుబాటులో లేవు.</h2>
       <button className="pd-btn-primary" onClick={() => navigate('/')}>మళ్ళీ ప్రయత్నించండి</button>
     </div>
@@ -370,6 +340,28 @@ export default function PropertyDetails() {
 
   return (
     <div className="pd-page">
+      <Helmet>
+        <title>{property?.title ? `${property.title} | SnapAdda` : 'Property Details | SnapAdda'}</title>
+        <meta name="description" content={generateDesc(property || {})} />
+        
+        {/* Open Graph / Facebook / WhatsApp */}
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content={window.location.href} />
+        <meta property="og:title" content={property?.title || 'Premium Property on SnapAdda'} />
+        <meta property="og:description" content={generateDesc(property || {})} />
+        <meta property="og:image" content={property?.images?.[0] || property?.image || '/og-image.jpg'} />
+        <meta property="og:site_name" content="SnapAdda" />
+
+        {/* Twitter */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:url" content={window.location.href} />
+        <meta name="twitter:title" content={property?.title || 'Premium Property on SnapAdda'} />
+        <meta name="twitter:description" content={generateDesc(property || {})} />
+        <meta name="twitter:image" content={property?.images?.[0] || property?.image || '/og-image.jpg'} />
+
+        <link rel="canonical" href={window.location.href} />
+      </Helmet>
+
       <AnimatePresence>{toast && <Toast msg={toast}/>}</AnimatePresence>
       <AnimatePresence>
         {lightbox && (
@@ -385,6 +377,7 @@ export default function PropertyDetails() {
 
       <div className="pd-back-bar" style={{ position: 'absolute', top: '15px', left: '15px', zIndex: 100 }}>
         <button 
+          id="btn-pd-back"
           className="pd-back-btn" 
           onClick={() => navigate(-1)}
           style={{ 
@@ -454,7 +447,7 @@ export default function PropertyDetails() {
                   </div>
                 )}
                 <div style={{ display: 'none', position: 'absolute', inset: 0, alignItems: 'center', justifyContent: 'center', background: '#111', flexDirection: 'column', gap: '12px' }}>
-                  <Building2 size={48} style={{ opacity: 0.2 }}/>
+                  <Building size={48} style={{ opacity: 0.2 }}/>
                   <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.75rem' }}>Image unavailable</span>
                 </div>
                 
@@ -505,7 +498,7 @@ export default function PropertyDetails() {
             ))
           ) : (
             <div style={{ flex: '0 0 100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#111' }}>
-              <Building2 size={64} style={{ opacity: 0.2 }}/>
+              <Building size={64} style={{ opacity: 0.2 }}/>
             </div>
           )}
         </div>
@@ -591,6 +584,7 @@ export default function PropertyDetails() {
                 <div style={{ marginTop: '1.5rem', width: '100%', maxWidth: '500px' }}>
                   <div style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--gold)', letterSpacing: '0.1em', marginBottom: '8px', textTransform: 'uppercase' }}>ప్రాంతం యొక్క మ్యాప్ (Location Map)</div>
                   <a 
+                    id="btn-pd-map-directions"
                     href={finalGoogleMapsLink} 
                     target="_blank" 
                     rel="noopener noreferrer" 
@@ -614,10 +608,14 @@ export default function PropertyDetails() {
               <div className="pd-price-main" style={{ fontSize: '2.5rem', fontWeight: 950, color: 'var(--gold)' }}>{formatSnapAddaPrice(displayPrice)}</div>
               <div className="pd-price-sub" style={{ color: 'var(--txt-muted)', fontWeight: 600, fontSize: '0.85rem' }}>SnapAdda Exclusive Valuation</div>
               <div className="pd-price-actions" style={{ marginTop: '1.5rem', display: 'flex', gap: '1rem' }}>
-                <button className={`pd-action-btn ${liked ? 'liked' : ''}`} onClick={handleLike} style={{ flex: 1, padding: '12px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', background: liked ? 'var(--gold)' : 'rgba(255,255,255,0.05)', color: liked ? 'black' : 'white', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                <button 
+                  id="btn-pd-like"
+                  className={`pd-action-btn ${liked ? 'liked' : ''}`} onClick={handleLike} style={{ flex: 1, padding: '12px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', background: liked ? 'var(--gold)' : 'rgba(255,255,255,0.05)', color: liked ? 'black' : 'white', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                   <Heart size={18} fill={liked ? 'currentColor' : 'none'}/> {liked ? 'Liked' : 'Like'}
                 </button>
-                <button className="pd-action-btn" onClick={handleShare} style={{ flex: 1, padding: '12px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: 'white', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                <button 
+                  id="btn-pd-share"
+                  className="pd-action-btn" onClick={handleShare} style={{ flex: 1, padding: '12px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: 'white', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                   <Share2 size={18}/> Share
                 </button>
               </div>
@@ -824,6 +822,14 @@ export default function PropertyDetails() {
                   <p style={{ color: 'var(--text-muted)', fontSize: '0.7rem', marginTop: '10px' }}>Predicted 18-22% appreciation in next 24 months.</p>
                 </div>
               </div>
+
+              {/* Interactive Location Map */}
+              <div style={{ marginTop: '2rem', height: '400px', width: '100%', borderRadius: '24px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)' }}>
+                <PropertyMap 
+                  properties={[property]} 
+                  selectedProperty={property}
+                />
+              </div>
             </section>
 
             {property.realtor?.name && (
@@ -954,54 +960,7 @@ export default function PropertyDetails() {
         </section>
       )}
 
-      <AnimatePresence>
-        {shareModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setShareModal(false)}
-            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 9998, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', backdropFilter: 'blur(10px)', padding: '0 0 80px' }}
-          >
-            <motion.div
-              initial={{ y: 80, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: 80, opacity: 0 }}
-              onClick={e => e.stopPropagation()}
-              style={{ background: 'rgba(10,10,20,0.98)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '28px 28px 0 0', padding: '28px 24px 24px', width: '100%', maxWidth: '500px', boxShadow: '0 -20px 60px rgba(0,0,0,0.8)' }}
-            >
-              <div style={{ width: '40px', height: '4px', background: 'rgba(255,255,255,0.2)', borderRadius: '4px', margin: '0 auto 20px' }} />
-              <div style={{ fontWeight: 900, fontSize: '1.05rem', color: 'white', marginBottom: '20px', textAlign: 'center' }}>
-                ప్రాపర్టీని షేర్ చేయండి
-              </div>
-              <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '12px 16px', marginBottom: '20px', fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)' }}>
-                <div style={{ fontWeight: 800, color: 'white', marginBottom: '4px' }}>{property?.title}</div>
-                <div>{property?.location} 繚 {formatSnapAddaPrice((isAgri && agriTotalValue > 0) ? agriTotalValue : property?.price)}</div>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <button onClick={handleShareWhatsApp}
-                  style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '14px 18px', background: 'rgba(37,211,102,0.12)', border: '1px solid rgba(37,211,102,0.3)', borderRadius: '16px', color: '#25D366', fontWeight: 800, fontSize: '1rem', cursor: 'pointer', width: '100%' }}>
-                  <span style={{ fontSize: '1.4rem' }}>俥</span> WhatsApp లో షేర్ చేయండి
-                </button>
-                <button onClick={handleCopyLink}
-                  style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '14px 18px', background: 'rgba(232,184,75,0.1)', border: '1px solid rgba(232,184,75,0.3)', borderRadius: '16px', color: '#e8b84b', fontWeight: 800, fontSize: '1rem', cursor: 'pointer', width: '100%' }}>
-                  <span style={{ fontSize: '1.4rem' }}></span> లింక్ కాపీ చేయండి
-                </button>
-                {typeof navigator !== 'undefined' && navigator.share && (
-                  <button onClick={handleNativeShare}
-                    style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '14px 18px', background: 'rgba(155,89,245,0.1)', border: '1px solid rgba(155,89,245,0.3)', borderRadius: '16px', color: '#9b59f5', fontWeight: 800, fontSize: '1rem', cursor: 'pointer', width: '100%' }}>
-                    <span style={{ fontSize: '1.4rem' }}>搻</span> More Options
-                  </button>
-                )}
-                <button onClick={() => setShareModal(false)}
-                  style={{ padding: '12px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', color: 'rgba(255,255,255,0.5)', fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer', width: '100%' }}>
-                  వెనక్కి వెళ్ళండి
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+
 
       {/* ── Elite Floating Bento Pill Ribbon ── */}
       <div className="pd-mobile-ribbon" style={{ 
@@ -1026,6 +985,11 @@ export default function PropertyDetails() {
           <MessageSquare size={18}/> WHATSAPP
         </button>
       </div>
+      <ShareControlCenter 
+        isOpen={shareModal} 
+        onClose={() => setShareModal(false)} 
+        property={property} 
+      />
     </div>
   );
 }

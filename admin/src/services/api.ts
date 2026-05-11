@@ -300,3 +300,14 @@ export const fetchContactProperties = async (contactId: string) => {
   return data.data || [];
 };
 
+/* ─────────────── Automation / Notifications ─────────────── */
+export const sendPushNotification = async (data: { title: string; body: string; imageUrl?: string; link?: string }) => {
+  const res = await fetch(`${API_URL}/automation/send-push`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(data)
+  });
+  if (!res.ok) throw new Error('Failed to send push notification');
+  return res.json();
+};
+

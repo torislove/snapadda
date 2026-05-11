@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Building, Users, MessageSquare, ShieldCheck,
   Plus, Activity,
@@ -163,6 +164,7 @@ const QuickAction = ({ icon: Icon, label, color, to }: any) => (
 
 /* ─── Dashboard Main ─── */
 const AdminDashboard = () => {
+  const { t } = useTranslation();
   const { adminUser } = useAdminAuth();
   const [stats, setStats] = useState<any>(null);
   const [chartData, setChartData] = useState<any>(CHART_DATA);
@@ -180,9 +182,9 @@ const AdminDashboard = () => {
     }
 
     const hour = new Date().getHours();
-    if (hour < 12) setGreeting('Good Morning');
-    else if (hour < 17) setGreeting('Good Afternoon');
-    else setGreeting('Good Evening');
+    if (hour < 12) setGreeting(t('dashboard.welcome', 'Good Morning'));
+    else if (hour < 17) setGreeting(t('dashboard.welcome', 'Good Afternoon'));
+    else setGreeting(t('dashboard.welcome', 'Good Evening'));
 
     const token = localStorage.getItem('snapadda_admin_token');
     const headers: any = {};
@@ -226,12 +228,12 @@ const AdminDashboard = () => {
 
   const METRICS = [
     {
-      title: 'Properties', value: stats?.propertyCount || 0,
+      title: t('nav.properties', 'Properties'), value: stats?.propertyCount || 0,
       icon: Building, color: '#9b59f5',
-      sub: `${stats?.activeCount || 0} Live Listings`, trend: 12, link: '/admin/properties',
+      sub: `${stats?.activeCount || 0} ${t('dashboard.stats.active', 'Live Listings')}`, trend: 12, link: '/admin/properties',
     },
     {
-      title: 'Active Leads', value: stats?.leadCount || 0,
+      title: t('nav.leads', 'Active Leads'), value: stats?.leadCount || 0,
       icon: Target, color: '#22d9e0',
       sub: 'Qualifying Prospects', trend: 8, link: '/admin/leads',
     },

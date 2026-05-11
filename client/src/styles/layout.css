@@ -284,6 +284,13 @@ section {
 }
 
 .label-active { color: var(--gold); }
+.label-primary {
+  font-size: 0.65rem !important;
+  color: var(--gold) !important;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+  margin-top: 5px !important;
+  font-weight: 900 !important;
+}
 
 .nav-active-pill {
   position: absolute;

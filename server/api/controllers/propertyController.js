@@ -167,8 +167,8 @@ export const getProperties = async (req, res) => {
     const skip = (pageNum - 1) * limitNum;
 
     // ── Use .lean() for plain JS objects (30-40% faster Mongoose reads) ──
-    // ── Select only card fields unless it's a search (needs score meta) ──
-    const selectFields = search ? '' : CARD_FIELDS;
+    // ── Always select card fields — even text search only needs card data ──
+    const selectFields = CARD_FIELDS;
 
     const [properties, total] = await Promise.all([
       Property.find(filter, projection)

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  MapPin, Phone, User, LogOut, LayoutDashboard, Building2, Globe,
+  MapPin, Phone, User, LogOut, LayoutDashboard, Building, Globe,
   ChevronDown, UserCircle2, PlusCircle, Search, X
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
@@ -34,6 +34,7 @@ function AvatarDropdown({ user, logout }) {
   return (
     <div ref={ref} style={{ position: 'relative' }}>
       <button
+        id="btn-nav-user-menu"
         onClick={() => setOpen(o => !o)}
         aria-label="User menu"
         aria-expanded={open}
@@ -82,7 +83,9 @@ function AvatarDropdown({ user, logout }) {
             </div>
 
             {menuItems.map(item => (
-              <button key={item.label} onClick={item.action}
+              <button 
+                id={`btn-nav-user-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
+                key={item.label} onClick={item.action}
                 style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '9px', padding: '9px 12px', borderRadius: '12px', border: 'none', background: 'transparent', color: 'rgba(255,255,255,0.8)', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', textAlign: 'left', transition: 'background 0.15s', minHeight: '40px' }}
                 onPointerEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.06)'}
                 onPointerLeave={e => e.currentTarget.style.background = 'transparent'}
@@ -92,7 +95,9 @@ function AvatarDropdown({ user, logout }) {
             ))}
 
             <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', marginTop: '4px', paddingTop: '4px' }}>
-              <button onClick={() => { logout(); setOpen(false); }}
+              <button 
+                id="btn-nav-user-signout"
+                onClick={() => { logout(); setOpen(false); }}
                 style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '9px', padding: '9px 12px', borderRadius: '12px', border: 'none', background: 'transparent', color: '#f0515f', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer', minHeight: '40px' }}
                 onPointerEnter={e => e.currentTarget.style.background = 'rgba(240,81,95,0.08)'}
                 onPointerLeave={e => e.currentTarget.style.background = 'transparent'}
@@ -127,10 +132,10 @@ export default function Header() {
   useEffect(() => { setMobileMenuOpen(false); }, [location]);
 
   const navLinks = [
-    { label: t('nav.properties', 'Browse'), path: '/#properties', icon: <Building2 size={17} /> },
-    { label: t('nav.post', 'Add Listing'), path: '/post-property', icon: <PlusCircle size={17} /> },
-    { label: t('nav.locations', 'Areas'), path: '/#cities', icon: <MapPin size={17} /> },
-    { label: t('nav.callback', 'Help'), path: '/request-callback', icon: <Phone size={17} /> },
+    { label: 'BUY', path: '/search?intent=Buy', icon: <Search size={15} /> },
+    { label: 'RENT', path: '/search?intent=Rent', icon: <Building size={15} /> },
+    { label: 'POST PROPERTY', path: '/post-property', icon: <PlusCircle size={15} /> },
+    { label: 'HELP', path: '/request-callback', icon: <Phone size={15} /> },
   ];
 
   const avatarUrl = user?.picture || user?.avatar || user?.photo ||
@@ -145,14 +150,17 @@ export default function Header() {
       >
         <div className="nav-inner">
           {/* Logo */}
-          <Link to="/" aria-label="SnapAdda Home" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', flexShrink: 0 }}>
+          <Link 
+            id="lnk-nav-logo"
+            to="/" aria-label="SnapAdda Home" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', flexShrink: 0 }}>
             <Logo size={scrolled ? 26 : 30} showText />
           </Link>
 
           {/* Desktop center links */}
-          <nav className="nav-links-center desktop-only" aria-label="Site navigation" style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
+          <nav id="nav-main-desktop" className="nav-links-center desktop-only" aria-label="Site navigation" style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
             {navLinks.map((link) => (
               <a
+                id={`lnk-nav-${link.label.toLowerCase().replace(/\s+/g, '-')}`}
                 key={link.label}
                 href={link.path.startsWith('/#') ? link.path.substring(1) : link.path}
                 style={{
@@ -180,6 +188,7 @@ export default function Header() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', flexShrink: 0 }}>
             {/* Language toggle — desktop */}
             <button
+              id="btn-nav-lang-toggle"
               onClick={toggleLang}
               aria-label="Toggle language"
               className="desktop-only"
@@ -207,6 +216,7 @@ export default function Header() {
               <AvatarDropdown user={user} logout={logout} />
             ) : (
               <Link
+                id="lnk-nav-login"
                 to="/login"
                 style={{
                   display: 'flex', alignItems: 'center', gap: '6px',
@@ -226,6 +236,7 @@ export default function Header() {
 
             {/* Mobile hamburger */}
             <button
+              id="btn-nav-mobile-hamburger"
               className="mobile-only"
               onClick={() => setMobileMenuOpen(o => !o)}
               aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}

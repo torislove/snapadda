@@ -10,9 +10,9 @@ const router = express.Router();
 
 router.get('/nearby', getNearbyProperties);
 router.get('/my/:userId', getMyProperties);
+router.get('/engagement', getEngagementStats);
 router.get('/', getProperties);
 router.post('/validate', validateProperties);
-router.get('/engagement', getEngagementStats);
 router.post('/public-submit', publicSubmitProperty);
 router.get('/:id', getPropertyById);
 router.get('/:id/similar', getSimilarProperties);

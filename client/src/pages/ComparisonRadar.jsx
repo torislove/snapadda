@@ -3,7 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   ArrowLeft, CheckCircle2, XCircle, SlidersHorizontal, 
-  MapPin, IndianRupee, Compass, Square, Building2, ShieldCheck, 
+  MapPin, IndianRupee, Compass, Square, Building, ShieldCheck, 
   Trash2, ArrowRight
 } from 'lucide-react';
 import { fetchProperties } from '../services/api';
@@ -45,7 +45,7 @@ const ComparisonRadar = () => {
 
   const attributes = [
     { label: 'Price', key: 'price', format: (v) => formatSnapAddaPrice(v), icon: <IndianRupee size={16} /> },
-    { label: 'Type', key: 'type', format: (v) => tr(v), icon: <Building2 size={16} /> },
+    { label: 'Type', key: 'type', format: (v) => tr(v), icon: <Building size={16} /> },
     { label: 'Location', key: 'location', format: (v) => v, icon: <MapPin size={16} /> },
     { label: 'Size', key: 'areaSize', format: (v, p) => `${v} ${p.measurementUnit || 'Sq.Ft'}`, icon: <Square size={16} /> },
     { label: 'Facing', key: 'facing', format: (v) => tr(v), icon: <Compass size={16} /> },

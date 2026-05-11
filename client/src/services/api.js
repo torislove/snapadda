@@ -98,9 +98,9 @@ export const fetchProperty = async (id, userId) => {
  */
 export const fetchPropertyById = fetchProperty;
 
-export const fetchSimilarProperties = async (category, excludeId) => {
+export const fetchSimilarProperties = async (type, excludeId) => {
   try {
-    const res = await safeFetch(`${API_BASE}/properties?category=${category}&limit=4&exclude=${excludeId}`);
+    const res = await safeFetch(`${API_BASE}/properties?type=${encodeURIComponent(type)}&limit=4&exclude=${excludeId}`);
     if (!res.ok) throw new Error('Failed to fetch similar properties');
     return await res.json();
   } catch (e) {

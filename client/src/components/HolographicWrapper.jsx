@@ -41,23 +41,11 @@ const HolographicWrapper = ({
     y.set(0);
   };
 
-  // Gyroscope effect — only registered when tilt is enabled
+  // Gyroscope effect removed as requested (making components static/predictable on mobile)
   useEffect(() => {
-    if (!tilt) return; // ← skip entirely when tilt disabled — saves mobile CPU/battery
-
-    const handleOrientation = (e) => {
-      const gamma = e.gamma || 0;
-      const beta = e.beta || 0;
-      x.set(Math.min(Math.max(gamma / 30, -0.5), 0.5));
-      y.set(Math.min(Math.max((beta - 45) / 30, -0.5), 0.5));
-    };
-
-    if (window.DeviceOrientationEvent && typeof window.DeviceOrientationEvent.requestPermission !== 'function') {
-      window.addEventListener('deviceorientation', handleOrientation);
-    }
-    
-    return () => window.removeEventListener('deviceorientation', handleOrientation);
-  }, [tilt, x, y]);
+    // No-op: Mobile gyro disabled to prevent 'System Divergence' and improve stability
+    return () => {};
+  }, []);
 
   return (
     <motion.div

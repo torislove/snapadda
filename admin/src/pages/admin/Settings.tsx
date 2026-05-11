@@ -14,6 +14,7 @@ import {
 } from '../../services/api';
 import { useAdminAuth } from '../../contexts/AdminAuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { triggerHaptic } from '../../utils/haptics';
 
 type SaveStatus = 'idle' | 'saving' | 'success' | 'error';
@@ -91,6 +92,7 @@ const inputWrap = (icon: React.ReactNode, children: React.ReactNode) => (
 );
 
 const AdminSettings = () => {
+  const { t } = useTranslation();
   const { adminUser, updateAdminUser } = useAdminAuth();
 
   // Profile state
@@ -164,8 +166,14 @@ const AdminSettings = () => {
   const [googleBusinessLink, setGoogleBusinessLink] = useState('');
   const [marketingStatus, setMarketingStatus] = useState<SaveStatus>('idle');
 
-  const [activeSection, setActiveSection] = useState<
-    'appearance' | 'design' | 'hero' | 'seo' | 'marketing' | 'profile' | 'password' | 'support' | 'whatsapp' | 'questions' | 'automation' | 'danger'
+  // Site Control state
+  const [postPropertyEnabled, setPostPropertyEnabled] = useState(true);
+  const [expertHelpEnabled, setExpertHelpEnabled] = useState(true);
+  const [verifyAssistEnabled, setVerifyAssistEnabled] = useState(true);
+  const [siteControlStatus, setSiteControlStatus] = useState<SaveStatus>('idle');
+
+   const [activeSection, setActiveSection] = useState<
+    'appearance' | 'design' | 'hero' | 'seo' | 'marketing' | 'site_control' | 'profile' | 'password' | 'support' | 'whatsapp' | 'questions' | 'automation' | 'danger'
   >('appearance');
 
   // Hero section state
@@ -220,10 +228,11 @@ const AdminSettings = () => {
           fetchSetting('onboarding_questions'),
           fetchSetting('automation_settings'),
           fetchSetting('marketing_settings'),
-          fetchSetting('design_tokens')
+          fetchSetting('design_tokens'),
+          fetchSetting('site_control')
         ]);
 
-        const [wa, app, sup, hero, stats, seo, quest, auto, mkt, dTokens] = results.map(r => r.status === 'fulfilled' ? r.value : null);
+        const [wa, app, sup, hero, stats, seo, quest, auto, mkt, dTokens, sControl] = results.map(r => r.status === 'fulfilled' ? r.value : null);
 
         if (wa?.data) { setWaNumber(wa.data.number || ''); setWaMessage(wa.data.message || ''); }
         if (app?.data) {
@@ -268,6 +277,11 @@ const AdminSettings = () => {
         }
         if (dTokens?.data) {
           setDesignTokens(dTokens.data);
+        }
+        if (sControl?.data) {
+          setPostPropertyEnabled(sControl.data.postPropertyEnabled ?? true);
+          setExpertHelpEnabled(sControl.data.expertHelpEnabled ?? true);
+          setVerifyAssistEnabled(sControl.data.verifyAssistEnabled ?? true);
         }
         
       } finally {
@@ -556,6 +570,25 @@ const AdminSettings = () => {
     }
   };
 
+  const handleSiteControlSave = async (ev: React.FormEvent) => {
+    ev.preventDefault();
+    setSiteControlStatus('saving');
+    try {
+      await saveSetting('site_control', {
+        postPropertyEnabled,
+        expertHelpEnabled,
+        verifyAssistEnabled
+      });
+      setSiteControlStatus('success');
+      showToast('Site controls updated!');
+      setTimeout(() => setSiteControlStatus('idle'), 3000);
+    } catch {
+      setSiteControlStatus('error');
+      showToast('Failed to save site controls', 'error');
+      setTimeout(() => setSiteControlStatus('idle'), 4000);
+    }
+  };
+
   /* ── Styles ── */
   const card = (accent: string) => ({
     background: 'var(--bg-glass)', border: '1px solid rgba(255,255,255,0.07)',
@@ -616,6 +649,7 @@ const AdminSettings = () => {
           }}>
         {[
           { key: 'appearance', label: 'Appearance' },
+          { key: 'site_control', label: 'Site Controls' },
           { key: 'hero', label: 'Hero & Home' },
           { key: 'seo', label: 'SEO' },
           { key: 'marketing', label: 'Google Marketing' },
@@ -811,6 +845,54 @@ const AdminSettings = () => {
               </button>
             </form>
           </div>
+        </div>
+      )}
+
+      {activeSection === 'site_control' && (
+        <div style={card('var(--emerald)')}>
+          {cardHeader(<Shield size={17}/>, t('settings.siteControl', 'Site Visibility Controls'), 'Instantly enable or disable specific portal sections for clients.', 'rgba(16,217,140,0.1)', 'var(--emerald)')}
+          <form onSubmit={handleSiteControlSave} style={{ padding:'1.5rem', display:'flex', flexDirection:'column', gap:'1.5rem' }}>
+            
+            <div style={{ display:'flex', flexDirection:'column', gap:'1rem' }}>
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'1rem', borderRadius:'14px', background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.06)' }}>
+                <div>
+                  <div style={{ fontWeight:700, color:'var(--text-primary)', fontSize:'0.9rem' }}>{t('settings.postProperty', 'Post Property Section')}</div>
+                  <div style={{ fontSize:'0.75rem', color:'var(--text-muted)' }}>Allow clients to submit their property listings.</div>
+                </div>
+                <button type="button" onClick={() => setPostPropertyEnabled(!postPropertyEnabled)} 
+                        style={{ width:'48px', height:'24px', borderRadius:'12px', background: postPropertyEnabled ? 'var(--emerald)' : 'rgba(255,255,255,0.1)', position:'relative', transition:'all 0.2s', border:'none', cursor:'pointer' }}>
+                  <div style={{ width:'18px', height:'18px', borderRadius:'50%', background:'#fff', position:'absolute', top:'3px', left: postPropertyEnabled ? '27px' : '3px', transition:'all 0.2s' }}/>
+                </button>
+              </div>
+
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'1rem', borderRadius:'14px', background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.06)' }}>
+                <div>
+                  <div style={{ fontWeight:700, color:'var(--text-primary)', fontSize:'0.9rem' }}>{t('settings.expertHelp', 'Expert Help Section')}</div>
+                  <div style={{ fontSize:'0.75rem', color:'var(--text-muted)' }}>Show the "Real Estate Expert Help" call-to-action on Home.</div>
+                </div>
+                <button type="button" onClick={() => setExpertHelpEnabled(!expertHelpEnabled)} 
+                        style={{ width:'48px', height:'24px', borderRadius:'12px', background: expertHelpEnabled ? 'var(--emerald)' : 'rgba(255,255,255,0.1)', position:'relative', transition:'all 0.2s', border:'none', cursor:'pointer' }}>
+                  <div style={{ width:'18px', height:'18px', borderRadius:'50%', background:'#fff', position:'absolute', top:'3px', left: expertHelpEnabled ? '27px' : '3px', transition:'all 0.2s' }}/>
+                </button>
+              </div>
+
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'1rem', borderRadius:'14px', background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.06)' }}>
+                <div>
+                  <div style={{ fontWeight:700, color:'var(--text-primary)', fontSize:'0.9rem' }}>{t('settings.verifyAssist', 'Verify Assist Section')}</div>
+                  <div style={{ fontSize:'0.75rem', color:'var(--text-muted)' }}>Show the "Verify Assist" legal and technical audit CTA.</div>
+                </div>
+                <button type="button" onClick={() => setVerifyAssistEnabled(!verifyAssistEnabled)} 
+                        style={{ width:'48px', height:'24px', borderRadius:'12px', background: verifyAssistEnabled ? 'var(--emerald)' : 'rgba(255,255,255,0.1)', position:'relative', transition:'all 0.2s', border:'none', cursor:'pointer' }}>
+                  <div style={{ width:'18px', height:'18px', borderRadius:'50%', background:'#fff', position:'absolute', top:'3px', left: verifyAssistEnabled ? '27px' : '3px', transition:'all 0.2s' }}/>
+                </button>
+              </div>
+            </div>
+
+            <StatusAlert status={siteControlStatus} successMsg={t('settings.saveSuccess', 'Settings updated successfully')} errorMsg="Failed to save site controls." />
+            <button type="submit" disabled={siteControlStatus === 'saving'} className="btn btn-emerald" style={{ alignSelf:'flex-start' }}>
+              {siteControlStatus === 'saving' ? t('common.loading', 'Saving...') : t('common.save', 'Save Site Controls')}
+            </button>
+          </form>
         </div>
       )}
 
@@ -1188,8 +1270,39 @@ const AdminSettings = () => {
               {automationStatus === 'saving' ? 'Saving...' : 'Update System Keys'}
             </button>
           </form>
+
+          <div style={{ padding: '0 1.5rem 1.5rem' }}>
+            <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '1.25rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1rem' }}>
+                <ImageIcon size={16} style={{ color: 'var(--gold)' }} />
+                <h4 style={{ margin: 0, fontSize: '0.85rem', fontWeight: 800, color: 'white' }}>FIREBASE INTEGRATION GUIDE</h4>
+              </div>
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: '1.5rem' }}>
+                To enable Push Notifications, ensure your Firebase project is correctly linked. You can find these credentials in your 
+                <a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--gold)', textDecoration: 'none', marginLeft: '4px', fontWeight: 700 }}>Firebase Console</a>.
+              </p>
+              
+              <div style={{ background: 'rgba(0,0,0,0.3)', padding: '1rem', borderRadius: '12px', fontFamily: 'monospace', fontSize: '0.65rem', border: '1px solid rgba(255,255,255,0.05)', position: 'relative' }}>
+                <div style={{ color: 'rgba(255,255,255,0.4)', marginBottom: '8px' }}># PROJECT ENVIRONMENT SNIPPET (.env)</div>
+                <div style={{ color: 'var(--emerald)', whiteSpace: 'pre' }}>
+{`VITE_FIREBASE_API_KEY="..."
+VITE_FIREBASE_AUTH_DOMAIN="..."
+VITE_FIREBASE_PROJECT_ID="..."
+VITE_FIREBASE_STORAGE_BUCKET="..."
+VITE_FIREBASE_MESSAGING_SENDER_ID="..."
+VITE_FIREBASE_APP_ID="..."
+VITE_FIREBASE_VAPID_KEY="${fcmVapid || 'PASTE_VAPID_HERE'}"`}
+                </div>
+              </div>
+              <div style={{ marginTop: '1rem', display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--gold)' }} />
+                <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>Generate the VAPID key in Project Settings &gt; Cloud Messaging &gt; Web configuration.</span>
+              </div>
+            </div>
+          </div>
         </div>
       )}
+
 
       {activeSection === 'danger' && (
         <div style={{ ...card('var(--rose)'), borderColor:'rgba(245,57,123,0.2)' }}>

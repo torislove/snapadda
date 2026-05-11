@@ -18,6 +18,7 @@ const LogoutButton = ({ onLogout }: { onLogout: () => void }) => {
   const [confirm, setConfirm] = useState(false);
   if (confirm) return (
     <button
+      id="btn-admin-logout-confirm"
       onClick={onLogout}
       className="btn-elite"
       style={{ width: '100%', background: 'var(--rose)', color: '#fff' }}
@@ -27,6 +28,7 @@ const LogoutButton = ({ onLogout }: { onLogout: () => void }) => {
   );
   return (
     <button
+      id="btn-admin-logout-trigger"
       onClick={() => setConfirm(true)}
       style={{
         width: '100%', padding: '0.5rem', borderRadius: '8px', cursor: 'pointer',
@@ -60,6 +62,7 @@ const LanguageSwitcher = () => {
     }}>
       {['en', 'te'].map(lng => (
         <button
+          id={`btn-admin-lang-${lng}`}
           key={lng}
           onClick={() => toggle(lng)}
           style={{
@@ -162,7 +165,9 @@ const AdminLayout = () => {
       {/* ── Sidebar ── */}
       <aside className={`admin-sidebar ${isSidebarOpen ? 'open' : ''}`}>
         <div className="sidebar-header">
-          <a href="https://snapadda-7a6e6.web.app/" className="logo-link" style={{ textDecoration: 'none' }}>
+          <a 
+            id="lnk-admin-logo"
+            href="https://snapadda-7a6e6.web.app/" className="logo-link" style={{ textDecoration: 'none' }}>
             <Logo size={30} />
             <div>
               <div className="logo-text">Snap<span>Adda</span></div>
@@ -186,6 +191,7 @@ const AdminLayout = () => {
             const active = isActive(item);
             return (
               <Link
+                id={`lnk-admin-nav-${item.label.split('.').pop()}`}
                 key={item.to}
                 to={item.to}
                 onClick={() => {
@@ -209,6 +215,7 @@ const AdminLayout = () => {
             const active = isActive(item);
             return (
               <Link
+                id={`lnk-admin-nav-${item.label.split('.').pop()}`}
                 key={item.to}
                 to={item.to}
                 onClick={() => {
@@ -249,6 +256,7 @@ const AdminLayout = () => {
             
             {deferredPrompt && (
               <button
+                id="btn-admin-install-app"
                 onClick={handleInstallClick}
                 style={{
                   width: '100%', marginTop: '0.75rem', padding: '0.5rem', borderRadius: '8px', cursor: 'pointer',
@@ -271,6 +279,7 @@ const AdminLayout = () => {
         <header className="admin-topbar">
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
             <button
+              id="btn-admin-sidebar-toggle"
               className="admin-mobile-toggle"
               onClick={() => setIsSidebarOpen(s => !s)}
               aria-label="Toggle sidebar"
@@ -280,7 +289,9 @@ const AdminLayout = () => {
             <div className="topbar-left-group" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
               <span className="topbar-title">{getPageTitle()}</span>
               {/* Command Search Shortcut UI */}
-              <div className="command-search-bar desktop-only" style={{
+              <div 
+                id="search-admin-global-trigger"
+                className="command-search-bar desktop-only" style={{
                 display: 'flex', alignItems: 'center', gap: '8px',
                 padding: '0.4rem 0.8rem', borderRadius: '10px',
                 background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',

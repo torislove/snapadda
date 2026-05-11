@@ -72,12 +72,12 @@ const HorizontalPropertySection = memo(({ title, eyebrow, properties, type, load
                   animation: 'pulse 2s ease-in-out infinite'
                 }} />
               ))
-            : properties.map((p) => (
+            : properties.map((p, idx) => (
                 <div key={p._id} style={{
                   minWidth: cardW, maxWidth: cardW,
                   scrollSnapAlign: 'start', flexShrink: 0,
                 }}>
-                  <PropertyCard {...p} designTokens={designTokens} />
+                  <PropertyCard {...p} designTokens={designTokens} priority={idx < 2} />
                 </div>
               ))
           }

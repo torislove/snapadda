@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence, useSpring, useMotionValue, useTransform } from 'framer-motion';
 import {
   Heart, Share2, Eye, Phone, MessageSquare, ShieldCheck, Flame,
-  MapPin, Building2, User, Leaf, BedDouble, Bath, Square,
+  MapPin, Building, User, Leaf, BedDouble, Bath, Square,
   Compass, IndianRupee, CheckCircle2, Award, TreePine, ArrowRight, Home as HomeIcon,
   SlidersHorizontal, ChevronLeft, ChevronRight, Image as ImageIcon, Maximize2, X, RefreshCw
 } from 'lucide-react';
@@ -22,6 +22,8 @@ import { triggerHaptic } from '../utils/haptics';
 import { prefetchPropertyData, prioritizeImage } from '../utils/PerformanceUtilities';
 import { fetchProperty } from '../services/api';
 import { useRealtimeProperties } from '../hooks/useRealtimeProperties';
+import { triggerMicroLead } from '../utils/tracker';
+import ShareControlCenter from './ShareControlCenter';
 
 const Toast = memo(({ msg, onDone }) => {
   return (
@@ -55,7 +57,8 @@ const PropertyCard = memo((props) => {
     supportPhone = '+919346793364', supportWA = '919346793364',
     status: propStatus = 'Active', pricePerSqYd, address,
     holographic = true, iridescent = false, propertyCode,
-    designTokens // Dynamic Institutional Tokens
+    designTokens, // Dynamic Institutional Tokens
+    priority = false // Priority flag for LCP
   } = p;
   const [activeImgIdx, setActiveImgIdx] = useState(0);
   const [liked, setLiked] = useState(initialLiked);
@@ -64,6 +67,7 @@ const PropertyCard = memo((props) => {
   const [questionText, setQuestionText] = useState('');
   const [submittingInquiry, setSubmittingInquiry] = useState(false);
   const [inquirySent, setInquirySent] = useState(false);
+  const [shareModal, setShareModal] = useState(false);
   const hoverIntervalRef = useRef(null);
 
   const startImageCycle = () => {
@@ -102,15 +106,15 @@ const PropertyCard = memo((props) => {
   // Icon & Style Mapping (extended for all AP types)
   const getTypeStyle = (t) => {
     const low = (t || '').toLowerCase();
-    if (low.includes('apartment')) return { icon: <Building2 size={12}/>, accent: '#9b59f5' };
+    if (low.includes('apartment')) return { icon: <Building size={12}/>, accent: '#9b59f5' };
     if (low.includes('villa')) return { icon: <HomeIcon size={12}/>, accent: '#e8b84b' };
     if (low.includes('crda')) return { icon: <Square size={12}/>, accent: '#e8b84b' };
     if (low.includes('plot') || low.includes('layout')) return { icon: <Square size={12}/>, accent: '#22d9e0' };
     if (low.includes('agri') || low.includes('farm')) return { icon: <Leaf size={12}/>, accent: '#10d98c' };
     if (low.includes('house')) return { icon: <HomeIcon size={12}/>, accent: '#ff8c42' };
-    if (low.includes('commercial') || low.includes('showroom') || low.includes('office')) return { icon: <Building2 size={12}/>, accent: '#22d9e0' };
+    if (low.includes('commercial') || low.includes('showroom') || low.includes('office')) return { icon: <Building size={12}/>, accent: '#22d9e0' };
     if (low.includes('industrial') || low.includes('warehouse') || low.includes('factory')) return { icon: <Maximize2 size={12}/>, accent: '#f5397b' };
-    return { icon: <Building2 size={12}/>, accent: '#fff' };
+    return { icon: <Building size={12}/>, accent: '#fff' };
   };
   const typeStyle = getTypeStyle(type);
 
@@ -194,22 +198,8 @@ const PropertyCard = memo((props) => {
 
   const handleShare = useCallback((e) => {
     e.preventDefault(); e.stopPropagation();
-    triggerHaptic('success');
-    const url = `${window.location.origin}/property/${propertyId}`;
-    const shareText = `Check out this ${type} in ${location} on SnapAdda.\n\nPrice: ${formatSnapAddaPrice(displayPrice)}\n\nView details:`;
-    
-    if (navigator.share) {
-      navigator.share({ 
-        title: `SnapAdda: ${title}`, 
-        text: shareText,
-        url 
-      }).catch(() => {
-        navigator.clipboard.writeText(`${shareText} ${url}`).then(() => setToast('🔗 Details copied!'));
-      });
-    } else {
-      navigator.clipboard.writeText(`${shareText} ${url}`).then(() => setToast('🔗 Link copied!'));
-    }
-  }, [propertyId, title, type, location, displayPrice]);
+    setShareModal(true);
+  }, []);
 
   const submitQuickInquiry = async (e) => {
     e.preventDefault(); e.stopPropagation();
@@ -351,6 +341,11 @@ const PropertyCard = memo((props) => {
     <>
       <AnimatePresence>{toast && <Toast msg={toast} onDone={() => setToast('')} />}</AnimatePresence>
       <AnimatePresence>{quickInquiryOpen && <QuickInquiryModal />}</AnimatePresence>
+      <ShareControlCenter 
+        isOpen={shareModal} 
+        onClose={() => setShareModal(false)} 
+        property={p} 
+      />
       <motion.article
         ref={cardRef}
         initial={{ opacity: 0 }}
@@ -398,6 +393,7 @@ const PropertyCard = memo((props) => {
                 return;
               }
               logUserActivity(ACTIONS.PROPERTY_VIEW, { propertyId, title, location }, user?._id);
+              triggerMicroLead({ source: 'Property View', propertyId, message: `User viewed ${title} in ${location}` });
               navigate(`/property/${propertyId}`);
             }}
             style={{ position: 'absolute', inset: 0, zIndex: 5, cursor: 'pointer' }}
@@ -466,8 +462,8 @@ const PropertyCard = memo((props) => {
                   key={activeImgIdx}
                   src={getOptimizedImg(displayImages[activeImgIdx % displayImages.length])} 
                   alt={title}
-                  loading="lazy"
-                  decoding="async"
+                  loading={priority ? "eager" : "lazy"}
+                  decoding={priority ? "sync" : "async"}
                   style={{ 
                     position: 'absolute', inset: 0, width: '100%', height: '100%', 
                     objectFit: 'cover', cursor: 'grab', 
@@ -477,7 +473,7 @@ const PropertyCard = memo((props) => {
                 />
               ) : (
                 <div style={{ height: '100%', background: '#111', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Building2 size={48} opacity={0.2} />
+                  <Building size={48} opacity={0.2} />
                 </div>
               )}
 
@@ -551,7 +547,10 @@ const PropertyCard = memo((props) => {
               </div>
 
               <div style={{ display: 'flex', gap: '8px' }}>
-                <a href={`tel:${supportPhone}`} onClick={(e) => e.stopPropagation()} style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.1)', width: '42px', height: '42px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '12px', color: 'white', transition: 'all 0.2s' }}>
+                <a href={`tel:${supportPhone}`} onClick={(e) => {
+                  e.stopPropagation();
+                  triggerMicroLead({ source: 'Call Intent', propertyId, message: `User clicked Call for ${title}` });
+                }} style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.1)', width: '42px', height: '42px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '12px', color: 'white', transition: 'all 0.2s' }}>
                   <Phone size={16}/>
                 </a>
                 <button 

@@ -11,7 +11,12 @@ const resources = {
         "contact": "Contact",
         "signIn": "SIGN IN",
         "signOut": "SIGN OUT",
-        "dashboard": "Portal"
+        "dashboard": "Portal",
+        "home": "Home",
+        "search": "Search",
+        "post": "Post Property",
+        "activity": "Activity",
+        "profile": "Profile"
       },
       "hero": {
         "eyebrow": "Andhra Pradesh's #1 Property Platform",
@@ -382,7 +387,12 @@ const resources = {
         "contact": "సంప్రదించండి",
         "signIn": "లాగిన్",
         "signOut": "లాగ్అవుట్",
-        "dashboard": "క్లయింట్ ప్యానెల్"
+        "dashboard": "క్లయింట్ ప్యానెల్",
+        "home": "హోమ్",
+        "search": "వెతకండి",
+        "post": "ప్రాపర్టీ పోస్ట్",
+        "activity": "యాక్టివిటీ",
+        "profile": "ప్రొఫైల్"
       },
       "hero": {
         "eyebrow": "ఆంధ్రప్రదేశ్ నెం.1 ప్రాపర్టీ ప్లాట్‌ఫారమ్",

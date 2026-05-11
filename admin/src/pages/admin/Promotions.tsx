@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   fetchAllPromotions, createPromotion, updatePromotion,
-  deletePromotion, reorderPromotions, uploadMedia
+  deletePromotion, reorderPromotions, uploadMedia, sendPushNotification
 } from '../../services/api';
 import {
   Plus, Trash2, Loader2,
   Sparkles,
   TrendingUp, MousePointer2, Calendar,
-  Zap, GripVertical, Eye, EyeOff, X, CheckCircle, AlertCircle
+  Zap, GripVertical, Eye, EyeOff, X, CheckCircle, AlertCircle, Building
 } from 'lucide-react';
 import { 
   BarChart, Bar, Tooltip, ResponsiveContainer
@@ -476,6 +476,78 @@ const StepContent = ({ activeStep, formData, setFormData, handleMediaChange }: {
   }
 };
 
+const PushBroadcast = ({ showToast }: { showToast: (m: string, t?: 'success' | 'error') => void }) => {
+  const [pushForm, setPushForm] = useState({ title: '', body: '', imageUrl: '', link: '/' });
+  const [sending, setSending] = useState(false);
+
+  const handleSend = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!pushForm.title || !pushForm.body) return;
+    setSending(true);
+    try {
+      await sendPushNotification(pushForm);
+      showToast('Notification broadcasted successfully! 🔔');
+      setPushForm({ title: '', body: '', imageUrl: '', link: '/' });
+    } catch {
+      showToast('Failed to send notification', 'error');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '24px', padding: '2rem' }}>
+      <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
+        <div style={{ flex: 1, minWidth: '300px' }}>
+          <h3 style={{ color: 'white', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <Zap size={20} color="var(--gold)" /> Broadcast Free Push Notification
+          </h3>
+          <form onSubmit={handleSend} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            <div>
+              <label style={{ display:'block', fontSize:'0.68rem', fontWeight:700, letterSpacing:'0.1em', textTransform:'uppercase', color:'var(--text-muted)', marginBottom:'0.45rem' }}>Notification Title</label>
+              <input value={pushForm.title} onChange={e => setPushForm({...pushForm, title: e.target.value})} style={inputCls} placeholder="New Property Alert! 🏡" />
+            </div>
+            <div>
+              <label style={{ display:'block', fontSize:'0.68rem', fontWeight:700, letterSpacing:'0.1em', textTransform:'uppercase', color:'var(--text-muted)', marginBottom:'0.45rem' }}>Message Body</label>
+              <textarea rows={3} value={pushForm.body} onChange={e => setPushForm({...pushForm, body: e.target.value})} style={{ ...inputCls, resize: 'none' }} placeholder="A new 3BHK Villa is available in Vijayawada..." />
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div>
+                <label style={{ display:'block', fontSize:'0.68rem', fontWeight:700, letterSpacing:'0.1em', textTransform:'uppercase', color:'var(--text-muted)', marginBottom:'0.45rem' }}>Image URL (Optional)</label>
+                <input value={pushForm.imageUrl} onChange={e => setPushForm({...pushForm, imageUrl: e.target.value})} style={inputCls} placeholder="https://..." />
+              </div>
+              <div>
+                <label style={{ display:'block', fontSize:'0.68rem', fontWeight:700, letterSpacing:'0.1em', textTransform:'uppercase', color:'var(--text-muted)', marginBottom:'0.45rem' }}>Redirect Link</label>
+                <input value={pushForm.link} onChange={e => setPushForm({...pushForm, link: e.target.value})} style={inputCls} placeholder="/property/..." />
+              </div>
+            </div>
+            <button disabled={sending} className="btn btn-gold" style={{ marginTop: '0.5rem', width: 'fit-content' }}>
+              {sending ? 'Broadcasting...' : 'SEND TO ALL DEVICES'}
+            </button>
+          </form>
+        </div>
+        <div style={{ width: '300px' }}>
+          <label style={{ display:'block', fontSize:'0.68rem', fontWeight:700, letterSpacing:'0.1em', textTransform:'uppercase', color:'var(--text-muted)', marginBottom:'1rem' }}>Live Preview</label>
+          <div style={{ background: '#111', borderRadius: '18px', padding: '16px', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }}>
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+              <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'var(--gold)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Building size={20} color="black" />
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ color: 'white', fontSize: '0.85rem', fontWeight: 800 }}>{pushForm.title || 'SnapAdda Notification'}</div>
+                <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.75rem', marginTop: '2px', lineHeight: 1.4 }}>{pushForm.body || 'This is how your message will appear on user devices.'}</div>
+              </div>
+            </div>
+          </div>
+          <div style={{ marginTop: '1.5rem', padding: '1rem', background: 'rgba(16,217,140,0.05)', border: '1px solid rgba(16,217,140,0.15)', borderRadius: '12px', fontSize: '0.7rem', color: '#10d98c', lineHeight: 1.5 }}>
+            <strong>Note:</strong> Free push notifications are delivered to all users who have allowed notifications on your website.
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 /* ═══════════════════════════════════════════ MAIN COMPONENT ═══════════════════════════════════════════ */
 export const Promotions = () => {
   const [promotions, setPromotions] = useState<any[]>([]);
@@ -483,6 +555,7 @@ export const Promotions = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState<any>({ ...EMPTY_FORM });
+  const [activeTab, setActiveTab] = useState<'campaigns' | 'push'>('campaigns');
   const [activeStep, setActiveStep] = useState(0);
   const [dragSrcIdx, setDragSrcIdx] = useState<number | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -703,50 +776,69 @@ export const Promotions = () => {
         <div>
           <div style={{ fontSize:'0.7rem', fontWeight:700, letterSpacing:'0.12em', textTransform:'uppercase', color:'var(--gold)', marginBottom:'0.25rem', fontFamily:'var(--font-mono)' }}>✦ Campaign Manager</div>
           <h1 style={{ fontSize:'1.8rem', background:'linear-gradient(135deg,#f5c842,#e8820c)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', marginBottom:'0.2rem' }}>
-            Active Promotions
+            {activeTab === 'campaigns' ? 'Active Promotions' : 'Push Notifications'}
           </h1>
-          <p style={{ fontSize:'0.82rem', color:'var(--text-muted)' }}>
-            Drag cards to reorder · Toggle live status · Upload images
-          </p>
+          <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
+            <button 
+              onClick={() => setActiveTab('campaigns')}
+              style={{ background: 'none', border: 'none', padding: '4px 0', borderBottom: activeTab === 'campaigns' ? '2px solid var(--gold)' : '2px solid transparent', color: activeTab === 'campaigns' ? 'white' : 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer' }}
+            >
+              Dashboard Banners
+            </button>
+            <button 
+              onClick={() => setActiveTab('push')}
+              style={{ background: 'none', border: 'none', padding: '4px 0', borderBottom: activeTab === 'push' ? '2px solid var(--gold)' : '2px solid transparent', color: activeTab === 'push' ? 'white' : 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer' }}
+            >
+              Push Broadcast
+            </button>
+          </div>
         </div>
-        <button
-          onClick={() => { setIsModalOpen(true); setEditingId(null); setActiveStep(0); setFormData({ ...EMPTY_FORM }); }}
-          className="btn btn-gold"
-        >
-          <Plus size={15} /> New Promotion
-        </button>
+        {activeTab === 'campaigns' && (
+          <button
+            onClick={() => { setIsModalOpen(true); setEditingId(null); setActiveStep(0); setFormData({ ...EMPTY_FORM }); }}
+            className="btn btn-gold"
+          >
+            <Plus size={15} /> New Promotion
+          </button>
+        )}
       </div>
 
-      {/* ── Cards Grid ── */}
-      {loading ? (
-        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(260px,1fr))', gap:'1rem' }}>
-          {[1,2,3].map(i => <div key={i} style={{ height:'220px', borderRadius:'18px', background:'var(--bg-glass)', border:'1px solid var(--border)', animation:'pulse 1.5s infinite' }} />)}
-        </div>
-      ) : promotions.length === 0 ? (
-        <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'4rem 2rem', borderRadius:'20px', border:'1.5px dashed rgba(255,255,255,0.08)', textAlign:'center' }}>
-          <Sparkles size={32} style={{ color:'var(--text-muted)', marginBottom:'1rem' }} />
-          <h3 style={{ color:'var(--text-secondary)', fontFamily:'var(--font-body)', marginBottom:'0.5rem' }}>No campaigns yet</h3>
-          <p style={{ color:'var(--text-muted)', fontSize:'0.83rem', maxWidth:'280px' }}>Create your first campaign to override static defaults on the client dashboard.</p>
-          <button onClick={() => setIsModalOpen(true)} className="btn btn-ghost btn-sm" style={{ marginTop:'1.25rem' }}>
-            <Plus size={13} /> Create Campaign
-          </button>
-        </div>
+      {activeTab === 'push' ? (
+        <PushBroadcast showToast={showToast} />
       ) : (
-        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(260px,1fr))', gap:'1rem' }}>
-          {promotions.map((promo, idx) => (
-            <PromoCard
-              key={promo._id}
-              promo={promo}
-              isDragging={dragSrcIdx === idx}
-              onToggle={handleToggle}
-              onDelete={handleDelete}
-              onEdit={handleEdit}
-              onDragStart={() => handleDragStart(idx)}
-              onDragOver={() => handleDragOver(idx)}
-              onDrop={handleDrop}
-            />
-          ))}
-        </div>
+        <>
+          {/* ── Cards Grid ── */}
+          {loading ? (
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(260px,1fr))', gap:'1rem' }}>
+              {[1,2,3].map(i => <div key={i} style={{ height:'220px', borderRadius:'18px', background:'var(--bg-glass)', border:'1px solid var(--border)', animation:'pulse 1.5s infinite' }} />)}
+            </div>
+          ) : promotions.length === 0 ? (
+            <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'4rem 2rem', borderRadius:'20px', border:'1.5px dashed rgba(255,255,255,0.08)', textAlign:'center' }}>
+              <Sparkles size={32} style={{ color:'var(--text-muted)', marginBottom:'1rem' }} />
+              <h3 style={{ color:'var(--text-secondary)', fontFamily:'var(--font-body)', marginBottom:'0.5rem' }}>No campaigns yet</h3>
+              <p style={{ color:'var(--text-muted)', fontSize:'0.83rem', maxWidth:'280px' }}>Create your first campaign to override static defaults on the client dashboard.</p>
+              <button onClick={() => setIsModalOpen(true)} className="btn btn-ghost btn-sm" style={{ marginTop:'1.25rem' }}>
+                <Plus size={13} /> Create Campaign
+              </button>
+            </div>
+          ) : (
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(260px,1fr))', gap:'1rem' }}>
+              {promotions.map((promo, idx) => (
+                <PromoCard
+                  key={promo._id}
+                  promo={promo}
+                  isDragging={dragSrcIdx === idx}
+                  onToggle={handleToggle}
+                  onDelete={handleDelete}
+                  onEdit={handleEdit}
+                  onDragStart={() => handleDragStart(idx)}
+                  onDragOver={() => handleDragOver(idx)}
+                  onDrop={handleDrop}
+                />
+              ))}
+            </div>
+          )}
+        </>
       )}
 
       {/* ════════════════ CREATION MODAL ════════════════ */}

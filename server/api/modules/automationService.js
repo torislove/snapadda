@@ -217,7 +217,7 @@ class AutomationService {
     const tokenCount = await NotificationToken.countDocuments();
     return {
       whatsapp: { enabled: this.whatsappEnabled, connected: this.whatsappReady, pendingQR: !!this.whatsappQR, qr: this.whatsappQR },
-      fcm: { enabled: !!fcm, tokenCount },
+      fcm: { enabled: !!fcm, tokenCount, vapidConfigured: !!this.fcmVapid },
       recentLogs: LOG_BUFFER.slice(0, 20),
     };
   }

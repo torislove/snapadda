@@ -6,6 +6,8 @@ import Header from './components/Header';
 import GlobalLoader from './components/GlobalLoader';
 import FloatingOffers from './components/FloatingOffers';
 import { useNotifications } from './hooks/useNotifications';
+import { useBehaviorTracker } from './hooks/useBehaviorTracker';
+import LeadCaptureModal from './components/LeadCaptureModal';
 import { pruneResources } from './utils/PerformanceUtilities';
 
 // Global HUD components - Symmetrically aligned (Lazy Loaded to unblock main thread)
@@ -27,6 +29,7 @@ const Terms = lazy(() => import('./pages/Terms'));
 const Privacy = lazy(() => import('./pages/Privacy'));
 const ComparisonRadar = lazy(() => import('./pages/ComparisonRadar'));
 const PostProperty = lazy(() => import('./pages/PostProperty'));
+const LocalAgency = lazy(() => import('./pages/LocalAgency'));
 
 import Logo from './components/Logo';
 import { useGoogleMarketing } from './utils/useGoogleMarketing';
@@ -61,6 +64,7 @@ function ProtectedRoute({ children }) {
 function AppContent() {
   useNotifications();
   useGoogleMarketing();
+  const { showModal, setShowModal, getTopPreferences } = useBehaviorTracker();
   const location = useLocation();
 
   useEffect(() => {
@@ -83,6 +87,7 @@ function AppContent() {
             <Route path="/" element={<Home />} />
             <Route path="/search" element={<SearchResults />} />
             <Route path="/property/:id" element={<PropertyDetails />} />
+            <Route path="/local-agency/:city" element={<LocalAgency />} />
             <Route path="/post-property" element={<PostProperty />} />
             <Route path="/compare" element={<ComparisonRadar />} />
             <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
@@ -99,6 +104,11 @@ function AppContent() {
       <ComparisonHud />
       <FloatingOffers />
       <MobileBottomNav />
+      <LeadCaptureModal 
+        isOpen={showModal} 
+        onClose={() => setShowModal(false)} 
+        preferredLocation={getTopPreferences()?.preferredLocation} 
+      />
     </>
   );
 }

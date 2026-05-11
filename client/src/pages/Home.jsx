@@ -1,17 +1,19 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo, startTransition } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo, startTransition, lazy, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import {
   Search, SlidersHorizontal, MapPin, Phone, MessageSquare, ShieldCheck, Star,
-  Building2, Home as HomeIcon, Square, Leaf, Filter, ChevronDown, X, ArrowRight,
+  Building, Home as HomeIcon, Square, Leaf, Filter, ChevronDown, X, ArrowRight,
   Zap, Shield, Clock, IndianRupee, Compass, Users, TrendingUp, CheckCircle2, Navigation2, Flame,
   Warehouse, Factory, Plus
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { fetchProperties, fetchCities, fetchTestimonials, fetchSetting, fetchPromotions } from '../services/api';
 import PropertyCard from '../components/PropertyCard';
+import LocationAutocomplete from '../components/LocationAutocomplete';
 import ContactModal from '../components/ContactModal';
+
 import ClientReviews from '../components/ClientReviews';
 import { logUserActivity, ACTIONS } from '../services/activityTracker';
 import FilterSidebar from '../components/FilterSidebar';
@@ -28,6 +30,12 @@ import { useBehaviorTracker } from '../hooks/useBehaviorTracker';
 import { getCachedProperties, setCachedProperties } from '../hooks/usePropertyCache';
 import { useRealtimeProperties } from '../hooks/useRealtimeProperties';
 import { prefetchRoute } from '../utils/PerformanceUtilities';
+import { triggerMicroLead } from '../utils/tracker';
+import { Helmet } from 'react-helmet-async';
+import PropertyMap from '../components/PropertyMap';
+
+// Lazy Loaded Regional Sitemap for SEO
+const RegionalSitemap = lazy(() => import('../components/RegionalSitemap'));
 
 
 // ─── Recently Sold Live Ticker ─────────────────────────────────────────────
@@ -76,7 +84,7 @@ function RecentlySoldTicker() {
 
 const TYPE_TABS = (t) => [
   { label: t('filter.all', 'All Properties'), value: 'all', icon: <Filter size={15} /> },
-  { label: t('types.apartments', 'Apartments'), value: 'Apartment', icon: <Building2 size={15} /> },
+  { label: t('types.apartments', 'Apartments'), value: 'Apartment', icon: <Building size={15} /> },
   { label: t('types.villas', 'Villas'), value: 'Villa', icon: <HomeIcon size={15} /> },
   { label: t('types.plots', 'Plots / Gajalu'), value: 'Plot', icon: <Square size={15} /> },
   { label: t('types.agriculture', 'Agri Land / Acres'), value: 'Agriculture', icon: <Leaf size={15} /> },
@@ -100,7 +108,7 @@ const SORT_OPTIONS = (t) => [
 
 const INTENT_TABS = (t) => [
   { label: t('intent.buy', 'I want to Buy'), value: 'Buy', icon: <HomeIcon size={24} /> },
-  { label: t('intent.rent', 'I want to Rent'), value: 'Rent', icon: <Building2 size={24} /> }
+  { label: t('intent.rent', 'I want to Rent'), value: 'Rent', icon: <Building size={24} /> }
 ];
 
 const BUDGET_OPTIONS = (t) => [
@@ -113,7 +121,7 @@ const BUDGET_OPTIONS = (t) => [
 ];
 
 const PROPERTY_TYPES = (t) => [
-  { label: 'Apartment', value: 'Apartment', icon: <Building2 size={24} /> },
+  { label: 'Apartment', value: 'Apartment', icon: <Building size={24} /> },
   { label: 'Independent House', value: 'Independent House', icon: <HomeIcon size={24} /> },
   { label: 'Villa', value: 'Villa', icon: <HomeIcon size={24} /> },
   { label: 'Gated Community Plot', value: 'Gated Community Plot', icon: <Square size={24} /> },
@@ -121,10 +129,10 @@ const PROPERTY_TYPES = (t) => [
   { label: 'CRDA Approved Plot', value: 'CRDA Approved Plot', icon: <ShieldCheck size={24} /> },
   { label: 'Open Plot', value: 'Open Plot', icon: <Square size={24} /> },
   { label: 'Layout Plot', value: 'Layout Plot', icon: <Square size={24} /> },
-  { label: 'Commercial Plot', value: 'Commercial Plot', icon: <Building2 size={24} /> },
-  { label: 'Commercial Space', value: 'Commercial Space', icon: <Building2 size={24} /> },
-  { label: 'Office Space', value: 'Office Space', icon: <Building2 size={24} /> },
-  { label: 'Showroom', value: 'Showroom', icon: <Building2 size={24} /> },
+  { label: 'Commercial Plot', value: 'Commercial Plot', icon: <Building size={24} /> },
+  { label: 'Commercial Space', value: 'Commercial Space', icon: <Building size={24} /> },
+  { label: 'Office Space', value: 'Office Space', icon: <Building size={24} /> },
+  { label: 'Showroom', value: 'Showroom', icon: <Building size={24} /> },
   { label: 'Agricultural Land', value: 'Agricultural Land', icon: <Leaf size={24} /> },
   { label: 'Farmhouse', value: 'Farmhouse', icon: <HomeIcon size={24} /> },
   { label: 'Industrial Shed', value: 'Industrial Shed', icon: <Warehouse size={24} /> },
@@ -240,14 +248,19 @@ export default function Home() {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalType, setModalType] = useState('callback');
   const [filterOpen, setFilterOpen] = useState(false);
+  const [heroMode, setHeroMode] = useState('selection'); // 'selection' or 'search'
+
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const [apiError, setApiError] = useState(false);  
   const [promotions, setPromotions] = useState([]);
   // Dynamic Settings
   const [heroContent, setHeroContent] = useState(null);
   const [designTokens, setDesignTokens] = useState(null);
+  const [budgetFilter, setBudgetFilter] = useState('all');
   const [siteStats, setSiteStats] = useState([]);
+
   const [seoData, setSeoData] = useState(null);
+  const [siteControl, setSiteControl] = useState({ postPropertyEnabled: true, expertHelpEnabled: true, verifyAssistEnabled: true });
 
   // SEO Injection
   useSEO(seoData);
@@ -277,7 +290,6 @@ export default function Home() {
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
     const handleScroll = () => {
-      setScrolled(window.scrollY > 20);
       setIsSearchSticky(window.scrollY > 500);
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
@@ -294,17 +306,23 @@ export default function Home() {
       );
     }
     
-    fetchCities().then(d => { setCities(d); setCitiesLoading(false); }).catch(console.error);
-    fetchTestimonials().then(setTestimonials).catch(console.error);
-    fetchSetting('appearance').then(d => setAppearance(d || {})).catch(console.error);
-    fetchSetting('support_info').then(d => setSupportInfo(d || {})).catch(console.error);
-    fetchSetting('hero_content').then(setHeroContent).catch(console.error);
-    fetchSetting('site_stats').then(setSiteStats).catch(console.error);
-    fetchSetting('seo').then(setSeoData).catch(console.error);
-    fetchSetting('design_tokens').then(setDesignTokens).catch(console.error);
-    fetchPromotions('segment=hero').then(d => {
-      setPromotions(d?.data || (Array.isArray(d) ? d : []));
-    }).catch(console.error);
+    // Parallelize settings fetch for faster FCP
+    Promise.all([
+      fetchCities().then(d => { setCities(d); setCitiesLoading(false); }),
+      fetchTestimonials().then(setTestimonials),
+      fetchSetting('appearance').then(d => setAppearance(d || {})),
+      fetchSetting('support_info').then(d => setSupportInfo(d || {})),
+      fetchSetting('hero_content').then(setHeroContent),
+      fetchSetting('site_stats').then(setSiteStats),
+      fetchSetting('seo').then(setSeoData),
+      fetchSetting('design_tokens').then(setDesignTokens),
+      fetchSetting('site_control').then(d => setSiteControl(d || { postPropertyEnabled: true, expertHelpEnabled: true, verifyAssistEnabled: true })),
+      fetchPromotions('segment=hero').then(d => {
+        setPromotions(d?.data || (Array.isArray(d) ? d : []));
+      })
+    ]).catch(err => {
+      console.error('Error fetching settings:', err);
+    });
 
     return () => window.removeEventListener('resize', handleResize);
   }, []);
@@ -329,6 +347,7 @@ export default function Home() {
         
         liveList.forEach(lp => {
           const id = lp._id || lp.id;
+          if (!id) return; // skip entries with no valid ID
           const existing = prevMap.get(id);
           // Only update if data is different or new
           if (!existing || JSON.stringify(existing) !== JSON.stringify(lp)) {
@@ -339,6 +358,7 @@ export default function Home() {
         
         if (!hasChanges) return prev;
         
+        // Deduplicate and sort — Map already guarantees unique _id keys
         return Array.from(prevMap.values()).sort((a, b) => 
           new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
         );
@@ -382,7 +402,11 @@ export default function Home() {
     })
       .then(res => { 
         setApiError(false); 
-        let data = [...(res?.data || (Array.isArray(res) ? res : []))];
+        const raw = [...(res?.data || (Array.isArray(res) ? res : []))];
+        // Deduplicate by _id to prevent duplicate React key warnings
+        const seenIds = new Map();
+        raw.forEach(p => { const id = p._id || p.id; if (id) seenIds.set(id, p); });
+        let data = Array.from(seenIds.values());
         
         // --- ADVANCED PROXIMITY DISCOVERY ENGINE ---
         // Hierarchy: 1. Exact City Match, 2. Same District Match, 3. Preference Match, 4. Global Fallback
@@ -519,6 +543,13 @@ export default function Home() {
 
   return (
     <>
+      <Helmet>
+        <title>SnapAdda | Andhra's #1 Real Estate Platform</title>
+        <meta name="description" content="Discover premium apartments, villas, and plots in Vijayawada, Guntur, and across Andhra Pradesh. SnapAdda - Your trusted real estate partner." />
+        <meta property="og:title" content="SnapAdda | Premium Real Estate in AP" />
+        <meta property="og:description" content="Buy, rent or sell properties with 100% verified listings." />
+        <meta property="og:image" content="/og-image.jpg" />
+      </Helmet>
       <AnimatePresence>
         {isSearchSticky && (
           <motion.div 
@@ -541,6 +572,7 @@ export default function Home() {
               style={{ flex: 1, background: 'transparent', border: 'none', color: 'white', fontSize: '0.9rem', outline: 'none' }}
             />
             <button 
+              id="btn-home-sticky-search"
               onClick={() => navigate(`/search?keyword=${keyword}`)}
               style={{ background: 'var(--gold)', color: 'black', border: 'none', padding: '6px 16px', borderRadius: '20px', fontWeight: 900, fontSize: '0.75rem', cursor: 'pointer' }}
             >
@@ -586,239 +618,180 @@ export default function Home() {
         >
           <div className="container" style={{ position: 'relative', zIndex: 10, height: '100%' }}>
             <RecentlySoldTicker />
-            <motion.div className="hero-eyebrow" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-              <MapPin size={12} /> {heroContent?.eyebrow || t('hero.eyebrow')}
-            </motion.div>
-            <motion.h1 className="hero-title" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, delay: 0.1 }}>
-              {heroContent?.title?.split('|')[0] || t('hero.title1')}
-              <span className="gold-line text-royal-gold" style={{ display: 'block' }}>
-                {typedWord}<span style={{ color: 'var(--gold)', opacity: 0.7 }}>|</span>
-              </span>
-              {heroContent?.title?.split('|')[1] || t('hero.title2')}
-            </motion.h1>
+            
+            <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="hero-eyebrow" style={{ margin: '0 auto 1.25rem', background: 'rgba(232,184,75,0.1)', color: 'var(--gold)', border: '1px solid rgba(232,184,75,0.2)' }}>
+                <ShieldCheck size={12} /> ANDHRA'S #1 TRUSTED NETWORK
+              </motion.div>
+              <motion.h1 
+                initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+                className="hero-title" style={{ fontSize: isMobile ? '2.2rem' : '4.5rem', lineHeight: 1.05, marginBottom: '1.25rem', fontWeight: 950 }}
+              >
+                {heroMode === 'selection' ? "ఆంధ్రా రియల్ ఎస్టేట్ గమ్యం" : "Find Your Perfect Asset"}
+                <span className="gold-line text-royal-gold" style={{ display: 'block', fontSize: isMobile ? '1.8rem' : '3.5rem', opacity: 0.9 }}>
+                  {heroMode === 'selection' ? "SnapAdda Elite Platform" : `Verified ${intent} Listings`}
+                </span>
+              </motion.h1>
+              <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: isMobile ? '0.95rem' : '1.15rem', maxWidth: '700px', margin: '0 auto', lineHeight: 1.7, fontWeight: 500 }}>
+                {heroMode === 'selection' 
+                  ? "Discover premium properties across Vijayawada, Vizag, Guntur & more. Institutional grade verification for every listing."
+                  : "Use our advanced spatial filters to locate verified properties near you."}
+              </p>
+            </div>
 
-            {/* Compact Search Platform */}
-            <motion.div 
-              className="search-platform-card glass-premium" 
-              style={{ 
-                padding: isMobile ? '1rem' : '1.5rem', 
-                borderRadius: '20px', 
-                border: '1px solid rgba(255,255,255,0.12)', 
-                boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
-                maxWidth: '900px',
-                margin: isMobile ? '0.875rem auto' : '1.25rem auto'
-              }}
-            >
-              {/* Intent Tabs */}
-              <div style={{ display: 'flex', gap: '8px', marginBottom: '1rem', justifyContent: isMobile ? 'center' : 'flex-start' }}>
-                {INTENT_TABS(t).map(tab => (
-                  <button
-                    key={tab.value}
-                    onClick={() => setIntent(tab.value)}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: '8px',
-                      padding: '10px 24px', borderRadius: '30px',
-                      background: intent === tab.value ? 'var(--gold)' : 'rgba(255,255,255,0.05)',
-                      color: intent === tab.value ? 'black' : 'white',
-                      border: '1px solid',
-                      borderColor: intent === tab.value ? 'var(--gold)' : 'rgba(255,255,255,0.1)',
-                      fontWeight: 900, fontSize: '0.85rem', cursor: 'pointer',
-                      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
-                    }}
-                  >
-                    {intent === tab.value ? React.cloneElement(tab.icon, { size: 18 }) : null}
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1.2fr 1fr 1fr', gap: isMobile ? '0.625rem' : '1rem', marginBottom: '1rem' }}>
-                <div className="search-group">
-                  <label style={{ color: 'var(--gold)', fontSize: '0.65rem', fontWeight: 900, letterSpacing: '0.1em', marginBottom: '8px', display: 'block' }}>LOCATION / PROJECT</label>
-                  <div style={{ position: 'relative', display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.05)', borderRadius: '12px', padding: '0 12px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                    <Search size={14} style={{ color: 'rgba(255,255,255,0.4)', marginRight: '8px' }} />
-                    <input 
-                      type="text" 
-                      placeholder="Search mandal, area..."
-                      value={keyword}
-                      aria-label="Location or project search"
-                      onChange={(e) => setKeyword(e.target.value)}
-                      style={{ background: 'transparent', border: 'none', color: 'white', fontSize: '0.85rem', width: '100%', padding: '10px 0', outline: 'none' }}
-                    />
-                  </div>
-                </div>
-
-                <div className="search-group">
-                  <label style={{ color: 'var(--gold)', fontSize: '0.65rem', fontWeight: 900, letterSpacing: '0.1em', marginBottom: '8px', display: 'block' }}>PROPERTY TYPE</label>
-                  <select 
-                    value={typeFilter}
-                    aria-label="Filter by property type"
-                    onChange={(e) => setTypeFilter(e.target.value)}
-                    style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '10px', color: 'white', fontSize: '0.85rem', outline: 'none', cursor: 'pointer' }}
-                  >
-                    <option value="all" style={{ background: '#050a14' }}>All Types</option>
-                    {PROPERTY_TYPES(t).map(type => (
-                      <option key={type.value} value={type.value} style={{ background: '#050a14' }}>{type.label}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="search-group">
-                  <label style={{ color: 'var(--gold)', fontSize: '0.65rem', fontWeight: 900, letterSpacing: '0.1em', marginBottom: '8px', display: 'block' }}>CITY</label>
-                  <select 
-                    value={cityFilter || ''}
-                    aria-label="Filter by city"
-                    onChange={(e) => setCityFilter(e.target.value || null)}
-                    style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '10px', color: 'white', fontSize: '0.85rem', outline: 'none', cursor: 'pointer' }}
-                  >
-                    <option value="" style={{ background: '#050a14' }}>Any City</option>
-                    {cities.map(city => (
-                      <option key={city._id} value={city.name} style={{ background: '#050a14' }}>{city.name}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              {/* Budget Slide & Search */}
-              <div className="search-footer-mobile" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                <div style={{ width: '100%' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                    <label style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--gold)', letterSpacing: '0.05em' }}>MAX BUDGET</label>
-                    <span style={{ color: 'white', fontWeight: 800, fontSize: '0.85rem' }}>{budget ? `₹${(budget/10000000).toFixed(2)} Cr` : 'Any'}</span>
-                  </div>
-                  <div style={{ padding: '2px 0' }}>
-                    <input 
-                      type="range" 
-                      min="500000" 
-                      max="100000000" 
-                      step="500000"
-                      value={budget || 100000000}
-                      aria-label="Budget slider"
-                      onChange={(e) => setBudget(e.target.value)}
-                      style={{ width: '100%', accentColor: 'var(--gold)', cursor: 'pointer', height: '4px' }}
-                    />
-                  </div>
-                </div>
-
-                <button 
-                  onClick={() => {
-                    const params = new URLSearchParams();
-                    if (keyword) params.set('keyword', keyword);
-                    if (typeFilter !== 'all') params.set('type', typeFilter);
-                    if (cityFilter) params.set('city', cityFilter);
-                    if (budget && budget < 100000000) params.set('maxPrice', budget);
-                    navigate(`/search?${params.toString()}`);
-                  }}
-                  className="btn-3d-glass"
-                  aria-label="Search properties"
-                  style={{ 
-                    background: 'var(--gold)', 
-                    color: 'black', 
-                    padding: '12px', 
-                    borderRadius: '12px', 
-                    fontWeight: 900, 
-                    fontSize: '0.95rem',
-                    width: '100%',
-                    boxShadow: '0 8px 25px rgba(232,184,75,0.3)',
-                    marginTop: '8px'
-                  }}
-                  whileTap={{ scale: 0.96 }}
+            <AnimatePresence mode="wait">
+              {heroMode === 'selection' ? (
+                <motion.div 
+                  key="selection"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 1.05 }}
+                  transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
                 >
-                  <Zap size={18} style={{ marginRight: '8px' }} />
-                  {t('hero.searchBtn', 'EXPLORE ESTATES')}
-                </button>
-              </div>
+                  <div style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: 'repeat(2, 1fr)', 
+                    gap: isMobile ? '1rem' : '2rem', 
+                    maxWidth: '800px',
+                    margin: '0 auto 2.5rem'
+                  }}>
+                    {/* BUY CTA */}
+                    <motion.div 
+                      whileHover={{ y: -10, boxShadow: '0 20px 40px rgba(16,217,140,0.15)' }}
+                      whileTap={{ scale: 0.97 }}
+                      onClick={() => { setIntent('Buy'); setHeroMode('search'); triggerHaptic('medium'); }}
+                      className="glass-premium"
+                      style={{ padding: isMobile ? '2rem 1.5rem' : '3.5rem 2rem', borderRadius: '32px', border: '1px solid rgba(16,217,140,0.2)', background: 'rgba(16,217,140,0.03)', cursor: 'pointer', textAlign: 'center' }}
+                    >
+                      <div style={{ width: '64px', height: '64px', borderRadius: '22px', background: 'rgba(16,217,140,0.1)', color: '#10d98c', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem', boxShadow: '0 10px 20px rgba(16,217,140,0.1)' }}>
+                        <HomeIcon size={32} />
+                      </div>
+                      <h3 style={{ fontSize: '1.6rem', fontWeight: 950, marginBottom: '0.5rem', color: '#fff', letterSpacing: '0.05em' }}>BUY</h3>
+                      <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)', fontWeight: 700 }}>VERIFIED ASSETS</p>
+                    </motion.div>
 
-              <style>{`
-                .hero-search-platform {
-                  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-                  margin: 0 auto;
-                  max-width: 900px; /* Center it nicely */
-                  width: 100%;
-                }
-                .hero-search-platform:hover {
-                  border-color: rgba(212, 175, 55, 0.4);
-                  box-shadow: 0 40px 120px rgba(0,0,0,0.9);
-                }
-                .hide-scrollbar::-webkit-scrollbar { display: none; }
-                .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-                
-                @media (max-width: 600px) {
-                  .hero-search-platform {
-                    padding: 1.5rem !important;
-                    margin: 1.5rem 12px !important;
-                    border-radius: 28px !important;
-                    gap: 1.75rem !important;
-                    background: rgba(8, 12, 25, 0.95) !important;
-                  }
-                  .search-group label {
-                    font-size: 0.65rem !important;
-                    opacity: 0.6;
-                  }
-                  .search-group input {
-                    font-size: 1.05rem !important;
-                  }
-                  .search-footer-mobile {
-                    gap: 1.75rem !important;
-                  }
-                  .search-group .hide-scrollbar {
-                    gap: 12px !important;
-                    padding-bottom: 15px !important;
-                    overflow-x: auto !important;
-                    -webkit-overflow-scrolling: touch;
-                  }
-                  /* Make cards slightly larger for touch */
-                  .search-group button {
-                    padding: 14px 22px !important;
-                    min-width: 110px !important;
-                    border-radius: 18px !important;
-                  }
-                  /* Increase budget slider height for touch */
-                  input[type="range"]::-webkit-slider-runnable-track {
-                    height: 10px !important;
-                  }
-                  input[type="range"]::-webkit-slider-thumb {
-                    width: 24px !important;
-                    height: 24px !important;
-                    margin-top: -7px !important;
-                  }
-                }
-              `}</style>
-            </motion.div>
-            <motion.div className="hero-ctas" initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.65, delay: 0.3 }}>
-              <a href={heroContent?.cta1Url || "#cities"} className="hero-btn hero-btn-primary">
-                <Navigation2 size={18} /> {heroContent?.cta1Text || t('hero.browseBtn')}
-              </a>
-              <a href={heroContent?.cta2Url === 'callback' ? '#' : (heroContent?.cta2Url || `tel:${supportPhone}`)} 
-                 onClick={(e) => { if (heroContent?.cta2Url === 'callback') { e.preventDefault(); openLead('callback'); } }}
-                 className="hero-btn hero-btn-glass">
-                 <Phone size={18} /> {heroContent?.cta2Text || 'CALL AGENT NOW'}
-              </a>
-            </motion.div>
-            <motion.div className="hero-stats-row" initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ delay: 0.5 }}>
-              {siteStats.length > 0 ? (
-                siteStats.map((s, i) => (
-                  <div key={i} className="hero-stat-chip">
-                    <div className="stat-v">{s.value}</div>
-                    <div className="stat-l">{s.label}</div>
+                    {/* RENT CTA */}
+                    <motion.div 
+                      whileHover={{ y: -10, boxShadow: '0 20px 40px rgba(155,89,245,0.15)' }}
+                      whileTap={{ scale: 0.97 }}
+                      onClick={() => { setIntent('Rent'); setHeroMode('search'); triggerHaptic('medium'); }}
+                      className="glass-premium"
+                      style={{ padding: isMobile ? '2rem 1.5rem' : '3.5rem 2rem', borderRadius: '32px', border: '1px solid rgba(155,89,245,0.2)', background: 'rgba(155,89,245,0.03)', cursor: 'pointer', textAlign: 'center' }}
+                    >
+                      <div style={{ width: '64px', height: '64px', borderRadius: '22px', background: 'rgba(155,89,245,0.1)', color: '#9b59f5', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem', boxShadow: '0 10px 20px rgba(155,89,245,0.1)' }}>
+                        <Building size={32} />
+                      </div>
+                      <h3 style={{ fontSize: '1.6rem', fontWeight: 950, marginBottom: '0.5rem', color: '#fff', letterSpacing: '0.05em' }}>RENT</h3>
+                      <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)', fontWeight: 700 }}>LUXURY SPACES</p>
+                    </motion.div>
                   </div>
-                ))
+
+                  {/* Centered SELL Button */}
+                  <div style={{ textAlign: 'center' }}>
+                    <motion.button
+                      whileHover={{ scale: 1.05, background: 'rgba(232,184,75,0.15)' }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => navigate('/post-property')}
+                      className="glass-premium"
+                      style={{ 
+                        padding: '1.2rem 3rem', borderRadius: '24px', border: '1px solid var(--gold)', 
+                        background: 'rgba(232,184,75,0.05)', cursor: 'pointer', color: 'var(--gold)',
+                        fontSize: '1rem', fontWeight: 900, display: 'inline-flex', alignItems: 'center', gap: '12px',
+                        letterSpacing: '0.1em'
+                      }}
+                    >
+                      <Plus size={20} /> SELL / POST PROPERTY
+                    </motion.button>
+                  </div>
+                </motion.div>
               ) : (
-                [
-                  { icon: <ShieldCheck size={15} />, val: `${properties.filter(p => p.isVerified).length || 0}+`, label: t('stats.verified') },
-                  { icon: <MapPin size={15} />, val: `${cities.length}`, label: t('stats.cities') },
-                  { icon: <Users size={15} />, val: '2,400+', label: t('stats.clients') },
-                  { icon: <Star size={15} />, val: 'CRDA', label: t('stats.approved') },
-                ].map((s, i) => (
-                  <div key={i} className="hero-stat-chip">
-                    <div className="stat-v">{s.val}</div>
-                    <div className="stat-l">{s.label}</div>
+                <motion.div 
+                  key="search"
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -30 }}
+                  transition={{ duration: 0.4, ease: "easeOut" }}
+                >
+                  <div className="glass-premium" style={{ maxWidth: '900px', margin: '0 auto', padding: '1.5rem', borderRadius: '32px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(5,5,15,0.85)', boxShadow: '0 40px 80px rgba(0,0,0,0.6)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '1.5rem', paddingLeft: '8px' }}>
+                      <button 
+                        onClick={() => setHeroMode('selection')}
+                        style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '8px 12px', color: 'var(--gold)', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '6px' }}
+                      >
+                        <ArrowRight size={14} style={{ transform: 'rotate(180deg)' }} /> BACK
+                      </button>
+                      <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.3)', fontWeight: 800, letterSpacing: '0.15em', textTransform: 'uppercase' }}>Searching for {intent} in Andhra Pradesh</div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1.2fr 1fr 1fr auto', gap: '1rem', alignItems: 'end' }}>
+                      <div className="field-group">
+                        <label className="elite-lbl" style={{ color: 'var(--gold)', fontSize: '0.6rem', fontWeight: 900, marginBottom: '10px', display: 'block', letterSpacing: '0.15em' }}>WHERE IN ANDHRA?</label>
+                        <LocationAutocomplete 
+                          value={keyword} 
+                          onChange={(val) => setKeyword(val)}
+                          onSelect={(loc) => { setKeyword(loc.name); setCityFilter(loc.name); triggerHaptic('medium'); }}
+                          placeholder="Area, Mandal, or City..."
+                        />
+                      </div>
+
+                      <div className="field-group">
+                        <label className="elite-lbl" style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.6rem', fontWeight: 900, marginBottom: '10px', display: 'block' }}>TYPE</label>
+                        <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '12px', color: 'white', outline: 'none' }}>
+                          <option value="all">All Types</option>
+                          {PROPERTY_TYPES(t).map(tp => <option key={tp.value} value={tp.value} style={{ background: '#0a0f1e' }}>{tp.label}</option>)}
+                        </select>
+                      </div>
+
+                      <div className="field-group">
+                        <label className="elite-lbl" style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.6rem', fontWeight: 900, marginBottom: '10px', display: 'block' }}>BUDGET</label>
+                        <select value={budgetFilter} onChange={(e) => setBudgetFilter(e.target.value)} style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '12px', color: 'white', outline: 'none' }}>
+                          <option value="all">Any Budget</option>
+                          <option value="0-500000">Below 5L</option>
+                          <option value="500000-2500000">5L - 25L</option>
+                          <option value="2500000-5000000">25L - 50L</option>
+                          <option value="5000000-10000000">50L - 1Cr</option>
+                          <option value="10000000-50000000">1Cr - 5Cr</option>
+                          <option value="50000000-500000000">Above 5Cr</option>
+                        </select>
+                      </div>
+
+                      <motion.button 
+                        onClick={() => {
+                          const p = new URLSearchParams();
+                          if (keyword) p.set('keyword', keyword);
+                          if (typeFilter !== 'all') p.set('type', typeFilter);
+                          if (intent) p.set('intent', intent);
+                          if (budgetFilter !== 'all') p.set('budget', budgetFilter);
+                          navigate(`/search?${p.toString()}`);
+                        }}
+                        whileHover={{ scale: 1.05, boxShadow: '0 0 20px var(--brand-glow)' }}
+                        whileTap={{ scale: 0.95 }}
+                        style={{ height: '52px', width: '52px', borderRadius: '16px', background: 'var(--gold)', color: 'black', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                      >
+                        <Search size={22} strokeWidth={2.5} />
+                      </motion.button>
+                    </div>
                   </div>
-                ))
+                </motion.div>
               )}
+            </AnimatePresence>
+
+            <motion.div className="hero-stats-row" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }} style={{ marginTop: '3rem' }}>
+              {[
+                { icon: <ShieldCheck size={15} />, val: 'Verified', label: '100% Secure' },
+                { icon: <Navigation2 size={15} />, val: 'Smart', label: 'Spatial Search' },
+                { icon: <Zap size={15} />, val: 'Instant', label: 'Connectivity' },
+              ].map((s, i) => (
+                <div key={i} className="hero-stat-chip" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                  <div style={{ color: 'var(--gold)' }}>{s.icon}</div>
+                  <div className="stat-v" style={{ fontSize: '0.8rem' }}>{s.val}</div>
+                  <div className="stat-l" style={{ fontSize: '0.6rem' }}>{s.label}</div>
+                </div>
+              ))}
             </motion.div>
           </div>
         </section>
+
 
         {/* ── Latest Listings & Categories (Moved Up for Elite Visibility) ── */}
         <section id="properties" style={{ paddingTop: '2.5rem', background: 'rgba(212,175,55,0.02)' }}>
@@ -877,79 +850,80 @@ export default function Home() {
           />
         </section>
 
-        <section style={{ padding: '4rem 0', background: 'rgba(255,255,255,0.01)', overflow: 'hidden' }}>
+        {/* ── Services Bento Grid ── */}
+        <section className="section-wrap" style={{ padding: '1rem 0 3rem' }}>
           <div className="container">
-            <h2 className="section-title" style={{ textAlign: 'center', marginBottom: '1rem' }}>{t('why.title', 'Why Choose SnapAdda?')}</h2>
-            <p style={{ textAlign: 'center', color: 'var(--txt-secondary)', marginBottom: '3rem' }}>Institutional Excellence in Every Transaction</p>
-          </div>
-          <WhyMarquee cards={WHY_CARDS(t)} />
-        </section>        {/* ── High-Productivity Operations Hub (Bento) ── */}
-        <section className="section-wrap" style={{ padding: '0.5rem 0 1.5rem' }}>
-          <div className="container">
-            <div className="bento-grid" style={{ 
-              display: 'grid', 
-              gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', 
-              gap: '1rem',
-              gridAutoRows: 'minmax(140px, auto)'
-            }}>
-              {/* Primary Action: Post */}
-              <motion.div 
-                whileHover={{ scale: 1.02, y: -4 }}
-                onClick={() => navigate('/post-property')}
-                className="glass-elite bento-item" 
-                style={{ 
-                  gridColumn: 'span 2', 
-                  background: 'linear-gradient(135deg, rgba(16,217,140,0.15) 0%, rgba(5,10,20,0.8) 100%)',
-                  border: '1px solid rgba(16,217,140,0.2)',
-                  display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '1.5rem',
-                  cursor: 'pointer', position: 'relative', overflow: 'hidden'
-                }}
-              >
-                <div style={{ position: 'absolute', right: '-10px', bottom: '-10px', opacity: 0.1 }}>
-                  <Plus size={120} color="var(--emerald)" />
-                </div>
-                <div style={{ color: 'var(--emerald)', fontSize: '0.65rem', fontWeight: 900, letterSpacing: '0.2em', marginBottom: '8px' }}>✦ MARKET READY</div>
-                <h3 style={{ fontSize: '1.4rem', fontWeight: 900, color: 'white', margin: 0 }}>Post Property</h3>
-                <p style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.6)', marginTop: '4px' }}>Get verified leads instantly</p>
-              </motion.div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '1rem' }}>
+              {siteControl.postPropertyEnabled && (
+                <motion.div 
+                  whileHover={{ scale: 1.02, y: -4 }}
+                  onClick={() => {
+                    triggerMicroLead({ source: 'Post Property Bento', message: 'User clicked Post Property bento item' });
+                    navigate('/post-property');
+                  }}
+                  className="glass-elite bento-item" 
+                  style={{ 
+                    gridColumn: 'span 2', 
+                    background: 'linear-gradient(135deg, rgba(16,217,140,0.15) 0%, rgba(5,10,20,0.8) 100%)',
+                    border: '1px solid rgba(16,217,140,0.2)',
+                    display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '1.5rem',
+                    cursor: 'pointer', position: 'relative', overflow: 'hidden'
+                  }}
+                >
+                  <div style={{ position: 'absolute', right: '-10px', bottom: '-10px', opacity: 0.1 }}>
+                    <Plus size={120} color="var(--emerald)" />
+                  </div>
+                  <div style={{ color: 'var(--emerald)', fontSize: '0.65rem', fontWeight: 900, letterSpacing: '0.2em', marginBottom: '8px' }}>✦ MARKET READY</div>
+                  <h3 style={{ fontSize: '1.4rem', fontWeight: 900, color: 'white', margin: 0 }}>Post Property</h3>
+                  <p style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.6)', marginTop: '4px' }}>Get verified leads instantly</p>
+                </motion.div>
+              )}
 
-              {/* Expert Support */}
-              <motion.div 
-                whileHover={{ scale: 1.02, y: -4 }}
-                onClick={() => window.open('https://wa.me/911234567890', '_blank')}
-                className="glass-elite bento-item" 
-                style={{ 
-                  background: 'linear-gradient(135deg, rgba(245,200,66,0.1) 0%, rgba(5,10,20,0.8) 100%)',
-                  border: '1px solid rgba(245,200,66,0.15)',
-                  display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center',
-                  padding: '1.25rem', cursor: 'pointer'
-                }}
-              >
-                <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'rgba(245,200,66,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--gold)', marginBottom: '10px' }}>
-                  <Zap size={20} fill="var(--gold)" />
-                </div>
-                <div style={{ fontSize: '0.9rem', fontWeight: 900, color: 'white' }}>Expert Help</div>
-                <div style={{ fontSize: '0.6rem', color: 'var(--gold)', fontWeight: 800, marginTop: '2px' }}>LIVE ASSIST</div>
-              </motion.div>
+              {siteControl.expertHelpEnabled && (
+                <motion.div 
+                  whileHover={{ scale: 1.02, y: -4 }}
+                  onClick={() => {
+                    triggerMicroLead({ source: 'Expert Help Intent', message: 'User clicked Expert Help WhatsApp link' });
+                    window.open(`https://wa.me/${supportWA}`, '_blank');
+                  }}
+                  className="glass-elite bento-item" 
+                  style={{ 
+                    background: 'linear-gradient(135deg, rgba(245,200,66,0.1) 0%, rgba(5,10,20,0.8) 100%)',
+                    border: '1px solid rgba(245,200,66,0.15)',
+                    display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center',
+                    padding: '1.25rem', cursor: 'pointer'
+                  }}
+                >
+                  <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'rgba(245,200,66,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--gold)', marginBottom: '10px' }}>
+                    <Zap size={20} fill="var(--gold)" />
+                  </div>
+                  <div style={{ fontSize: '0.9rem', fontWeight: 900, color: 'white' }}>Expert Help</div>
+                  <div style={{ fontSize: '0.6rem', color: 'var(--gold)', fontWeight: 800, marginTop: '2px' }}>LIVE ASSIST</div>
+                </motion.div>
+              )}
 
-              {/* Verify Asset */}
-              <motion.div 
-                whileHover={{ scale: 1.02, y: -4 }}
-                onClick={() => navigate('/services/verification')}
-                className="glass-elite bento-item" 
-                style={{ 
-                  background: 'linear-gradient(135deg, rgba(34,217,224,0.1) 0%, rgba(5,10,20,0.8) 100%)',
-                  border: '1px solid rgba(34,217,224,0.15)',
-                  display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center',
-                  padding: '1.25rem', cursor: 'pointer'
-                }}
-              >
-                <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'rgba(34,217,224,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--cyan)', marginBottom: '10px' }}>
-                  <ShieldCheck size={20} />
-                </div>
-                <div style={{ fontSize: '0.9rem', fontWeight: 900, color: 'white' }}>Verify Asset</div>
-                <div style={{ fontSize: '0.6rem', color: 'var(--cyan)', fontWeight: 800, marginTop: '2px' }}>TRUST FIRST</div>
-              </motion.div>
+              {siteControl.verifyAssistEnabled && (
+                <motion.div 
+                  whileHover={{ scale: 1.02, y: -4 }}
+                  onClick={() => {
+                    triggerMicroLead({ source: 'Verify Asset Intent', message: 'User clicked Verify Asset service' });
+                    navigate('/services/verification');
+                  }}
+                  className="glass-elite bento-item" 
+                  style={{ 
+                    background: 'linear-gradient(135deg, rgba(34,217,224,0.1) 0%, rgba(5,10,20,0.8) 100%)',
+                    border: '1px solid rgba(34,217,224,0.15)',
+                    display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center',
+                    padding: '1.25rem', cursor: 'pointer'
+                  }}
+                >
+                  <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'rgba(34,217,224,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--cyan)', marginBottom: '10px' }}>
+                    <ShieldCheck size={20} />
+                  </div>
+                  <div style={{ fontSize: '0.9rem', fontWeight: 900, color: 'white' }}>Verify Asset</div>
+                  <div style={{ fontSize: '0.6rem', color: 'var(--cyan)', fontWeight: 800, marginTop: '2px' }}>TRUST FIRST</div>
+                </motion.div>
+              )}
             </div>
           </div>
         </section>
@@ -964,6 +938,7 @@ export default function Home() {
           </div>
           <OfferSection designTokens={designTokens?.adCard} />
         </section>
+
         <section id="cities" className="section-wrap" style={{ padding: '1.5rem 0' }}>
           <div className="container">
             <div className="section-head" style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
@@ -998,32 +973,37 @@ export default function Home() {
         </section>
 
         {/* Sell Property CTA */}
-        <section className="section-wrap animate-on-scroll" style={{ background: 'linear-gradient(180deg, transparent, rgba(16,217,140,0.02))', padding: '1.5rem 0' }}>
-          <div className="container">
-            <motion.div 
-              className="glass-elite" 
-              initial={{ opacity: 0, scale: 0.98 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-              style={{ height: 'auto', padding: '2.5rem', textAlign: 'center', background: 'linear-gradient(135deg, rgba(5,10,20,0.8) 0%, rgba(16,217,140,0.03) 100%)', border: '1px solid rgba(16,217,140,0.15)', borderRadius: '32px' }}
-            >
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: 'var(--emerald)', fontSize: '0.7rem', fontWeight: 900, letterSpacing: '0.25em', textTransform: 'uppercase', marginBottom: '1.25rem' }}>
-                <Zap size={14} fill="var(--emerald)" /> Direct Posting
-              </div>
-              <h2 style={{ fontSize: 'clamp(1.75rem, 5vw, 2.25rem)', marginBottom: '0.75rem', color: 'white', fontWeight: 900 }}>మీ ప్రాపర్టీని అమ్మాలనుకుంటున్నారా?</h2>
-              <p style={{ fontSize: '0.95rem', color: 'var(--txt-secondary)', maxWidth: '600px', margin: '0 auto 2rem', lineHeight: 1.6 }}>
-                వేలాది మంది కొనుగోలుదారులకు మీ ప్రాపర్టీని నేరుగా చూపండి.
-              </p>
-              <button 
-                onClick={() => navigate('/post-property')}
-                className="hero-btn hero-btn-primary btn-3d-liquid" 
-                style={{ padding: '1rem 3rem', fontSize: '1rem', background: '#10d98c', color: 'black' }}
+        {siteControl.postPropertyEnabled && (
+          <section className="section-wrap animate-on-scroll" style={{ background: 'linear-gradient(180deg, transparent, rgba(16,217,140,0.02))', padding: '1.5rem 0' }}>
+            <div className="container">
+              <motion.div 
+                className="glass-elite" 
+                initial={{ opacity: 0, scale: 0.98 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                style={{ height: 'auto', padding: '2.5rem', textAlign: 'center', background: 'linear-gradient(135deg, rgba(5,10,20,0.8) 0%, rgba(16,217,140,0.03) 100%)', border: '1px solid rgba(16,217,140,0.15)', borderRadius: '32px' }}
               >
-                POST PROPERTY <Plus size={18} style={{ marginLeft: '8px' }} />
-              </button>
-            </motion.div>
-          </div>
-        </section>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: 'var(--emerald)', fontSize: '0.7rem', fontWeight: 900, letterSpacing: '0.25em', textTransform: 'uppercase', marginBottom: '1.25rem' }}>
+                  <Zap size={14} fill="var(--emerald)" /> Direct Posting
+                </div>
+                <h2 style={{ fontSize: 'clamp(1.75rem, 5vw, 2.25rem)', marginBottom: '0.75rem', color: 'white', fontWeight: 900 }}>మీ ప్రాపర్టీని అమ్మాలనుకుంటున్నారా?</h2>
+                <p style={{ fontSize: '0.95rem', color: 'var(--txt-secondary)', maxWidth: '600px', margin: '0 auto 2rem', lineHeight: 1.6 }}>
+                  వేలాది మంది కొనుగోలుదారులకు మీ ప్రాపర్టీని నేరుగా చూపండి.
+                </p>
+                <button 
+                  onClick={() => {
+                    triggerMicroLead({ source: 'Post Property CTA', message: 'User clicked Sell Property CTA button' });
+                    navigate('/post-property');
+                  }}
+                  className="hero-btn hero-btn-primary btn-3d-liquid" 
+                  style={{ padding: '1rem 3rem', fontSize: '1rem', background: '#10d98c', color: 'black' }}
+                >
+                  POST PROPERTY <Plus size={18} style={{ marginLeft: '8px' }} />
+                </button>
+              </motion.div>
+            </div>
+          </section>
+        )}
 
         <section id="contact" className="cta-section">
           <div className="container">
@@ -1044,6 +1024,26 @@ export default function Home() {
             </motion.div>
           </div>
         </section>
+
+        {/* Regional Market Hotspots (Interactive Map) */}
+        <section className="map-discovery-section" style={{ padding: '4rem 0', background: 'rgba(0,0,0,0.2)' }}>
+          <div className="container">
+            <div className="section-head" style={{ marginBottom: '2rem' }}>
+              <div className="section-eyebrow">Visual Discovery</div>
+              <h2 className="section-title" style={{ color: 'white' }}>Explore Market Hotspots</h2>
+              <p className="section-subtitle">Browse premium listings across Andhra Pradesh using our interactive spatial search.</p>
+            </div>
+            
+            <div style={{ height: '500px', width: '100%', borderRadius: '32px', overflow: 'hidden', border: '1px solid rgba(232,184,75,0.2)', boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }}>
+              <PropertyMap properties={properties.slice(0, 50)} />
+            </div>
+          </div>
+        </section>
+
+        {/* Regional Sitemap - High Density Keyword Hub for Google Search */}
+        <Suspense fallback={<div className="container" style={{ padding: '2rem', textAlign: 'center' }}>Loading regions...</div>}>
+          <RegionalSitemap />
+        </Suspense>
 
         <footer className="app-footer">
           <div className="container">

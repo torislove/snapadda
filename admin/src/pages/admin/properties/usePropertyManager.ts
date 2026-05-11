@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { fetchProperties, createProperty, updateProperty, deleteProperty, uploadMedia } from '../../../services/api';
 import { adminAIService } from '../../../services/aiService';
 import { toast } from 'react-hot-toast';
@@ -22,6 +22,7 @@ export const usePropertyManager = () => {
   const [search, setSearch] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'cards'>('cards');
   const [realtorData, setRealtorData] = useState<any>({});
+  const formTimeoutRef = useRef<any>(null);
 
   useEffect(() => {
     loadProperties();
@@ -221,9 +222,16 @@ export const usePropertyManager = () => {
   const handleFormChange = (e: React.FormEvent<HTMLFormElement>) => {
     const formData = new FormData(e.currentTarget);
     const updatedData: any = Object.fromEntries(formData.entries());
-    updatedData.price = convertToValue(updatedData.price, priceUnit);
-    updatedData.pricePerAcre = convertToValue(updatedData.pricePerAcre, pricePerAcreUnit);
-    setLiveData((prev: any) => ({ ...prev, ...updatedData }));
+    
+    if (formTimeoutRef.current) clearTimeout(formTimeoutRef.current);
+    
+    formTimeoutRef.current = setTimeout(() => {
+      setLiveData((prev: any) => {
+        const p = convertToValue(updatedData.price, priceUnit);
+        const ppa = convertToValue(updatedData.pricePerAcre, pricePerAcreUnit);
+        return { ...prev, ...updatedData, price: p, pricePerAcre: ppa };
+      });
+    }, 350);
   };
 
   const handleMediaChange = (urls: string[], files: File[]) => {

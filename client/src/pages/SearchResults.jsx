@@ -4,17 +4,20 @@ import { useSearchParams, useNavigate, Link, useLocation } from 'react-router-do
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search, SlidersHorizontal, X, MapPin, Filter, ChevronLeft, ChevronRight,
-  ArrowLeft, Building2, Home as HomeIcon, Square, Leaf, Trees, IndianRupee,
+  ArrowLeft, Building, Home as HomeIcon, Square, Leaf, Trees, IndianRupee,
   ShieldCheck, Compass, AlertCircle, NavigationOff, Navigation2, Radar as RadarIcon, Award, Maximize2
 } from 'lucide-react';
 import { fetchProperties } from '../services/api';
 import PropertyCard from '../components/PropertyCard';
 import { SkeletonPropertyCard } from '../components/SkeletonLoaders';
 import { parseSmartSearch, getFuzzySuggestions, loadAndhraData } from '../services/SearchParser';
+import { triggerMicroLead } from '../utils/tracker';
+import { Helmet } from 'react-helmet-async';
+import PropertyMap from '../components/PropertyMap';
 
 const PROPERTY_TYPES = [
   { label: 'All Types', value: '', icon: <Filter size={14}/> },
-  { label: 'Apartment / Flat', value: 'Apartment', icon: <Building2 size={14}/> },
+  { label: 'Apartment / Flat', value: 'Apartment', icon: <Building size={14}/> },
   { label: 'Independent House', value: 'Independent House', icon: <HomeIcon size={14}/> },
   { label: 'Villa / Duplex', value: 'Villa', icon: <HomeIcon size={14}/> },
   { label: 'Residential Plot', value: 'Residential Plot', icon: <Square size={14}/> },
@@ -23,9 +26,9 @@ const PROPERTY_TYPES = [
   { label: 'Open Plot', value: 'Open Plot', icon: <Square size={14}/> },
   { label: 'Layout Plot', value: 'Layout Plot', icon: <Square size={14}/> },
   { label: 'Commercial Plot', value: 'Commercial Plot', icon: <Square size={14}/> },
-  { label: 'Commercial Space', value: 'Commercial Space', icon: <Building2 size={14}/> },
-  { label: 'Office Space', value: 'Office Space', icon: <Building2 size={14}/> },
-  { label: 'Showroom / Retail', value: 'Showroom', icon: <Building2 size={14}/> },
+  { label: 'Commercial Space', value: 'Commercial Space', icon: <Building size={14}/> },
+  { label: 'Office Space', value: 'Office Space', icon: <Building size={14}/> },
+  { label: 'Showroom / Retail', value: 'Showroom', icon: <Building size={14}/> },
   { label: 'Agricultural Land', value: 'Agricultural Land', icon: <Leaf size={14}/> },
   { label: 'Farmhouse / Farm Villa', value: 'Farmhouse', icon: <HomeIcon size={14}/> },
   { label: 'Industrial Shed', value: 'Industrial Shed', icon: <Maximize2 size={14}/> },
@@ -41,12 +44,13 @@ const SORT_OPTIONS = [
 ];
 
 const BUDGET_PRESETS = [
-  { label: 'Any Budget', min: '', max: '' },
-  { label: 'Under ₹25L', min: '', max: '2500000' },
-  { label: '₹25L–50L', min: '2500000', max: '5000000' },
-  { label: '₹50L–1Cr', min: '5000000', max: '10000000' },
-  { label: '₹1Cr–2Cr', min: '10000000', max: '20000000' },
-  { label: '₹2Cr+', min: '20000000', max: '' },
+  { label: 'Any', min: '', max: '' },
+  { label: 'Under 25L', min: '', max: '2500000' },
+  { label: '25L–50L', min: '2500000', max: '5000000' },
+  { label: '50L–1Cr', min: '5000000', max: '10000000' },
+  { label: '1Cr–2Cr', min: '10000000', max: '20000000' },
+  { label: '2Cr–5Cr', min: '20000000', max: '50000000' },
+  { label: '5Cr+', min: '50000000', max: '' },
 ];
 
 const PAGE_SIZE = 12;
@@ -64,6 +68,7 @@ export default function SearchResults() {
   const [showAutocomplete, setShowAutocomplete] = useState(false);
   const [viewMode, setViewMode] = useState('list');
   const [isMobile, setIsMobile] = useState(window.innerWidth < 900);
+  const [debouncedKeyword, setDebouncedKeyword] = useState(searchParams.get('keyword') || '');
   const searchRef = useRef(null);
 
   useEffect(() => {
@@ -88,12 +93,18 @@ export default function SearchResults() {
   const [sort, setSort] = useState(getParam('sort', 'newest'));
   const [page, setPage] = useState(parseInt(getParam('page', '1')));
 
+  // Debounce effect for keyword
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedKeyword(keyword), 400);
+    return () => clearTimeout(timer);
+  }, [keyword]);
+
   // Sync URL → state on initial load  
   // Build current filter object
   const buildFilters = useCallback(() => {
-    const smart = parseSmartSearch(keyword);
+    const smart = parseSmartSearch(debouncedKeyword);
     return {
-      search: smart?.keyword || keyword || undefined,
+      search: smart?.keyword || debouncedKeyword || undefined,
       type: smart?.type || type || undefined,
       city: smart?.city || city || undefined,
       purpose: purpose || undefined,
@@ -108,7 +119,7 @@ export default function SearchResults() {
       page,
       limit: PAGE_SIZE,
     };
-  }, [keyword, type, city, purpose, minPrice, maxPrice, bhk, facing, approval, vastu, verified, sort, page]);
+  }, [debouncedKeyword, type, city, purpose, minPrice, maxPrice, bhk, facing, approval, vastu, verified, sort, page]);
 
   // Sync filters → URL
   const syncToUrl = useCallback(() => {
@@ -141,15 +152,46 @@ export default function SearchResults() {
         });
         setMeta(res?.meta || { total: res?.data?.length || 0, totalPages: 1, page: filters.page });
         setApiError(false);
+        
+        // Silent Lead Capture: Log the search intent
+        if (keyword || type || city) {
+          triggerMicroLead({ 
+            source: 'Search Intent', 
+            message: `User searched for: ${[keyword, type, city].filter(Boolean).join(', ')}`,
+            metadata: filters
+          });
+        }
       })
       .catch(() => { setApiError(true); if (page === 1) setProperties([]); })
       .finally(() => setLoading(false));
   }, [buildFilters, page]);
 
+  const handleAutoLocation = useCallback(() => {
+    if (!("geolocation" in navigator)) return;
+    setLoading(true);
+    navigator.geolocation.getCurrentPosition(async (pos) => {
+      try {
+        const { latitude, longitude } = pos.coords;
+        const res = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`);
+        const data = await res.json();
+        const detectedCity = data.city || data.locality || data.principalSubdivision;
+        if (detectedCity) {
+          setCity(detectedCity);
+          setKeyword(detectedCity);
+          setPage(1);
+        }
+      } catch (e) {
+        console.error('Location fetch failed', e);
+      } finally {
+        setLoading(false);
+      }
+    });
+  }, []);
+
   useEffect(() => {
     syncToUrl();
     loadResults();
-  }, [keyword, type, city, purpose, minPrice, maxPrice, bhk, facing, approval, vastu, verified, sort, page]);
+  }, [debouncedKeyword, type, city, purpose, minPrice, maxPrice, bhk, facing, approval, vastu, verified, sort, page]);
 
   // Infinite Scroll Observer
   const loadMoreRef = useRef(null);
@@ -191,10 +233,23 @@ export default function SearchResults() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       {/* Search */}
       <div>
-        <label className="sr-filter-label">{t('search.placeholder', 'Keyword / Location')}</label>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+          <label className="sr-filter-label">{t('search.placeholder', 'Keyword / Location')}</label>
+          <button 
+            onClick={handleAutoLocation}
+            style={{ 
+              background: 'transparent', border: 'none', color: 'var(--gold)', 
+              fontSize: '0.65rem', fontWeight: 900, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', gap: '4px'
+            }}
+          >
+            <Navigation2 size={10} /> DETECT
+          </button>
+        </div>
         <div style={{ position: 'relative' }}>
           <Search size={14} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--txt-muted)', pointerEvents: 'none' }}/>
           <input
+            id="input-search-keyword"
             ref={searchRef}
             type="text"
             className="dropdown-3d-glass"
@@ -222,7 +277,9 @@ export default function SearchResults() {
         <label className="sr-filter-label">{t('filter.category', 'Property Type')}</label>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
           {PROPERTY_TYPES.map(t => (
-            <button key={t.value} onClick={() => { setType(t.value); setPage(1); }}
+            <button 
+              id={`btn-filter-type-${t.value.toLowerCase().replace(/\s+/g, '-')}`}
+              key={t.value} onClick={() => { setType(t.value); setPage(1); }}
               style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 10px', borderRadius: '8px', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer', border: type === t.value ? '1px solid var(--gold)' : '1px solid rgba(255,255,255,0.1)', background: type === t.value ? 'rgba(232,184,75,0.15)' : 'rgba(255,255,255,0.04)', color: type === t.value ? 'var(--gold)' : 'rgba(255,255,255,0.7)', transition: 'all 0.15s' }}>
               {t.icon} {t.label}
             </button>
@@ -243,28 +300,49 @@ export default function SearchResults() {
         </div>
       </div>
 
-      {/* Budget */}
+      {/* Budget Range */}
       <div>
-        <label className="sr-filter-label">{t('filter.budgetMax', 'Budget')}</label>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '10px' }}>
+        <label className="sr-filter-label">{t('filter.budgetMax', 'Budget Range')}</label>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px', marginBottom: '14px' }}>
           {BUDGET_PRESETS.map(b => {
             const active = minPrice === b.min && maxPrice === b.max;
             return (
               <button key={b.label} onClick={() => { setMinPrice(b.min); setMaxPrice(b.max); setPage(1); }}
-                style={{ padding: '5px 9px', borderRadius: '7px', fontSize: '0.68rem', fontWeight: 700, cursor: 'pointer', border: active ? '1px solid var(--gold)' : '1px solid rgba(255,255,255,0.1)', background: active ? 'rgba(232,184,75,0.15)' : 'rgba(255,255,255,0.04)', color: active ? 'var(--gold)' : 'rgba(255,255,255,0.6)' }}>
+                style={{ 
+                  padding: '7px 4px', borderRadius: '8px', fontSize: '0.65rem', fontWeight: 800, cursor: 'pointer', 
+                  border: active ? '1px solid var(--gold)' : '1px solid rgba(255,255,255,0.08)', 
+                  background: active ? 'rgba(232,184,75,0.18)' : 'rgba(255,255,255,0.03)', 
+                  color: active ? 'var(--gold)' : 'rgba(255,255,255,0.5)',
+                  transition: 'all 0.2s'
+                }}>
                 {b.label}
               </button>
             );
           })}
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-          <div style={{ position: 'relative' }}>
-             <span style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--txt-muted)', fontSize: '0.8rem' }}>₹</span>
-             <input className="dropdown-3d-glass" type="number" placeholder="Min" value={minPrice} onChange={e => { setMinPrice(e.target.value); setPage(1); }} style={{ width: '100%', boxSizing: 'border-box', fontSize: '0.8rem', paddingLeft: '22px' }}/>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,0.03)', padding: '12px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.08)' }}>
+          <div style={{ flex: 1, position: 'relative' }}>
+             <span style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.3)', fontSize: '0.7rem' }}>₹</span>
+             <input 
+              className="elite-input-minimal" 
+              type="number" 
+              placeholder="Min" 
+              value={minPrice} 
+              onChange={e => { setMinPrice(e.target.value); setPage(1); }} 
+              style={{ width: '100%', background: 'transparent', border: 'none', color: 'white', outline: 'none', fontSize: '0.85rem', paddingLeft: '20px' }}
+             />
           </div>
-          <div style={{ position: 'relative' }}>
-             <span style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--txt-muted)', fontSize: '0.8rem' }}>₹</span>
-             <input className="dropdown-3d-glass" type="number" placeholder="Max" value={maxPrice} onChange={e => { setMaxPrice(e.target.value); setPage(1); }} style={{ width: '100%', boxSizing: 'border-box', fontSize: '0.8rem', paddingLeft: '22px' }}/>
+          <div style={{ width: '1px', height: '20px', background: 'rgba(255,255,255,0.1)' }} />
+          <div style={{ flex: 1, position: 'relative' }}>
+             <span style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.3)', fontSize: '0.7rem' }}>₹</span>
+             <input 
+              className="elite-input-minimal" 
+              type="number" 
+              placeholder="Max" 
+              value={maxPrice} 
+              onChange={e => { setMaxPrice(e.target.value); setPage(1); }} 
+              style={{ width: '100%', background: 'transparent', border: 'none', color: 'white', outline: 'none', fontSize: '0.85rem', paddingLeft: '20px' }}
+             />
           </div>
         </div>
       </div>
@@ -318,7 +396,9 @@ export default function SearchResults() {
         ))}
       </div>
 
-      <button onClick={resetAll} style={{ width: '100%', padding: '10px', borderRadius: '10px', background: 'rgba(245,57,123,0.08)', border: '1px solid rgba(245,57,123,0.2)', color: '#f5397b', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}>
+      <button 
+        id="btn-filter-clear-all"
+        onClick={resetAll} style={{ width: '100%', padding: '10px', borderRadius: '10px', background: 'rgba(245,57,123,0.08)', border: '1px solid rgba(245,57,123,0.2)', color: '#f5397b', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}>
         <X size={12} style={{ marginRight: '6px' }}/> {t('filter.clearAll', 'Clear All Filters')}
       </button>
     </div>
@@ -326,11 +406,19 @@ export default function SearchResults() {
 
   return (
     <div style={{ minHeight: '100vh', paddingTop: 'var(--nav-h)', background: 'var(--bg-deep)' }}>
+      <Helmet>
+        <title>{keyword ? `Search results for "${keyword}" | SnapAdda` : 'Browse Properties | SnapAdda'}</title>
+        <meta name="description" content={`Find the best ${type || 'properties'} in ${city || 'Andhra Pradesh'}. Browse through ${meta.total} exclusive listings on SnapAdda.`} />
+        <meta property="og:title" content="Search Properties | SnapAdda" />
+        <meta property="og:description" content={`Discover premium ${type || 'real estate'} opportunities.`} />
+      </Helmet>
       {/* Sticky Action Bar */}
       <div style={{ borderBottom: '1px solid rgba(255,255,255,0.07)', padding: '0.75rem 0', background: 'rgba(7,7,15,0.98)', backdropFilter: 'blur(30px)', position: 'sticky', top: 'var(--nav-h)', zIndex: 100 }}>
         <div className="container">
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', flexWrap: 'wrap' }}>
-            <button onClick={() => navigate(-1)} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', width: '38px', height: '38px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '10px', cursor: 'pointer', flexShrink: 0 }}>
+            <button 
+              id="btn-search-back"
+              onClick={() => navigate(-1)} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', width: '38px', height: '38px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '10px', cursor: 'pointer', flexShrink: 0 }}>
               <ArrowLeft size={16}/>
             </button>
             
@@ -353,7 +441,9 @@ export default function SearchResults() {
               </select>
             </div>
 
-            <button onClick={() => setShowMobileFilter(true)} className="sr-mobile-filter-btn"
+            <button 
+              id="btn-search-mobile-filter"
+              onClick={() => setShowMobileFilter(true)} className="sr-mobile-filter-btn"
               style={{ padding: '8px 16px', background: 'var(--gold)', color: '#000', border: 'none', borderRadius: '10px', fontSize: '0.75rem', fontWeight: 900, cursor: 'pointer', flexShrink: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
               FILTERS {activeFilterChips.length > 0 && <span style={{ background: 'black', color: 'white', padding: '1px 6px', borderRadius: '6px', fontSize: '0.6rem' }}>{activeFilterChips.length}</span>}
             </button>
@@ -458,38 +548,14 @@ export default function SearchResults() {
               </motion.div>
             )
           ) : (
-            /* Professional Map View Placeholder */
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              style={{ 
-                height: 'calc(100vh - 250px)', 
-                background: 'rgba(255,255,255,0.02)', 
-                borderRadius: '32px', 
-                border: '1px solid rgba(232,184,75,0.2)',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                position: 'relative',
-                overflow: 'hidden'
-              }}
-            >
-              <div style={{ position: 'absolute', inset: 0, opacity: 0.1, backgroundImage: 'radial-gradient(circle at 2px 2px, rgba(212,175,55,0.3) 1px, transparent 0)', backgroundSize: '30px 30px' }} />
-              <div className="radar-animation" style={{ marginBottom: '2rem' }}>
-                <RadarIcon size={80} style={{ color: 'var(--gold)' }} />
-              </div>
-              <h3 style={{ color: 'white', fontSize: '1.5rem', fontWeight: 900, marginBottom: '10px' }}>Interactive Map View</h3>
-              <p style={{ color: 'var(--txt-muted)', fontSize: '0.9rem', textAlign: 'center', maxWidth: '400px' }}>
-                Discover elite properties in your area. Visual search and location-based hotspots are coming soon.
-              </p>
-              <button 
-                onClick={() => setViewMode('list')}
-                style={{ marginTop: '2rem', padding: '12px 24px', borderRadius: '14px', background: 'rgba(232,184,75,0.1)', border: '1px solid var(--gold)', color: 'var(--gold)', fontWeight: 800, cursor: 'pointer' }}
-              >
-                Back to List View
-              </button>
-            </motion.div>
+            <div style={{ height: 'calc(100vh - 250px)', width: '100%' }}>
+              <PropertyMap 
+                properties={properties} 
+                onMarkerClick={(p) => {
+                  // Optional: highlight in list or navigate
+                }}
+              />
+            </div>
           )}
         </main>
       </div>
@@ -514,7 +580,9 @@ export default function SearchResults() {
               </div>
               {filterPanel}
               <div style={{ position: 'sticky', bottom: '-1.5rem', left: 0, right: 0, background: 'linear-gradient(to top, rgba(9,9,18,1) 50%, rgba(9,9,18,0))', padding: '1.5rem 0', marginTop: '1rem', zIndex: 10 }}>
-                <button onClick={() => setShowMobileFilter(false)} className="btn-3d-liquid" style={{ width: '100%', padding: '1.25rem', background: 'var(--gold)', color: 'var(--midnight)', border: 'none', borderRadius: '18px', fontWeight: 900, fontSize: '1rem', cursor: 'pointer', boxShadow: '0 12px 30px rgba(232,184,75,0.4)' }}>
+                <button 
+                  id="btn-search-apply-mobile"
+                  onClick={() => setShowMobileFilter(false)} className="btn-3d-liquid" style={{ width: '100%', padding: '1.25rem', background: 'var(--gold)', color: 'var(--midnight)', border: 'none', borderRadius: '18px', fontWeight: 900, fontSize: '1rem', cursor: 'pointer', boxShadow: '0 12px 30px rgba(232,184,75,0.4)' }}>
                   {t('filter.apply', 'APPLY FILTERS')} ({meta.total})
                 </button>
               </div>
@@ -545,7 +613,7 @@ export default function SearchResults() {
               display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.3s'
             }}
           >
-            <Building2 size={16} /> List
+            <Building size={16} /> List
           </button>
           <button 
             onClick={() => setViewMode('map')}

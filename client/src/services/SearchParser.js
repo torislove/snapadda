@@ -170,20 +170,33 @@ export const parseSmartSearch = (query) => {
 export const getFuzzySuggestions = (input) => {
   if (!input || input.length < 2 || locations.length === 0) return [];
   const q = input.toLowerCase();
+  const isPincode = /^\d+$/.test(q);
   
   return locations
     .map(loc => {
       const name = loc.name.toLowerCase();
+      const pincode = loc.pincode ? loc.pincode.toLowerCase() : '';
       let score = 100;
-      if (name.startsWith(q)) score = 0;
-      else if (name.includes(q)) score = 5;
-      else {
+      
+      if (isPincode && pincode.startsWith(q)) {
+        score = 0; // Highest priority for pincode prefix
+      } else if (name.startsWith(q)) {
+        score = 1; // High priority for name prefix match
+      } else if (name.includes(q) || pincode.includes(q)) {
+        score = 5; // Secondary priority: Contains the query
+      } else {
+        // Tertiary: Fuzzy match for typos
         const dist = getLevenshteinDistance(q, name.substring(0, q.length + 1));
         if (dist <= 1) score = 10;
       }
       return { ...loc, score };
     })
     .filter(loc => loc.score <= 10)
-    .sort((a, b) => a.score - b.score)
-    .slice(0, 8);
+    .sort((a, b) => {
+      if (a.score !== b.score) return a.score - b.score;
+      return a.name.length - b.name.length; // Tie-break: shorter names first
+    })
+    .slice(0, 10);
 };
+
+

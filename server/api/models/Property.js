@@ -11,7 +11,12 @@ const propertySchema = new mongoose.Schema({
   location: { type: String, default: '' },
   address: { type: String, default: '' },
   district: { type: String, default: '' }, // AP district
+  mandal: { type: String, default: '' },
+  village: { type: String, default: '' },
+  pincode: { type: String, default: '' },
+  state: { type: String, default: 'Andhra Pradesh' },
   cityId: { type: mongoose.Schema.Types.ObjectId, ref: 'City' },
+
   googleMapsLink: { type: String, default: '' },
   
   type: { 

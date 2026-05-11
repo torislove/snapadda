@@ -45,6 +45,7 @@
     "tar": "^7.5.13",
     "node-domexception": "^2.0.2",
     "protobufjs": "^8.0.1",
-    "basic-ftp": "^5.3.0"
+    "basic-ftp": "^5.3.0",
+    "uuid": "^11.0.0"
   }
 }
