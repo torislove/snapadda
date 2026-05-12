@@ -6,7 +6,7 @@ import { getCached, setCached, invalidateCache, buildCacheKey } from '../cache/p
 import { cleanPropertyData } from '../utils/propertyCleaner.js';
 
 // Lean projection for card list views (avoids fetching 50+ unused fields)
-const CARD_FIELDS = 'title price priceDisplay pricePerUnit pricePerAcre totalAcres location district type purpose subType images image status isVerified isFeatured bhk beds baths areaSize measurementUnit facing furnishing constructionStatus approvalAuthority isGated vastuCompliant listerType propertyCode createdAt likeCount';
+const CARD_FIELDS = 'title price priceDisplay pricePerUnit pricePerAcre totalAcres location district type purpose subType images image status isVerified isFeatured bhk beds baths areaSize measurementUnit facing furnishing constructionStatus approvalAuthority isGated vastuCompliant listerType propertyCode googleMapsLink createdAt likeCount';
 
 // Helper to sync to Firebase
 const syncToFirebase = async (property) => {
@@ -48,6 +48,7 @@ const syncToFirebase = async (property) => {
       listerType: property.listerType || 'Individual Owner',
       amenities: property.amenities || [],
       customFeatures: property.customFeatures || [],
+      googleMapsLink: property.googleMapsLink || '',
       updatedAt: new Date().toISOString()
     };
 
@@ -456,6 +457,7 @@ export const publicSubmitProperty = async (req, res) => {
     const propertyData = cleanPropertyData(req.body, true);
     
     const property = new Property(propertyData);
+    property.propertyCode = `SNA-${property._id.toString().slice(-5).toUpperCase()}`;
     await property.save();
     
     // Invalidate cache since a new (though pending) record exists
@@ -464,7 +466,7 @@ export const publicSubmitProperty = async (req, res) => {
     res.status(201).json({
       status: 'success',
       message: 'Property submitted successfully. It will be live after admin review.',
-      data: { id: property._id }
+      data: { id: property._id, propertyCode: property.propertyCode }
     });
   } catch (err) {
     console.error('PUBLIC_SUBMIT_ERROR:', err);

@@ -112,35 +112,8 @@ function resolveCoords(property) {
     if (!isNaN(lat) && !isNaN(lng)) return [lat, lng];
   }
 
-  // 4. Fuzzy match against known AP locations
-  const searchText = [
-    property.location || '',
-    property.district || '',
-    property.address || '',
-    property.title || '',
-  ].join(' ').toLowerCase();
-
-  let bestMatch = null;
-  let bestScore = 0;
-
-  for (const city of AP_COORDS) {
-    for (const alias of city.aliases) {
-      if (searchText.includes(alias)) {
-        if (alias.length > bestScore) {
-          bestScore = alias.length;
-          bestMatch = city;
-        }
-      }
-    }
-  }
-
-  if (bestMatch) {
-    // Jitter to avoid stacking at exact same coord
-    const jLat = (Math.random() - 0.5) * 0.012;
-    const jLng = (Math.random() - 0.5) * 0.012;
-    return [bestMatch.lat + jLat, bestMatch.lng + jLng];
-  }
-
+  // 4. STOP: User requested NO address fallback or fuzzy search.
+  // If we reach here, we don't have a reliable link or coords.
   return null;
 }
 

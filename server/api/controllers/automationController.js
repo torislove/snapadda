@@ -57,32 +57,11 @@ export const sendTestWhatsApp = async (req, res) => {
 };
 
 export const registerToken = async (req, res) => {
-  try {
-    const { token, deviceInfo } = req.body;
-    if (!token) return res.status(400).json({ status: 'fail', message: 'Token required' });
-
-    await NotificationToken.findOneAndUpdate(
-      { token },
-      { token, deviceInfo, lastUsed: new Date() },
-      { upsert: true, new: true }
-    );
-
-    res.json({ status: 'success', message: 'Token registered' });
-  } catch (err) {
-    res.status(500).json({ status: 'error', message: err.message });
-  }
+  res.json({ status: 'success', message: 'FCM Decommissioned' });
 };
 
 export const sendPushNotification = async (req, res) => {
-  try {
-    const { title, body, imageUrl, link } = req.body;
-    if (!title || !body) return res.status(400).json({ status: 'fail', message: 'Title and body required' });
-
-    const result = await automationService.sendPushNotification({ title, body, imageUrl, link });
-    res.json({ status: result.success ? 'success' : 'error', data: result });
-  } catch (err) {
-    res.status(500).json({ status: 'error', message: err.message });
-  }
+  res.status(410).json({ status: 'error', message: 'Push Notifications Decommissioned' });
 };
 
 /**

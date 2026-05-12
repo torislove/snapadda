@@ -10,8 +10,6 @@ const isFunctions = !!process.env.FUNCTIONS_EMULATOR || !!process.env.FIREBASE_C
 const isLocal = !isFunctions && (process.env.npm_lifecycle_event === 'start' || process.env.LOCAL_DEV === 'true');
 const hasCredentials = !!process.env.GOOGLE_APPLICATION_CREDENTIALS || !!process.env.FIREBASE_SERVICE_ACCOUNT;
 
-let fcm;
-
 if (process.env.DB_FIREBASE_URL) {
   try {
     // on production/GCP, applicationDefault() works automatically. 
@@ -26,8 +24,7 @@ if (process.env.DB_FIREBASE_URL) {
         });
       }
       db = admin.database();
-      fcm = admin.messaging();
-      console.log("✅ Firebase Admin + FCM initialized");
+      console.log("✅ Firebase Admin initialized (FCM removed)");
     }
   } catch (err) {
     console.error("❌ Firebase Admin init failed:", err.message);
@@ -36,4 +33,4 @@ if (process.env.DB_FIREBASE_URL) {
   console.warn("⚠️ DB_FIREBASE_URL missing. Real-time sync disabled.");
 }
 
-export { db, fAdmin, fcm };
+export { db, fAdmin };

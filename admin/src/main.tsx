@@ -2,8 +2,10 @@ import { StrictMode } from 'react'
 import { registerSW } from 'virtual:pwa-register'
 
 // Register Service Worker for Instant Admin PWA Loading
-registerSW({
-  onNeedRefresh() {},
+const updateSW = registerSW({
+  onNeedRefresh() {
+    updateSW(true);
+  },
   onOfflineReady() {},
 })
 import { createRoot } from 'react-dom/client'

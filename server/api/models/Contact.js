@@ -8,6 +8,19 @@ const contactSchema = new mongoose.Schema({
   company: { type: String, default: '' },
   location:{ type: String, default: '' },
   district:{ type: String, default: '' },
+  
+  // Specific requirements
+  budget:          { type: String, default: '' },
+  propertyType:    { type: String, default: '' },
+  preferredLocation: { type: String, default: '' },
+
+  // Communication History
+  communicationHistory: [{
+    channel: { type: String, enum: ['WhatsApp', 'Email', 'Both'] },
+    propertiesSent: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Property' }],
+    sentAt: { type: Date, default: Date.now },
+    sentBy: { type: String, default: 'Admin' }
+  }],
 
   // Notes thread (append-only activity log)
   notes: [{

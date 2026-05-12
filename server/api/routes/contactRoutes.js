@@ -1,6 +1,10 @@
 import express from 'express';
 import Contact from '../models/Contact.js';
 import multer from 'multer';
+import Property from '../models/Property.js';
+import { formatWhatsAppMessage } from '../utils/whatsappFormatter.js';
+import { generatePropertyEmailHTML } from '../utils/emailTemplates.js';
+import nodemailer from 'nodemailer';
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
@@ -183,15 +187,70 @@ router.put('/:id/star', async (req, res) => {
   }
 });
 
-// POST log WhatsApp message sent
-router.post('/:id/whatsapp', async (req, res) => {
+
+// POST send multiple properties via WhatsApp and/or Email
+router.post('/:id/broadcast', async (req, res) => {
   try {
+    const { channel, propertyIds } = req.body; // channel: 'WhatsApp', 'Email', 'Both'
     const contact = await Contact.findById(req.params.id);
     if (!contact) return res.status(404).json({ message: 'Contact not found' });
-    contact.whatsappSent.count = (contact.whatsappSent.count || 0) + 1;
-    contact.whatsappSent.lastSent = new Date();
+
+    let properties = [];
+    if (propertyIds && propertyIds.length > 0) {
+      properties = await Property.find({ _id: { $in: propertyIds } });
+    }
+
+    let whatsappText = '';
+    if (channel === 'WhatsApp' || channel === 'Both') {
+      whatsappText = formatWhatsAppMessage(contact.name, properties);
+      contact.whatsappSent.count = (contact.whatsappSent.count || 0) + 1;
+      contact.whatsappSent.lastSent = new Date();
+    }
+
+    if ((channel === 'Email' || channel === 'Both') && contact.email) {
+      const html = generatePropertyEmailHTML(contact.name, properties);
+      // Setup nodemailer
+      const transporter = nodemailer.createTransport({
+        service: 'gmail', // or configured SMTP
+        auth: {
+          user: process.env.SMTP_USER || 'hello@snapadda.com',
+          pass: process.env.SMTP_PASS || 'password',
+        }
+      });
+      
+      try {
+        await transporter.sendMail({
+          from: '"SnapAdda Real Estate" <hello@snapadda.com>',
+          to: contact.email,
+          subject: 'Exclusive Property Matches for You 🏠',
+          html: html,
+        });
+      } catch (e) {
+        console.error('Email sending failed:', e.message);
+        // We log the error but don't fail the whole request since WhatsApp might have worked
+      }
+    }
+
+    // Log the communication
+    contact.communicationHistory.push({
+      channel: channel,
+      propertiesSent: propertyIds || [],
+      sentAt: new Date(),
+      sentBy: 'Admin'
+    });
+    
+    // Also add a note so it shows up in the normal notes thread
+    const noteText = `Broadcasted ${properties.length} properties via ${channel}.`;
+    contact.notes.push({ text: noteText, addedBy: 'System', addedAt: new Date() });
+    contact.lastContactedAt = new Date();
+
     await contact.save();
-    res.json({ status: 'success', data: contact });
+    
+    res.json({ 
+      status: 'success', 
+      whatsappText: whatsappText, // Send back so client can open wa.me
+      message: 'Broadcast logged successfully' 
+    });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

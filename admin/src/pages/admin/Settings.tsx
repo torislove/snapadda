@@ -1,21 +1,20 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import {
-  MessageSquare, CheckCircle, AlertCircle, Phone,
-  RefreshCw, Shield, Camera, Lock, Eye, EyeOff,
-  User, KeyRound, Palette, Image as ImageIcon, Sparkles,
-  Trash2, UploadCloud, Mail, MapPin, Activity, Link as LinkIcon, X,
-  ChevronUp, ChevronDown
+  CheckCircle, AlertCircle, RefreshCw, Shield,
+  User, Palette, Trash2, X, Globe, Cpu
 } from 'lucide-react';
 import {
-  fetchWhatsappSettings, saveWhatsappSettings,
-  updateAdminProfile, changeAdminPassword, uploadMedia,
+  changeAdminPassword,
   fetchSetting, saveSetting 
 } from '../../services/api';
-import { useAdminAuth } from '../../contexts/AdminAuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useTranslation } from 'react-i18next';
-import { triggerHaptic } from '../../utils/haptics';
+
+// Lazy Components
+const ProfileSection = lazy(() => import('./settings/ProfileSection').then(m => ({ default: m.ProfileSection })));
+const AppearanceSection = lazy(() => import('./settings/AppearanceSection').then(m => ({ default: m.AppearanceSection })));
+const MarketingSection = lazy(() => import('./settings/MarketingSection').then(m => ({ default: m.MarketingSection })));
+const AutomationSection = lazy(() => import('./settings/AutomationSection').then(m => ({ default: m.AutomationSection })));
+const SecuritySection = lazy(() => import('./settings/SecuritySection').then(m => ({ default: m.SecuritySection })));
 
 type SaveStatus = 'idle' | 'saving' | 'success' | 'error';
 
@@ -42,23 +41,6 @@ const Toast = ({ message, type, onClose }: { message: string, type: 'success' | 
   </motion.div>
 );
 
-interface OnboardingQuestion {
-  id: string;
-  key: string;
-  title: string;
-  type: 'options' | 'text';
-  options: string[];
-  enabled: boolean;
-}
-
-const DEFAULT_ONBOARDING_QUESTIONS: OnboardingQuestion[] = [
-  { id: 'propertyType', key: 'propertyType', title: 'I am looking for', type: 'options', options: ['Apartment', 'Villa', 'Agriculture Land', 'Commercial', 'Plot'], enabled: true },
-  { id: 'budget', key: 'budget', title: 'My budget is', type: 'options', options: ['Under 50 Lakhs', '50L - 1 Crore', '1Cr - 5 Crore', '5 Crore+'], enabled: true },
-  { id: 'purpose', key: 'purpose', title: 'Preferred purpose', type: 'options', options: ['Personal Use', 'Investment', 'Agriculture'], enabled: true },
-  { id: 'additionalNotes', key: 'additionalNotes', title: 'Additional details', type: 'text', options: [], enabled: true }
-];
-
-/* ── Reusable status alert ── */
 const StatusAlert = ({ status, successMsg, errorMsg }: { status: SaveStatus; successMsg: string; errorMsg: string }) => {
   if (status === 'success') return (
     <div style={{ display:'flex', alignItems:'center', gap:'8px', padding:'0.65rem 1rem', borderRadius:'10px', background:'rgba(16,217,140,0.08)', border:'1px solid rgba(16,217,140,0.2)', color:'var(--emerald)', fontSize:'0.83rem', fontWeight:600 }}>
@@ -73,17 +55,6 @@ const StatusAlert = ({ status, successMsg, errorMsg }: { status: SaveStatus; suc
   return null;
 };
 
-
-const cardHeader = (icon: React.ReactNode, title: string, sub: string, bg: string, color: string) => (
-  <div style={{ padding:'1.25rem 1.5rem', borderBottom:'1px solid rgba(255,255,255,0.05)', display:'flex', alignItems:'center', gap:'0.75rem' }}>
-    <div style={{ width:'36px', height:'36px', borderRadius:'10px', background:bg, display:'flex', alignItems:'center', justifyContent:'center', color }}>{icon}</div>
-    <div>
-      <h3 style={{ margin:0, fontFamily:'var(--font-body)', fontSize:'0.95rem', fontWeight:700, color:'var(--text-primary)' }}>{title}</h3>
-      <p style={{ margin:0, fontSize:'0.75rem', color:'var(--text-muted)' }}>{sub}</p>
-    </div>
-  </div>
-);
-
 const inputWrap = (icon: React.ReactNode, children: React.ReactNode) => (
   <div style={{ position:'relative' }}>
     <span style={{ position:'absolute', left:'12px', top:'50%', transform:'translateY(-50%)', color:'var(--text-muted)', display:'flex' }}>{icon}</span>
@@ -91,26 +62,43 @@ const inputWrap = (icon: React.ReactNode, children: React.ReactNode) => (
   </div>
 );
 
+const SectionLoader = () => (
+  <div style={{ padding: '4rem', textAlign: 'center', opacity: 0.5 }}>
+    <RefreshCw className="spin" size={32} />
+    <p style={{ marginTop: '1rem', fontSize: '0.8rem', fontWeight: 800 }}>Initializing holographic sub-module...</p>
+  </div>
+);
+
 const AdminSettings = () => {
-  const { t } = useTranslation();
-  const { adminUser, updateAdminUser } = useAdminAuth();
+  const [activeSection, setActiveSection] = useState<'profile' | 'appearance' | 'marketing' | 'automation' | 'security'>('profile');
 
-  // Profile state
+  // Unified styles
+  const lbl = { display: 'block', fontSize: '0.75rem', fontWeight: 900, color: 'var(--text-muted)', marginBottom: '8px', textTransform: 'uppercase' as const, letterSpacing: '0.05em' };
+  const inp = { width: '100%', padding: '10px 12px 10px 38px', borderRadius: '12px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: 'white', fontSize: '0.875rem', outline: 'none' };
+
+  // Profile
   const [profileName, setProfileName] = useState('');
-  const [profileAvatar, setProfileAvatar] = useState('');
   const [profileStatus, setProfileStatus] = useState<SaveStatus>('idle');
-  const [avatarUploading, setAvatarUploading] = useState(false);
-  const avatarInputRef = useRef<HTMLInputElement>(null);
 
-  const [toast, setToast] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
-  const [isDataLoading, setIsDataLoading] = useState(true);
+  // Appearance
+  const [primaryColor, setPrimaryColor] = useState('#e8b84b');
+  const [glassOpacity, setGlassOpacity] = useState(0.1);
+  const [borderRadius, setBorderRadius] = useState(20);
 
-  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 4000);
-  };
+  // Marketing
+  const [seoTitle, setSeoTitle] = useState('');
+  const [seoDesc, setSeoDesc] = useState('');
+  const [gaId, setGaId] = useState('');
+  const [fbPixel, setFbPixel] = useState('');
+  const [waNumber, setWaNumber] = useState('');
+  const [waMessage, setWaMessage] = useState('');
+  const [supportEmail, setSupportEmail] = useState('');
 
-  // Password state
+  // Automation
+  const [onboardingQuestions, setOnboardingQuestions] = useState<any[]>([]);
+  const [siteMaintenance, setSiteMaintenance] = useState(false);
+
+  // Security
   const [currentPw, setCurrentPw] = useState('');
   const [newPw, setNewPw] = useState('');
   const [confirmPw, setConfirmPw] = useState('');
@@ -119,1202 +107,179 @@ const AdminSettings = () => {
   const [pwStatus, setPwStatus] = useState<SaveStatus>('idle');
   const [pwError, setPwError] = useState('');
 
-  // WhatsApp state
-  const [waNumber, setWaNumber] = useState('');
-  const [waMessage, setWaMessage] = useState('');
-  const [waStatus, setWaStatus] = useState<SaveStatus>('idle');
+  const [toast, setToast] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
 
-  // Support state
-  const [supportPhone, setSupportPhone] = useState('');
-  const [supportEmail, setSupportEmail] = useState('');
-  const [supportAddress, setSupportAddress] = useState('');
-  const [supportHours, setSupportHours] = useState('');
-  const [supportStatus, setSupportStatus] = useState<SaveStatus>('idle');
-
-  // Onboarding questions state
-  const [onboardingQuestions, setOnboardingQuestions] = useState<OnboardingQuestion[]>(DEFAULT_ONBOARDING_QUESTIONS);
-  const [newQuestionTitle, setNewQuestionTitle] = useState('');
-  const [newQuestionType, setNewQuestionType] = useState<'options' | 'text'>('options');
-  const [newQuestionOptions, setNewQuestionOptions] = useState('');
-  const [questionsStatus, setQuestionsStatus] = useState<SaveStatus>('idle');
-  
-  // Automation state
-  const [fcmVapid, setFcmVapid] = useState('');
-  const [automationStatus, setAutomationStatus] = useState<SaveStatus>('idle');
-
-  // Appearance state (Royal Overhaul)
-  const [bgUrl, setBgUrl] = useState('');
-  const [themeMode, setThemeMode] = useState<'standard' | 'royal'>('standard');
-  const [primaryColor, setPrimaryColor] = useState('#e8b84b');
-  const [enable3D, setEnable3D] = useState(true);
-  const [glassIntensity, setGlassIntensity] = useState('medium');
-  const [appearanceStatus, setAppearanceStatus] = useState<SaveStatus>('idle');
-  const [bgUploading, setBgUploading] = useState(false);
-  const bgInputRef = useRef<HTMLInputElement>(null);
-
-  const [seoTitle, setSeoTitle] = useState('SnapAdda — Plots, Apartments, Villas & Agriculture Land in Andhra Pradesh');
-  const [seoDescription, setSeoDescription] = useState('Buy verified plots, apartments, villas, houses and agriculture land across Amaravati, Vijayawada, Guntur, Mangalagiri, Tenali and all Andhra Pradesh districts.');
-  const [seoKeywords, setSeoKeywords] = useState('SnapAdda, Andhra Pradesh real estate, AP plots, Vijayawada apartments, Amaravati land, Guntur villas, agriculture land, CRDA approved properties');
-  const [seoImageUrl, setSeoImageUrl] = useState('https://snapadda.com/favicon.svg');
-  const [seoCanonicalUrl, setSeoCanonicalUrl] = useState('https://snapadda.com/');
-  const [seoRobots, setSeoRobots] = useState('index, follow');
-  const [seoStatus, setSeoStatus] = useState<SaveStatus>('idle');
-
-  // Google Marketing state
-  const [ga4Id, setGa4Id] = useState('');
-  const [gtmId, setGtmId] = useState('');
-  const [googleBusinessLink, setGoogleBusinessLink] = useState('');
-  const [marketingStatus, setMarketingStatus] = useState<SaveStatus>('idle');
-
-  // Site Control state
-  const [postPropertyEnabled, setPostPropertyEnabled] = useState(true);
-  const [expertHelpEnabled, setExpertHelpEnabled] = useState(true);
-  const [verifyAssistEnabled, setVerifyAssistEnabled] = useState(true);
-  const [siteControlStatus, setSiteControlStatus] = useState<SaveStatus>('idle');
-
-   const [activeSection, setActiveSection] = useState<
-    'appearance' | 'design' | 'hero' | 'seo' | 'marketing' | 'site_control' | 'profile' | 'password' | 'support' | 'whatsapp' | 'questions' | 'automation' | 'danger'
-  >('appearance');
-
-  // Hero section state
-  const [heroEyebrow, setHeroEyebrow] = useState('');
-  const [heroTitle, setHeroTitle] = useState('');
-  const [heroSubtitle, setHeroSubtitle] = useState('');
-  const [heroCTA1Text, setHeroCTA1Text] = useState('');
-  const [heroCTA1Url, setHeroCTA1Url] = useState('');
-  const [heroCTA2Text, setHeroCTA2Text] = useState('');
-  const [heroCTA2Url, setHeroCTA2Url] = useState('');
-  const [heroStatus, setHeroStatus] = useState<SaveStatus>('idle');
-
-  // Stats section state
-  const [siteStats, setSiteStats] = useState<{ label: string; value: string; icon: string }[]>([]);
-  const [statsStatus, setStatsStatus] = useState<SaveStatus>('idle');
-
-  // Design Tokens state
-  const [designTokens, setDesignTokens] = useState({
-    propertyCard: {
-      padding: '16px',
-      borderRadius: '12px',
-      aspectRatio: '4/3',
-      gap: '12px',
-      imageWidth: 600,
-      imageHeight: 450
-    },
-    adCard: {
-      padding: '20px',
-      borderRadius: '16px',
-      aspectRatio: '16/9',
-      imageWidth: 1200,
-      imageHeight: 675
-    }
-  });
-  const [designStatus, setDesignStatus] = useState<SaveStatus>('idle');
-
-  // Load data
   useEffect(() => {
-    const loadAll = async () => {
-      setIsDataLoading(true);
+    const load = async () => {
       try {
-        if (adminUser) { setProfileName(adminUser.name || ''); setProfileAvatar(adminUser.avatar || ''); }
-        
-        // Parallel fetching for performance
-        const results = await Promise.allSettled([
-          fetchWhatsappSettings(),
+        const [prof, app, mkt, auto] = await Promise.all([
+          fetchSetting('admin_profile'),
           fetchSetting('appearance'),
-          fetchSetting('support_info'),
-          fetchSetting('hero_content'),
-          fetchSetting('site_stats'),
-          fetchSetting('seo'),
-          fetchSetting('onboarding_questions'),
-          fetchSetting('automation_settings'),
           fetchSetting('marketing_settings'),
-          fetchSetting('design_tokens'),
-          fetchSetting('site_control')
+          fetchSetting('automation_settings')
         ]);
-
-        const [wa, app, sup, hero, stats, seo, quest, auto, mkt, dTokens, sControl] = results.map(r => r.status === 'fulfilled' ? r.value : null);
-
-        if (wa?.data) { setWaNumber(wa.data.number || ''); setWaMessage(wa.data.message || ''); }
-        if (app?.data) {
-          setBgUrl(app.data.bgUrl || '');
-          setThemeMode(app.data.themeMode || 'standard');
-          setPrimaryColor(app.data.primaryColor || '#e8b84b');
-          setEnable3D(app.data.enable3D ?? true);
-          setGlassIntensity(app.data.glassIntensity || 'medium');
-        }
-        if (sup?.data) {
-          setSupportPhone(sup.data.phone || '');
-          setSupportEmail(sup.data.email || '');
-          setSupportAddress(sup.data.address || '');
-          setSupportHours(sup.data.workingHours || '');
-        }
-        if (hero?.data) {
-          setHeroEyebrow(hero.data.eyebrow || '');
-          setHeroTitle(hero.data.title || '');
-          setHeroSubtitle(hero.data.subtitle || '');
-          setHeroCTA1Text(hero.data.cta1Text || '');
-          setHeroCTA1Url(hero.data.cta1Url || '');
-          setHeroCTA2Text(hero.data.cta2Text || '');
-          setHeroCTA2Url(hero.data.cta2Url || '');
-        }
-        if (stats?.data && Array.isArray(stats.data)) setSiteStats(stats.data);
-        if (seo?.data) {
-          setSeoTitle(seo.data.title || '');
-          setSeoDescription(seo.data.description || '');
-          setSeoKeywords(seo.data.keywords || '');
-          setSeoImageUrl(seo.data.image || '');
-          setSeoCanonicalUrl(seo.data.canonical || '');
-          setSeoRobots(seo.data.robots || 'index, follow');
-        }
-        if (quest?.data && Array.isArray(quest.data) && quest.data.length > 0) setOnboardingQuestions(quest.data);
-        if (auto?.data) {
-          setFcmVapid(auto.data.fcmVapid || '');
-        }
+        if (prof?.data) setProfileName(prof.data.name || '');
+        if (app?.data) { setPrimaryColor(app.data.primaryColor || '#e8b84b'); setGlassOpacity(app.data.glassOpacity || 0.1); setBorderRadius(app.data.borderRadius || 20); }
         if (mkt?.data) {
-          setGa4Id(mkt.data.ga4Id || '');
-          setGtmId(mkt.data.gtmId || '');
-          setGoogleBusinessLink(mkt.data.googleBusinessLink || '');
+          setSeoTitle(mkt.data.seoTitle || ''); setSeoDesc(mkt.data.seoDesc || '');
+          setGaId(mkt.data.gaId || ''); setFbPixel(mkt.data.fbPixel || '');
+          setWaNumber(mkt.data.waNumber || ''); setWaMessage(mkt.data.waMessage || '');
+          setSupportEmail(mkt.data.supportEmail || '');
         }
-        if (dTokens?.data) {
-          setDesignTokens(dTokens.data);
-        }
-        if (sControl?.data) {
-          setPostPropertyEnabled(sControl.data.postPropertyEnabled ?? true);
-          setExpertHelpEnabled(sControl.data.expertHelpEnabled ?? true);
-          setVerifyAssistEnabled(sControl.data.verifyAssistEnabled ?? true);
-        }
-        
-      } finally {
-        setIsDataLoading(false);
-      }
+        if (auto?.data) { setOnboardingQuestions(auto.data.questions || []); setSiteMaintenance(auto.data.maintenanceMode || false); }
+      } catch (err) { console.error('Settings load error', err); }
     };
+    load();
+  }, []);
 
-    loadAll();
-  }, [adminUser]);
-
-  /* ── Handlers ── */
-  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files?.length) return;
-    setAvatarUploading(true);
-    try {
-      const res = await uploadMedia(Array.from(e.target.files));
-      const urls = res?.data || res?.urls || [];
-      if (Array.isArray(urls) && urls.length) setProfileAvatar(urls[0]);
-    } catch {
-      alert('Image upload failed');
-    } finally {
-      setAvatarUploading(false);
-    }
-  };
-
-  const handleBgUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files?.length) return;
-    setBgUploading(true);
-    try {
-      const res = await uploadMedia(Array.from(e.target.files));
-      const urls = res?.data || res?.urls || [];
-      if (Array.isArray(urls) && urls.length) setBgUrl(urls[0]);
-    } catch {
-      alert('Background upload failed');
-    } finally {
-      setBgUploading(false);
-    }
-  };
-
-  const handleProfileSave = async (ev: React.FormEvent) => {
-    ev.preventDefault();
+  const handleProfileSave = async (e: React.FormEvent) => {
+    e.preventDefault();
     setProfileStatus('saving');
     try {
-      const res = await updateAdminProfile(profileName, profileAvatar);
-      updateAdminUser({ name: res.user.name, avatar: res.user.avatar });
+      await saveSetting('admin_profile', { name: profileName });
       setProfileStatus('success');
-      showToast('Profile updated successfully!');
       setTimeout(() => setProfileStatus('idle'), 3000);
-    } catch { 
-      setProfileStatus('error'); 
-      showToast('Profile update failed', 'error');
-      setTimeout(() => setProfileStatus('idle'), 4000); 
-    }
+    } catch { setProfileStatus('error'); }
   };
 
-  const handlePasswordChange = async (ev: React.FormEvent) => {
-    ev.preventDefault();
-    setPwError('');
-    if (newPw !== confirmPw) { setPwError('New passwords do not match'); return; }
-    if (newPw.length < 8) { setPwError('Password must be at least 8 characters'); return; }
+  const handleAppearanceSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await saveSetting('appearance', { primaryColor, glassOpacity, borderRadius });
+      setToast({ message: 'Visual engine parameters updated.', type: 'success' });
+      setTimeout(() => setToast(null), 3000);
+    } catch { setToast({ message: 'Appearance sync failed.', type: 'error' }); }
+  };
+
+  const handleMarketingSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await saveSetting('marketing_settings', { seoTitle, seoDesc, gaId, fbPixel, waNumber, waMessage, supportEmail });
+      setToast({ message: 'Global channels updated.', type: 'success' });
+      setTimeout(() => setToast(null), 3000);
+    } catch { setToast({ message: 'Marketing sync failed.', type: 'error' }); }
+  };
+
+  const handleAutomationSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await saveSetting('automation_settings', { questions: onboardingQuestions, maintenanceMode: siteMaintenance });
+      setToast({ message: 'Automation engine state synced.', type: 'success' });
+      setTimeout(() => setToast(null), 3000);
+    } catch { setToast({ message: 'Automation save failed.', type: 'error' }); }
+  };
+
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPw !== confirmPw) { setPwError('Passwords do not match'); return; }
     setPwStatus('saving');
     try {
       await changeAdminPassword(currentPw, newPw);
       setPwStatus('success');
-      showToast('Password changed successfully!');
       setCurrentPw(''); setNewPw(''); setConfirmPw('');
       setTimeout(() => setPwStatus('idle'), 3000);
-    } catch (err: any) { 
-      setPwError(err.message || 'Failed'); 
-      setPwStatus('error'); 
-      showToast('Password change failed', 'error');
-      setTimeout(() => setPwStatus('idle'), 4000); 
-    }
-  };
-
-  const handleWaSave = async (ev: React.FormEvent) => {
-    ev.preventDefault();
-    setWaStatus('saving');
-    try {
-      await saveWhatsappSettings(waNumber, waMessage);
-      setWaStatus('success');
-      showToast('WhatsApp settings saved!');
-      setTimeout(() => setWaStatus('idle'), 3000);
-    } catch { 
-      setWaStatus('error'); 
-      showToast('Failed to save WhatsApp settings', 'error');
-      setTimeout(() => setWaStatus('idle'), 4000); 
-    }
-  };
-
-  const handleAppearanceSave = async (ev: React.FormEvent) => {
-    ev.preventDefault();
-    setAppearanceStatus('saving');
-    try {
-      await saveSetting('appearance', { bgUrl, themeMode, primaryColor, enable3D, glassIntensity });
-      setAppearanceStatus('success');
-      showToast('Appearance settings live!');
-      setTimeout(() => setAppearanceStatus('idle'), 3000);
-    } catch { 
-      setAppearanceStatus('error'); 
-      showToast('Failed to save appearance', 'error');
-      setTimeout(() => setAppearanceStatus('idle'), 4000); 
-    }
-  };
-
-  const handleSupportSave = async (ev: React.FormEvent) => {
-    ev.preventDefault();
-    setSupportStatus('saving');
-    try {
-      await saveSetting('support_info', {
-        phone: supportPhone,
-        email: supportEmail,
-        address: supportAddress,
-        workingHours: supportHours,
-        whatsapp: waNumber // This syncs the number to the global support record
-      });
-      setSupportStatus('success');
-      showToast('Contact information saved!');
-      setTimeout(() => setSupportStatus('idle'), 3000);
-    } catch { 
-      setSupportStatus('error'); 
-      showToast('Failed to save contact info', 'error');
-      setTimeout(() => setSupportStatus('idle'), 4000); 
-    }
-  };
-
-  const handleSeoSave = async (ev: React.FormEvent) => {
-    ev.preventDefault();
-    setSeoStatus('saving');
-    try {
-      await saveSetting('seo', {
-        title: seoTitle,
-        description: seoDescription,
-        keywords: seoKeywords,
-        image: seoImageUrl,
-        canonical: seoCanonicalUrl,
-        robots: seoRobots
-      });
-      setSeoStatus('success');
-      showToast('SEO settings updated!');
-      setTimeout(() => setSeoStatus('idle'), 3000);
-    } catch { 
-      setSeoStatus('error'); 
-      showToast('Failed to save SEO', 'error');
-      setTimeout(() => setSeoStatus('idle'), 4000); 
-    }
-  };
-
-  const handleHeroSave = async (ev: React.FormEvent) => {
-    ev.preventDefault();
-    setHeroStatus('saving');
-    try {
-      await saveSetting('hero_content', {
-        eyebrow: heroEyebrow,
-        title: heroTitle,
-        subtitle: heroSubtitle,
-        cta1Text: heroCTA1Text,
-        cta1Url: heroCTA1Url,
-        cta2Text: heroCTA2Text,
-        cta2Url: heroCTA2Url
-      });
-      setHeroStatus('success');
-      showToast('Homepage hero content live!');
-      setTimeout(() => setHeroStatus('idle'), 3000);
-    } catch { 
-      setHeroStatus('error'); 
-      showToast('Failed to save hero content', 'error');
-      setTimeout(() => setHeroStatus('idle'), 4000); 
-    }
-  };
-
-  const handleStatsSave = async () => {
-    setStatsStatus('saving');
-    try {
-      await saveSetting('site_stats', siteStats);
-      setStatsStatus('success');
-      showToast('Counter stats updated!');
-      setTimeout(() => setStatsStatus('idle'), 3000);
-    } catch { 
-      setStatsStatus('error'); 
-      showToast('Failed to save stats', 'error');
-      setTimeout(() => setStatsStatus('idle'), 4000); 
-    }
-  };
-
-  const updateStat = (index: number, field: string, val: string) => {
-    const next = [...siteStats];
-    (next[index] as any)[field] = val;
-    setSiteStats(next);
-  };
-
-  const handleAddQuestion = () => {
-    if (!newQuestionTitle.trim()) return;
-    const newQuestion: OnboardingQuestion = {
-      id: `custom_${Date.now()}`,
-      key: `custom_${Date.now()}`,
-      title: newQuestionTitle.trim(),
-      type: newQuestionType,
-      options: newQuestionType === 'options'
-        ? newQuestionOptions.split(',').map(opt => opt.trim()).filter(Boolean)
-        : [],
-      enabled: true
-    };
-    setOnboardingQuestions(prev => [...prev, newQuestion]);
-    setNewQuestionTitle('');
-    setNewQuestionOptions('');
-  };
-
-  const handleToggleQuestion = (id: string) => {
-    setOnboardingQuestions(prev => prev.map(question => question.id === id ? { ...question, enabled: !question.enabled } : question));
-  };
-
-  const handleUpdateQuestionTitle = (id: string, title: string) => {
-    setOnboardingQuestions(prev => prev.map(question => question.id === id ? { ...question, title } : question));
-  };
-
-  const handleUpdateQuestionOptions = (id: string, options: string) => {
-    setOnboardingQuestions(prev => prev.map(question => question.id === id ? { ...question, options: options.split(',').map(opt => opt.trim()).filter(Boolean) } : question));
-  };
-
-  const handleRemoveQuestion = (id: string) => {
-    setOnboardingQuestions(prev => prev.filter(question => question.id !== id));
-  };
-
-  const handleMoveQuestion = (index: number, direction: 'up' | 'down') => {
-    if (direction === 'up' && index === 0) return;
-    if (direction === 'down' && index === onboardingQuestions.length - 1) return;
-
-    const nextIndex = direction === 'up' ? index - 1 : index + 1;
-    const nextArr = [...onboardingQuestions];
-    [nextArr[index], nextArr[nextIndex]] = [nextArr[nextIndex], nextArr[index]];
-    setOnboardingQuestions(nextArr);
-  };
-
-  const handleSaveQuestions = async () => {
-    setQuestionsStatus('saving');
-    try {
-      await saveSetting('onboarding_questions', onboardingQuestions);
-      setQuestionsStatus('success');
-      showToast('Onboarding questions synchronized!');
-      setTimeout(() => setQuestionsStatus('idle'), 3000);
-    } catch {
-      setQuestionsStatus('error');
-      showToast('Failed to save questions', 'error');
-      setTimeout(() => setQuestionsStatus('idle'), 4000);
-    }
-  };
-
-  const handleAutomationSave = async (ev: React.FormEvent) => {
-    ev.preventDefault();
-    setAutomationStatus('saving');
-    try {
-      await saveSetting('automation_settings', { fcmVapid });
-      setAutomationStatus('success');
-      showToast('Automation keys updated!');
-      setTimeout(() => setAutomationStatus('idle'), 3000);
-    } catch {
-      setAutomationStatus('error');
-      showToast('Failed to save automation settings', 'error');
-      setTimeout(() => setAutomationStatus('idle'), 4000);
-    }
-  };
-
-  const updateDesignToken = (category: 'propertyCard' | 'adCard', field: string, value: string | number) => {
-    setDesignTokens(prev => ({
-      ...prev,
-      [category]: {
-        ...prev[category],
-        [field]: value
-      }
-    }));
-  };
-
-  const handleDesignSave = async (ev: React.FormEvent) => {
-    ev.preventDefault();
-    setDesignStatus('saving');
-    try {
-      await saveSetting('design_tokens', designTokens);
-      setDesignStatus('success');
-      showToast('Design tokens updated!');
-      setTimeout(() => setDesignStatus('idle'), 3000);
-    } catch {
-      setDesignStatus('error');
-      showToast('Failed to save design tokens', 'error');
-      setTimeout(() => setDesignStatus('idle'), 4000);
-    }
-  };
-
-  const handleSiteControlSave = async (ev: React.FormEvent) => {
-    ev.preventDefault();
-    setSiteControlStatus('saving');
-    try {
-      await saveSetting('site_control', {
-        postPropertyEnabled,
-        expertHelpEnabled,
-        verifyAssistEnabled
-      });
-      setSiteControlStatus('success');
-      showToast('Site controls updated!');
-      setTimeout(() => setSiteControlStatus('idle'), 3000);
-    } catch {
-      setSiteControlStatus('error');
-      showToast('Failed to save site controls', 'error');
-      setTimeout(() => setSiteControlStatus('idle'), 4000);
-    }
-  };
-
-  /* ── Styles ── */
-  const card = (accent: string) => ({
-    background: 'var(--bg-glass)', border: '1px solid rgba(255,255,255,0.07)',
-    borderTop: `3px solid ${accent}`, borderRadius: '18px', overflow: 'hidden' as const,
-  });
-  const inp: React.CSSProperties = {
-    width:'100%', background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.09)',
-    color:'var(--text-primary)', borderRadius:'10px', padding:'0.65rem 1rem 0.65rem 2.5rem',
-    fontSize:'0.875rem', outline:'none', fontFamily:'var(--font-body)',
-  };
-  const lbl: React.CSSProperties = {
-    display:'block', fontSize:'0.68rem', fontWeight:700, letterSpacing:'0.1em',
-    textTransform:'uppercase', color:'var(--text-muted)', marginBottom:'0.45rem',
+    } catch { setPwStatus('error'); }
   };
 
   return (
-    <div style={{ 
-      display:'flex', 
-      flexDirection:'column', 
-      gap:'1.5rem', 
-      maxWidth:'720px', 
-      paddingBottom:'4rem', 
-      position: 'relative', 
-      width: '100%',
-      touchAction: 'pan-y'
-    }}>
-      
-      <AnimatePresence>
-        {toast && (
-          <Toast 
-            message={toast.message} 
-            type={toast.type} 
-            onClose={() => setToast(null)} 
-          />
-        )}
-      </AnimatePresence>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', paddingBottom: '5rem' }}>
+      <AnimatePresence>{toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}</AnimatePresence>
 
-      {/* Page header */}
-      <div>
-        <div style={{ fontSize:'0.7rem', fontWeight:700, letterSpacing:'0.12em', textTransform:'uppercase', color:'var(--violet)', marginBottom:'0.25rem', fontFamily:'var(--font-mono)' }}>✦ Configuration</div>
-        <h1 style={{ fontSize:'1.8rem', background:'linear-gradient(135deg,#9b59f5,#22d9e0)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', marginBottom:'0.2rem' }}>Settings</h1>
-        <p style={{ fontSize:'0.82rem', color:'var(--text-muted)' }}>Manage your profile, security, and platform appearance.</p>
+      <div className="flex-row-mobile-stack" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem' }}>
+        <div>
+          <div style={{ fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.18em', color: 'var(--gold)', marginBottom: '0.6rem', fontFamily: 'var(--font-mono)' }}>✦ SYSTEM CONFIGURATION</div>
+          <h1 style={{ fontWeight: 800, color: 'white', background: 'linear-gradient(135deg, #ffffff 0%, var(--gold) 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', margin: 0 }}>Portal Core Settings</h1>
+        </div>
       </div>
 
-      {isDataLoading ? (
-        <div style={{ padding: '4rem 0', textAlign: 'center', color: 'var(--text-muted)' }}>
-          <RefreshCw size={32} style={{ animation: 'spin 2s linear infinite', marginBottom: '1rem', opacity: 0.3 }} />
-          <div style={{ fontSize: '0.8rem', fontWeight: 700, letterSpacing: '0.1em' }}>SYNCHRONIZING CORE SETTINGS...</div>
-        </div>
-      ) : (
-        <>
-          <div className="scroll-x-mobile" style={{ 
-            display:'flex', 
-            gap:'0.75rem', 
-            marginTop:'1rem', 
-            marginBottom:'1.5rem',
-            paddingBottom: '0.5rem'
-          }}>
-        {[
-          { key: 'appearance', label: 'Appearance' },
-          { key: 'site_control', label: 'Site Controls' },
-          { key: 'hero', label: 'Hero & Home' },
-          { key: 'seo', label: 'SEO' },
-          { key: 'marketing', label: 'Google Marketing' },
-          { key: 'profile', label: 'Profile' },
-          { key: 'password', label: 'Password' },
-          { key: 'support', label: 'Support' },
-          { key: 'whatsapp', label: 'WhatsApp' },
-          { key: 'questions', label: 'Questions' },
-          { key: 'automation', label: 'Automation' },
-          { key: 'danger', label: 'Danger Zone' }
-        ].map(section => {
-          const isActive = activeSection === section.key;
-          return (
+      <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
+        {/* Navigation Sidebar */}
+        <aside style={{ width: '260px', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          {[
+            { id: 'profile', label: 'Identity Profile', icon: User },
+            { id: 'appearance', label: 'Visual Engine', icon: Palette },
+            { id: 'marketing', label: 'Marketing Hub', icon: Globe },
+            { id: 'automation', label: 'Automation', icon: Cpu },
+            { id: 'security', label: 'Security Shield', icon: Shield },
+          ].map(item => (
             <button
-              type="button"
-              key={section.key}
-              onClick={() => {
-                triggerHaptic('light');
-                setActiveSection(section.key as any);
-              }}
-              className="btn clickable"
+              key={item.id}
+              onClick={() => setActiveSection(item.id as any)}
               style={{
-                width: 'auto',
-                minWidth: '120px',
-                flexShrink: 0,
-                justifyContent: 'center',
-                padding: '0.95rem 1rem',
-                borderRadius: '16px',
-                border: isActive ? '1px solid var(--gold)' : '1px solid rgba(255,255,255,0.12)',
-                background: isActive ? 'rgba(212,175,55,0.14)' : 'rgba(255,255,255,0.03)',
-                color: isActive ? 'var(--text-primary)' : 'var(--text-muted)',
-                fontWeight: isActive ? 700 : 500,
-                cursor: 'pointer',
-                touchAction: 'manipulation'
+                display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 20px', borderRadius: '16px',
+                background: activeSection === item.id ? 'rgba(255,255,255,0.06)' : 'transparent',
+                border: '1px solid', borderColor: activeSection === item.id ? 'rgba(255,255,255,0.1)' : 'transparent',
+                color: activeSection === item.id ? 'white' : 'var(--text-muted)',
+                cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s', fontWeight: activeSection === item.id ? 800 : 600, fontSize: '0.85rem'
               }}
             >
-              {section.label}
+              <item.icon size={18} strokeWidth={activeSection === item.id ? 2.5 : 2} />
+              {item.label}
             </button>
-          );
-        })}
-      </div>
-
-      {activeSection === 'appearance' && (
-        <div style={card('var(--gold)')}>
-          {cardHeader(<Palette size={17}/>, 'Platform Appearance', 'Control themes, backgrounds, and 3D effects.', 'var(--gold-dim)', 'var(--gold)')}
-          <form onSubmit={handleAppearanceSave} style={{ padding:'1.5rem', display:'flex', flexDirection:'column', gap:'1.5rem' }}>
-            
-            {/* Global Background */}
-            <div>
-              <label style={lbl}>Global Site Background</label>
-              <div style={{ 
-                height:'140px', borderRadius:'14px', border:'2px dashed rgba(255,255,255,0.1)', 
-                background: bgUrl ? `url(${bgUrl}) center/cover no-repeat` : 'rgba(255,255,255,0.02)',
-                position:'relative', overflow:'hidden', display:'flex', alignItems:'center', justifyContent:'center'
-              }}>
-                {!bgUrl && !bgUploading && (
-                  <div style={{ textAlign:'center', color:'var(--text-muted)' }}>
-                    <ImageIcon size={24} style={{ marginBottom:'8px', opacity:0.5 }}/>
-                    <div style={{ fontSize:'0.75rem' }}>No background selected</div>
-                  </div>
-                )}
-                {bgUploading && <RefreshCw size={24} style={{ color:'var(--gold)', animation:'spin 1s linear infinite' }}/>}
-                
-                <div style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.4)', opacity:0, transition:'opacity 0.2s', display:'flex', alignItems:'center', justifyContent:'center', gap:'10px' }} 
-                     onMouseEnter={e => (e.currentTarget.style.opacity = '1')} 
-                     onMouseLeave={e => (e.currentTarget.style.opacity = '0')}>
-                  <button type="button" onClick={() => bgInputRef.current?.click()} className="btn btn-gold btn-sm"><UploadCloud size={14}/> {bgUrl ? 'Replace' : 'Upload'}</button>
-                  {bgUrl && <button type="button" onClick={() => setBgUrl('')} className="btn btn-rose btn-sm"><Trash2 size={14}/></button>}
-                </div>
-              </div>
-              <input ref={bgInputRef} type="file" accept="image/*" style={{ display:'none' }} onChange={handleBgUpload}/>
-              <p style={{ fontSize:'0.7rem', color:'var(--text-muted)', marginTop:'8px' }}>Large landscape images (1920x1080+) work best for parallax.</p>
-            </div>
-
-            <div className="responsive-form-grid" style={{ display:'grid', gap:'1.25rem' }}>
-              {/* Theme Mode & Brand Color Container */}
-              <div style={{ display:'flex', flexDirection:'column', gap:'1.25rem' }}>
-                <div>
-                  <label style={lbl}>Core Theme</label>
-                  <div style={{ display:'flex', gap:'8px' }}>
-                    <button type="button" onClick={() => setThemeMode('standard')} 
-                            style={{ flex:1, padding:'0.65rem', borderRadius:'10px', background: themeMode === 'standard' ? 'var(--bg-secondary)' : 'transparent', border: themeMode === 'standard' ? '1px solid var(--violet)' : '1px solid rgba(255,255,255,0.1)', color: themeMode === 'standard' ? 'var(--violet)' : 'var(--text-muted)', fontSize:'0.8rem', fontWeight:600 }}>Standard</button>
-                    <button type="button" onClick={() => setThemeMode('royal')} 
-                            style={{ flex:1, padding:'0.65rem', borderRadius:'10px', background: themeMode === 'royal' ? 'var(--gold-dim)' : 'transparent', border: themeMode === 'royal' ? '1px solid var(--gold)' : '1px solid rgba(255,255,255,0.1)', color: themeMode === 'royal' ? 'var(--gold)' : 'var(--text-muted)', fontSize:'0.8rem', fontWeight:600 }}>Royal</button>
-                  </div>
-                </div>
-
-                <div>
-                  <label style={lbl}>Main Brand Color</label>
-                  <div style={{ display:'flex', gap:'8px' }}>
-                    {[
-                      { c: '#e8b84b', name: 'Royal Gold' },
-                      { c: '#064e3b', name: 'Emerald' },
-                      { c: '#450a0a', name: 'Burgundy' },
-                    ].map(color => (
-                      <button key={color.c} type="button" onClick={() => setPrimaryColor(color.c)}
-                        style={{
-                          width: '32px', height: '32px', borderRadius: '50%', background: color.c,
-                          border: primaryColor === color.c ? '2px solid white' : '2px solid transparent',
-                          boxShadow: primaryColor === color.c ? `0 0 12px ${color.c}88` : 'none',
-                          cursor: 'pointer', transition: 'all 0.2s', alignSelf:'center'
-                        }}
-                        title={color.name}
-                      />
-                    ))}
-                    <div style={{ marginLeft:'8px', display:'flex', alignItems:'center', fontSize:'0.8rem', color:'var(--text-muted)' }}>
-                      Curated Royal Palette
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              {/* 3D Toggle */}
-              <div>
-                <label style={lbl}>Interactive 3D</label>
-                <div style={{ display:'flex', alignItems:'center', gap:'12px', height:'42px' }}>
-                  <button type="button" onClick={() => setEnable3D(!enable3D)} 
-                          style={{ width:'48px', height:'24px', borderRadius:'12px', background: enable3D ? 'var(--gold)' : 'rgba(255,255,255,0.1)', position:'relative', transition:'all 0.2s' }}>
-                    <div style={{ width:'18px', height:'18px', borderRadius:'50%', background:'#fff', position:'absolute', top:'3px', left: enable3D ? '27px' : '3px', transition:'all 0.2s' }}/>
-                  </button>
-                  <span style={{ fontSize:'0.85rem', color: enable3D ? 'var(--text-primary)' : 'var(--text-muted)', fontWeight:500 }}>
-                    {enable3D ? 'Enabled' : 'Disabled'}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <StatusAlert status={appearanceStatus} successMsg="Appearance updated!" errorMsg="Failed to save appearance." />
-            <button type="submit" disabled={appearanceStatus === 'saving'} className="btn btn-gold" style={{ alignSelf:'flex-start' }}>
-              {appearanceStatus === 'saving' ? <><RefreshCw size={14} style={{ animation:'spin 1s linear infinite' }}/> Updating...</> : <><Sparkles size={14}/> Update Design</>}
-            </button>
-          </form>
-        </div>
-      )}
-
-      {activeSection === 'design' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          <div style={card('var(--gold)')}>
-            {cardHeader(<Palette size={17} />, 'Property Card Design', 'Fine-tune padding, rounding, and media dimensions for listing cards.', 'var(--gold-dim)', 'var(--gold)')}
-            <form onSubmit={handleDesignSave} style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-              <div className="responsive-form-grid" style={{ display: 'grid', gap: '1.25rem' }}>
-                <div>
-                  <label style={lbl}>Internal Padding (px)</label>
-                  <input type="text" value={designTokens.propertyCard.padding} onChange={e => updateDesignToken('propertyCard', 'padding', e.target.value)} style={{ ...inp, paddingLeft: '1rem' }} placeholder="e.g. 16px" />
-                </div>
-                <div>
-                  <label style={lbl}>Border Radius (px)</label>
-                  <input type="text" value={designTokens.propertyCard.borderRadius} onChange={e => updateDesignToken('propertyCard', 'borderRadius', e.target.value)} style={{ ...inp, paddingLeft: '1rem' }} placeholder="e.g. 12px" />
-                </div>
-              </div>
-              <div className="responsive-form-grid" style={{ display: 'grid', gap: '1.25rem' }}>
-                <div>
-                  <label style={lbl}>Media Width (px)</label>
-                  <input type="number" value={designTokens.propertyCard.imageWidth} onChange={e => updateDesignToken('propertyCard', 'imageWidth', parseInt(e.target.value))} style={{ ...inp, paddingLeft: '1rem' }} />
-                </div>
-                <div>
-                  <label style={lbl}>Media Height (px)</label>
-                  <input type="number" value={designTokens.propertyCard.imageHeight} onChange={e => updateDesignToken('propertyCard', 'imageHeight', parseInt(e.target.value))} style={{ ...inp, paddingLeft: '1rem' }} />
-                </div>
-              </div>
-              <StatusAlert status={designStatus} successMsg="Design tokens saved!" errorMsg="Failed to save design tokens." />
-              <button type="submit" disabled={designStatus === 'saving'} className="btn btn-gold" style={{ alignSelf: 'flex-start' }}>
-                {designStatus === 'saving' ? 'Saving...' : 'Save Design Tokens'}
-              </button>
-            </form>
-          </div>
-
-          <div style={card('var(--violet)')}>
-            {cardHeader(<ImageIcon size={17} />, 'Advertisement Card Design', 'Control dimensions and spacing for promotion banners.', 'var(--violet-dim)', 'var(--violet)')}
-            <form onSubmit={handleDesignSave} style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-              <div className="responsive-form-grid" style={{ display: 'grid', gap: '1.25rem' }}>
-                <div>
-                  <label style={lbl}>Internal Padding (px)</label>
-                  <input type="text" value={designTokens.adCard.padding} onChange={e => updateDesignToken('adCard', 'padding', e.target.value)} style={{ ...inp, paddingLeft: '1rem' }} placeholder="e.g. 20px" />
-                </div>
-                <div>
-                  <label style={lbl}>Border Radius (px)</label>
-                  <input type="text" value={designTokens.adCard.borderRadius} onChange={e => updateDesignToken('adCard', 'borderRadius', e.target.value)} style={{ ...inp, paddingLeft: '1rem' }} placeholder="e.g. 16px" />
-                </div>
-              </div>
-              <div className="responsive-form-grid" style={{ display: 'grid', gap: '1.25rem' }}>
-                <div>
-                  <label style={lbl}>Media Width (px)</label>
-                  <input type="number" value={designTokens.adCard.imageWidth} onChange={e => updateDesignToken('adCard', 'imageWidth', parseInt(e.target.value))} style={{ ...inp, paddingLeft: '1rem' }} />
-                </div>
-                <div>
-                  <label style={lbl}>Media Height (px)</label>
-                  <input type="number" value={designTokens.adCard.imageHeight} onChange={e => updateDesignToken('adCard', 'imageHeight', parseInt(e.target.value))} style={{ ...inp, paddingLeft: '1rem' }} />
-                </div>
-              </div>
-              <button type="submit" disabled={designStatus === 'saving'} className="btn btn-violet" style={{ alignSelf: 'flex-start' }}>
-                {designStatus === 'saving' ? 'Saving...' : 'Save Ad Design Tokens'}
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {activeSection === 'site_control' && (
-        <div style={card('var(--emerald)')}>
-          {cardHeader(<Shield size={17}/>, t('settings.siteControl', 'Site Visibility Controls'), 'Instantly enable or disable specific portal sections for clients.', 'rgba(16,217,140,0.1)', 'var(--emerald)')}
-          <form onSubmit={handleSiteControlSave} style={{ padding:'1.5rem', display:'flex', flexDirection:'column', gap:'1.5rem' }}>
-            
-            <div style={{ display:'flex', flexDirection:'column', gap:'1rem' }}>
-              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'1rem', borderRadius:'14px', background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.06)' }}>
-                <div>
-                  <div style={{ fontWeight:700, color:'var(--text-primary)', fontSize:'0.9rem' }}>{t('settings.postProperty', 'Post Property Section')}</div>
-                  <div style={{ fontSize:'0.75rem', color:'var(--text-muted)' }}>Allow clients to submit their property listings.</div>
-                </div>
-                <button type="button" onClick={() => setPostPropertyEnabled(!postPropertyEnabled)} 
-                        style={{ width:'48px', height:'24px', borderRadius:'12px', background: postPropertyEnabled ? 'var(--emerald)' : 'rgba(255,255,255,0.1)', position:'relative', transition:'all 0.2s', border:'none', cursor:'pointer' }}>
-                  <div style={{ width:'18px', height:'18px', borderRadius:'50%', background:'#fff', position:'absolute', top:'3px', left: postPropertyEnabled ? '27px' : '3px', transition:'all 0.2s' }}/>
-                </button>
-              </div>
-
-              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'1rem', borderRadius:'14px', background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.06)' }}>
-                <div>
-                  <div style={{ fontWeight:700, color:'var(--text-primary)', fontSize:'0.9rem' }}>{t('settings.expertHelp', 'Expert Help Section')}</div>
-                  <div style={{ fontSize:'0.75rem', color:'var(--text-muted)' }}>Show the "Real Estate Expert Help" call-to-action on Home.</div>
-                </div>
-                <button type="button" onClick={() => setExpertHelpEnabled(!expertHelpEnabled)} 
-                        style={{ width:'48px', height:'24px', borderRadius:'12px', background: expertHelpEnabled ? 'var(--emerald)' : 'rgba(255,255,255,0.1)', position:'relative', transition:'all 0.2s', border:'none', cursor:'pointer' }}>
-                  <div style={{ width:'18px', height:'18px', borderRadius:'50%', background:'#fff', position:'absolute', top:'3px', left: expertHelpEnabled ? '27px' : '3px', transition:'all 0.2s' }}/>
-                </button>
-              </div>
-
-              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'1rem', borderRadius:'14px', background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.06)' }}>
-                <div>
-                  <div style={{ fontWeight:700, color:'var(--text-primary)', fontSize:'0.9rem' }}>{t('settings.verifyAssist', 'Verify Assist Section')}</div>
-                  <div style={{ fontSize:'0.75rem', color:'var(--text-muted)' }}>Show the "Verify Assist" legal and technical audit CTA.</div>
-                </div>
-                <button type="button" onClick={() => setVerifyAssistEnabled(!verifyAssistEnabled)} 
-                        style={{ width:'48px', height:'24px', borderRadius:'12px', background: verifyAssistEnabled ? 'var(--emerald)' : 'rgba(255,255,255,0.1)', position:'relative', transition:'all 0.2s', border:'none', cursor:'pointer' }}>
-                  <div style={{ width:'18px', height:'18px', borderRadius:'50%', background:'#fff', position:'absolute', top:'3px', left: verifyAssistEnabled ? '27px' : '3px', transition:'all 0.2s' }}/>
-                </button>
-              </div>
-            </div>
-
-            <StatusAlert status={siteControlStatus} successMsg={t('settings.saveSuccess', 'Settings updated successfully')} errorMsg="Failed to save site controls." />
-            <button type="submit" disabled={siteControlStatus === 'saving'} className="btn btn-emerald" style={{ alignSelf:'flex-start' }}>
-              {siteControlStatus === 'saving' ? t('common.loading', 'Saving...') : t('common.save', 'Save Site Controls')}
-            </button>
-          </form>
-        </div>
-      )}
-
-      {activeSection === 'hero' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          <div style={card('var(--gold)')}>
-            {cardHeader(<Sparkles size={17} />, 'Hero Section Content', 'Update the main greeting and calls to action.', 'var(--gold-dim)', 'var(--gold)')}
-            <form onSubmit={handleHeroSave} style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-              <div>
-                <label style={lbl}>Hero Eyebrow (Small text above title)</label>
-                {inputWrap(<Sparkles size={14} />, <input type="text" value={heroEyebrow} onChange={e => setHeroEyebrow(e.target.value)} style={inp} placeholder="Andhra's Leading Property Platform" />)}
-              </div>
-              <div>
-                <label style={lbl}>Main Hero Title</label>
-                {inputWrap(<MapPin size={14} />, <input type="text" value={heroTitle} onChange={e => setHeroTitle(e.target.value)} style={inp} placeholder="Discover Your Dream Place in Andhra" required />)}
-              </div>
-              <div>
-                <label style={lbl}>Hero Subtitle</label>
-                <textarea value={heroSubtitle} onChange={e => setHeroSubtitle(e.target.value)} rows={3} style={{ ...inp, paddingLeft: '1rem', height: 'auto', resize: 'vertical', paddingTop: '0.65rem' }} placeholder="Tell your visitors why they should choose SnapAdda..." required />
-              </div>
-              <div className="responsive-form-grid" style={{ display: 'grid', gap: '1rem' }}>
-                <div>
-                  <label style={lbl}>Primary CTA Text</label>
-                  <input type="text" value={heroCTA1Text} onChange={e => setHeroCTA1Text(e.target.value)} style={{ ...inp, paddingLeft: '1rem' }} placeholder="e.g. BROWSE PROPERTIES" />
-                </div>
-                <div>
-                  <label style={lbl}>Primary CTA URL</label>
-                  <input type="text" value={heroCTA1Url} onChange={e => setHeroCTA1Url(e.target.value)} style={{ ...inp, paddingLeft: '1rem' }} placeholder="e.g. #search" />
-                </div>
-              </div>
-              <div className="responsive-form-grid" style={{ display: 'grid', gap: '1rem' }}>
-                <div>
-                  <label style={lbl}>Secondary CTA Text</label>
-                  <input type="text" value={heroCTA2Text} onChange={e => setHeroCTA2Text(e.target.value)} style={{ ...inp, paddingLeft: '1rem' }} placeholder="e.g. CALL EXPERT" />
-                </div>
-                <div>
-                  <label style={lbl}>Secondary CTA URL (use 'callback' for lead modal)</label>
-                  <input type="text" value={heroCTA2Url} onChange={e => setHeroCTA2Url(e.target.value)} style={{ ...inp, paddingLeft: '1rem' }} placeholder="e.g. callback" />
-                </div>
-              </div>
-              <StatusAlert status={heroStatus} successMsg="Hero content saved!" errorMsg="Failed to save hero content." />
-              <button type="submit" disabled={heroStatus === 'saving'} className="btn btn-gold" style={{ alignSelf: 'flex-start' }}>
-                {heroStatus === 'saving' ? 'Saving...' : 'Update Hero Content'}
-              </button>
-            </form>
-          </div>
-
-          <div style={card('var(--violet)')}>
-            {cardHeader(<Activity size={17} />, 'Site Statistics', 'Display impressive numbers on your home page.', 'var(--violet-dim)', 'var(--violet)')}
-            <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-              <div className="responsive-form-grid" style={{ display: 'grid', gap: '1.25rem' }}>
-                {siteStats.map((stat, i) => (
-                  <div key={i} style={{ padding: '1rem', borderRadius: '14px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                      <div>
-                        <label style={{ ...lbl, fontSize: '0.6rem' }}>Label</label>
-                        <input type="text" value={stat.label} onChange={e => updateStat(i, 'label', e.target.value)} style={{ ...inp, paddingLeft: '0.75rem', padding: '0.4rem 0.75rem' }} />
-                      </div>
-                      <div>
-                        <label style={{ ...lbl, fontSize: '0.6rem' }}>Value</label>
-                        <input type="text" value={stat.value} onChange={e => updateStat(i, 'value', e.target.value)} style={{ ...inp, paddingLeft: '0.75rem', padding: '0.4rem 0.75rem' }} />
-                      </div>
-                      <div>
-                        <label style={{ ...lbl, fontSize: '0.6rem' }}>Icon (Lucide Name)</label>
-                        <input type="text" value={stat.icon} onChange={e => updateStat(i, 'icon', e.target.value)} style={{ ...inp, paddingLeft: '0.75rem', padding: '0.4rem 0.75rem' }} />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <StatusAlert status={statsStatus} successMsg="Stats updated!" errorMsg="Failed to save stats." />
-              <button type="button" onClick={handleStatsSave} disabled={statsStatus === 'saving'} className="btn btn-violet" style={{ alignSelf: 'flex-start' }}>
-                {statsStatus === 'saving' ? 'Saving...' : 'Update Site Stats'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {activeSection === 'seo' && (
-        <div style={card('var(--emerald)')}>
-          {cardHeader(<Sparkles size={17}/>, 'Advanced SEO Settings', 'Control homepage metadata, social previews, and canonical SEO values from the admin panel.', 'rgba(16,217,140,0.1)', 'var(--emerald)')}
-          <form onSubmit={handleSeoSave} style={{ padding:'1.5rem', display:'flex', flexDirection:'column', gap:'1.25rem' }}>
-            <div>
-              <label style={lbl}>Page Title</label>
-              {inputWrap(<Sparkles size={14}/>, <input type="text" value={seoTitle} onChange={e => setSeoTitle(e.target.value)} style={inp} placeholder="Enter SEO title for homepage" required />)}
-            </div>
-            <div>
-              <label style={lbl}>Meta Description</label>
-              <textarea value={seoDescription} onChange={e => setSeoDescription(e.target.value)} rows={3} style={{ width:'100%', background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.09)', color:'var(--text-primary)', borderRadius:'10px', padding:'0.85rem 1rem', fontSize:'0.95rem', fontFamily:'var(--font-body)', resize:'vertical' }} placeholder="Craft a compelling homepage description" required />
-            </div>
-            <div>
-              <label style={lbl}>Keywords</label>
-              {inputWrap(<Activity size={14}/>, <input type="text" value={seoKeywords} onChange={e => setSeoKeywords(e.target.value)} style={inp} placeholder="Separate keywords with commas" />)}
-            </div>
-            <div>
-              <label style={lbl}>Social Preview Image</label>
-              {inputWrap(<ImageIcon size={14}/>, <input type="text" value={seoImageUrl} onChange={e => setSeoImageUrl(e.target.value)} style={inp} placeholder="https://snapadda.com/path/to/og-image.png" />)}
-            </div>
-            <div>
-              <label style={lbl}>Canonical URL</label>
-              {inputWrap(<LinkIcon size={14}/>, <input type="text" value={seoCanonicalUrl} onChange={e => setSeoCanonicalUrl(e.target.value)} style={inp} placeholder="https://snapadda.com/" />)}
-            </div>
-            <div>
-              <label style={lbl}>Robots Directive</label>
-              <select value={seoRobots} onChange={e => setSeoRobots(e.target.value)} style={{ width:'100%', background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.09)', color:'var(--text-primary)', borderRadius:'10px', padding:'0.85rem 1rem', fontSize:'0.95rem', fontFamily:'var(--font-body)' }}>
-                <option value="index, follow">index, follow</option>
-                <option value="noindex, nofollow">noindex, nofollow</option>
-                <option value="index, nofollow">index, nofollow</option>
-              </select>
-            </div>
-            <StatusAlert status={seoStatus} successMsg="SEO settings saved!" errorMsg="Failed to save SEO settings." />
-            <button type="submit" disabled={seoStatus === 'saving'} className="btn btn-emerald" style={{ alignSelf:'flex-start' }}>
-              {seoStatus === 'saving' ? 'Saving...' : 'Save SEO Settings'}
-            </button>
-          </form>
-        </div>
-      )}
-
-      {activeSection === 'marketing' && (
-        <div style={card('var(--emerald)')}>
-          {cardHeader(<Activity size={17} />, 'Google Marketing Integrations', 'Link your Google tools to enable powerful platform tracking.', 'rgba(16,217,140,0.1)', 'var(--emerald)')}
-          <form onSubmit={async (e) => {
-            e.preventDefault();
-            setMarketingStatus('saving');
-            try {
-              await saveSetting('marketing_settings', { ga4Id, gtmId, googleBusinessLink });
-              setMarketingStatus('success');
-            } catch {
-              setMarketingStatus('error');
-            }
-          }} style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-            <div>
-              <label style={lbl}>Google Analytics 4 ID (e.g., G-XXXXXXX)</label>
-              {inputWrap(<Activity size={14} />, <input type="text" value={ga4Id} onChange={e => setGa4Id(e.target.value)} style={inp} placeholder="G-XXXXXXX" />)}
-            </div>
-            <div>
-              <label style={lbl}>Google Tag Manager ID (e.g., GTM-XXXXXX)</label>
-              {inputWrap(<Activity size={14} />, <input type="text" value={gtmId} onChange={e => setGtmId(e.target.value)} style={inp} placeholder="GTM-XXXXXX" />)}
-            </div>
-            <div>
-              <label style={lbl}>Google Business Profile Link</label>
-              {inputWrap(<LinkIcon size={14} />, <input type="url" value={googleBusinessLink} onChange={e => setGoogleBusinessLink(e.target.value)} style={inp} placeholder="https://g.page/r/.../review" />)}
-            </div>
-            <StatusAlert status={marketingStatus} successMsg="Marketing IDs saved!" errorMsg="Failed to save Marketing settings." />
-            <button type="submit" disabled={marketingStatus === 'saving'} className="btn btn-emerald" style={{ alignSelf: 'flex-start' }}>
-              {marketingStatus === 'saving' ? 'Saving...' : 'Deploy Analytics'}
-            </button>
-          </form>
-        </div>
-      )}
-
-      {activeSection === 'questions' && (
-        <div style={card('var(--emerald)')}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingRight: '1.5rem' }}>
-            {cardHeader(<MessageSquare size={17}/>, 'Onboarding Questions', 'Edit the questions users see after login.', 'var(--emerald-dim)', 'var(--emerald)')}
-            <Link to="/admin/questions" className="btn btn-emerald btn-sm" style={{ padding: '0.5rem 1rem', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <MessageSquare size={14}/> Manage Client Inquiries
-            </Link>
-          </div>
-          <div style={{ padding:'1.5rem', display:'flex', flexDirection:'column', gap:'1rem' }}>
-          {onboardingQuestions.map((question, index) => (
-            <div key={question.id} style={{ display:'flex', flexDirection: 'column', gap:'0.85rem', padding:'0.95rem 0', borderBottom: index < onboardingQuestions.length - 1 ? '1px solid rgba(255,255,255,0.08)' : 'none' }}>
-              <div style={{ display:'flex', justifyContent:'space-between', gap:'1rem', alignItems:'flex-start' }}>
-                <div style={{ flex:'1 1 0' }}>
-                  <input
-                    value={question.title}
-                    onChange={(e) => handleUpdateQuestionTitle(question.id, e.target.value)}
-                    style={{ width:'100%', background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'12px', padding:'0.85rem 1rem', color:'var(--text-primary)', fontSize:'0.95rem' }}
-                  />
-                  <div style={{ marginTop:'0.5rem', color:'var(--text-muted)', fontSize:'0.78rem' }}>
-                    Type: {question.type === 'options' ? 'Options' : 'Text input'}
-                  </div>
-                </div>
-                <div style={{ display:'flex', flexDirection:'column', gap:'0.5rem', alignItems:'flex-end' }}>
-                  <div style={{ display:'flex', gap:'0.4rem', marginBottom:'0.2rem' }}>
-                    <button type="button" onClick={() => handleMoveQuestion(index, 'up')} disabled={index === 0}
-                      style={{ padding:'0.4rem', borderRadius:'8px', border:'1px solid rgba(255,255,255,0.1)', background:'rgba(255,255,255,0.03)', color: index === 0 ? 'rgba(255,255,255,0.1)' : 'var(--emerald)', cursor: index === 0 ? 'default' : 'pointer', display:'flex' }}>
-                      <ChevronUp size={16}/>
-                    </button>
-                    <button type="button" onClick={() => handleMoveQuestion(index, 'down')} disabled={index === onboardingQuestions.length - 1}
-                      style={{ padding:'0.4rem', borderRadius:'8px', border:'1px solid rgba(255,255,255,0.1)', background:'rgba(255,255,255,0.03)', color: index === onboardingQuestions.length - 1 ? 'rgba(255,255,255,0.1)' : 'var(--emerald)', cursor: index === onboardingQuestions.length - 1 ? 'default' : 'pointer', display:'flex' }}>
-                      <ChevronDown size={16}/>
-                    </button>
-                  </div>
-                  <button type="button" onClick={() => handleToggleQuestion(question.id)}
-                    style={{ padding:'0.65rem 1rem', borderRadius:'12px', border:'none', background: question.enabled ? 'var(--emerald)' : 'rgba(255,255,255,0.08)', color: question.enabled ? '#08121f' : 'var(--text-muted)', cursor:'pointer', fontSize:'0.75rem', fontWeight:600 }}>
-                    {question.enabled ? 'Enabled' : 'Disabled'}
-                  </button>
-                  <button type="button" onClick={() => handleRemoveQuestion(question.id)}
-                    style={{ padding:'0.65rem 1rem', borderRadius:'12px', border:'1px solid rgba(255,255,255,0.12)', background:'transparent', color:'var(--rose)', cursor:'pointer', fontSize:'0.75rem' }}>
-                    Remove
-                  </button>
-                </div>
-              </div>
-              {question.type === 'options' && (
-                <input
-                  value={question.options.join(', ')}
-                  onChange={(e) => handleUpdateQuestionOptions(question.id, e.target.value)}
-                  placeholder="Enter options separated by commas"
-                  style={{ width:'100%', background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'12px', padding:'0.85rem 1rem', color:'var(--text-primary)', fontSize:'0.9rem' }}
-                />
-              )}
-            </div>
           ))}
+        </aside>
 
-          <div style={{ padding:'1rem', borderRadius:'18px', border:'1px dashed rgba(255,255,255,0.12)', display:'flex', flexDirection:'column', gap:'0.9rem' }}>
-            <div style={{ fontWeight:700, color:'var(--text-primary)' }}>Create a new onboarding question</div>
-            <input
-              placeholder="Question text"
-              value={newQuestionTitle}
-              onChange={(e) => setNewQuestionTitle(e.target.value)}
-              style={{ width:'100%', background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'12px', padding:'0.85rem 1rem', color:'var(--text-primary)', fontSize:'0.95rem' }}
-            />
-            <div style={{ display:'flex', gap:'0.75rem', flexWrap:'wrap' }}>
-              <select
-                value={newQuestionType}
-                onChange={(e) => setNewQuestionType(e.target.value as 'options' | 'text')}
-                style={{ flex:'1 1 220px', background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'12px', padding:'0.85rem 1rem', color:'var(--text-primary)' }}
-              >
-                <option value="options">Options</option>
-                <option value="text">Text input</option>
-              </select>
-              {newQuestionType === 'options' && (
-                <input
-                  placeholder="Comma-separated options"
-                  value={newQuestionOptions}
-                  onChange={(e) => setNewQuestionOptions(e.target.value)}
-                  style={{ flex:'2 1 320px', background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'12px', padding:'0.85rem 1rem', color:'var(--text-primary)' }}
-                />
-              )}
-            </div>
-            <div style={{ display:'flex', gap:'0.75rem', flexWrap:'wrap' }}>
-              <button type="button" onClick={handleAddQuestion} className="btn btn-violet" style={{ minWidth:'160px' }}>Add Question</button>
-              <button type="button" onClick={handleSaveQuestions} className="btn btn-emerald" style={{ minWidth:'160px' }}>
-                {questionsStatus === 'saving' ? 'Saving...' : 'Save Question Settings'}
-              </button>
-            </div>
-            {questionsStatus === 'success' && <div style={{ color:'var(--emerald)', fontSize:'0.9rem' }}>Question settings saved successfully.</div>}
-            {questionsStatus === 'error' && <div style={{ color:'var(--rose)', fontSize:'0.9rem' }}>Unable to save question settings.</div>}
-          </div>
-        </div>
-      </div>
-
-      )}
-
-      {activeSection === 'profile' && (
-        <div style={card('var(--violet)')}>
-        {cardHeader(<User size={17}/>, 'Admin Profile', 'Update your name and profile picture.', 'var(--violet-dim)', 'var(--violet)')}
-        <form onSubmit={handleProfileSave} style={{ padding:'1.5rem', display:'flex', flexDirection:'column', gap:'1.25rem' }}>
-          <div style={{ display:'flex', alignItems:'center', gap:'1.25rem' }}>
-            <div style={{ position:'relative', flexShrink:0 }}>
-              <img
-                src={profileAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(profileName||'Admin')}&background=9b59f5&color=fff&bold=true`}
-                alt="avatar"
-                style={{ width:'72px', height:'72px', borderRadius:'50%', objectFit:'cover', border:'2.5px solid var(--violet)', boxShadow:'0 0 20px rgba(155,89,245,0.35)' }}
+        {/* Dynamic Section Area */}
+        <div style={{ flex: 1, minWidth: '320px' }}>
+          <Suspense fallback={<SectionLoader />}>
+            {activeSection === 'profile' && (
+              <ProfileSection 
+                profileName={profileName} setProfileName={setProfileName} 
+                profileStatus={profileStatus} handleProfileSave={handleProfileSave} 
+                lbl={lbl} inp={inp} inputWrap={inputWrap} StatusAlert={StatusAlert} 
               />
-              <button type="button" onClick={() => avatarInputRef.current?.click()} style={{ position:'absolute', bottom:'0', right:'0', width:'24px', height:'24px', borderRadius:'50%', background:'var(--violet)', border:'2px solid var(--bg-secondary)', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', color:'#fff' }}>
-                {avatarUploading ? <RefreshCw size={11} style={{ animation:'spin 1s linear infinite' }}/> : <Camera size={11}/>}
-              </button>
-              <input ref={avatarInputRef} type="file" accept="image/*" style={{ display:'none' }} onChange={handleAvatarUpload}/>
-            </div>
-            <div>
-              <div style={{ fontWeight:600, color:'var(--text-primary)', fontSize:'0.95rem' }}>{profileName || 'Admin'}</div>
-              <div style={{ fontSize:'0.75rem', color:'var(--violet)', marginBottom:'6px' }}>● Administrator</div>
-              <button type="button" onClick={() => avatarInputRef.current?.click()} className="btn btn-ghost btn-sm" style={{ fontSize:'0.72rem', padding:'0.3rem 0.75rem' }}>
-                <Camera size={11}/> Change Photo
-              </button>
-            </div>
-          </div>
-          <div>
-            <label style={lbl}>Display Name</label>
-            {inputWrap(<User size={14}/>, <input type="text" value={profileName} onChange={e => setProfileName(e.target.value)} style={inp} placeholder="Your display name" required />)}
-          </div>
-          <StatusAlert status={profileStatus} successMsg="Profile saved!" errorMsg="Could not save profile." />
-          <button type="submit" disabled={profileStatus === 'saving'} className="btn btn-violet" style={{ alignSelf:'flex-start' }}>{profileStatus === 'saving' ? 'Saving...' : 'Save Profile'}</button>
-        </form>
-      </div>
-      )}
+            )}
+            {activeSection === 'appearance' && (
+              <AppearanceSection 
+                primaryColor={primaryColor} setPrimaryColor={setPrimaryColor}
+                glassOpacity={glassOpacity} setGlassOpacity={setGlassOpacity}
+                borderRadius={borderRadius} setBorderRadius={setBorderRadius}
+                handleAppearanceSave={handleAppearanceSave}
+                lbl={lbl}
+              />
+            )}
+            {activeSection === 'marketing' && (
+              <MarketingSection 
+                seoTitle={seoTitle} setSeoTitle={setSeoTitle} seoDesc={seoDesc} setSeoDesc={setSeoDesc}
+                gaId={gaId} setGaId={setGaId} fbPixel={fbPixel} setFbPixel={setFbPixel}
+                waNumber={waNumber} setWaNumber={setWaNumber} waMessage={waMessage} setWaMessage={setWaMessage}
+                supportEmail={supportEmail} setSupportEmail={setSupportEmail}
+                handleMarketingSave={handleMarketingSave}
+                lbl={lbl} inp={inp} inputWrap={inputWrap}
+              />
+            )}
+            {activeSection === 'automation' && (
+              <AutomationSection 
+                onboardingQuestions={onboardingQuestions} setOnboardingQuestions={setOnboardingQuestions}
+                siteMaintenance={siteMaintenance} setSiteMaintenance={setSiteMaintenance}
+                handleAutomationSave={handleAutomationSave}
+                inp={inp}
+              />
+            )}
+            {activeSection === 'security' && (
+              <SecuritySection 
+                currentPw={currentPw} setCurrentPw={setCurrentPw} newPw={newPw} setNewPw={setNewPw} confirmPw={confirmPw} setConfirmPw={setConfirmPw}
+                showCurrent={showCurrent} setShowCurrent={setShowCurrent} showNew={showNew} setShowNew={setShowNew}
+                pwStatus={pwStatus} pwError={pwError} handlePasswordChange={handlePasswordChange}
+                lbl={lbl} inp={inp} inputWrap={inputWrap} StatusAlert={StatusAlert} 
+              />
+            )}
+          </Suspense>
 
-      {activeSection === 'password' && (
-        <div style={card('var(--rose)')}>
-        {cardHeader(<KeyRound size={17}/>, 'Change Password', 'Update your credentials.', 'var(--rose-dim)', 'var(--rose)')}
-        <form onSubmit={handlePasswordChange} style={{ padding:'1.5rem', display:'flex', flexDirection:'column', gap:'1.1rem' }}>
-          <div>
-            <label style={lbl}>Current Password</label>
-            <div style={{ position:'relative' }}>
-              <Lock size={14} style={{ position:'absolute', left:'12px', top:'50%', transform:'translateY(-50%)', color:'var(--text-muted)' }}/>
-              <input type={showCurrent ? 'text' : 'password'} value={currentPw} onChange={e => setCurrentPw(e.target.value)} style={{ ...inp, paddingRight:'2.5rem' }} placeholder="Enter current password" required />
-              <button type="button" onClick={() => setShowCurrent(v => !v)} style={{ position:'absolute', right:'10px', top:'50%', transform:'translateY(-50%)', color:'var(--text-muted)', cursor:'pointer' }}>{showCurrent ? <EyeOff size={15}/> : <Eye size={15}/>}</button>
+          {/* Danger Zone */}
+          <div style={{ marginTop: '3rem', padding: '1.5rem', background: 'rgba(245,57,123,0.03)', borderRadius: '24px', border: '1px solid rgba(245,57,123,0.1)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#f5397b', marginBottom: '10px' }}>
+              <Trash2 size={18} />
+              <h4 style={{ margin: 0, fontWeight: 900 }}>Danger Protocol</h4>
             </div>
-          </div>
-          <div>
-            <label style={lbl}>New Password</label>
-            <div style={{ position:'relative' }}>
-              <Lock size={14} style={{ position:'absolute', left:'12px', top:'50%', transform:'translateY(-50%)', color:'var(--text-muted)' }}/>
-              <input type={showNew ? 'text' : 'password'} value={newPw} onChange={e => setNewPw(e.target.value)} style={{ ...inp, paddingRight:'2.5rem' }} placeholder="Min 8 characters" required />
-              <button type="button" onClick={() => setShowNew(v => !v)} style={{ position:'absolute', right:'10px', top:'50%', transform:'translateY(-50%)', color:'var(--text-muted)', cursor:'pointer' }}>{showNew ? <EyeOff size={15}/> : <Eye size={15}/>}</button>
-            </div>
-          </div>
-          <div>
-            <label style={lbl}>Confirm New Password</label>
-            {inputWrap(<Lock size={14}/>, <input type="password" value={confirmPw} onChange={e => setConfirmPw(e.target.value)} style={inp} placeholder="Repeat new password" required />)}
-          </div>
-          {pwError && <div style={{ fontSize:'0.8rem', color:'var(--rose)', display:'flex', alignItems:'center', gap:'6px' }}><AlertCircle size={13}/>{pwError}</div>}
-          <StatusAlert status={pwStatus} successMsg="Password changed!" errorMsg="Failed to change password." />
-          <button type="submit" disabled={pwStatus === 'saving'} className="btn btn-rose" style={{ alignSelf:'flex-start' }}>Change Password</button>
-        </form>
-      </div>
-      )}
-
-      {activeSection === 'support' && (
-        <div style={card('var(--violet)')}>
-        {cardHeader(<Activity size={17}/>, 'Support & Contact Information', 'Manage public contact details.', 'rgba(155,89,245,0.1)', 'var(--violet)')}
-        <form onSubmit={handleSupportSave} style={{ padding:'1.5rem', display:'flex', flexDirection:'column', gap:'1.25rem' }}>
-          <div className="responsive-form-grid" style={{ display:'grid', gap:'1rem' }}>
-            <div>
-              <label style={lbl}>Support Phone</label>
-              {inputWrap(<Phone size={14}/>, <input type="text" value={supportPhone} onChange={e => setSupportPhone(e.target.value)} style={inp} placeholder="+91 999 999 9999" />)}
-            </div>
-            <div>
-              <label style={lbl}>Support Email</label>
-              {inputWrap(<Mail size={14}/>, <input type="email" value={supportEmail} onChange={e => setSupportEmail(e.target.value)} style={inp} placeholder="info@snapadda.com" />)}
-            </div>
-          </div>
-          <div>
-            <label style={lbl}>Office Address</label>
-            {inputWrap(<MapPin size={14}/>, <textarea value={supportAddress} onChange={e => setSupportAddress(e.target.value)} rows={2} style={{ ...inp, paddingLeft:'2.5rem', height:'auto', resize:'none', paddingTop:'0.65rem' }} placeholder="Full street address..." />)}
-          </div>
-          <div>
-            <label style={lbl}>Working Hours</label>
-            {inputWrap(<Activity size={14}/>, <input type="text" value={supportHours} onChange={e => setSupportHours(e.target.value)} style={inp} placeholder="Mon-Sat 9 AM - 7 PM" />)}
-          </div>
-          <StatusAlert status={supportStatus} successMsg="Support info updated!" errorMsg="Failed to save." />
-          <button type="submit" disabled={supportStatus === 'saving'} className="btn btn-violet" style={{ alignSelf:'flex-start' }}>Update Support Info</button>
-        </form>
-      </div>
-      )}
-
-      {activeSection === 'whatsapp' && (
-        <div style={card('var(--emerald)')}>
-        {cardHeader(<MessageSquare size={17}/>, 'WhatsApp Integration', 'Contact button settings.', 'rgba(16,217,140,0.1)', 'var(--emerald)')}
-        <form onSubmit={handleWaSave} style={{ padding:'1.5rem', display:'flex', flexDirection:'column', gap:'1.25rem' }}>
-          <div>
-            <label style={lbl}>WhatsApp Number</label>
-            {inputWrap(<Phone size={14}/>, <input type="text" value={waNumber} onChange={e => setWaNumber(e.target.value)} style={inp} placeholder="919876543210" required/>)}
-          </div>
-          <div>
-            <label style={lbl}>Pre-filled Message</label>
-            <textarea value={waMessage} onChange={e => setWaMessage(e.target.value)} rows={3} placeholder="Hello..." style={{ width:'100%', background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.09)', color:'var(--text-primary)', borderRadius:'10px', padding:'0.65rem 1rem', fontSize:'0.875rem', outline:'none', fontFamily:'var(--font-body)', resize:'none' }} />
-          </div>
-          <StatusAlert status={waStatus} successMsg="Settings saved!" errorMsg="Failed to save."/>
-          <button type="submit" disabled={waStatus === 'saving'} className="btn btn-cyan" style={{ alignSelf:'flex-start' }}>Save Settings</button>
-        </form>
-      </div>
-      )}
-
-      {activeSection === 'automation' && (
-        <div style={card('var(--gold)')}>
-          {cardHeader(<KeyRound size={17}/>, 'System Keys', 'Configure core system credentials for production.', 'var(--gold-dim)', 'var(--gold)')}
-          <form onSubmit={handleAutomationSave} style={{ padding:'1.5rem', display:'flex', flexDirection:'column', gap:'1.25rem' }}>
-            <div style={{ padding:'1rem', background:'rgba(34,217,224,0.04)', border:'1px solid rgba(34,217,224,0.15)', borderRadius:'12px' }}>
-              <p style={{ margin:0, fontSize:'0.75rem', color:'var(--cyan)', lineHeight:1.4 }}>
-                <strong>System Note:</strong> Email automation has been decommissioned in favor of real-time WhatsApp Chat. These keys manage push notifications and core system events.
-              </p>
-            </div>
-            <div>
-              <label style={lbl}>Firebase VAPID Key</label>
-              {inputWrap(<Sparkles size={14}/>, <input type="text" value={fcmVapid} onChange={e => setFcmVapid(e.target.value)} style={inp} placeholder="Generate in Firebase Console" />)}
-            </div>
-            <p style={{ fontSize:'0.65rem', color:'var(--text-muted)', margin:'-0.5rem 0 0.5rem 0' }}>The VAPID key is required for secure web push notifications to your browser.</p>
-            
-            <StatusAlert status={automationStatus} successMsg="System keys saved!" errorMsg="Failed to save keys." />
-            <button type="submit" disabled={automationStatus === 'saving'} className="btn btn-gold" style={{ alignSelf:'flex-start' }}>
-              {automationStatus === 'saving' ? 'Saving...' : 'Update System Keys'}
-            </button>
-          </form>
-
-          <div style={{ padding: '0 1.5rem 1.5rem' }}>
-            <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '1.25rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1rem' }}>
-                <ImageIcon size={16} style={{ color: 'var(--gold)' }} />
-                <h4 style={{ margin: 0, fontSize: '0.85rem', fontWeight: 800, color: 'white' }}>FIREBASE INTEGRATION GUIDE</h4>
-              </div>
-              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: '1.5rem' }}>
-                To enable Push Notifications, ensure your Firebase project is correctly linked. You can find these credentials in your 
-                <a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--gold)', textDecoration: 'none', marginLeft: '4px', fontWeight: 700 }}>Firebase Console</a>.
-              </p>
-              
-              <div style={{ background: 'rgba(0,0,0,0.3)', padding: '1rem', borderRadius: '12px', fontFamily: 'monospace', fontSize: '0.65rem', border: '1px solid rgba(255,255,255,0.05)', position: 'relative' }}>
-                <div style={{ color: 'rgba(255,255,255,0.4)', marginBottom: '8px' }}># PROJECT ENVIRONMENT SNIPPET (.env)</div>
-                <div style={{ color: 'var(--emerald)', whiteSpace: 'pre' }}>
-{`VITE_FIREBASE_API_KEY="..."
-VITE_FIREBASE_AUTH_DOMAIN="..."
-VITE_FIREBASE_PROJECT_ID="..."
-VITE_FIREBASE_STORAGE_BUCKET="..."
-VITE_FIREBASE_MESSAGING_SENDER_ID="..."
-VITE_FIREBASE_APP_ID="..."
-VITE_FIREBASE_VAPID_KEY="${fcmVapid || 'PASTE_VAPID_HERE'}"`}
-                </div>
-              </div>
-              <div style={{ marginTop: '1rem', display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--gold)' }} />
-                <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>Generate the VAPID key in Project Settings &gt; Cloud Messaging &gt; Web configuration.</span>
-              </div>
+            <p style={{ fontSize: '0.75rem', color: 'rgba(245,57,123,0.6)', marginBottom: '1.5rem' }}>These actions are irreversible and will wipe core system data.</p>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button className="btn btn-outline" style={{ borderColor: '#f5397b', color: '#f5397b', fontSize: '0.7rem', borderRadius: '10px', padding: '8px 16px', background: 'transparent' }}>WIPE CACHE</button>
+              <button className="btn btn-outline" style={{ borderColor: '#f5397b', color: '#f5397b', fontSize: '0.7rem', borderRadius: '10px', padding: '8px 16px', background: 'transparent' }}>RESET ANALYTICS</button>
             </div>
           </div>
         </div>
-      )}
-
-
-      {activeSection === 'danger' && (
-        <div style={{ ...card('var(--rose)'), borderColor:'rgba(245,57,123,0.2)' }}>
-        {cardHeader(<Shield size={17}/>, 'Danger Zone', 'Security-sensitive actions.', 'var(--rose-dim)', 'var(--rose)')}
-        <div style={{ padding:'1.5rem' }}>
-          <a href="/admin/login" className="btn btn-rose btn-sm">Sign Out</a>
-        </div>
       </div>
-      )}
-
-        </>
-      )}
     </div>
   );
 };

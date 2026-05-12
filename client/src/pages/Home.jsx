@@ -544,11 +544,12 @@ export default function Home() {
   return (
     <>
       <Helmet>
-        <title>SnapAdda | Andhra's #1 Real Estate Platform</title>
-        <meta name="description" content="Discover premium apartments, villas, and plots in Vijayawada, Guntur, and across Andhra Pradesh. SnapAdda - Your trusted real estate partner." />
-        <meta property="og:title" content="SnapAdda | Premium Real Estate in AP" />
-        <meta property="og:description" content="Buy, rent or sell properties with 100% verified listings." />
-        <meta property="og:image" content="/og-image.jpg" />
+        <title>SnapAdda | Best Real Estate Website in Andhra Pradesh | Amaravathi Plots</title>
+        <meta name="description" content="SnapAdda is the #1 real estate platform in Andhra Pradesh. Buy or Rent verified apartments, villas, and plots in Vijayawada, Guntur, and Vizag. Trusted by thousands." />
+        <meta property="og:title" content="SnapAdda | Best Real Estate in Andhra Pradesh" />
+        <meta property="og:description" content="Discover verified properties and institutional grade listings across all AP districts." />
+        <meta property="og:image" content="https://snapadda.com/og-image.jpg" />
+        <link rel="canonical" href="https://snapadda.com/" />
       </Helmet>
       <AnimatePresence>
         {isSearchSticky && (
@@ -659,7 +660,7 @@ export default function Home() {
                     <motion.div 
                       whileHover={{ y: -10, boxShadow: '0 20px 40px rgba(16,217,140,0.15)' }}
                       whileTap={{ scale: 0.97 }}
-                      onClick={() => { setIntent('Buy'); setHeroMode('search'); triggerHaptic('medium'); }}
+                      onClick={() => { setIntent('Buy'); setHeroMode('search');  }}
                       className="glass-premium"
                       style={{ padding: isMobile ? '2rem 1.5rem' : '3.5rem 2rem', borderRadius: '32px', border: '1px solid rgba(16,217,140,0.2)', background: 'rgba(16,217,140,0.03)', cursor: 'pointer', textAlign: 'center' }}
                     >
@@ -674,7 +675,7 @@ export default function Home() {
                     <motion.div 
                       whileHover={{ y: -10, boxShadow: '0 20px 40px rgba(155,89,245,0.15)' }}
                       whileTap={{ scale: 0.97 }}
-                      onClick={() => { setIntent('Rent'); setHeroMode('search'); triggerHaptic('medium'); }}
+                      onClick={() => { setIntent('Rent'); setHeroMode('search');  }}
                       className="glass-premium"
                       style={{ padding: isMobile ? '2rem 1.5rem' : '3.5rem 2rem', borderRadius: '32px', border: '1px solid rgba(155,89,245,0.2)', background: 'rgba(155,89,245,0.03)', cursor: 'pointer', textAlign: 'center' }}
                     >
@@ -729,7 +730,7 @@ export default function Home() {
                         <LocationAutocomplete 
                           value={keyword} 
                           onChange={(val) => setKeyword(val)}
-                          onSelect={(loc) => { setKeyword(loc.name); setCityFilter(loc.name); triggerHaptic('medium'); }}
+                          onSelect={(loc) => { setKeyword(loc.name); setCityFilter(loc.name);  }}
                           placeholder="Area, Mandal, or City..."
                         />
                       </div>
@@ -962,7 +963,7 @@ export default function Home() {
                 { icon: <MapPin size={22} />, val: `${new Set(properties.map(p => p.location)).size}+`, label: 'Locations' },
                 { icon: <Phone size={22} />, val: '24/7', label: 'Expert Support' },
               ].map((s, i) => (
-                <motion.div key={i} className="stat-card" whileInView={{ opacity: 1, y: 0 }} initial={{ opacity: 0, y: 20 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}>
+                <motion.div key={s.label} className="stat-card" whileInView={{ opacity: 1, y: 0 }} initial={{ opacity: 0, y: 20 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}>
                   <div className="stat-icon">{s.icon}</div>
                   <div className="stat-value">{s.val}</div>
                   <div className="stat-label">{s.label}</div>

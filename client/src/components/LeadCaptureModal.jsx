@@ -2,12 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Phone, User, Zap, ShieldCheck, MapPin } from 'lucide-react';
 import axios from 'axios';
-import { triggerHaptic } from '../utils/haptics';
+import { useToast } from '../contexts/ToastContext';
 
 const LeadCaptureModal = ({ isOpen, onClose, preferredLocation }) => {
+  const { toast } = useToast();
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [district, setDistrict] = useState(preferredLocation || '');
+  const [budget, setBudget] = useState('');
+  const [propertyType, setPropertyType] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
 
@@ -22,12 +25,14 @@ const LeadCaptureModal = ({ isOpen, onClose, preferredLocation }) => {
         name,
         phone,
         district,
+        budget,
+        propertyType,
         source: 'High-Intent Modal',
-        message: `High-intent visitor looking in ${district || 'Andhra'}. Priority Lead.`,
+        message: `High-intent visitor looking for a ${propertyType || 'property'} in ${district || 'Andhra'} with a budget of ${budget || 'flexible'}. Priority Lead.`,
         priority: 'High'
       });
       
-      triggerHaptic('success');
+      
       setSuccess(true);
       setTimeout(() => {
         onClose();
@@ -36,6 +41,7 @@ const LeadCaptureModal = ({ isOpen, onClose, preferredLocation }) => {
       }, 3000);
     } catch (error) {
       console.error('Lead capture failed', error);
+      toast('Verification system busy. Please try again.', 'error');
     } finally {
       setSubmitting(false);
     }
@@ -94,8 +100,12 @@ const LeadCaptureModal = ({ isOpen, onClose, preferredLocation }) => {
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="relative">
+                  <label htmlFor="lcm-name" className="sr-only">Full Name</label>
                   <User className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30" size={18} />
                   <input
+                    id="lcm-name"
+                    name="name"
+                    autoComplete="name"
                     type="text"
                     required
                     placeholder="Your Full Name"
@@ -106,8 +116,12 @@ const LeadCaptureModal = ({ isOpen, onClose, preferredLocation }) => {
                 </div>
 
                 <div className="relative">
+                  <label htmlFor="lcm-phone" className="sr-only">WhatsApp Number</label>
                   <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30" size={18} />
                   <input
+                    id="lcm-phone"
+                    name="phone"
+                    autoComplete="tel"
                     type="tel"
                     required
                     placeholder="WhatsApp Number"
@@ -118,14 +132,55 @@ const LeadCaptureModal = ({ isOpen, onClose, preferredLocation }) => {
                 </div>
 
                 <div className="relative">
+                  <label htmlFor="lcm-district" className="sr-only">Preferred District/City</label>
                   <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30" size={18} />
                   <input
+                    id="lcm-district"
+                    name="district"
                     type="text"
-                    placeholder="Preferred District"
+                    placeholder="Preferred District/City"
                     value={district}
                     onChange={(e) => setDistrict(e.target.value)}
                     className="w-full rounded-2xl border border-white/10 bg-white/5 py-4 pl-12 pr-4 text-white outline-none focus:border-emerald-500/50 focus:bg-white/[0.08]"
                   />
+                </div>
+
+                <div className="flex gap-4">
+                  <div className="w-full">
+                    <label htmlFor="lcm-property-type" className="sr-only">Property Type</label>
+                    <select
+                      id="lcm-property-type"
+                      name="propertyType"
+                      value={propertyType}
+                      onChange={(e) => setPropertyType(e.target.value)}
+                      className="w-full rounded-2xl border border-white/10 bg-white/5 py-4 px-4 text-white outline-none focus:border-emerald-500/50 focus:bg-white/[0.08] appearance-none"
+                      style={{ WebkitAppearance: 'none', MozAppearance: 'none' }}
+                    >
+                      <option value="" disabled className="text-gray-500 bg-[#050a14]">Property Type</option>
+                      <option value="Apartment" className="bg-[#050a14]">Apartment</option>
+                      <option value="Villa" className="bg-[#050a14]">Villa</option>
+                      <option value="Plot" className="bg-[#050a14]">Plot</option>
+                      <option value="Commercial" className="bg-[#050a14]">Commercial</option>
+                    </select>
+                  </div>
+
+                  <div className="w-full">
+                    <label htmlFor="lcm-budget" className="sr-only">Budget Range</label>
+                    <select
+                      id="lcm-budget"
+                      name="budget"
+                      value={budget}
+                      onChange={(e) => setBudget(e.target.value)}
+                      className="w-full rounded-2xl border border-white/10 bg-white/5 py-4 px-4 text-white outline-none focus:border-emerald-500/50 focus:bg-white/[0.08] appearance-none"
+                      style={{ WebkitAppearance: 'none', MozAppearance: 'none' }}
+                    >
+                      <option value="" disabled className="text-gray-500 bg-[#050a14]">Budget Range</option>
+                      <option value="Under 50 Lakhs" className="bg-[#050a14]">Under 50 Lakhs</option>
+                      <option value="50 Lakhs - 1 Crore" className="bg-[#050a14]">50 Lakhs - 1 Crore</option>
+                      <option value="1 Crore - 5 Crores" className="bg-[#050a14]">1 Crore - 5 Crores</option>
+                      <option value="5 Crores+" className="bg-[#050a14]">5 Crores+</option>
+                    </select>
+                  </div>
                 </div>
 
                 <button

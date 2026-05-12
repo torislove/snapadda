@@ -109,7 +109,15 @@ export default function PropertyDetails() {
   // Sync liveData to property state
   useEffect(() => {
     if (liveData) {
-      setProperty(prev => ({ ...prev, ...liveData }));
+      setProperty(prev => {
+        const next = { ...prev, ...liveData };
+        // HEAL: If liveData (Firebase) is missing the link but prev (MongoDB) has it, preserve MongoDB's link.
+        // This handles cases where Firebase sync might have been delayed or failed.
+        if (!liveData.googleMapsLink && prev?.googleMapsLink) {
+          next.googleMapsLink = prev.googleMapsLink;
+        }
+        return next;
+      });
       if (liveData.likeCount !== undefined) setLikeCount(liveData.likeCount);
     }
   }, [liveData]);
@@ -201,7 +209,14 @@ export default function PropertyDetails() {
   ];
 
   // Fallback Google Maps Link generation if missing
-  const finalGoogleMapsLink = property?.googleMapsLink || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${property?.title} ${property?.location} ${property?.district || ''}`)}`;
+  const cleanMapLink = (link) => {
+    if (!link) return null;
+    let l = link.trim();
+    if (!l.startsWith('http')) return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(l)}`;
+    return l;
+  };
+  const finalGoogleMapsLink = cleanMapLink(property?.googleMapsLink);
+  const hasMapLink = !!finalGoogleMapsLink;
 
   const isAgri = ['agricultural land', 'farmhouse'].some(t => (property?.type || '').toLowerCase().includes(t));
   const isPlot = ['plot', 'crda', 'layout'].some(t => (property?.type || '').toLowerCase().includes(t));
@@ -582,42 +597,84 @@ export default function PropertyDetails() {
                 )}
 
                 <div style={{ marginTop: '1.5rem', width: '100%', maxWidth: '500px' }}>
-                  <div style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--gold)', letterSpacing: '0.1em', marginBottom: '8px', textTransform: 'uppercase' }}>ప్రాంతం యొక్క మ్యాప్ (Location Map)</div>
+                  <div style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--gold)', letterSpacing: '0.1em', marginBottom: '12px', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ width: '12px', height: '12px', borderRadius: '3px', background: 'linear-gradient(45deg, #4285F4, #EA4335, #FBBC05, #34A853)' }} />
+                    ప్రాంతం యొక్క మ్యాప్ (Location Map)
+                  </div>
                   <a 
                     id="btn-pd-map-directions"
-                    href={finalGoogleMapsLink} 
-                    target="_blank" 
+                    href={hasMapLink ? finalGoogleMapsLink : '#'} 
+                    target={hasMapLink ? "_blank" : "_self"}
                     rel="noopener noreferrer" 
-                    className="btn-3d-glass"
+                    onClick={(e) => !hasMapLink && e.preventDefault()}
                     style={{ 
                       width: '100%',
-                      padding: '1.2rem', fontSize: '1rem', fontWeight: 900, borderRadius: '20px',
-                      textDecoration: 'none'
+                      padding: '1.2rem', 
+                      fontSize: '1rem', 
+                      fontWeight: 900, 
+                      borderRadius: '24px',
+                      textDecoration: 'none',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '12px',
+                      color: 'white',
+                      position: 'relative',
+                      background: hasMapLink ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255,255,255,0.02)',
+                      backdropFilter: 'blur(10px)',
+                      backgroundImage: hasMapLink 
+                        ? 'linear-gradient(rgba(10, 10, 20, 0.8), rgba(10, 10, 20, 0.8)), linear-gradient(135deg, #4285F4 0%, #EA4335 33%, #FBBC05 66%, #34A853 100%)'
+                        : 'none',
+                      backgroundOrigin: 'border-box',
+                      backgroundClip: 'padding-box, border-box',
+                      backgroundColor: !hasMapLink ? 'rgba(255,255,255,0.05)' : 'transparent',
+                      border: !hasMapLink ? '1px solid rgba(255,255,255,0.1)' : '2px solid transparent',
+                      boxShadow: hasMapLink ? '0 10px 30px rgba(0,0,0,0.4), inset 0 1px 1px rgba(255,255,255,0.1)' : 'none',
+                      transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                      cursor: hasMapLink ? 'pointer' : 'not-allowed',
+                      opacity: hasMapLink ? 1 : 0.6,
+                      filter: hasMapLink ? 'none' : 'grayscale(1)'
+                    }}
+                    onMouseEnter={e => {
+                      if (hasMapLink) {
+                        e.currentTarget.style.transform = 'translateY(-5px) scale(1.02)';
+                        e.currentTarget.style.boxShadow = '0 15px 40px rgba(66, 133, 244, 0.3)';
+                      }
+                    }}
+                    onMouseLeave={e => {
+                      if (hasMapLink) {
+                        e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                        e.currentTarget.style.boxShadow = '0 10px 30px rgba(0,0,0,0.4), inset 0 1px 1px rgba(255,255,255,0.1)';
+                      }
                     }}
                   >
-                    <MapPin size={24}/> మ్యాప్‌లో దిశలను చూడండి
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ filter: hasMapLink ? 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' : 'none' }}>
+                      <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill={hasMapLink ? "#4285F4" : "#94a3b8"}/>
+                      <path d="M12 11.5c1.38 0 2.5-1.12 2.5-2.5S13.38 6.5 12 6.5 9.5 7.62 9.5 9s1.12 2.5 2.5 2.5z" fill="white"/>
+                    </svg>
+                    {hasMapLink ? 'మ్యాప్‌లో దిశలను చూడండి' : 'Location Link Pending'}
                   </a>
                 </div>
               </div>
             </div>
 
             <div className="pd-price-block">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', background: 'rgba(39, 201, 125, 0.1)', border: '1px solid rgba(39, 201, 125, 0.3)', padding: '6px 12px', borderRadius: '12px' }}>
-                 <ShieldCheck size={14} color="#27c97d"/> <span style={{ color: '#27c97d', fontSize: '0.7rem', fontWeight: 900 }}>100% VERIFIED ASSET</span>
-              </div>
-              <div className="pd-price-main" style={{ fontSize: '2.5rem', fontWeight: 950, color: 'var(--gold)' }}>{formatSnapAddaPrice(displayPrice)}</div>
-              <div className="pd-price-sub" style={{ color: 'var(--txt-muted)', fontWeight: 600, fontSize: '0.85rem' }}>SnapAdda Exclusive Valuation</div>
-              <div className="pd-price-actions" style={{ marginTop: '1.5rem', display: 'flex', gap: '1rem' }}>
-                <button 
-                  id="btn-pd-like"
-                  className={`pd-action-btn ${liked ? 'liked' : ''}`} onClick={handleLike} style={{ flex: 1, padding: '12px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', background: liked ? 'var(--gold)' : 'rgba(255,255,255,0.05)', color: liked ? 'black' : 'white', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                  <Heart size={18} fill={liked ? 'currentColor' : 'none'}/> {liked ? 'Liked' : 'Like'}
-                </button>
-                <button 
-                  id="btn-pd-share"
-                  className="pd-action-btn" onClick={handleShare} style={{ flex: 1, padding: '12px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: 'white', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                  <Share2 size={18}/> Share
-                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', background: 'rgba(39, 201, 125, 0.1)', border: '1px solid rgba(39, 201, 125, 0.3)', padding: '6px 12px', borderRadius: '12px' }}>
+                   <ShieldCheck size={14} color="#27c97d"/> <span style={{ color: '#27c97d', fontSize: '0.7rem', fontWeight: 900 }}>100% VERIFIED ASSET</span>
+                </div>
+                <div className="pd-price-main" style={{ fontSize: '2.5rem', fontWeight: 950, color: 'var(--gold)' }}>{formatSnapAddaPrice(displayPrice)}</div>
+                <div className="pd-price-sub" style={{ color: 'var(--txt-muted)', fontWeight: 600, fontSize: '0.85rem' }}>SnapAdda Exclusive Valuation</div>
+                <div className="pd-price-actions" style={{ marginTop: '1.5rem', display: 'flex', gap: '1rem' }}>
+                  <button 
+                    id="btn-pd-like"
+                    className={`pd-action-btn ${liked ? 'liked' : ''}`} onClick={handleLike} style={{ flex: 1, padding: '12px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', background: liked ? 'var(--gold)' : 'rgba(255,255,255,0.05)', color: liked ? 'black' : 'white', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                    <Heart size={18} fill={liked ? 'currentColor' : 'none'}/> {liked ? 'Liked' : 'Like'}
+                  </button>
+                  <button 
+                    id="btn-pd-share"
+                    className="pd-action-btn" onClick={handleShare} style={{ flex: 1, padding: '12px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: 'white', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                    <Share2 size={18}/> Share
+                  </button>
               </div>
             </div>
           </div>
@@ -962,28 +1019,32 @@ export default function PropertyDetails() {
 
 
 
-      {/* ── Elite Floating Bento Pill Ribbon ── */}
       <div className="pd-mobile-ribbon" style={{ 
         position: 'fixed', bottom: '25px', left: '20px', right: '20px', 
-        zIndex: 100002, display: 'flex', gap: '10px',
-        background: 'rgba(10,12,20,0.85)', backdropFilter: 'blur(20px)',
-        padding: '10px', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.1)',
+        zIndex: 100002, display: 'flex', gap: '10px', alignItems: 'center',
+        background: 'rgba(10,12,20,0.85)', backdropFilter: 'blur(25px)',
+        padding: '8px 10px', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.12)',
         boxShadow: '0 20px 50px rgba(0,0,0,0.8)'
       }}>
-        <button 
-          onClick={() => window.location.href = `tel:${supportPhone}`}
-          className="btn-3d-glass" 
-          style={{ flex: 1, padding: '14px', borderRadius: '16px', background: 'rgba(232,184,75,0.9)', color: 'black', fontWeight: 900, fontSize: '0.85rem', boxShadow: '0 10px 25px rgba(232,184,75,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', border: 'none' }}
-        >
-          <Phone size={18}/> CALL AGENT
-        </button>
-        <button 
-          onClick={handleWhatsApp}
-          className="btn-3d-glass-emerald" 
-          style={{ flex: 1, padding: '14px', borderRadius: '16px', background: 'rgba(37,211,102,0.9)', color: 'white', fontWeight: 900, fontSize: '0.85rem', boxShadow: '0 10px 25px rgba(37,211,102,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', border: 'none' }}
-        >
-          <MessageSquare size={18}/> WHATSAPP
-        </button>
+        <div style={{ padding: '0 10px', flex: 1 }}>
+          <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.6rem', fontWeight: 800 }}>STARTING FROM</div>
+          <div style={{ color: 'var(--gold)', fontSize: '1.1rem', fontWeight: 950 }}>{formatSnapAddaPrice(displayPrice)}</div>
+        </div>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button 
+            onClick={() => window.location.href = `tel:${supportPhone}`}
+            style={{ width: '48px', height: '48px', borderRadius: '16px', background: 'rgba(255,255,255,0.1)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(255,255,255,0.1)' }}
+          >
+            <Phone size={20}/>
+          </button>
+          <button 
+            onClick={handleWhatsApp}
+            className="btn-3d-liquid" 
+            style={{ background: 'var(--gold)', color: 'black', padding: '0 20px', height: '48px', borderRadius: '16px', fontWeight: 900, fontSize: '0.85rem' }}
+          >
+            ENQUIRE
+          </button>
+        </div>
       </div>
       <ShareControlCenter 
         isOpen={shareModal} 

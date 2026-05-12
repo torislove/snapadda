@@ -1,9 +1,12 @@
 import { StrictMode } from 'react';
 import { registerSW } from 'virtual:pwa-register';
 
-// Register Service Worker for Instant PWA Loading
-registerSW({
-  onNeedRefresh() {},
+// Register Service Worker for Instant PWA Loading and Auto Update
+const updateSW = registerSW({
+  onNeedRefresh() {
+    // Automatically force update when new version is available
+    updateSW(true);
+  },
   onOfflineReady() {},
 });
 import { createRoot } from 'react-dom/client';

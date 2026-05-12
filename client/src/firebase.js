@@ -1,6 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getDatabase } from "firebase/database";
-import { getMessaging } from "firebase/messaging";
+// import { getDatabase } from "firebase/database";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -15,22 +14,17 @@ const firebaseConfig = {
 
 let app;
 let db = null;
-let messaging = null;
 
 if (firebaseConfig.apiKey && firebaseConfig.apiKey !== 'undefined') {
   try {
     app = initializeApp(firebaseConfig);
     const rtdbUrl = import.meta.env.VITE_RTDB_URL || firebaseConfig.databaseURL;
     if (rtdbUrl && rtdbUrl !== 'undefined') {
-      db = getDatabase(app, rtdbUrl);
-      console.log("Firebase RTDB initialized:", rtdbUrl);
+      db = null; // Disabled RTDB to prevent unconfigured instance warning
+      // console.log("Firebase RTDB initialized:", rtdbUrl);
     } else {
       console.warn("RTDB URL missing or invalid. Sync features will be limited.");
     }
-    
-    // Initialize Messaging
-    messaging = getMessaging(app);
-    console.log("Firebase Messaging initialized");
     
   } catch (err) {
     console.error("Firebase startup failure:", err);
@@ -39,4 +33,4 @@ if (firebaseConfig.apiKey && firebaseConfig.apiKey !== 'undefined') {
   console.warn("Firebase configuration missing. Real-time features will be disabled.");
 }
 
-export { app, db, messaging };
+export { app, db };

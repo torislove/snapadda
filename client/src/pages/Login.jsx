@@ -130,13 +130,13 @@ export default function Login() {
             >
               {/* Mobile */}
               <div>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '0.72rem', fontWeight: 700, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px' }}>
+                <label htmlFor="phone" style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '0.72rem', fontWeight: 700, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px' }}>
                   <Phone size={13} color="var(--gold)" /> Mobile Number
                 </label>
                 <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '14px', overflow: 'hidden' }}>
                   <span style={{ padding: '0 14px', color: 'rgba(255,255,255,0.4)', fontSize: '0.9rem', fontWeight: 700, borderRight: '1px solid rgba(255,255,255,0.08)', height: '52px', display: 'flex', alignItems: 'center' }}>+91</span>
                   <input
-                    type="tel" inputMode="numeric" maxLength={10} placeholder="98XXXXXXXX" value={phone}
+                    id="phone" name="phone" type="tel" inputMode="numeric" maxLength={10} placeholder="98XXXXXXXX" value={phone}
                     onChange={e => setPhone(e.target.value.replace(/\D/g, ''))}
                     onFocus={e => e.target.parentElement.style.borderColor = 'rgba(212,175,55,0.6)'}
                     onBlur={e => e.target.parentElement.style.borderColor = 'rgba(255,255,255,0.12)'}
@@ -147,13 +147,13 @@ export default function Login() {
 
               {/* WhatsApp */}
               <div>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '0.72rem', fontWeight: 700, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px' }}>
+                <label htmlFor="whatsapp" style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '0.72rem', fontWeight: 700, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px' }}>
                   <MessageSquare size={13} color="#25D366" /> WhatsApp Number
                 </label>
                 <div style={{ display: 'flex', alignItems: 'center', background: sameAsPhone ? 'rgba(37,211,102,0.04)' : 'rgba(255,255,255,0.04)', border: `1px solid ${sameAsPhone ? 'rgba(37,211,102,0.3)' : 'rgba(255,255,255,0.12)'}`, borderRadius: '14px', overflow: 'hidden', transition: 'all 0.2s' }}>
                   <span style={{ padding: '0 14px', color: 'rgba(255,255,255,0.4)', fontSize: '0.9rem', fontWeight: 700, borderRight: '1px solid rgba(255,255,255,0.08)', height: '52px', display: 'flex', alignItems: 'center' }}>+91</span>
                   <input
-                    type="tel" inputMode="numeric" maxLength={10} placeholder="WhatsApp number"
+                    id="whatsapp" name="whatsapp" type="tel" inputMode="numeric" maxLength={10} placeholder="WhatsApp number"
                     value={sameAsPhone ? phone : whatsapp}
                     onChange={e => { setSameAsPhone(false); setWhatsapp(e.target.value.replace(/\D/g, '')); }}
                     disabled={sameAsPhone}
@@ -219,6 +219,8 @@ export default function Login() {
                     theme="filled_black"
                     shape="circle"
                     size="large"
+                    useOneTap={false}
+                    use_fedcm_for_prompt={true}
                   />
                 )}
               </div>

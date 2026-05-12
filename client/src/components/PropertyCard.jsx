@@ -18,7 +18,6 @@ import {
 } from '../utils/priceUtils';
 import tr from '../utils/teluguTranslations';
 import { logUserActivity, ACTIONS } from '../services/activityTracker';
-import { triggerHaptic } from '../utils/haptics';
 import { prefetchPropertyData, prioritizeImage } from '../utils/PerformanceUtilities';
 import { fetchProperty } from '../services/api';
 import { useRealtimeProperties } from '../hooks/useRealtimeProperties';
@@ -184,7 +183,7 @@ const PropertyCard = memo((props) => {
     e.preventDefault(); e.stopPropagation();
     if (!user) return setToast('Sign in to save properties');
     
-    triggerHaptic('medium');
+    
     likeProperty(propertyId, user._id || user.id)
       .then(res => {
         if (res.status === 'success') {
@@ -216,7 +215,7 @@ const PropertyCard = memo((props) => {
       });
       setInquirySent(true);
       setQuestionText('');
-      triggerHaptic('success');
+      
       setQuickInquiryOpen(false);
       setTimeout(() => {
         setInquirySent(false);
@@ -304,7 +303,9 @@ const PropertyCard = memo((props) => {
           </div>
         ) : (
           <form onSubmit={submitQuickInquiry}>
+            <label htmlFor={`qi-text-${propertyId}`} className="sr-only">Ask a question about this property</label>
             <textarea
+              id={`qi-text-${propertyId}`}
               autoFocus
               value={questionText}
               onChange={(e) => setQuestionText(e.target.value)}
@@ -372,14 +373,16 @@ const PropertyCard = memo((props) => {
           onMouseEnter={(e) => {
             handleHoverPrefetch();
             if (!isMobile) {
-              e.currentTarget.style.transform = 'translateY(-4px)';
-              e.currentTarget.style.boxShadow = '0 20px 40px rgba(0,0,0,0.4), 0 0 20px rgba(232,184,75,0.1)';
+              e.currentTarget.style.transform = 'translateY(-8px)';
+              e.currentTarget.style.boxShadow = '0 25px 50px -12px rgba(0,0,0,0.7), 0 0 25px rgba(232,184,75,0.2)';
+              e.currentTarget.style.borderColor = 'rgba(232,184,75,0.4)';
             }
           }}
           onMouseLeave={(e) => {
             if (!isMobile) {
               e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = '0 10px 30px rgba(0,0,0,0.2)';
+              e.currentTarget.style.boxShadow = isMobile ? '0 12px 30px rgba(0,0,0,0.4)' : '0 10px 30px rgba(0,0,0,0.2)';
+              e.currentTarget.style.borderColor = isMobile ? 'rgba(255,255,255,0.08)' : 'var(--border-light)';
             }
           }}
         >
@@ -418,7 +421,7 @@ const PropertyCard = memo((props) => {
           <div style={{ position: 'absolute', top: '12px', right: '12px', zIndex: 30, display: 'flex', gap: '6px', background: 'rgba(10, 15, 25, 0.75)', backdropFilter: 'blur(20px)', padding: '4px', borderRadius: '30px', border: '1px solid rgba(255,255,255,0.2)', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
             <motion.button 
               whileTap={{ scale: 0.9 }}
-              onClick={(e) => { e.preventDefault(); e.stopPropagation(); setQuickInquiryOpen(true); triggerHaptic('light'); }}
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); setQuickInquiryOpen(true);  }}
               style={{ width: '38px', height: '38px', borderRadius: '50%', background: 'transparent', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: 'none' }}
             >
               <MessageSquare size={18} />
@@ -496,6 +499,11 @@ const PropertyCard = memo((props) => {
                    >
                      <ShieldCheck size={12} /> Verified
                    </motion.span>
+                 )}
+                 {googleMapsLink && (
+                   <span style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(66, 133, 244, 0.15)', color: '#4285F4', border: '1px solid rgba(66, 133, 244, 0.35)', backdropFilter: 'blur(10px)', fontWeight: 700, padding: '4px 10px', borderRadius: '8px', fontSize: '0.65rem' }}>
+                     <MapPin size={10} /> Map Link
+                   </span>
                  )}
               </div>
 

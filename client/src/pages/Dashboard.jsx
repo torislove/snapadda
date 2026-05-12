@@ -9,7 +9,7 @@ import Logo from '../components/Logo';
 import ContactModal from '../components/ContactModal';
 import { useTranslation } from 'react-i18next';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
-import { useNotifications } from '../hooks/useNotifications';
+
 
 // Dashboard home tab
 function DashboardHome({ user, stats, recent, setModalOpen }) {
@@ -207,7 +207,6 @@ function Profile({ user, logout, stats }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
-  const { registerToken, permission } = useNotifications();
 
   const avatarUrl = user?.picture || user?.avatar || user?.photo ||
     `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'U')}&background=e8b84b&color=000&bold=true&size=200`;
@@ -232,46 +231,6 @@ function Profile({ user, logout, stats }) {
 
   return (
     <div style={{ padding: '2rem 0', maxWidth: '860px' }}>
-      {/* ── Notification Status ──────────────────────────────────────── */}
-      <motion.div
-        initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-        style={{ 
-          background: 'rgba(232,184,75,0.03)', 
-          border: '1px solid rgba(232,184,75,0.15)', 
-          borderRadius: '24px', padding: '1.5rem', 
-          marginBottom: '1.5rem', display: 'flex', 
-          alignItems: 'center', justifyContent: 'space-between',
-          gap: '1rem', flexWrap: 'wrap'
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <div style={{ 
-            width: '48px', height: '48px', borderRadius: '14px', 
-            background: permission === 'granted' ? 'rgba(16,217,140,0.1)' : 'rgba(255,255,255,0.05)', 
-            display: 'flex', alignItems: 'center', justifyContent: 'center' 
-          }}>
-            <Sparkles size={24} style={{ color: permission === 'granted' ? '#10d98c' : 'var(--gold)' }} />
-          </div>
-          <div>
-            <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#fff' }}>
-              {permission === 'granted' ? 'Smart Alerts Active' : 'Enable Real-time Alerts'}
-            </div>
-            <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)', fontWeight: 600 }}>
-              {permission === 'granted' ? 'You are receiving instant market updates.' : 'Get notified when new assets match your profile.'}
-            </div>
-          </div>
-        </div>
-        {permission !== 'granted' && (
-          <button 
-            onClick={registerToken}
-            className="btn-3d-glass" 
-            style={{ padding: '10px 20px', fontSize: '0.75rem', borderRadius: '12px' }}
-          >
-            ENABLE NOTIFICATIONS
-          </button>
-        )}
-      </motion.div>
-
       {/* ── Hero Profile Card ─────────────────────────────────────────── */}
       <motion.div
         initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}

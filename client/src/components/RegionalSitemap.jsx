@@ -134,7 +134,8 @@ export default function RegionalSitemap() {
         }}>
           {AP_REGIONS.map((region, idx) => (
             <motion.div 
-              key={idx}
+              key={region.district}
+
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
@@ -156,7 +157,8 @@ export default function RegionalSitemap() {
               </h3>
               <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {region.mandals.map((mandal, mIdx) => (
-                  <li key={mIdx}>
+                  <li key={`${region.district}-${mandal}`}>
+
                     <Link 
                       to={`/local-agency/${mandal}`}
                       style={{ 

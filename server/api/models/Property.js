@@ -77,6 +77,7 @@ const propertySchema = new mongoose.Schema({
   verificationStatus: { type: String, default: 'Draft' },
   isVerified: { type: Boolean, default: false },
   isFeatured: { type: Boolean, default: false },
+  propertyCode: { type: String, default: '' },
   franchiseId: { type: String, default: null },
   
   listerType: { type: String, default: 'Individual Owner' },

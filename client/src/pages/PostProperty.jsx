@@ -9,7 +9,6 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { submitProperty, uploadMedia } from '../services/api';
-import { triggerHaptic } from '../utils/haptics';
 import { useTranslation } from 'react-i18next';
 import LocationAutocomplete from '../components/LocationAutocomplete';
 import { fetchSetting } from '../services/api';
@@ -20,39 +19,39 @@ import { MessageSquare } from 'lucide-react';
 const StepBasics = memo(({ formData, handleChange, formErrors, t, PROPERTY_TYPES }) => (
   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
     <div className={`field-group ${formErrors.includes('title') ? 'error' : ''}`}>
-      <label className="elite-lbl">
+      <label htmlFor="pp-title" className="elite-lbl">
         {t('post.propTitle')} <span className="required-asterisk">*</span>
       </label>
-      <input name="title" value={formData.title} onChange={handleChange} placeholder="e.g. 3BHK Ultra Luxury Villa" className="elite-input" />
+      <input id="pp-title" name="title" value={formData.title} onChange={handleChange} placeholder="e.g. 3BHK Ultra Luxury Villa" className="elite-input" />
     </div>
     
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
       <div className="field-group">
-        <label className="elite-lbl">{t('post.assetType')}</label>
+        <label htmlFor="pp-type" className="elite-lbl">{t('post.assetType')}</label>
         <div style={{ position: 'relative' }}>
-          <select name="type" value={formData.type} onChange={handleChange} className="elite-input" style={{ appearance: 'none' }}>
+          <select id="pp-type" name="type" value={formData.type} onChange={handleChange} className="elite-input" style={{ appearance: 'none' }}>
             {PROPERTY_TYPES.map(pt => <option key={pt}>{pt}</option>)}
           </select>
           <Building size={16} style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', opacity: 0.3 }} />
         </div>
       </div>
       <div className="field-group">
-        <label className="elite-lbl">Sub-Category / Structure</label>
-        <input name="subType" value={formData.subType} onChange={handleChange} placeholder="e.g. Gated Community, Penthouse" className="elite-input" />
+        <label htmlFor="pp-subType" className="elite-lbl">Sub-Category / Structure</label>
+        <input id="pp-subType" name="subType" value={formData.subType} onChange={handleChange} placeholder="e.g. Gated Community, Penthouse" className="elite-input" />
       </div>
     </div>
 
     <div className="field-group">
-      <label className="elite-lbl">{t('post.transaction')}</label>
-      <select name="purpose" value={formData.purpose} onChange={handleChange} className="elite-input">
+      <label htmlFor="pp-purpose" className="elite-lbl">{t('post.transaction')}</label>
+      <select id="pp-purpose" name="purpose" value={formData.purpose} onChange={handleChange} className="elite-input">
         <option value="Sale">{t('post.sell')}</option>
         <option value="Rent">{t('post.giveRent')}</option>
       </select>
     </div>
 
     <div className="field-group">
-      <label className="elite-lbl">{t('post.desc')}</label>
-      <textarea name="description" value={formData.description} onChange={handleChange} rows={5} placeholder="Describe the premium features..." className="elite-input" style={{ resize: 'none' }} />
+      <label htmlFor="pp-description" className="elite-lbl">{t('post.desc')}</label>
+      <textarea id="pp-description" name="description" value={formData.description} onChange={handleChange} rows={5} placeholder="Describe the premium features..." className="elite-input" style={{ resize: 'none' }} />
     </div>
   </motion.div>
 ));
@@ -61,10 +60,11 @@ const StepTechnicals = memo(({ formData, handleChange, setFormData, t }) => (
   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
       <div className="field-group">
-        <label className="elite-lbl">{t('post.size')}</label>
+        <label htmlFor="pp-areaSize" className="elite-lbl">{t('post.size')}</label>
         <div style={{ display: 'flex', gap: '10px' }}>
-          <input name="areaSize" type="number" value={formData.areaSize} onChange={handleChange} placeholder="Value" className="elite-input" style={{ flex: 1 }} />
-          <select name="measurementUnit" value={formData.measurementUnit} onChange={handleChange} className="elite-input" style={{ width: '130px' }}>
+          <input id="pp-areaSize" name="areaSize" type="number" value={formData.areaSize} onChange={handleChange} placeholder="Value" className="elite-input" style={{ flex: 1 }} />
+          <label htmlFor="pp-measurementUnit" className="sr-only">Measurement Unit</label>
+          <select id="pp-measurementUnit" name="measurementUnit" value={formData.measurementUnit} onChange={handleChange} className="elite-input" style={{ width: '130px' }}>
             <option>Sq.Yds</option>
             <option>Acres</option>
             <option>Cents</option>
@@ -74,8 +74,8 @@ const StepTechnicals = memo(({ formData, handleChange, setFormData, t }) => (
         </div>
       </div>
       <div className="field-group">
-        <label className="elite-lbl">{t('post.facing')}</label>
-        <select name="facing" value={formData.facing} onChange={handleChange} className="elite-input">
+        <label htmlFor="pp-facing" className="elite-lbl">{t('post.facing')}</label>
+        <select id="pp-facing" name="facing" value={formData.facing} onChange={handleChange} className="elite-input">
           <option>East</option><option>West</option><option>North</option><option>South</option>
           <option>North-East</option><option>South-East</option><option>North-West</option><option>South-West</option>
         </select>
@@ -84,26 +84,26 @@ const StepTechnicals = memo(({ formData, handleChange, setFormData, t }) => (
 
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem' }}>
       <div className="field-group">
-        <label className="elite-lbl">{t('post.bhk')}</label>
-        <input name="bhk" type="number" value={formData.bhk} onChange={handleChange} placeholder="e.g. 3" className="elite-input" />
+        <label htmlFor="pp-bhk" className="elite-lbl">{t('post.bhk')}</label>
+        <input id="pp-bhk" name="bhk" type="number" value={formData.bhk} onChange={handleChange} placeholder="e.g. 3" className="elite-input" />
       </div>
       <div className="field-group">
-        <label className="elite-lbl">{t('post.baths')}</label>
-        <input name="baths" type="number" value={formData.baths} onChange={handleChange} placeholder="e.g. 2" className="elite-input" />
+        <label htmlFor="pp-baths" className="elite-lbl">{t('post.baths')}</label>
+        <input id="pp-baths" name="baths" type="number" value={formData.baths} onChange={handleChange} placeholder="e.g. 2" className="elite-input" />
       </div>
       <div className="field-group">
         <label className="elite-lbl">{t('post.vastu')}</label>
         <div style={{ height: '54px', display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,0.02)', padding: '0 16px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.08)' }}>
-          <input type="checkbox" name="vastuCompliant" checked={formData.vastuCompliant} onChange={handleChange} style={{ width: '20px', height: '20px', accentColor: 'var(--gold)' }} />
-          <span style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)' }}>Vastu Verified</span>
+          <input id="pp-vastuCompliant" type="checkbox" name="vastuCompliant" checked={formData.vastuCompliant} onChange={handleChange} style={{ width: '20px', height: '20px', accentColor: 'var(--gold)' }} />
+          <label htmlFor="pp-vastuCompliant" style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', cursor: 'pointer' }}>Vastu Verified</label>
         </div>
       </div>
     </div>
 
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
       <div className="field-group">
-        <label className="elite-lbl">{t('post.age')}</label>
-        <select name="propertyAge" value={formData.propertyAge} onChange={handleChange} className="elite-input">
+        <label htmlFor="pp-propertyAge" className="elite-lbl">{t('post.age')}</label>
+        <select id="pp-propertyAge" name="propertyAge" value={formData.propertyAge} onChange={handleChange} className="elite-input">
           <option value="N/A">N/A</option>
           <option value="0-1 yrs">New / 0-1 Years</option>
           <option value="1-5 yrs">1-5 Years</option>
@@ -112,8 +112,8 @@ const StepTechnicals = memo(({ formData, handleChange, setFormData, t }) => (
         </select>
       </div>
       <div className="field-group">
-        <label className="elite-lbl">{t('post.status')}</label>
-        <select name="constructionStatus" value={formData.constructionStatus} onChange={handleChange} className="elite-input">
+        <label htmlFor="pp-constructionStatus" className="elite-lbl">{t('post.status')}</label>
+        <select id="pp-constructionStatus" name="constructionStatus" value={formData.constructionStatus} onChange={handleChange} className="elite-input">
           <option>Ready to Move</option>
           <option>Under Construction</option>
           <option>New Launch</option>
@@ -148,26 +148,26 @@ const StepTechnicals = memo(({ formData, handleChange, setFormData, t }) => (
 const StepLocation = memo(({ formData, handleChange, setFormData, formErrors, t, DISTRICTS }) => (
   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
     <div className="field-group">
-      <label className="elite-lbl">{t('post.district')}</label>
-      <select name="district" value={formData.district} onChange={handleChange} className="elite-input">
+      <label htmlFor="pp-district" className="elite-lbl">{t('post.district')}</label>
+      <select id="pp-district" name="district" value={formData.district} onChange={handleChange} className="elite-input">
         {DISTRICTS.map(d => <option key={d}>{d}</option>)}
       </select>
     </div>
     
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
       <div className="field-group">
-        <label className="elite-lbl">Pincode <span className="required-asterisk">*</span></label>
-        <input name="pincode" value={formData.pincode || ''} onChange={handleChange} placeholder="6-digit code" className="elite-input" maxLength={6} />
+        <label htmlFor="pp-pincode" className="elite-lbl">Pincode <span className="required-asterisk">*</span></label>
+        <input id="pp-pincode" name="pincode" value={formData.pincode || ''} onChange={handleChange} placeholder="6-digit code" className="elite-input" maxLength={6} />
       </div>
       <div className="field-group">
-        <label className="elite-lbl">Mandal / Tahsil</label>
-        <input name="mandal" value={formData.mandal || ''} onChange={handleChange} placeholder="e.g. Mangalagiri" className="elite-input" />
+        <label htmlFor="pp-mandal" className="elite-lbl">Mandal / Tahsil</label>
+        <input id="pp-mandal" name="mandal" value={formData.mandal || ''} onChange={handleChange} placeholder="e.g. Mangalagiri" className="elite-input" />
       </div>
     </div>
 
     <div className="field-group">
-      <label className="elite-lbl">Village / Locality</label>
-      <input name="village" value={formData.village || ''} onChange={handleChange} placeholder="e.g. Navuluru" className="elite-input" />
+      <label htmlFor="pp-village" className="elite-lbl">Village / Locality</label>
+      <input id="pp-village" name="village" value={formData.village || ''} onChange={handleChange} placeholder="e.g. Navuluru" className="elite-input" />
     </div>
 
     <div className="field-group">
@@ -186,7 +186,7 @@ const StepLocation = memo(({ formData, handleChange, setFormData, formErrors, t,
             village: loc.village || prev.village,
             state: loc.state || 'Andhra Pradesh'
           }));
-          triggerHaptic('medium');
+          
         }}
         placeholder="Type Mandal, City or Village (e.g. Tenali, Benz Circle...)"
       />
@@ -196,29 +196,29 @@ const StepLocation = memo(({ formData, handleChange, setFormData, formErrors, t,
     </div>
 
     <div className="field-group">
-      <label className="elite-lbl">{t('post.area')} / Landmark</label>
-      <input name="location" value={formData.location} onChange={handleChange} placeholder="e.g. Near Bus Stand" className="elite-input" />
+      <label htmlFor="pp-location" className="elite-lbl">{t('post.area')} / Landmark</label>
+      <input id="pp-location" name="location" value={formData.location} onChange={handleChange} placeholder="e.g. Near Bus Stand" className="elite-input" />
     </div>
 
 
     <div className="field-group">
-      <label className="elite-lbl">Google Maps Link</label>
-      <input name="googleMapsLink" value={formData.googleMapsLink} onChange={handleChange} placeholder="https://goo.gl/maps/..." className="elite-input" />
+      <label htmlFor="pp-googleMapsLink" className="elite-lbl">Google Maps Link</label>
+      <input id="pp-googleMapsLink" name="googleMapsLink" value={formData.googleMapsLink} onChange={handleChange} placeholder="https://goo.gl/maps/..." className="elite-input" />
     </div>
     <div className="field-group">
-      <label className="elite-lbl">{t('post.address')}</label>
-      <textarea name="address" value={formData.address} onChange={handleChange} placeholder="Detailed address for admin review..." className="elite-input" rows={2} style={{ resize: 'none' }} />
+      <label htmlFor="pp-address" className="elite-lbl">{t('post.address')}</label>
+      <textarea id="pp-address" name="address" value={formData.address} onChange={handleChange} placeholder="Detailed address for admin review..." className="elite-input" rows={2} style={{ resize: 'none' }} />
     </div>
   </motion.div>
 ));
 
-const StepMedia = memo(({ formData, handleImageUpload, removeImage, t, formErrors }) => (
+const StepMedia = memo(({ formData, handleImageUpload, removeImage, t, formErrors, handleChange }) => (
   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
     <div className={`field-group ${formErrors.includes('price') ? 'error' : ''}`}>
-      <label className="elite-lbl">{t('post.price')} <span className="required-asterisk">*</span></label>
+      <label htmlFor="pp-price" className="elite-lbl">{t('post.price')} <span className="required-asterisk">*</span></label>
       <div style={{ position: 'relative' }}>
         <IndianRupee size={18} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--gold)' }} />
-        <input name="price" type="number" value={formData.price} onChange={handleChange} placeholder="e.g. 8500000" className="elite-input" style={{ paddingLeft: '44px' }} />
+        <input id="pp-price" name="price" type="number" value={formData.price} onChange={handleChange} placeholder="e.g. 8500000" className="elite-input" style={{ paddingLeft: '44px' }} />
       </div>
     </div>
 
@@ -265,10 +265,10 @@ export default function PostProperty() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { toast } = useToast();
   const [step, setStep] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
   const [formErrors, setFormErrors] = useState([]);
   const [success, setSuccess] = useState(false);
   const [supportInfo, setSupportInfo] = useState({ phone: '+919346793364', whatsapp: '919346793364' });
@@ -346,7 +346,7 @@ export default function PostProperty() {
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files);
     if (formData.images.length + files.length > 10) {
-      setError('Maximum 10 images allowed'); return;
+      toast('Maximum 10 images allowed', 'error'); return;
     }
     const newImgs = files.map(f => URL.createObjectURL(f));
     setFormData(prev => ({ 
@@ -354,7 +354,7 @@ export default function PostProperty() {
       images: [...prev.images, ...newImgs],
       imageFiles: [...prev.imageFiles, ...files] 
     }));
-    triggerHaptic('light');
+    
   };
 
   const removeImage = (index) => {
@@ -367,7 +367,6 @@ export default function PostProperty() {
   };
 
   const nextStep = () => {
-    setError('');
     const missing = [];
     if (step === 0 && !formData.title) missing.push('title');
     if (step === 2 && !formData.city) missing.push('city');
@@ -376,12 +375,10 @@ export default function PostProperty() {
     
     if (missing.length > 0) {
       setFormErrors(missing);
-      setError(`Please fill all required fields: ${missing.join(', ')}`);
-      triggerHaptic('error');
+      toast(`Required: ${missing.join(', ')}`, 'error');
       return;
     }
     
-    triggerHaptic('medium');
     const nextS = Math.min(step + 1, STEPS.length - 1);
     setIsTransitioning(true);
     setTimeout(() => {
@@ -394,7 +391,6 @@ export default function PostProperty() {
   };
   
   const prevStep = () => {
-    triggerHaptic('light');
     const prevS = Math.max(step - 1, 0);
     setIsTransitioning(true);
     setTimeout(() => {
@@ -408,9 +404,9 @@ export default function PostProperty() {
 
   const handleSubmit = async () => {
     if (!formData.price || !formData.posterPhone) {
-      setError('Required: Price & Contact'); triggerHaptic('error'); return;
+      toast('Required: Price & Contact', 'error'); return;
     }
-    setLoading(true); setError('');
+    setLoading(true);
     try {
       let uploadedUrls = [];
       if (formData.imageFiles.length > 0) {
@@ -427,10 +423,12 @@ export default function PostProperty() {
 
       const res = await submitProperty(payload);
       if (res.status === 'success') {
-        triggerHaptic('success'); setSuccess(true);
+         setSuccess(true);
+         const pCode = res.data?.propertyCode || 'SNA-PENDING';
+         toast(`Listing sent for audit. Ref: ${pCode}`, 'success');
       } else throw new Error(res.message);
     } catch (err) {
-      setError(err.message || 'Failed to submit.');
+      toast(err.message || 'Submission failed.', 'error');
     } finally { setLoading(false); }
   };
 
@@ -483,8 +481,8 @@ export default function PostProperty() {
                       <p>{t('post.audit')}</p>
                     </div>
                     <div className="field-group">
-                      <label className="elite-lbl">Mobile Contact</label>
-                      <input name="posterPhone" value={formData.posterPhone} onChange={handleChange} className="elite-input" placeholder="Enter number" />
+                      <label htmlFor="pp-posterPhone" className="elite-lbl">Mobile Contact</label>
+                      <input id="pp-posterPhone" name="posterPhone" value={formData.posterPhone} onChange={handleChange} className="elite-input" placeholder="Enter number" />
                     </div>
                   </motion.div>
                 )}

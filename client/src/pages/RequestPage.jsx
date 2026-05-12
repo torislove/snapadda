@@ -86,39 +86,41 @@ export default function RequestPage() {
 
                     <form onSubmit={handleSubmit}>
                       <div className="request-input-group">
-                        <label className="request-label">Your Name</label>
+                        <label htmlFor="req-name" className="request-label">Your Name</label>
                         <div style={{ position: 'relative' }}>
-                          <input required type="text" className="request-input" placeholder="Enter Full Name" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
+                          <input id="req-name" name="name" required type="text" className="request-input" placeholder="Enter Full Name" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} autoComplete="name" />
                           <User size={16} style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', opacity: 0.5, color: 'var(--gold)' }} />
                         </div>
                       </div>
 
                       <div className="request-input-group">
-                        <label className="request-label">Phone Number</label>
+                        <label htmlFor="req-phone" className="request-label">Phone Number</label>
                         <div style={{ position: 'relative' }}>
-                          <input required type="tel" className="request-input" placeholder="+91" value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} />
+                          <input id="req-phone" name="phone" required type="tel" className="request-input" placeholder="+91" value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} autoComplete="tel" />
                           <Phone size={16} style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', opacity: 0.5, color: 'var(--gold)' }} />
                         </div>
                       </div>
 
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem', marginBottom: '1.75rem' }}>
                         <div>
-                          <label className="request-label">Purpose</label>
-                          <select className="request-input" value={formData.purpose} onChange={e => setFormData({ ...formData, purpose: e.target.value })}>
+                          <label htmlFor="req-purpose" className="request-label">Purpose</label>
+                          <select id="req-purpose" name="purpose" className="request-input" value={formData.purpose} onChange={e => setFormData({ ...formData, purpose: e.target.value })}>
                             <option>Sale</option><option>Rent</option><option>Lease</option>
                           </select>
                         </div>
                         <div>
-                          <label className="request-label">Type</label>
-                          <select className="request-input" value={formData.propertyType} onChange={e => setFormData({ ...formData, propertyType: e.target.value })}>
+                          <label htmlFor="req-type" className="request-label">Type</label>
+                          <select id="req-type" name="propertyType" className="request-input" value={formData.propertyType} onChange={e => setFormData({ ...formData, propertyType: e.target.value })}>
                             <option>Apartment</option><option>Plot</option><option>Villa</option><option>Agricultural</option><option>Commercial</option>
                           </select>
                         </div>
                       </div>
 
                       <div className="request-input-group">
-                        <label className="request-label">Special Requirements</label>
+                        <label htmlFor="req-requirements" className="request-label">Special Requirements</label>
                         <textarea 
+                          id="req-requirements"
+                          name="requirements"
                           className="request-input" 
                           style={{ minHeight: '120px', resize: 'none' }}
                           placeholder="e.g., East facing, CRDA approved, Near Highway..."

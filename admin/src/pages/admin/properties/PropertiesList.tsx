@@ -62,6 +62,7 @@ export const PropertiesList: React.FC<PropertiesListProps> = ({
 
   const finalFiltered = React.useMemo(() => {
     if (statusFilter === 'all') return filteredProperties;
+    if (statusFilter === 'Pending Review') return filteredProperties.filter(p => p.verificationStatus === 'Draft');
     return filteredProperties.filter(p => p.status === statusFilter);
   }, [filteredProperties, statusFilter]);
 
@@ -127,7 +128,7 @@ export const PropertiesList: React.FC<PropertiesListProps> = ({
         </div>
 
         <div style={{ display: 'flex', gap: '0.5rem', width: '100%', overflowX: 'auto', paddingBottom: '4px', WebkitOverflowScrolling: 'touch' }}>
-            {['all', 'Active', 'Sold', 'Pending', 'Draft'].map(f => (
+            {['all', 'Active', 'Sold', 'Pending', 'Draft', 'Pending Review'].map(f => (
               <button 
                 key={f}
                 onClick={() => setStatusFilter(f)}

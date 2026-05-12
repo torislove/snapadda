@@ -30,7 +30,7 @@ const CityMarquee = ({ cities, loading }) => {
       }}>
         {repeatedCities.map((city, idx) => (
           <motion.div
-            key={`${city._id || idx}`}
+            key={`${city._id || city.name}-${idx}`}
             whileHover={{ scale: 1.02, translateY: -5 }}
             onClick={() => navigate(`/search?city=${encodeURIComponent(city.name)}`)}
             style={{

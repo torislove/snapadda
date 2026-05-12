@@ -10,7 +10,7 @@ import { useAdminAuth } from '../../contexts/AdminAuthContext';
 import { ConnectivityBanner } from '../../components/ui/ConnectivityBanner';
 import { AdminMobileNav } from '../../components/ui/AdminMobileNav';
 import { useTranslation } from 'react-i18next';
-import { triggerHaptic } from '../../utils/haptics';
+
 // Styles imported via main entry point
 
 /* ── 2-click Logout Button ── */
@@ -50,7 +50,7 @@ const LanguageSwitcher = () => {
   const currentLng = i18n.language || 'en';
 
   const toggle = (lng: string) => {
-    triggerHaptic('light');
+    
     i18n.changeLanguage(lng);
   };
 
@@ -137,8 +137,8 @@ const AdminLayout = () => {
     const dx = e.changedTouches[0].clientX - touchStartX.current;
     const dy = Math.abs(e.changedTouches[0].clientY - touchStartY.current);
     if (dy > 60) return; // mostly vertical — ignore
-    if (dx > 80 && touchStartX.current < 32) { triggerHaptic('light'); setIsSidebarOpen(true); }
-    if (dx < -80 && isSidebarOpen) { triggerHaptic('light'); setIsSidebarOpen(false); }
+    if (dx > 80 && touchStartX.current < 32) {  setIsSidebarOpen(true); }
+    if (dx < -80 && isSidebarOpen) {  setIsSidebarOpen(false); }
   }, [isSidebarOpen]);
 
   const isActive = (item: typeof NAV_ITEMS[0]) => {
@@ -159,7 +159,7 @@ const AdminLayout = () => {
     >
       {/* Mobile Overlay */}
       {isSidebarOpen && (
-        <div className="admin-sidebar-overlay" onClick={() => { triggerHaptic('light'); setIsSidebarOpen(false); }} />
+        <div className="admin-sidebar-overlay" onClick={() => {  setIsSidebarOpen(false); }} />
       )}
 
       {/* ── Sidebar ── */}
@@ -195,7 +195,7 @@ const AdminLayout = () => {
                 key={item.to}
                 to={item.to}
                 onClick={() => {
-                  triggerHaptic('light');
+                  
                   setIsSidebarOpen(false);
                 }}
                 className={`nav-item ${active ? item.activeClass : ''} ${active ? 'active' : ''}`}
@@ -219,7 +219,7 @@ const AdminLayout = () => {
                 key={item.to}
                 to={item.to}
                 onClick={() => {
-                  triggerHaptic('light');
+                  
                   setIsSidebarOpen(false);
                 }}
                 className={`nav-item ${active ? item.activeClass : ''} ${active ? 'active' : ''}`}

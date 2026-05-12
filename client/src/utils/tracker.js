@@ -1,8 +1,9 @@
 import axios from 'axios';
 
 /**
- * Triggers a silent lead submission for micro-interactions.
- * @param {Object} data - The lead data (source, propertyId, message, etc.)
+ * Triggers a silent activity event for micro-interactions.
+ * Routes to /api/activity (NOT /api/leads) to avoid polluting the leads database.
+ * @param {Object} data - Interaction data (source, propertyId, message, metadata)
  */
 export const triggerMicroLead = async (data) => {
   try {
@@ -14,25 +15,25 @@ export const triggerMicroLead = async (data) => {
     try { if (userStr) user = JSON.parse(userStr); } catch (e) {}
 
     const payload = {
-      name: user?.name || 'Anonymous Visitor',
-      phone: user?.phone || 'N/A',
-      email: user?.email || 'anonymous@snapadda.com',
-      source: data.source || 'Micro Interaction',
-      message: data.message || `User interacted with: ${data.source}`,
+      type: 'micro-interaction',
+      userId: user?._id || user?.id || 'anonymous',
+      source: data.source || 'Website',
+      message: data.message || 'User interaction tracked',
       propertyId: data.propertyId || null,
-      priority: 'Low', // Micro-leads are lower priority by default
       metadata: {
         timestamp: new Date().toISOString(),
         url: window.location.href,
         userAgent: navigator.userAgent,
+        userName: user?.name || 'Anonymous',
+        userEmail: user?.email || null,
         ...data.metadata
       }
     };
 
-    // Silent POST
-    await axios.post(`${API_URL}/leads`, payload);
+    // Silent POST to activity endpoint (low-priority, fire-and-forget)
+    await axios.post(`${API_URL}/activity/log`, payload);
   } catch (error) {
-    // Fail silently to not disrupt UX
-    console.warn('Silent tracking failed:', error.message);
+    // Fail silently — never disrupt user experience
+    console.warn('Silent activity tracking failed:', error.message);
   }
 };

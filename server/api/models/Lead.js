@@ -16,6 +16,19 @@ const leadSchema = new mongoose.Schema({
   district:    { type: String, default: '' },
   franchiseId: { type: String, default: null },
   assignedTo:  { type: String, default: 'Super Admin' },
+  
+  // Specific requirements
+  budget:          { type: String, default: '' },
+  propertyType:    { type: String, default: '' },
+  preferredLocation: { type: String, default: '' },
+
+  // Communication History
+  communicationHistory: [{
+    channel: { type: String, enum: ['WhatsApp', 'Email', 'Both'] },
+    propertiesSent: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Property' }],
+    sentAt: { type: Date, default: Date.now },
+    sentBy: { type: String, default: 'Admin' }
+  }],
 
   // Status pipeline (extended)
   status: {
@@ -27,12 +40,11 @@ const leadSchema = new mongoose.Schema({
   // Lead intelligence
   source: {
     type: String,
-    enum: ['Website', 'WhatsApp', 'Phone', 'PropertyCard', 'CallbackRequest', 'Other'],
     default: 'Website'
   },
   priority: {
     type: String,
-    enum: ['Normal', 'High', 'Urgent'],
+    enum: ['Low', 'Normal', 'High', 'Urgent'],
     default: 'Normal'
   },
   followUpFlag: { type: Boolean, default: false },

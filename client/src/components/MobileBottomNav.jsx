@@ -2,7 +2,6 @@ import { Link, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Home, Search, Plus, User, LayoutDashboard } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { triggerHaptic } from '../utils/haptics';
 import { useTranslation } from 'react-i18next';
 import { triggerMicroLead } from '../utils/tracker';
 
@@ -41,7 +40,7 @@ export default function MobileBottomNav() {
                 key={item.label}
                 to={item.path}
                 onClick={() => {
-                  triggerHaptic('light');
+                  
                   triggerMicroLead({ source: 'Post Property Intent', message: 'User clicked Post Property from Mobile Nav' });
                 }}
                 className="bottom-nav-item bottom-nav-center"
@@ -68,7 +67,7 @@ export default function MobileBottomNav() {
               id={`btn-mobnav-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
               key={item.label}
               to={item.path}
-              onClick={() => triggerHaptic('light')}
+              onClick={() => {}}
               className={`bottom-nav-item ${isActive ? 'active' : ''}`}
               aria-label={item.label}
               aria-current={isActive ? 'page' : undefined}

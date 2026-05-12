@@ -31,7 +31,6 @@ app.use(helmet({
 app.use(compression());
 
 // Handle CORS early and consistently
-// Handle CORS early and consistently
 const allowedOrigins = [
   'https://snapadda-7a6e6.web.app',
   'https://snapadda-7a6e6.firebaseapp.com',
@@ -75,18 +74,6 @@ const limiter = rateLimit({
 });
 app.use('/api/', limiter);
 
-// Error Handling Middleware
-app.use((err, req, res, next) => {
-  console.error('SERVER_ERROR:', err.stack);
-
-  // Standard Error Response moves directly to result
-  res.status(err.status || 500).json({
-    status: 'error',
-    message: process.env.NODE_ENV === 'production' 
-      ? 'An internal server error occurred' 
-      : err.message
-  });
-});
 
 // 1. Basic Health Check (Must be at the TOP (to respond even if DB is still connecting))
 // Base health check
@@ -314,13 +301,25 @@ app.get('/api/health/deep', async (req, res) => {
   });
 });
 
-// Catch-all 404 Diagnostic (Must be LAST)
+// Catch-all 404 Diagnostic
 app.use((req, res) => {
   console.log('404_NOT_FOUND_PATH:', req.originalUrl);
   res.status(404).json({
     status: 'error',
     message: `Cannot ${req.method} ${req.originalUrl}`,
     suggestion: 'Try checking /api/health to verify base URL'
+  });
+});
+
+// ─── Global Error Handling Middleware (MUST be last, after all routes) ───
+// Express identifies error handlers by their 4-argument signature (err, req, res, next)
+app.use((err, req, res, next) => {
+  console.error('SERVER_ERROR:', err.stack);
+  res.status(err.status || 500).json({
+    status: 'error',
+    message: process.env.NODE_ENV === 'production'
+      ? 'An internal server error occurred'
+      : err.message
   });
 });
 

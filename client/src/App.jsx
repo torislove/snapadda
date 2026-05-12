@@ -5,7 +5,6 @@ import { useAuth } from './contexts/AuthContext';
 import Header from './components/Header';
 import GlobalLoader from './components/GlobalLoader';
 import FloatingOffers from './components/FloatingOffers';
-import { useNotifications } from './hooks/useNotifications';
 import { useBehaviorTracker } from './hooks/useBehaviorTracker';
 import LeadCaptureModal from './components/LeadCaptureModal';
 import { pruneResources } from './utils/PerformanceUtilities';
@@ -34,6 +33,7 @@ const LocalAgency = lazy(() => import('./pages/LocalAgency'));
 import Logo from './components/Logo';
 import { useGoogleMarketing } from './utils/useGoogleMarketing';
 import ScrollToTop from './components/ScrollToTop';
+import { ToastProvider } from './contexts/ToastContext';
 // Minimalist High-Performance Loader
 const EliteLoader = () => (
   <div style={{ 
@@ -62,7 +62,7 @@ function ProtectedRoute({ children }) {
 
 
 function AppContent() {
-  useNotifications();
+
   useGoogleMarketing();
   const { showModal, setShowModal, getTopPreferences } = useBehaviorTracker();
   const location = useLocation();
@@ -125,12 +125,17 @@ export default function App() {
     const storedVersion = localStorage.getItem('snapadda_app_version');
 
     if (currentVersion && storedVersion && currentVersion !== storedVersion) {
-      console.log('🚀 New version detected. Purging cache and reloading...');
-      // Clear specific cache but keep essential user sessions if possible
-      // For now, full clear is safest for "immediate update"
-      localStorage.clear(); 
+      // Selective cache clear — preserve user session to prevent forced logout on deploy
+      const savedUser = localStorage.getItem('snapadda_user');
+      const keysToRemove = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key !== 'snapadda_user') keysToRemove.push(key);
+      }
+      keysToRemove.forEach(k => localStorage.removeItem(k));
+      if (savedUser) localStorage.setItem('snapadda_user', savedUser);
       localStorage.setItem('snapadda_app_version', currentVersion);
-      window.location.reload(true);
+      window.location.reload();
     } else if (currentVersion) {
       localStorage.setItem('snapadda_app_version', currentVersion);
     }
@@ -143,7 +148,9 @@ export default function App() {
         {isAppLoading && <GlobalLoader key="loader" />}
       </AnimatePresence>
       <LazyMotion features={domAnimation}>
-        <AppContent />
+        <ToastProvider>
+          <AppContent />
+        </ToastProvider>
       </LazyMotion>
     </BrowserRouter>
   );

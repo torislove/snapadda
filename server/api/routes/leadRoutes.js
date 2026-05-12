@@ -3,13 +3,16 @@ import Lead from '../models/Lead.js';
 import Property from '../models/Property.js';
 import { automationService } from '../modules/automationService.js';
 import { db } from '../firebase.js';
+import { formatWhatsAppMessage } from '../utils/whatsappFormatter.js';
+import { generatePropertyEmailHTML } from '../utils/emailTemplates.js';
+import nodemailer from 'nodemailer';
 
 const router = express.Router();
 
 // ─── POST /api/leads ─── Submit a new lead from the Client UI
 router.post('/', async (req, res) => {
   try {
-    const { name, phone, email, propertyId, message, franchiseId, source, priority } = req.body;
+    const { name, phone, email, propertyId, message, franchiseId, source, priority, district: clientDistrict, budget, propertyType } = req.body;
 
     // Auto-Routing: Fetch property details
     let district = '';
@@ -26,7 +29,9 @@ router.post('/', async (req, res) => {
 
     const newLead = new Lead({
       name, phone, email, propertyId, message, franchiseId,
-      district, propertyCode, propertyTitle,
+      district: district || clientDistrict || '', propertyCode, propertyTitle,
+      budget: budget || '',
+      propertyType: propertyType || '',
       source: source || 'Website',
       priority: priority || 'Normal',
     });
@@ -176,14 +181,65 @@ router.get('/stats', async (req, res) => {
   }
 });
 
-// ─── DELETE /api/leads/:id ─── Delete a lead (Admin Portal)
-router.delete('/:id', async (req, res) => {
+// ─── POST /api/leads/:id/broadcast ─── Send properties via WA/Email
+router.post('/:id/broadcast', async (req, res) => {
   try {
-    const lead = await Lead.findByIdAndDelete(req.params.id);
+    const { channel, propertyIds } = req.body; // channel: 'WhatsApp', 'Email', 'Both'
+    const lead = await Lead.findById(req.params.id);
     if (!lead) return res.status(404).json({ message: 'Lead not found' });
-    res.status(200).json({ status: 'success', message: 'Lead deleted' });
-  } catch (error) {
-    res.status(500).json({ status: 'error', message: 'Failed deleting lead' });
+
+    let properties = [];
+    if (propertyIds && propertyIds.length > 0) {
+      properties = await Property.find({ _id: { $in: propertyIds } });
+    }
+
+    let whatsappText = '';
+    if (channel === 'WhatsApp' || channel === 'Both') {
+      whatsappText = formatWhatsAppMessage(lead.name, properties);
+    }
+
+    if ((channel === 'Email' || channel === 'Both') && lead.email) {
+      const html = generatePropertyEmailHTML(lead.name, properties);
+      const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          user: process.env.SMTP_USER || 'hello@snapadda.com',
+          pass: process.env.SMTP_PASS || 'password',
+        }
+      });
+      
+      try {
+        await transporter.sendMail({
+          from: '"SnapAdda Real Estate" <hello@snapadda.com>',
+          to: lead.email,
+          subject: 'Exclusive Property Matches for You 🏠',
+          html: html,
+        });
+      } catch (e) {
+        console.error('Email sending failed:', e.message);
+      }
+    }
+
+    // Log the communication
+    lead.communicationHistory.push({
+      channel: channel,
+      propertiesSent: propertyIds || [],
+      sentAt: new Date(),
+      sentBy: 'Admin'
+    });
+    
+    const noteText = `Broadcasted ${properties.length} properties via ${channel}.`;
+    lead.notes.push({ text: noteText, addedBy: 'System', addedAt: new Date() });
+
+    await lead.save();
+    
+    res.json({ 
+      status: 'success', 
+      whatsappText: whatsappText,
+      message: 'Broadcast logged successfully' 
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 });
 

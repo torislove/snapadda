@@ -8,7 +8,6 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { Activity, Zap, Clock } from 'lucide-react';
 import { ConnectivityBanner } from '../../components/ui/ConnectivityBanner';
-import { triggerHaptic } from '../../utils/haptics';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -19,6 +18,8 @@ const STATUS_CONFIG: Record<string, { color: string; bg: string; label: string; 
   Lost:      { color: '#f5397b', bg: 'rgba(245,57,123,0.06)',  border: 'rgba(245,57,123,0.2)', label: 'Lost'      },
   Pending:   { color: '#ff8c42', bg: 'rgba(255,140,66,0.06)',  border: 'rgba(255,140,66,0.2)', label: 'Pending'   },
   Answered:  { color: '#10d98c', bg: 'rgba(16,217,140,0.06)',  border: 'rgba(16,217,140,0.2)', label: 'Answered'  },
+  'Follow Up': { color: '#e8b84b', bg: 'rgba(232,184,75,0.06)', border: 'rgba(232,184,75,0.2)', label: 'Follow Up' },
+  Closed:    { color: '#5b7ea1', bg: 'rgba(91,126,161,0.06)',  border: 'rgba(91,126,161,0.2)', label: 'Closed'    },
 };
 
 const StatusBadge = ({ status }: { status: string }) => {
@@ -153,9 +154,8 @@ const LeadTimeline = ({ lead }: { lead: any }) => {
 };
 
 /* ── Elite Kanban Lead Card ── */
-const LeadCard = ({ lead, onDelete, onStatusChange, onFlag }: { 
+const LeadCard = ({ lead, onStatusChange, onFlag }: { 
   lead: any; 
-  onDelete: (id: string) => Promise<void>; 
   onStatusChange: (id: string, s: string) => Promise<void>;
   onFlag: (id: string, flag: boolean) => Promise<void>;
 }) => {
@@ -175,7 +175,7 @@ const LeadCard = ({ lead, onDelete, onStatusChange, onFlag }: {
   }, [lead]);
 
   const handleStatusChange = async (newStatus: string) => {
-    triggerHaptic('medium');
+    
     setUpdating(true);
     await onStatusChange(lead._id, newStatus);
     setUpdating(false);
@@ -226,7 +226,7 @@ const LeadCard = ({ lead, onDelete, onStatusChange, onFlag }: {
             style={{ cursor: 'pointer', transition: 'all 0.2s' }}
             onClick={(e) => { 
               e.stopPropagation(); 
-              triggerHaptic('light');
+              
               onFlag(lead._id, !lead.followUpFlag); 
             }}
           />
@@ -262,14 +262,7 @@ const LeadCard = ({ lead, onDelete, onStatusChange, onFlag }: {
                     {s}
                   </button>
                 ))}
-                <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.4rem', paddingTop: '0.4rem' }}>
-                  <button 
-                    onClick={() => { if(window.confirm('Delete lead?')) onDelete(lead._id); }}
-                    style={{ width: '100%', textAlign: 'left', padding: '0.6rem 0.75rem', borderRadius: '10px', border: 'none', background: 'none', color: 'var(--rose)', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}
-                  >
-                    Delete Lead
-                  </button>
-                </div>
+                  {/* Delete completely removed for data retention */}
               </motion.div>
             )}
           </AnimatePresence>
@@ -299,7 +292,7 @@ const LeadCard = ({ lead, onDelete, onStatusChange, onFlag }: {
         
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           <button 
-            onClick={(e) => { e.stopPropagation(); setShowTimeline(!showTimeline); triggerHaptic('light'); }}
+            onClick={(e) => { e.stopPropagation(); setShowTimeline(!showTimeline);  }}
             style={{ flex: 1, padding: '7px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.03)', color: 'rgba(255,255,255,0.6)', fontSize: '0.65rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
           >
             <Clock size={12} /> {showTimeline ? 'HIDE' : 'HISTORY'}
@@ -351,7 +344,7 @@ const InquiryCard = ({ inq, onAnswer }: { inq: any; onAnswer: (id: string, text:
       }}
     >
       <div
-        onClick={() => { setExpanded(e => !e); triggerHaptic('light'); }}
+        onClick={() => { setExpanded(e => !e);  }}
         style={{ padding: '1rem', cursor: 'pointer', display: 'flex', gap: '0.875rem', alignItems: 'flex-start' }}
       >
         <div style={{
@@ -391,7 +384,9 @@ const InquiryCard = ({ inq, onAnswer }: { inq: any; onAnswer: (id: string, text:
               </div>
             ) : (
               <div>
+                <label htmlFor={`answer-text-${inq._id}`} className="sr-only">Draft your professional response</label>
                 <textarea
+                  id={`answer-text-${inq._id}`}
                   value={answerText}
                   onChange={e => setAnswerText(e.target.value)}
                   rows={4}
@@ -488,12 +483,6 @@ const AdminLeads = () => {
     } catch (err) { console.error(err); }
   };
 
-  const deleteLead = async (id: string) => {
-    try {
-      const res = await fetch(`${API_URL}/leads/${id}`, { method: 'DELETE' });
-      if (res.ok) await fetchLeads();
-    } catch (err) { console.error(err); }
-  };
 
   const updateLeadFlag = async (id: string, flag: boolean) => {
     try {
@@ -557,13 +546,13 @@ const AdminLeads = () => {
         </div>
         <div style={{ display: 'flex', gap: '0.5rem', background: 'rgba(255,255,255,0.03)', padding: '4px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
           <button 
-            onClick={() => { setViewMode('Kanban'); triggerHaptic('light'); }}
+            onClick={() => { setViewMode('Kanban');  }}
             style={{ padding: '8px 12px', borderRadius: '8px', border: 'none', background: viewMode === 'Kanban' ? 'rgba(255,255,255,0.1)' : 'transparent', color: viewMode === 'Kanban' ? 'white' : 'rgba(255,255,255,0.3)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', fontWeight: 700 }}
           >
             <LayoutGrid size={14} /> Kanban
           </button>
           <button 
-            onClick={() => { setViewMode('List'); triggerHaptic('light'); }}
+            onClick={() => { setViewMode('List');  }}
             style={{ padding: '8px 12px', borderRadius: '8px', border: 'none', background: viewMode === 'List' ? 'rgba(255,255,255,0.1)' : 'transparent', color: viewMode === 'List' ? 'white' : 'rgba(255,255,255,0.3)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', fontWeight: 700 }}
           >
             <List size={14} /> List
@@ -581,7 +570,7 @@ const AdminLeads = () => {
             ].map(tab => (
               <button 
                 key={tab.id}
-                onClick={() => { setActiveTab(tab.id as any); triggerHaptic('light'); }}
+                onClick={() => { setActiveTab(tab.id as any);  }}
                 style={{
                   background: activeTab === tab.id ? 'rgba(255,255,255,0.08)' : 'transparent',
                   border: 'none',
@@ -599,8 +588,9 @@ const AdminLeads = () => {
 
           <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
              <div className="search-input-wrap" style={{ flex: 1, minWidth: '180px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '14px', display: 'flex', alignItems: 'center', padding: '0 1rem' }}>
-                <Search size={14} style={{ opacity: 0.4 }} />
+                <Search size={16} style={{ color: 'var(--text-muted)' }} />
                 <input
+                  id="admin-leads-search"
                   type="text"
                   placeholder={`Search registry...`}
                   value={search}
@@ -642,7 +632,7 @@ const AdminLeads = () => {
               minHeight: '600px',
               WebkitOverflowScrolling: 'touch'
             }}>
-              {['New', 'Contacted', 'Qualified', 'Lost'].map(status => {
+              {['New', 'Contacted', 'Qualified', 'Follow Up', 'Closed', 'Lost'].map(status => {
                 const columnLeads = filteredLeads.filter(l => (l.status || 'New') === status);
                 return (
                   <div key={status} style={{ minWidth: '280px', maxWidth: '320px', flex: 1 }}>
@@ -671,7 +661,6 @@ const AdminLeads = () => {
                             <LeadCard 
                               key={lead._id} 
                               lead={lead} 
-                              onDelete={deleteLead} 
                               onStatusChange={updateLeadStatus}
                               onFlag={updateLeadFlag}
                             />
@@ -695,7 +684,6 @@ const AdminLeads = () => {
                    <LeadCard 
                       key={lead._id} 
                       lead={lead} 
-                      onDelete={deleteLead} 
                       onStatusChange={updateLeadStatus}
                       onFlag={updateLeadFlag}
                    />

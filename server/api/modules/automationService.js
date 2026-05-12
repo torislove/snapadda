@@ -1,5 +1,5 @@
 import { EventEmitter } from 'events';
-import { fcm } from '../firebase.js';
+import { db } from '../firebase.js';
 import NotificationToken from '../models/NotificationToken.js';
 import SiteSetting from '../models/SiteSetting.js';
 import ChatMessage from '../models/ChatMessage.js';
@@ -42,7 +42,7 @@ class AutomationService {
       const settings = await SiteSetting.findOne({ key: 'automation_settings' });
       if (settings?.value) {
         const { fcmVapid } = settings.value;
-        if (fcmVapid) this.fcmVapid = fcmVapid;
+        // fcmVapid removed
       }
     } catch (err) {
       console.error('Failed to load automation settings:', err);
@@ -92,12 +92,7 @@ class AutomationService {
           chatMessage: chatMsg 
         });
 
-        // Optional: Trigger FCM to alert admin
-        this.sendPushNotification({
-          title: `💬 WhatsApp: ${chatMsg.senderName}`,
-          body: msg.body.substring(0, 100),
-          link: '/admin/comms'
-        });
+        // Optional: Trigger FCM removed
       });
 
       await this.whatsappClient.initialize();
@@ -133,77 +128,43 @@ class AutomationService {
     }
   }
 
-  /* ─── SEND PUSH NOTIFICATION (FCM) ─── */
-  async sendPushNotification({ title, body, imageUrl, link }) {
-    if (!fcm) {
-      pushLog('system', 'Push notification skipped — FCM not initialized');
-      return { success: false, reason: 'FCM not initialized' };
-    }
-
-    try {
-      const tokens = await NotificationToken.find().distinct('token');
-      if (tokens.length === 0) {
-        pushLog('system', 'Push notification skipped — No registered tokens');
-        return { success: false, reason: 'No registered tokens' };
-      }
-
-      const message = {
-        notification: { title, body },
-        data: { 
-          click_action: link || '/',
-          ...(imageUrl && { image: imageUrl })
-        },
-        tokens: tokens
-      };
-
-      const response = await fcm.sendEachForMulticast(message);
-      
-      const successCount = response.successCount;
-      const failureCount = response.failureCount;
-
-      pushLog('system', `🔔 Push notification sent to ${successCount} devices (${failureCount} failed)`);
-      
-      // Cleanup invalid tokens
-      if (response.failureCount > 0) {
-        const invalidTokens = [];
-        response.responses.forEach((resp, idx) => {
-          if (!resp.success && (resp.error.code === 'messaging/registration-token-not-registered' || resp.error.code === 'messaging/invalid-registration-token')) {
-            invalidTokens.push(tokens[idx]);
-          }
-        });
-        if (invalidTokens.length > 0) {
-          await NotificationToken.deleteMany({ token: { $in: invalidTokens } });
-          pushLog('system', `🧹 Cleaned up ${invalidTokens.length} invalid FCM tokens`);
-        }
-      }
-
-      return { success: true, successCount, failureCount };
-    } catch (err) {
-      pushLog('error', `❌ Push notification failed: ${err.message}`);
-      return { success: false, reason: err.message };
-    }
+  /* ─── SEND PUSH NOTIFICATION (REMOVED) ─── */
+  async sendPushNotification() {
+    return { success: false, reason: 'Decommissioned' };
   }
 
   /* ─── AI INTERACTION ALERT ─── */
+  /* ─── AI INTERACTION ALERT ─── */
   async notifyAdminAIInsight({ type, clientContext, previewText }) {
-    const title = type === 'inquiry' ? '🎯 High-Intent Inquiry Drafted' : '🤖 AI Concierge Interaction';
-    const body = `${clientContext}: ${previewText.substring(0, 60)}...`;
-    
-    // Log it locally so it shows in the live stream
     pushLog(type === 'inquiry' ? 'lead' : 'inquiry', `AI Alert: User drafted ${type} for ${clientContext}`);
-    
-    // Send push notification to all admins
-    return this.sendPushNotification({
-      title,
-      body,
-      link: '/admin/comms'
-    });
+    return { success: true };
   }
 
-  /* ─── AUTOMATED LEAD RESPONSE ─── */
+  /* ─── AUTOMATED LEAD RESPONSE & ROUTING ─── */
   async handleNewLead(lead) {
-    pushLog('lead', `🎯 New lead received: ${lead.name} (${lead.phone})`);
-    // AI Drafting Removed
+    pushLog('lead', `🎯 Processing new lead: ${lead.name} (${lead.phone})`);
+    
+    // Auto-Routing Logic (Phase 5)
+    const district = (lead.district || '').toLowerCase();
+    const districtMap = {
+      'vijayawada': 'franchise_vja_01',
+      'guntur': 'franchise_gnt_01',
+      'amaravati': 'franchise_ama_01',
+      'visakhapatnam': 'franchise_viz_01',
+      'kakinada': 'franchise_kkd_01',
+      'tirupati': 'franchise_tpt_01'
+    };
+
+    if (districtMap[district]) {
+      lead.franchiseId = districtMap[district];
+      lead.assignedTo = `District Manager (${lead.district})`;
+      pushLog('automation', `🔀 Lead routed to ${lead.assignedTo} based on district: ${lead.district}`);
+    } else {
+      lead.assignedTo = 'Super Admin';
+      pushLog('automation', `🔀 Lead unrouted — assigned to Super Admin. District: ${lead.district || 'N/A'}`);
+    }
+
+    await lead.save();
   }
 
   /* ─── AUTOMATED INQUIRY RESPONSE ─── */
@@ -217,7 +178,7 @@ class AutomationService {
     const tokenCount = await NotificationToken.countDocuments();
     return {
       whatsapp: { enabled: this.whatsappEnabled, connected: this.whatsappReady, pendingQR: !!this.whatsappQR, qr: this.whatsappQR },
-      fcm: { enabled: !!fcm, tokenCount, vapidConfigured: !!this.fcmVapid },
+      fcm: { enabled: false, tokenCount: 0, vapidConfigured: false },
       recentLogs: LOG_BUFFER.slice(0, 20),
     };
   }

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { 
   MessageCircle, Send, RefreshCcw, Wifi, WifiOff,
-  Terminal, Bot, Bell, Users
+  Terminal, Bot, Users
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { adminAIService } from '../../services/aiService';
@@ -50,7 +50,7 @@ const CommsHub = () => {
   const [status, setStatus] = useState<any>(null);
   const [logs, setLogs] = useState<any[]>([]);
   const [sseConnected, setSseConnected] = useState(false);
-  const [activeTab, setActiveTab] = useState<'logs' | 'chat' | 'push'>('chat');
+  const [activeTab, setActiveTab] = useState<'logs' | 'chat'>('chat');
   
   // Chat Specific State
   const [chats, setChats] = useState<any[]>([]);
@@ -62,10 +62,7 @@ const CommsHub = () => {
   useEffect(() => {
     activeChatRef.current = activeChat;
   }, [activeChat]);
-  const [pushTitle, setPushTitle] = useState('');
-  const [pushBody, setPushBody] = useState('');
-  const [pushLink, setPushLink] = useState('');
-  const [pushImage, setPushImage] = useState('');
+  // Push State Removed
   const [sending, setSending] = useState('');
   const [toastMsg, setToastMsg] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
@@ -177,41 +174,7 @@ const CommsHub = () => {
     finally { setSending(''); }
   };
 
-  const handleDraftPush = async () => {
-    setAiLoading(true);
-    try {
-      const text = await adminAIService.generate(`Short engaging push notification about a new property or market update`, 'draft_email');
-      const lines = text.split('\n').filter(l => l.trim());
-      if (lines.length > 1) {
-        setPushTitle(lines[0].replace(/Title: /i, '').trim());
-        setPushBody(lines.slice(1).join(' ').trim());
-      } else {
-        setPushTitle('SnapAdda Update 🏠');
-        setPushBody(text);
-      }
-    } catch { showToast('❌ AI Draft failed'); }
-    finally { setAiLoading(false); }
-  };
-
-  const handleSendPush = async () => {
-    if (!pushTitle || !pushBody) return;
-    setSending('push');
-    try {
-      const res = await fetch(`${API_URL}/automation/send-push`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          title: pushTitle, 
-          body: pushBody, 
-          link: pushLink,
-          imageUrl: pushImage 
-        }),
-      });
-      const data = await res.json();
-      showToast(data.status === 'success' ? `✅ Push sent!` : `❌ Failed: ${data.data?.reason}`);
-    } catch { showToast('❌ Connection error'); }
-    finally { setSending(''); }
-  };
+  // Push handling removed
 
   const StatusDot = ({ active }: { active: boolean }) => (
     <span style={{ 
@@ -274,19 +237,7 @@ const CommsHub = () => {
           </div>
         </div>
 
-        {/* FCM Status */}
-        <div className="glass-card" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '14px' }}>
-          <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: 'rgba(245,57,123,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--rose)' }}>
-            <Bell size={20} />
-          </div>
-          <div>
-            <div style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Push (FCM)</div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
-              <StatusDot active={status?.fcm?.enabled ?? false} />
-              <span style={{ fontWeight: 700, fontSize: '0.88rem' }}>{status?.fcm?.enabled ? `Active` : 'Not Initialized'}</span>
-            </div>
-          </div>
-        </div>
+        {/* Push Status Removed */}
 
         {/* AI Model (Local Migration) */}
         <div className="glass-card" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '14px', cursor: 'pointer' }} onClick={async () => {
@@ -311,7 +262,6 @@ const CommsHub = () => {
         <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
           {[
             { id: 'chat', label: 'WhatsApp Chat', icon: MessageCircle },
-            { id: 'push', label: 'Push Broadcast', icon: Bell },
             { id: 'logs', label: 'System Logs', icon: Terminal },
           ].map(tab => (
             <button
@@ -466,102 +416,7 @@ const CommsHub = () => {
             </div>
           )}
 
-          {/* PUSH NOTIFICATIONS TAB */}
-          {activeTab === 'push' && (
-            <div style={{ maxWidth: '600px' }}>
-              <div style={{ background: 'rgba(245,57,123,0.04)', border: '1px solid rgba(245,57,123,0.15)', borderRadius: '12px', padding: '1rem', marginBottom: '1.5rem' }}>
-                <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--rose)', marginBottom: '8px', letterSpacing: '0.1em' }}>🔔 FIREBASE PUSH NOTIFICATIONS</div>
-                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: 1.5, margin: 0 }}>
-                  Send real-time alerts to all registered client devices.<br/>
-                  Total registered tokens: <strong style={{ color: 'var(--rose)' }}>{status?.fcm?.tokenCount || 'Calculating...'}</strong>
-                </p>
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                  <div>
-                    <label className="admin-label">Notification Title</label>
-                    <input
-                      className="admin-input"
-                      value={pushTitle}
-                      onChange={(e) => setPushTitle(e.target.value)}
-                      placeholder="e.g. New Luxury Villa! 🏠"
-                    />
-                  </div>
-                  <div>
-                    <label className="admin-label">Action URL (Click Action)</label>
-                    <input
-                      className="admin-input"
-                      value={pushLink}
-                      onChange={(e) => setPushLink(e.target.value)}
-                      placeholder="e.g. /properties/123"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="admin-label">Notification Body</label>
-                  <textarea 
-                    className="admin-input" 
-                    rows={3} 
-                    value={pushBody} 
-                    onChange={(e) => setPushBody(e.target.value)}
-                    placeholder="Brief & engaging message..."
-                  />
-                  <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
-                    <button 
-                      type="button" 
-                      onClick={handleDraftPush}
-                      className="btn-ghost" 
-                      style={{ fontSize: '0.7rem', color: 'var(--rose)', border: '1px solid var(--rose)', padding: '4px 12px', borderRadius: '6px' }}
-                    >
-                      {aiLoading ? 'DRAFTING...' : '⚡ AI SMART DRAFT'}
-                    </button>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="admin-label">Image URL (Optional)</label>
-                  <input
-                    className="admin-input"
-                    value={pushImage}
-                    onChange={(e) => setPushImage(e.target.value)}
-                    placeholder="https://example.com/image.jpg"
-                  />
-                </div>
-
-                <div style={{ padding: '1rem', background: 'rgba(255,255,255,0.03)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)' }}>
-                  <div style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--text-muted)', marginBottom: '8px' }}>PREVIEW</div>
-                  <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                    <div style={{ width: '40px', height: '40px', background: 'var(--rose)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <Bell size={20} color="white" />
-                    </div>
-                    <div>
-                      <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>{pushTitle || 'Project Title'}</div>
-                      <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{pushBody || 'Notification body content will appear here...'}</div>
-                    </div>
-                  </div>
-                </div>
-
-                <button
-                  onClick={handleSendPush}
-                  disabled={!!sending || !pushTitle || !pushBody}
-                  className="btn"
-                  style={{ 
-                    display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center', padding: '12px', width: '100%',
-                    background: 'var(--rose)', color: 'white'
-                  }}
-                >
-                  {sending === 'push' ? <RefreshCcw size={16} className="animate-spin" /> : <Send size={16} />}
-                  {sending === 'push' ? 'Broadcasting...' : 'Send Broadcast Notification'}
-                </button>
-                
-                <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textAlign: 'center' }}>
-                  This will send a notification to ALL registered tokens concurrently.
-                </p>
-              </div>
-            </div>
-          )}
+          {/* Push Content Removed */}
         </div>
       </div>
 

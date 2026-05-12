@@ -1,10 +1,9 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { updatePreferences, fetchSetting } from '../services/api';
+import { updatePreferences } from '../services/api';
 
 const AuthContext = createContext(undefined);
 
 export const AuthProvider = ({ children }) => {
-  console.log('AuthProvider initializing...');
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
