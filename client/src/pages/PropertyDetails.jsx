@@ -1009,7 +1009,7 @@ export default function PropertyDetails() {
         </div>
       </div>
       </div>
-      <ShareControlCenter 
+      <SharePortal 
         isOpen={shareModal} 
         onClose={() => setShareModal(false)} 
         property={property} 
