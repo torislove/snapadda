@@ -4,9 +4,8 @@ import { ChevronLeft, ChevronRight, Zap, ArrowRight, Timer } from 'lucide-react'
 import { useNavigate } from 'react-router-dom';
 import { fetchPromotions, trackPromotionView, trackPromotionClick } from '../services/api';
 
-const OfferCard = ({ promo, designTokens }) => {
+const OfferCard = ({ promo }) => {
   const navigate = useNavigate();
-  const cardRef = useRef(null);
   
   useEffect(() => {
     if (promo._id) trackPromotionView(promo._id);
@@ -24,76 +23,95 @@ const OfferCard = ({ promo, designTokens }) => {
     }
   };
 
-  const getOptimizedImg = (url, width = designTokens?.imageWidth || 400, height = designTokens?.imageHeight || 530) => {
+  const getOptimizedImg = (url, width = 600) => {
     if (!url || !url.includes('cloudinary.com')) return url;
     const parts = url.split('/upload/');
-    if (parts.length !== 2) return url;
-    return `${parts[0]}/upload/f_auto,q_auto:good,w_${width},h_${height},c_fill/${parts[1]}`;
+    return `${parts[0]}/upload/f_auto,q_auto:good,w_${width},c_fill/${parts[1]}`;
   };
 
   return (
     <motion.div
-      whileHover={{ y: -8, scale: 1.02 }}
-      whileTap={{ scale: 0.98 }}
-      className="offer-card-vertical"
+      whileHover={{ y: -12, scale: 1.03 }}
+      whileTap={{ scale: 0.97 }}
       onClick={handleAction}
+      className="elite-promo-card"
       style={{
-        minWidth: '240px',
-        width: '240px',
-        height: '320px',
-        borderRadius: designTokens?.borderRadius || '24px',
+        minWidth: '320px',
+        width: '320px',
+        height: '450px',
+        borderRadius: '32px',
         overflow: 'hidden',
         position: 'relative',
         cursor: 'pointer',
-        background: '#0a0a12',
+        background: '#0a0a15',
         border: '1px solid rgba(255,255,255,0.08)',
-        boxShadow: '0 15px 35px rgba(0,0,0,0.4)',
-        scrollSnapAlign: 'start',
+        boxShadow: '0 25px 50px rgba(0,0,0,0.4)',
+        scrollSnapAlign: 'center',
         flexShrink: 0
       }}
     >
-        {/* Background Media */}
+      {/* Background with Parallax effect */}
       {promo.image && (
         <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
-          <img 
+          <motion.img 
+            initial={{ scale: 1.1 }}
+            whileHover={{ scale: 1.2 }}
+            transition={{ duration: 0.6 }}
             src={getOptimizedImg(promo.image)} 
             alt={promo.title}
-            loading="lazy"
-            style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.7 }}
+            style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.8 }}
           />
-          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.3) 60%, transparent 100%)' }} />
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, #0a0a15 10%, rgba(10,10,21,0.4) 60%, transparent 100%)' }} />
         </div>
       )}
 
+      {/* Holographic Glow */}
+      <div style={{ 
+        position: 'absolute', top: '-50%', left: '-50%', width: '200%', height: '200%',
+        background: 'radial-gradient(circle at center, rgba(232,184,75,0.05) 0%, transparent 50%)',
+        pointerEvents: 'none'
+      }} />
+
       {/* Content */}
-      <div style={{ position: 'relative', zIndex: 2, height: '100%', padding: designTokens?.padding || '1.25rem', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+      <div style={{ position: 'relative', zIndex: 2, height: '100%', padding: '2rem', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
           <span style={{ 
-            fontSize: '0.6rem', fontWeight: 950, letterSpacing: '0.12em', textTransform: 'uppercase',
-            padding: '4px 10px', borderRadius: '40px', background: 'rgba(255,255,255,0.1)', color: 'var(--gold)',
-            border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(10px)'
+            fontSize: '0.65rem', fontWeight: 950, letterSpacing: '0.15em', textTransform: 'uppercase',
+            padding: '6px 14px', borderRadius: '40px', background: 'rgba(232,184,75,0.15)', color: 'var(--gold)',
+            border: '1px solid rgba(232,184,75,0.2)', backdropFilter: 'blur(10px)'
           }}>
-            {promo.type || 'OFFER'}
+            {promo.type || 'EXCLUSIVE'}
           </span>
           {promo.countdownActive && (
-            <span style={{ color: '#ff4b4b', display: 'flex', alignItems: 'center', gap: '3px', fontSize: '0.65rem', fontWeight: 800 }}>
-              <Timer size={10} /> LIMITED
+            <span style={{ 
+                color: '#ff4b4b', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.7rem', fontWeight: 900,
+                background: 'rgba(255,75,75,0.1)', padding: '6px 14px', borderRadius: '40px', border: '1px solid rgba(255,75,75,0.2)'
+            }}>
+              <Timer size={12} /> FLASH
             </span>
           )}
         </div>
 
-        <h4 style={{ color: 'white', fontSize: '1.15rem', fontWeight: 900, lineHeight: 1.15, marginBottom: '6px' }}>{promo.title}</h4>
-        <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.75rem', lineHeight: 1.4, marginBottom: '1rem', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+        <h4 style={{ color: 'white', fontSize: '1.75rem', fontWeight: 950, lineHeight: 1.1, marginBottom: '10px', letterSpacing: '-0.02em' }}>{promo.title}</h4>
+        <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem', lineHeight: 1.5, marginBottom: '1.5rem', fontWeight: 500 }}>
           {promo.subtitle}
         </p>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--gold)', fontWeight: 800, fontSize: '0.75rem' }}>
-          {promo.actionText || 'Learn More'} <ArrowRight size={14} />
+        <div style={{ 
+            display: 'inline-flex', alignItems: 'center', gap: '10px', color: 'black', fontWeight: 900, fontSize: '0.85rem',
+            background: 'var(--gold)', padding: '12px 24px', borderRadius: '16px', width: 'fit-content',
+            boxShadow: '0 10px 25px rgba(232,184,75,0.3)'
+        }}>
+          {promo.actionText || 'Explore Now'} <ArrowRight size={18} />
         </div>
       </div>
 
-      {/* Interaction Layer */}
-      <div className="card-shine" />
+      {/* 3D Liquid Reflection */}
+      <div style={{
+          position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
+          background: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 40%, rgba(255,255,255,0.05) 100%)',
+          pointerEvents: 'none', opacity: 0.4
+      }} />
     </motion.div>
   );
 };

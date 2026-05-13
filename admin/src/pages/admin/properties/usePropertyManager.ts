@@ -17,15 +17,15 @@ export const usePropertyManager = () => {
   const [currentImageUrls, setCurrentImageUrls] = useState<string[]>([]);
   const [newImageFiles, setNewImageFiles] = useState<File[]>([]);
   const [priceUnit, setPriceUnit] = useState<'Total' | 'Lakhs' | 'Cr'>('Total');
-  const [pricePerAcreUnit, setPricePerAcreUnit] = useState<'Total' | 'Lakhs' | 'Cr'>('Lakhs');
-  const [agriAcres, setAgriAcres] = useState<number | string>('');
   const [search, setSearch] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'cards'>('cards');
   const [realtorData, setRealtorData] = useState<any>({});
+  const [realtors, setRealtors] = useState<any[]>([]);
   const formTimeoutRef = useRef<any>(null);
 
   useEffect(() => {
     loadProperties();
+    loadRealtors();
   }, []);
 
   const loadProperties = () => {
@@ -36,6 +36,16 @@ export const usePropertyManager = () => {
       console.error("Database connection failed:", err);
       setProperties([]);
     });
+  };
+
+  const loadRealtors = async () => {
+    try {
+      const { fetchRealtors } = await import('../../../services/api');
+      const data = await fetchRealtors();
+      setRealtors(data);
+    } catch (err) {
+      console.error("Failed to load realtors:", err);
+    }
   };
 
   const handleCloseForm = () => {
@@ -49,8 +59,6 @@ export const usePropertyManager = () => {
     setCurrentImageUrls([]);
     setLiveData({});
     setPriceUnit('Total');
-    setPricePerAcreUnit('Total');
-    setAgriAcres('');
     setRealtorData({});
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -62,20 +70,18 @@ export const usePropertyManager = () => {
     setIsFeatured(prop.isFeatured || false);
     const existing = prop.images || (prop.image ? [prop.image] : []);
     setCurrentImageUrls(existing);
-    setLiveData(prop);
     setRealtorData(prop.realtor || {});
     
-    if (prop.price >= 10000000) setPriceUnit('Cr');
-    else if (prop.price >= 100000) setPriceUnit('Lakhs');
-    else setPriceUnit('Total');
+    let pUnit: 'Total' | 'Lakhs' | 'Cr' = 'Total';
+    let pRaw = prop.price;
+    if (prop.price >= 10000000) { pUnit = 'Cr'; pRaw = prop.price / 10000000; }
+    else if (prop.price >= 100000) { pUnit = 'Lakhs'; pRaw = prop.price / 100000; }
+    setPriceUnit(pUnit);
 
-    if (prop.pricePerAcre >= 10000000) setPricePerAcreUnit('Cr');
-    else if (prop.pricePerAcre >= 100000) setPricePerAcreUnit('Lakhs');
-    else setPricePerAcreUnit('Total');
-
-    if (prop.type === 'Agricultural Land' && prop.totalAcres) {
-      setAgriAcres(prop.totalAcres);
-    }
+    setLiveData({
+      ...prop,
+      price_raw: pRaw
+    });
 
     setIsEditing(true);
     setIsAdding(true);
@@ -87,15 +93,6 @@ export const usePropertyManager = () => {
     if (unit === 'Cr') return n * 10000000;
     if (unit === 'Lakhs') return n * 100000;
     return n;
-  };
-
-  const getAgriTotalDecimal = () => Number(agriAcres) || 0;
-
-  const agriAutoValuation = () => {
-    const ta = getAgriTotalDecimal();
-    const ppa = convertToValue(liveData.pricePerAcre || 0, pricePerAcreUnit);
-    if (!ta || !ppa) return 0;
-    return Math.round(ta * Number(ppa));
   };
 
   const handleGenerateAIDescription = async () => {
@@ -169,16 +166,7 @@ export const usePropertyManager = () => {
       }
 
       propData.price = convertToValue(propData.price, priceUnit);
-      propData.pricePerAcre = convertToValue(propData.pricePerAcre, pricePerAcreUnit);
-
-      if (liveData.type === 'Agricultural Land') {
-        propData.totalAcres = getAgriTotalDecimal();
-        if (!propData.price && propData.pricePerAcre && propData.totalAcres) {
-          propData.price = Math.round(Number(propData.pricePerAcre) * Number(propData.totalAcres));
-        }
-      } else {
-        propData.totalAcres = Number(propData.totalAcres) || 0;
-      }
+      propData.areaSize = Number(propData.areaSize) || 0;
 
       const isVideoUrl = (url: string) => /\.(mp4|mov|webm|ogg)$/i.test(url) || url.includes('/video/');
       const imagesList = uploadedUrls.filter(url => !isVideoUrl(url) && url.startsWith('http'));
@@ -227,9 +215,15 @@ export const usePropertyManager = () => {
     
     formTimeoutRef.current = setTimeout(() => {
       setLiveData((prev: any) => {
-        const p = convertToValue(updatedData.price, priceUnit);
-        const ppa = convertToValue(updatedData.pricePerAcre, pricePerAcreUnit);
-        return { ...prev, ...updatedData, price: p, pricePerAcre: ppa };
+        const p_raw = updatedData.price;
+        const p = convertToValue(p_raw, priceUnit);
+        
+        return { 
+          ...prev, 
+          ...updatedData, 
+          price_raw: p_raw, 
+          price: p
+        };
       });
     }, 350);
   };
@@ -264,13 +258,11 @@ export const usePropertyManager = () => {
     currentImageUrls, setCurrentImageUrls,
     newImageFiles, setNewImageFiles,
     priceUnit, setPriceUnit,
-    pricePerAcreUnit, setPricePerAcreUnit,
-    agriAcres, setAgriAcres,
     search, setSearch,
     viewMode, setViewMode,
     loadProperties, handleCloseForm, handleEdit,
     handleGenerateAIDescription, handleAddSubmit, handleFormChange, handleMediaChange,
-    agriAutoValuation, convertToValue, getAgriTotalDecimal,
+    convertToValue, 
     createProperty, updateProperty, deleteProperty,
     addCustomFeature: () => setCustomFeatures([...customFeatures, { label: '', value: '' }]),
     removeCustomFeature: (index: number) => setCustomFeatures(customFeatures.filter((_, i) => i !== index)),
@@ -280,5 +272,6 @@ export const usePropertyManager = () => {
       setCustomFeatures(updated);
     },
     realtorData, setRealtorData,
+    realtors, loadRealtors
   };
 };

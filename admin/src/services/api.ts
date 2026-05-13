@@ -5,7 +5,7 @@ const getApiUrl = () => {
   if (typeof window !== 'undefined' && (window.location.hostname.includes('web.app') || window.location.hostname.includes('firebaseapp.com') || window.location.hostname.includes('snapadda.com'))) {
     return '/api';
   }
-  return 'http://localhost:5000/api';
+  return '/api';
 };
 
 const API_URL = getApiUrl();

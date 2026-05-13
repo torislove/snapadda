@@ -61,6 +61,7 @@ try {
 
     foreach ($path in @("admin/.env", "client/.env", "server/.env")) {
         Write-Host "   Updating $path..." -ForegroundColor Gray
+        Set-EnvVar $path "NODE_ENV" "production"
         
         # Performance & Consistency: Use relative paths for Hosting->Functions connectivity
         # Use relative paths for production to avoid CORS and multi-domain issues
@@ -135,4 +136,4 @@ Write-Host "   ------------------------------------------------------" -Foregrou
 Write-Host "   Live API:     $PROD_API_URL" -ForegroundColor Green
 Write-Host "==========================================================" -ForegroundColor Green
 Write-Host ""
-pause
+# pause

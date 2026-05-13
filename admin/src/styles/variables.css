@@ -55,6 +55,7 @@
   --nav-h:          56px;
   --sidebar-w:      240px;
   --bottom-nav-h:   64px;
+  --max-content-width: 1200px;
 
   /* ── Spacing ── */
   --spacing-xs:     0.25rem;

@@ -7,6 +7,7 @@ import {
   Clock, Copy, X, Play, BedDouble, EyeOff, CheckCircle
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { getEffectivePricePerUnit } from '../../utils/priceUtils';
 import HolographicWrapper from './HolographicWrapper';
 
 interface Props {
@@ -371,7 +372,15 @@ export const AdminPropertyCard: React.FC<Props> = ({
                 <span style={{ fontFamily: 'var(--font-serif)', fontSize: '1.5rem', fontWeight: 900, color: 'white', textShadow: '0 2px 10px rgba(0,0,0,0.8)' }}>
                   {fmt(prop.price)}
                 </span>
-                {isAgri && prop.pricePerAcre > 0 && <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>{fmt(prop.pricePerAcre)}/Ac</span>}
+                {(() => {
+                  const unitPrices: any = getEffectivePricePerUnit(prop);
+                  if (unitPrices) {
+                    if (isAgri && unitPrices.acre && unitPrices.acre > 0) return <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>{fmt(unitPrices.acre)}/Ac</span>;
+                    const isPlot = (prop.type||'').toLowerCase().includes('plot') || (prop.type||'').toLowerCase().includes('crda');
+                    if (isPlot && unitPrices.sqYard && unitPrices.sqYard > 0) return <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>{fmt(unitPrices.sqYard)}/SqYd</span>;
+                  }
+                  return null;
+                })()}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'white', fontSize: '0.75rem', fontWeight: 600, background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(12px)', padding: '4px 10px', borderRadius: '12px' }}>
                 <span style={{ color: typeStyle.accent }}>{typeStyle.icon}</span> <span>{prop.type}</span>

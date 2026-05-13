@@ -42,14 +42,37 @@ body {
 /* ── Container ── */
 .container {
   width: 100%;
-  max-width: var(--container-max);
-  padding: 0 1rem;
+  max-width: var(--max-content-width);
+  padding: 0 1.5rem;
   margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* Force centering of all main content children */
 }
 
-@media (min-width: 640px)  { .container { padding: 0 1.25rem; } }
-@media (min-width: 1024px) { .container { padding: 0 1.5rem; } }
-@media (min-width: 1440px) { .container { max-width: 1380px; } }
+.elite-section {
+  padding: var(--section-padding) 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.centered-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  width: 100%;
+}
+
+.app-main-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
 
 /* ── Typography ── */
 h1, h2, h3, h4, h5, h6 {

@@ -20,8 +20,32 @@ const LocationAutocomplete = ({ value, onChange, placeholder = "City, Mandal, or
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  const handleInput = (val) => {
+  const handleInput = async (val) => {
     onChange(val);
+    
+    // Check if it's a 6-digit pincode
+    if (/^\d{6}$/.test(val)) {
+      try {
+        const res = await fetch(`https://api.postalpincode.in/pincode/${val}`);
+        const data = await res.json();
+        if (data[0]?.Status === 'Success' && data[0].PostOffice?.length) {
+          const poResults = data[0].PostOffice.map((po) => ({
+            name: po.Name,
+            district: po.District,
+            mandal: po.Block !== 'NA' ? po.Block : po.Name,
+            state: po.State,
+            pincode: val,
+            type: 'Village / Post Office'
+          }));
+          setSuggestions(poResults);
+          setShow(true);
+          return;
+        }
+      } catch (err) {
+        console.error("Pincode API failed in autocomplete:", err);
+      }
+    }
+
     if (val.length >= 2) {
       const results = getFuzzySuggestions(val);
       setSuggestions(results);

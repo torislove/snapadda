@@ -117,9 +117,9 @@ export default function SearchResults() {
       verified: verified ? 'true' : undefined,
       sort,
       page,
-      limit: PAGE_SIZE,
+      limit: viewMode === 'map' ? 100 : PAGE_SIZE,
     };
-  }, [debouncedKeyword, type, city, purpose, minPrice, maxPrice, bhk, facing, approval, vastu, verified, sort, page]);
+  }, [debouncedKeyword, type, city, purpose, minPrice, maxPrice, bhk, facing, approval, vastu, verified, sort, page, viewMode]);
 
   // Sync filters → URL
   const syncToUrl = useCallback(() => {

@@ -1,9 +1,11 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap, Tooltip } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { MapPin, Navigation, ExternalLink, TrendingUp } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { formatSnapAddaPrice } from '../utils/priceUtils';
+import ErrorBoundary from './ErrorBoundary';
 
 // Fix default marker icons in Vite
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
@@ -77,17 +79,18 @@ const AP_COORDS = [
   { name: 'Jagannadhapuram', aliases: ['jagannadhapuram', 'jnpuram'], lat: 16.4800, lng: 80.6100 },
 ];
 
-// Robust coordinate resolver
 function resolveCoords(property) {
-  // 1. Direct coordinates field on property
+  // 1. Direct coordinates field on property (Stored by backend)
   if (property.coordinates?.lat && property.coordinates?.lng) {
     return [property.coordinates.lat, property.coordinates.lng];
   }
+  
+  // legacy or raw coords
   if (property.lat && property.lng) {
     return [property.lat, property.lng];
   }
 
-  // 2. Parse Google Maps Link if available
+  // 2. Parse Google Maps Link if available (Fallback for client-only data)
   if (property.googleMapsLink) {
     try {
       const url = property.googleMapsLink;
@@ -98,6 +101,14 @@ function resolveCoords(property) {
       // Pattern 2: q=lat,lng
       const qMatch = url.match(/q=(-?\d+\.\d+),(-?\d+\.\d+)/);
       if (qMatch) return [parseFloat(qMatch[1]), parseFloat(qMatch[2])];
+
+      // Pattern 3: /dir/lat,lng
+      const dirMatch = url.match(/\/dir\/(-?\d+\.\d+),(-?\d+\.\d+)/);
+      if (dirMatch) return [parseFloat(dirMatch[1]), parseFloat(dirMatch[2])];
+      
+      // Pattern 4: ll=lat,lng
+      const llMatch = url.match(/ll=(-?\d+\.\d+),(-?\d+\.\d+)/);
+      if (llMatch) return [parseFloat(llMatch[1]), parseFloat(llMatch[2])];
     } catch (e) {
       console.warn('Failed to parse googleMapsLink for coords:', e);
     }
@@ -112,16 +123,34 @@ function resolveCoords(property) {
     if (!isNaN(lat) && !isNaN(lng)) return [lat, lng];
   }
 
-  // 4. STOP: User requested NO address fallback or fuzzy search.
-  // If we reach here, we don't have a reliable link or coords.
+  // 4. AP Regional Fallback (Using AP_COORDS)
+  const loc = (property.location || '').toLowerCase();
+  const dist = (property.district || '').toLowerCase();
+  
+  const match = AP_COORDS.find(c => 
+    c.aliases.some(a => loc.includes(a) || dist.includes(a)) ||
+    loc.includes(c.name.toLowerCase()) || 
+    dist.includes(c.name.toLowerCase())
+  );
+
+  if (match) {
+    // Add slight random jitter so markers in same city don't overlap perfectly
+    const jitter = () => (Math.random() - 0.5) * 0.01;
+    return [match.lat + jitter(), match.lng + jitter()];
+  }
+
   return null;
 }
 
-function ChangeView({ center, zoom }) {
+function ChangeView({ center, zoom, bounds }) {
   const map = useMap();
   useEffect(() => {
-    if (center) map.setView(center, zoom);
-  }, [center, zoom, map]);
+    if (bounds) {
+      map.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 });
+    } else if (center) {
+      map.setView(center, zoom);
+    }
+  }, [center, zoom, bounds, map]);
   return null;
 }
 
@@ -142,6 +171,7 @@ const PropertyMap = ({ properties = [], selectedProperty, onMarkerClick }) => {
   const [zoom] = useState(8);
   const [selectedCenter, setSelectedCenter] = useState(null);
   const [selectedZoom, setSelectedZoom] = useState(null);
+  const [mapBounds, setMapBounds] = useState(null);
 
   const markers = useMemo(() => {
     if (!properties?.length) return [];
@@ -156,17 +186,18 @@ const PropertyMap = ({ properties = [], selectedProperty, onMarkerClick }) => {
       if (sel?.coords) {
         setSelectedCenter(sel.coords);
         setSelectedZoom(15);
+        setMapBounds(null);
       }
+    } else if (markers.length > 0) {
+      // Auto-fit to show all markers if none selected
+      const bounds = L.latLngBounds(markers.map(m => m.coords));
+      setMapBounds(bounds);
     }
   }, [selectedProperty, markers]);
 
   const priceDisplay = (p) => {
     if (p.priceDisplay) return p.priceDisplay;
-    const n = parseFloat(p.price);
-    if (!n) return 'Price N/A';
-    if (n >= 10000000) return `₹${(n / 10000000).toFixed(2)} Cr`;
-    if (n >= 100000) return `₹${(n / 100000).toFixed(1)} L`;
-    return `₹${n.toLocaleString('en-IN')}`;
+    return formatSnapAddaPrice(p.price);
   };
 
   const handleRecenter = () => {
@@ -185,8 +216,9 @@ const PropertyMap = ({ properties = [], selectedProperty, onMarkerClick }) => {
       >
         <MapResizeHandler />
         <ChangeView
-          center={selectedCenter || mapCenter}
-          zoom={selectedZoom || zoom}
+          center={selectedCenter || (!mapBounds ? mapCenter : null)}
+          zoom={selectedZoom || (!mapBounds ? zoom : null)}
+          bounds={mapBounds}
         />
         <TileLayer
           url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
@@ -199,6 +231,11 @@ const PropertyMap = ({ properties = [], selectedProperty, onMarkerClick }) => {
             icon={p.isFeatured ? GoldIcon : DefaultIcon}
             eventHandlers={{ click: () => onMarkerClick && onMarkerClick(p) }}
           >
+            <Tooltip permanent direction="top" offset={[0, -32]} className="elite-map-tag">
+              <span style={{ fontWeight: 900, color: '#b45309', fontSize: '11px' }}>
+                {priceDisplay(p)}
+              </span>
+            </Tooltip>
             <Popup className="property-popup" minWidth={220}>
               <div style={{ padding: '4px', minWidth: '210px' }}>
                 <img
@@ -216,16 +253,32 @@ const PropertyMap = ({ properties = [], selectedProperty, onMarkerClick }) => {
                 <div style={{ fontSize: '11px', color: '#64748b', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '10px' }}>
                   📍 {[p.location, p.district].filter(Boolean).join(', ')}
                 </div>
-                <Link
-                  to={`/property/${p._id}`}
-                  style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                    width: '100%', padding: '10px', background: '#0f172a', color: 'white',
-                    borderRadius: '10px', fontSize: '12px', fontWeight: 800, textDecoration: 'none'
-                  }}
-                >
-                  VIEW ASSET <ExternalLink size={12} />
-                </Link>
+                <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
+                  <Link
+                    to={`/property/${p._id}`}
+                    style={{
+                      flex: 1, padding: '10px', background: '#0f172a', color: 'white',
+                      borderRadius: '10px', fontSize: '11px', fontWeight: 800, textDecoration: 'none',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px'
+                    }}
+                  >
+                    VIEW ASSET <ExternalLink size={10} />
+                  </Link>
+                  {p.googleMapsLink && (
+                    <a
+                      href={p.googleMapsLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        padding: '10px', background: 'rgba(66, 133, 244, 0.1)', color: '#4285F4',
+                        borderRadius: '10px', fontSize: '11px', fontWeight: 800, textDecoration: 'none',
+                        border: '1px solid rgba(66, 133, 244, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center'
+                      }}
+                    >
+                      <MapPin size={14} />
+                    </a>
+                  )}
+                </div>
               </div>
             </Popup>
           </Marker>
@@ -265,4 +318,10 @@ const PropertyMap = ({ properties = [], selectedProperty, onMarkerClick }) => {
   );
 };
 
-export default PropertyMap;
+const SafePropertyMap = (props) => (
+  <ErrorBoundary>
+    <PropertyMap {...props} />
+  </ErrorBoundary>
+);
+
+export default SafePropertyMap;

@@ -18,7 +18,7 @@ console.log('NODE_ENV:', process.env.NODE_ENV);
 console.log('MONGODB_URI_PROVIDED:', !!process.env.MONGODB_URI);
 console.log('CLOUDINARY_NAME_PROVIDED:', !!process.env.CLOUDINARY_CLOUD_NAME);
 console.log('CLOUDINARY_KEY_PROVIDED:', !!process.env.CLOUDINARY_API_KEY);
-console.log('DB_URL_PROVIDED:', !!process.env.DB_URL);
+console.log('DB_FIREBASE_URL_PROVIDED:', !!process.env.DB_FIREBASE_URL);
 console.log('----------------------------------');
 
 const app = express();
@@ -237,7 +237,7 @@ app.get('/api/health', (req, res) => {
       NODE_ENV: process.env.NODE_ENV,
       MONGODB_URI_SET: !!process.env.MONGODB_URI,
       CLOUDINARY_SET: !!process.env.CLOUDINARY_CLOUD_NAME,
-      FIREBASE_URL_SET: !!process.env.DB_URL
+      FIREBASE_URL_SET: !!process.env.DB_FIREBASE_URL
     },
     platform: process.platform
   });

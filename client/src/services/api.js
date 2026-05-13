@@ -1,4 +1,4 @@
-const RAW_API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const RAW_API_URL = import.meta.env.VITE_API_URL || '/api';
 const API_BASE = RAW_API_URL.replace(/\/+$/, ''); // Ensure no trailing slash
 
 /**

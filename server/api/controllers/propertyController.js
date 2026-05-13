@@ -4,9 +4,10 @@ import SiteSetting from '../models/SiteSetting.js';
 import { getCitiesNearby } from '../data/apCoordinates.js';
 import { getCached, setCached, invalidateCache, buildCacheKey } from '../cache/propertyCache.js';
 import { cleanPropertyData } from '../utils/propertyCleaner.js';
+import { extractCoordsFromLink } from '../utils/geoUtils.js';
 
 // Lean projection for card list views (avoids fetching 50+ unused fields)
-const CARD_FIELDS = 'title price priceDisplay pricePerUnit pricePerAcre totalAcres location district type purpose subType images image status isVerified isFeatured bhk beds baths areaSize measurementUnit facing furnishing constructionStatus approvalAuthority isGated vastuCompliant listerType propertyCode googleMapsLink createdAt likeCount';
+const CARD_FIELDS = 'title price priceDisplay pricePerUnit location district type purpose subType images image status isVerified isFeatured bhk beds baths areaSize measurementUnit facing furnishing constructionStatus approvalAuthority isGated vastuCompliant listerType propertyCode googleMapsLink coordinates createdAt likeCount';
 
 // Helper to sync to Firebase
 const syncToFirebase = async (property) => {
@@ -49,6 +50,8 @@ const syncToFirebase = async (property) => {
       amenities: property.amenities || [],
       customFeatures: property.customFeatures || [],
       googleMapsLink: property.googleMapsLink || '',
+      coordinates: property.coordinates || null,
+      propertyCode: property.propertyCode || '',
       updatedAt: new Date().toISOString()
     };
 
@@ -161,7 +164,7 @@ export const getProperties = async (req, res) => {
     if (sort === 'price_asc') sortObj = { price: 1, isFeatured: -1 };
     else if (sort === 'price_desc') sortObj = { price: -1, isFeatured: -1 };
     else if (sort === 'featured') sortObj = { isFeatured: -1, isVerified: -1, createdAt: -1 };
-    else if (sort === 'newest') sortObj = { createdAt: -1, isFeatured: -1 };
+    else if (sort === 'newest') sortObj = { updatedAt: -1, createdAt: -1, isFeatured: -1 };
 
     const pageNum = Math.max(1, parseInt(page));
     const limitNum = Math.min(100, Math.max(1, parseInt(limit)));
@@ -249,6 +252,12 @@ export const createProperty = async (req, res) => {
   try {
     const propertyData = cleanPropertyData(req.body, false);
     
+    // Extract coordinates if link is provided
+    if (propertyData.googleMapsLink && (!propertyData.coordinates || !propertyData.coordinates.lat)) {
+      const coords = extractCoordsFromLink(propertyData.googleMapsLink);
+      if (coords) propertyData.coordinates = coords;
+    }
+    
     const newProperty = new Property(propertyData);
     await newProperty.save();
     
@@ -305,6 +314,12 @@ export const getPropertyById = async (req, res) => {
 export const updateProperty = async (req, res) => {
   try {
     const updateData = cleanPropertyData(req.body, false);
+
+    // Update coordinates if link changed or coordinates are missing
+    if (updateData.googleMapsLink) {
+      const coords = extractCoordsFromLink(updateData.googleMapsLink);
+      if (coords) updateData.coordinates = coords;
+    }
 
     const property = await Property.findByIdAndUpdate(req.params.id, updateData, { new: true, runValidators: true });
     if (!property) return res.status(404).json({ message: 'Property not found' });
@@ -455,6 +470,12 @@ export const getEngagementStats = async (req, res) => {
 export const publicSubmitProperty = async (req, res) => {
   try {
     const propertyData = cleanPropertyData(req.body, true);
+    
+    // Extract coordinates if link is provided
+    if (propertyData.googleMapsLink) {
+      const coords = extractCoordsFromLink(propertyData.googleMapsLink);
+      if (coords) propertyData.coordinates = coords;
+    }
     
     const property = new Property(propertyData);
     property.propertyCode = `SNA-${property._id.toString().slice(-5).toUpperCase()}`;

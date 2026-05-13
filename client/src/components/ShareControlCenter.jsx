@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, MessageSquare, Mail, Share2, Copy, Check, 
@@ -64,23 +65,40 @@ const ShareControlCenter = ({ isOpen, onClose, property }) => {
     link.click();
   };
 
-  return (
+  // --- PORTAL ENFORCEMENT ---
+  // Ensuring the modal is always at document.body level to avoid clipping and containment issues.
+  const modalContent = (
     <AnimatePresence>
       {isOpen && (
-        <div className="share-modal-overlay" style={{ position: 'fixed', inset: 0, zIndex: 100000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem', background: 'rgba(2, 2, 5, 0.85)', backdropFilter: 'blur(12px)' }}>
+        <div 
+          className="share-modal-overlay" 
+          onClick={onClose}
+          style={{ 
+            position: 'fixed', 
+            inset: 0, 
+            zIndex: 1000000, 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            padding: '1rem', 
+            background: 'rgba(2, 2, 5, 0.9)', 
+            backdropFilter: 'blur(16px)' 
+          }}
+        >
           <motion.div 
-            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            initial={{ opacity: 0, scale: 0.9, y: 30 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            exit={{ opacity: 0, scale: 0.9, y: 30 }}
+            onClick={(e) => e.stopPropagation()}
             className="glass-premium"
             style={{ 
               width: '100%', 
               maxWidth: '550px', 
               borderRadius: '32px', 
               overflow: 'hidden', 
-              border: '1px solid rgba(232, 184, 75, 0.25)',
+              border: '1px solid rgba(232, 184, 75, 0.3)',
               background: 'linear-gradient(165deg, #0a0c14 0%, #050a14 100%)',
-              boxShadow: '0 30px 70px rgba(0,0,0,0.8)'
+              boxShadow: '0 40px 100px rgba(0,0,0,0.9)'
             }}
           >
             {/* Header */}
@@ -261,6 +279,8 @@ const ShareControlCenter = ({ isOpen, onClose, property }) => {
       )}
     </AnimatePresence>
   );
+
+  return createPortal(modalContent, document.body);
 };
 
 export default ShareControlCenter;

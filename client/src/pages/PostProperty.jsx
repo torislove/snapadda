@@ -1,4 +1,5 @@
 import { useState, useEffect, memo, startTransition } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -8,10 +9,9 @@ import {
   Layers, Ruler, Trash2, Plus, Sparkles
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { submitProperty, uploadMedia } from '../services/api';
-import { useTranslation } from 'react-i18next';
+import { submitProperty, uploadMedia, fetchSetting } from '../services/api';
+import { useToast } from '../contexts/ToastContext';
 import LocationAutocomplete from '../components/LocationAutocomplete';
-import { fetchSetting } from '../services/api';
 import { MessageSquare } from 'lucide-react';
 
 // --- Sub-components for Form Steps (Memoized for Snappiness) ---
@@ -56,108 +56,171 @@ const StepBasics = memo(({ formData, handleChange, formErrors, t, PROPERTY_TYPES
   </motion.div>
 ));
 
-const StepTechnicals = memo(({ formData, handleChange, setFormData, t }) => (
-  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
-      <div className="field-group">
-        <label htmlFor="pp-areaSize" className="elite-lbl">{t('post.size')}</label>
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <input id="pp-areaSize" name="areaSize" type="number" value={formData.areaSize} onChange={handleChange} placeholder="Value" className="elite-input" style={{ flex: 1 }} />
-          <label htmlFor="pp-measurementUnit" className="sr-only">Measurement Unit</label>
-          <select id="pp-measurementUnit" name="measurementUnit" value={formData.measurementUnit} onChange={handleChange} className="elite-input" style={{ width: '130px' }}>
-            <option>Sq.Yds</option>
-            <option>Acres</option>
-            <option>Cents</option>
-            <option>SqFt</option>
-            <option>Guntas</option>
+const StepTechnicals = memo(({ formData, handleChange, setFormData, t }) => {
+  const type = (formData.type || '').toLowerCase();
+  const isAgri = type.includes('agri') || type.includes('farm');
+  const isPlot = type.includes('plot') || type.includes('layout') || type.includes('crda');
+  const isResidential = ['apartment', 'villa', 'independent house'].some(t => type.includes(t));
+  const isCommercial = ['commercial', 'office', 'showroom'].some(t => type.includes(t));
+
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+      
+      {/* AREA & UNIT - Dynamic Labeling */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
+        <div className="field-group">
+          <label htmlFor="pp-areaSize" className="elite-lbl">
+            {isAgri ? 'Total Acres (ఎకరాలు)' : (isPlot ? 'Plot Area' : t('post.size'))}
+          </label>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <input id="pp-areaSize" name="areaSize" type="number" value={formData.areaSize} onChange={handleChange} placeholder="Value" className="elite-input" style={{ flex: 1 }} />
+            <select id="pp-measurementUnit" name="measurementUnit" value={formData.measurementUnit} onChange={handleChange} className="elite-input" style={{ width: '130px' }}>
+              {isAgri ? (
+                <>
+                  <option value="Acres">Acres</option>
+                  <option value="Cents">Cents</option>
+                </>
+              ) : isPlot ? (
+                <>
+                  <option value="Sq.Yards">Sq.Yards</option>
+                  <option value="Cents">Cents</option>
+                  <option value="Guntas">Guntas</option>
+                  <option value="Ankanam">Ankanam</option>
+                </>
+              ) : (
+                <>
+                  <option value="SqFt">Sq.Ft</option>
+                  <option value="Sq.Yards">Sq.Yards</option>
+                  <option value="Ankanam">Ankanam</option>
+                </>
+              )}
+            </select>
+          </div>
+        </div>
+
+        {/* FACING - Common for all in AP */}
+        <div className="field-group">
+          <label htmlFor="pp-facing" className="elite-lbl">{t('post.facing')}</label>
+          <select id="pp-facing" name="facing" value={formData.facing} onChange={handleChange} className="elite-input">
+            <option>East</option><option>West</option><option>North</option><option>South</option>
+            <option>North-East</option><option>South-East</option><option>North-West</option><option>South-West</option>
           </select>
         </div>
       </div>
-      <div className="field-group">
-        <label htmlFor="pp-facing" className="elite-lbl">{t('post.facing')}</label>
-        <select id="pp-facing" name="facing" value={formData.facing} onChange={handleChange} className="elite-input">
-          <option>East</option><option>West</option><option>North</option><option>South</option>
-          <option>North-East</option><option>South-East</option><option>North-West</option><option>South-West</option>
-        </select>
-      </div>
-    </div>
 
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem' }}>
-      <div className="field-group">
-        <label htmlFor="pp-bhk" className="elite-lbl">{t('post.bhk')}</label>
-        <input id="pp-bhk" name="bhk" type="number" value={formData.bhk} onChange={handleChange} placeholder="e.g. 3" className="elite-input" />
-      </div>
-      <div className="field-group">
-        <label htmlFor="pp-baths" className="elite-lbl">{t('post.baths')}</label>
-        <input id="pp-baths" name="baths" type="number" value={formData.baths} onChange={handleChange} placeholder="e.g. 2" className="elite-input" />
-      </div>
-      <div className="field-group">
-        <label className="elite-lbl">{t('post.vastu')}</label>
-        <div style={{ height: '54px', display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,0.02)', padding: '0 16px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.08)' }}>
-          <input id="pp-vastuCompliant" type="checkbox" name="vastuCompliant" checked={formData.vastuCompliant} onChange={handleChange} style={{ width: '20px', height: '20px', accentColor: 'var(--gold)' }} />
-          <label htmlFor="pp-vastuCompliant" style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', cursor: 'pointer' }}>Vastu Verified</label>
+      {/* AGRI SPECIFIC - Hidden for others */}
+      {isAgri && (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
+          <div className="field-group">
+            <label className="elite-lbl">Survey Number</label>
+            <input name="surveyNo" value={formData.surveyNo} onChange={handleChange} placeholder="e.g. 123/A" className="elite-input" />
+          </div>
+          <div className="field-group">
+            <label className="elite-lbl">Water Source</label>
+            <select name="waterSource" value={formData.waterSource} onChange={handleChange} className="elite-input">
+              <option value="N/A">N/A</option>
+              <option value="Borewell">Borewell</option>
+              <option value="Canal">Canal</option>
+              <option value="Both">Both</option>
+            </select>
+          </div>
         </div>
-      </div>
-    </div>
+      )}
 
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
-      <div className="field-group">
-        <label htmlFor="pp-propertyAge" className="elite-lbl">{t('post.age')}</label>
-        <select id="pp-propertyAge" name="propertyAge" value={formData.propertyAge} onChange={handleChange} className="elite-input">
-          <option value="N/A">N/A</option>
-          <option value="0-1 yrs">New / 0-1 Years</option>
-          <option value="1-5 yrs">1-5 Years</option>
-          <option value="5-10 yrs">5-10 Years</option>
-          <option value="10+ yrs">10+ Years</option>
-        </select>
-      </div>
-      <div className="field-group">
-        <label htmlFor="pp-constructionStatus" className="elite-lbl">{t('post.status')}</label>
-        <select id="pp-constructionStatus" name="constructionStatus" value={formData.constructionStatus} onChange={handleChange} className="elite-input">
-          <option>Ready to Move</option>
-          <option>Under Construction</option>
-          <option>New Launch</option>
-        </select>
-      </div>
-    </div>
+      {/* RESIDENTIAL SPECIFIC */}
+      {isResidential && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem' }}>
+          <div className="field-group">
+            <label htmlFor="pp-bhk" className="elite-lbl">{t('post.bhk')}</label>
+            <input id="pp-bhk" name="bhk" type="number" value={formData.bhk} onChange={handleChange} placeholder="e.g. 3" className="elite-input" />
+          </div>
+          <div className="field-group">
+            <label htmlFor="pp-baths" className="elite-lbl">{t('post.baths')}</label>
+            <input id="pp-baths" name="baths" type="number" value={formData.baths} onChange={handleChange} placeholder="e.g. 2" className="elite-input" />
+          </div>
+          <div className="field-group">
+            <label className="elite-lbl">{t('post.vastu')}</label>
+            <div style={{ height: '54px', display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,0.02)', padding: '0 16px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.08)' }}>
+              <input id="pp-vastuCompliant" type="checkbox" name="vastuCompliant" checked={formData.vastuCompliant} onChange={handleChange} style={{ width: '20px', height: '20px', accentColor: 'var(--gold)' }} />
+              <label htmlFor="pp-vastuCompliant" style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', cursor: 'pointer' }}>Vastu Verified</label>
+            </div>
+          </div>
+        </div>
+      )}
 
-    <div className="field-group">
-      <label className="elite-lbl">Amenities</label>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '10px', padding: '1.5rem', background: 'rgba(255,255,255,0.02)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}>
-        {['Lift', 'Security', 'Swimming Pool', 'Gym', 'Club House', 'Power Backup', 'Water Supply', 'Play Area', 'Park', 'Gated Community'].map(amn => (
-          <label key={amn} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: 'rgba(255,255,255,0.7)', fontSize: '0.8rem' }}>
-            <input 
-              type="checkbox" 
-              checked={formData.amenities?.includes(amn)} 
-              onChange={(e) => {
-                const newAmn = e.target.checked 
-                  ? [...(formData.amenities || []), amn]
-                  : (formData.amenities || []).filter(a => a !== amn);
-                setFormData(prev => ({ ...prev, amenities: newAmn }));
-              }}
-              style={{ width: '16px', height: '16px', accentColor: 'var(--gold)' }} 
-            />
-            {amn}
-          </label>
-        ))}
-      </div>
-    </div>
-  </motion.div>
-));
+      {/* PLOT SPECIFIC CHECKBOXES */}
+      {isPlot && (
+        <div style={{ display: 'flex', gap: '2rem', padding: '1rem', background: 'rgba(255,255,255,0.02)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}>
+           <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem' }}>
+              <input type="checkbox" name="cornerProperty" checked={formData.cornerProperty} onChange={handleChange} /> Corner Plot
+           </label>
+           <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem' }}>
+              <input type="checkbox" name="boundaryWall" checked={formData.boundaryWall} onChange={handleChange} /> Boundary Wall
+           </label>
+           <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem' }}>
+              <input type="checkbox" name="vastuCompliant" checked={formData.vastuCompliant} onChange={handleChange} /> Vastu Compliant
+           </label>
+        </div>
+      )}
 
-const StepLocation = memo(({ formData, handleChange, setFormData, formErrors, t, DISTRICTS }) => (
+      {/* AMENITIES - Only for Built-up properties */}
+      {(isResidential || isCommercial) && (
+        <div className="field-group">
+          <label className="elite-lbl">Amenities</label>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '10px', padding: '1.5rem', background: 'rgba(255,255,255,0.02)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}>
+            {['Lift', 'Security', 'Swimming Pool', 'Gym', 'Club House', 'Power Backup', 'Water Supply', 'Play Area', 'Park', 'Gated Community'].map(amn => (
+              <label key={amn} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: 'rgba(255,255,255,0.7)', fontSize: '0.8rem' }}>
+                <input 
+                  type="checkbox" 
+                  checked={formData.amenities?.includes(amn)} 
+                  onChange={(e) => {
+                    const newAmn = e.target.checked 
+                      ? [...(formData.amenities || []), amn]
+                      : (formData.amenities || []).filter(a => a !== amn);
+                    setFormData(prev => ({ ...prev, amenities: newAmn }));
+                  }}
+                  style={{ width: '16px', height: '16px', accentColor: 'var(--gold)' }} 
+                />
+                {amn}
+              </label>
+            ))}
+          </div>
+        </div>
+      )}
+    </motion.div>
+  );
+});
+
+const StepLocation = memo(({ formData, handleChange, setFormData, formErrors, t, DISTRICTS, pincodeLoading, villages, handlePincodeChange }) => (
   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
     <div className="field-group">
       <label htmlFor="pp-district" className="elite-lbl">{t('post.district')}</label>
-      <select id="pp-district" name="district" value={formData.district} onChange={handleChange} className="elite-input">
-        {DISTRICTS.map(d => <option key={d}>{d}</option>)}
-      </select>
+      <input 
+        id="pp-district" 
+        name="district" 
+        value={formData.district || ''} 
+        onChange={handleChange} 
+        className="elite-input" 
+        placeholder="District"
+      />
     </div>
     
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
       <div className="field-group">
         <label htmlFor="pp-pincode" className="elite-lbl">Pincode <span className="required-asterisk">*</span></label>
-        <input id="pp-pincode" name="pincode" value={formData.pincode || ''} onChange={handleChange} placeholder="6-digit code" className="elite-input" maxLength={6} />
+        <div style={{ position: 'relative' }}>
+          <input 
+            id="pp-pincode" 
+            name="pincode" 
+            value={formData.pincode || ''} 
+            onChange={(e) => handlePincodeChange(e.target.value)} 
+            placeholder="6-digit code" 
+            className="elite-input" 
+            maxLength={6} 
+            style={{ border: pincodeLoading ? '1px solid var(--gold)' : '1px solid rgba(255,255,255,0.05)' }}
+          />
+          {pincodeLoading && <div className="loader-dots" style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)' }} />}
+        </div>
       </div>
       <div className="field-group">
         <label htmlFor="pp-mandal" className="elite-lbl">Mandal / Tahsil</label>
@@ -167,7 +230,20 @@ const StepLocation = memo(({ formData, handleChange, setFormData, formErrors, t,
 
     <div className="field-group">
       <label htmlFor="pp-village" className="elite-lbl">Village / Locality</label>
-      <input id="pp-village" name="village" value={formData.village || ''} onChange={handleChange} placeholder="e.g. Navuluru" className="elite-input" />
+      {villages.length > 0 ? (
+        <select 
+          id="pp-village" 
+          name="village" 
+          value={formData.village || ''} 
+          onChange={handleChange} 
+          className="elite-input"
+        >
+          <option value="">Select Village</option>
+          {villages.map(v => <option key={v} value={v}>{v}</option>)}
+        </select>
+      ) : (
+        <input id="pp-village" name="village" value={formData.village || ''} onChange={handleChange} placeholder="e.g. Navuluru" className="elite-input" />
+      )}
     </div>
 
     <div className="field-group">
@@ -270,6 +346,7 @@ export default function PostProperty() {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [loading, setLoading] = useState(false);
   const [formErrors, setFormErrors] = useState([]);
+  const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [supportInfo, setSupportInfo] = useState({ phone: '+919346793364', whatsapp: '919346793364' });
 
@@ -315,7 +392,7 @@ export default function PostProperty() {
       constructionStatus: 'Ready to Move', listerType: 'Individual Owner',
       posterName: user?.name || '', posterPhone: user?.phone || '',
       address: '', googleMapsLink: '', reraId: '', approvalAuthority: 'N/A',
-      totalAcres: '', pricePerAcre: '', surveyNo: '', waterSource: 'N/A',
+      surveyNo: '', waterSource: 'N/A',
       roadType: 'N/A', roadWidth: '', carpetArea: '', totalFloors: '',
       floorNo: '', propertyAge: 'N/A', ownershipType: 'Freehold',
       parking: 'Available', cornerProperty: false, boundaryWall: false,
@@ -336,6 +413,36 @@ export default function PostProperty() {
   useEffect(() => {
     if (!user) navigate('/login', { state: { from: '/post-property' } });
   }, [user, navigate]);
+
+  const [pincodeLoading, setPincodeLoading] = useState(false);
+  const [villages, setVillages] = useState([]);
+
+  const handlePincodeChange = async (code) => {
+    setFormData(prev => ({ ...prev, pincode: code }));
+    if (code.length === 6) {
+      setPincodeLoading(true);
+      try {
+        const res = await fetch(`https://api.postalpincode.in/pincode/${code}`);
+        const data = await res.json();
+        if (data[0]?.Status === 'Success' && data[0].PostOffice?.length) {
+          const po = data[0].PostOffice[0];
+          const allVillages = data[0].PostOffice.map(p => p.Name);
+          setVillages(allVillages);
+          setFormData(prev => ({
+            ...prev,
+            district: po.District,
+            mandal: po.Block !== 'NA' ? po.Block : po.Name,
+            state: po.State,
+            village: allVillages.length === 1 ? allVillages[0] : prev.village
+          }));
+        }
+      } catch (err) {
+        console.error("Pincode API failed:", err);
+      } finally {
+        setPincodeLoading(false);
+      }
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -428,6 +535,7 @@ export default function PostProperty() {
          toast(`Listing sent for audit. Ref: ${pCode}`, 'success');
       } else throw new Error(res.message);
     } catch (err) {
+      setError(err.message || 'Submission failed.');
       toast(err.message || 'Submission failed.', 'error');
     } finally { setLoading(false); }
   };
@@ -473,7 +581,19 @@ export default function PostProperty() {
               <div key={step}>
                 {step === 0 && <StepBasics formData={formData} handleChange={handleChange} formErrors={formErrors} t={t} PROPERTY_TYPES={PROPERTY_TYPES} />}
                 {step === 1 && <StepTechnicals formData={formData} handleChange={handleChange} setFormData={setFormData} t={t} />}
-                {step === 2 && <StepLocation formData={formData} handleChange={handleChange} setFormData={setFormData} formErrors={formErrors} t={t} DISTRICTS={DISTRICTS} />}
+                {step === 2 && (
+                  <StepLocation 
+                    formData={formData} 
+                    handleChange={handleChange} 
+                    setFormData={setFormData} 
+                    formErrors={formErrors} 
+                    t={t} 
+                    DISTRICTS={DISTRICTS} 
+                    pincodeLoading={pincodeLoading}
+                    villages={villages}
+                    handlePincodeChange={handlePincodeChange}
+                  />
+                )}
                 {step === 3 && <StepMedia formData={formData} handleImageUpload={handleImageUpload} removeImage={removeImage} t={t} formErrors={formErrors} handleChange={handleChange} />}
                 {step === 4 && (
                   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>

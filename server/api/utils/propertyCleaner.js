@@ -16,7 +16,7 @@ export const cleanPropertyData = (rawData, isPublicSubmission = false) => {
 
   // 2. Numeric Parsing
   const numericFields = [
-    'price', 'pricePerUnit', 'pricePerAcre', 'totalAcres', 'areaSize', 
+    'price', 'pricePerUnit', 'areaSize', 
     'bhk', 'beds', 'baths', 'totalFloors', 'floorNo', 'carpetArea', 
     'superBuiltupArea', 'roadWidth'
   ];

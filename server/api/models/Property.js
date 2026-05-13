@@ -4,10 +4,6 @@ const propertySchema = new mongoose.Schema({
   title: { type: String, default: '' },
   description: String,
   price: { type: Number, default: 0 },
-  priceDisplay: { type: String, default: '' }, // "₹ 85,00,000" or "₹ 1.2 Crore"
-  pricePerUnit: { type: Number, default: 0 }, // For agriculture — price per acre/cent
-  pricePerAcre: { type: Number, default: 0 },
-  totalAcres: { type: Number, default: 0 },
   location: { type: String, default: '' },
   address: { type: String, default: '' },
   district: { type: String, default: '' }, // AP district
@@ -18,6 +14,10 @@ const propertySchema = new mongoose.Schema({
   cityId: { type: mongoose.Schema.Types.ObjectId, ref: 'City' },
 
   googleMapsLink: { type: String, default: '' },
+  coordinates: {
+    lat: Number,
+    lng: Number
+  },
   
   type: { 
     type: String, 
@@ -47,8 +47,6 @@ const propertySchema = new mongoose.Schema({
   constructionStatus: { type: String, default: 'N/A' },
   
   // Advanced Spatial & Structural
-  carpetArea: { type: Number, default: 0 },
-  superBuiltupArea: { type: Number, default: 0 },
   totalFloors: { type: Number, default: 0 },
   floorNo: { type: Number, default: 0 },
   propertyAge: { type: String, default: 'N/A' },
@@ -66,6 +64,7 @@ const propertySchema = new mongoose.Schema({
   cornerProperty: { type: Boolean, default: false },
   boundaryWall: { type: Boolean, default: false }, 
   overlooking: { type: String, default: 'N/A' },
+  powerKVA: { type: Number, default: 0 },
   
   image: { type: String, default: '' },
   images: [{ type: String }],
@@ -77,7 +76,7 @@ const propertySchema = new mongoose.Schema({
   verificationStatus: { type: String, default: 'Draft' },
   isVerified: { type: Boolean, default: false },
   isFeatured: { type: Boolean, default: false },
-  propertyCode: { type: String, default: '' },
+  propertyCode: { type: String, unique: true, sparse: true, default: '' },
   franchiseId: { type: String, default: null },
   
   listerType: { type: String, default: 'Individual Owner' },
@@ -116,39 +115,26 @@ const propertySchema = new mongoose.Schema({
 
   createdAt: { type: Date, default: Date.now },
 
-  // Unique property reference code (auto-generated: SNA-XXXXX)
-  propertyCode: { type: String, unique: true, sparse: true, default: '' },
-
   // Tracking for client-submitted properties
   submittedBy: { type: String, default: null }, // Stores userId (MongoDB _id or Google UID)
-});
+}, { timestamps: true });
 
 // Auto-generate SNA property code and calculate unit prices before first save
 propertySchema.pre('save', function(next) {
   if (!this.propertyCode && this._id) {
     this.propertyCode = 'SNA-' + this._id.toString().slice(-5).toUpperCase();
   }
-
-  // Elite Advanced: Auto-calculate unit pricing for land assets
-  if (this.price > 0 && this.areaSize > 0) {
-    this.pricePerUnit = this.price / this.areaSize;
-  }
-  
-  if (this.type === 'Agricultural Land' && this.price > 0 && this.totalAcres > 0) {
-    this.pricePerAcre = this.price / this.totalAcres;
-  }
-
   next();
 });
 
 // Performance Indexes - Aggressive Compound Indexing for Real Estate Filters
 propertySchema.index({ status: 1, createdAt: -1 });
-propertySchema.index({ status: 1, type: 1, city: 1, price: 1 }); // Core multi-filter index
+propertySchema.index({ status: 1, type: 1, location: 1, price: 1 }); // Core multi-filter index
 propertySchema.index({ price: 1, bhk: 1 }); // Native budget sorting
 propertySchema.index({ isVerified: -1, createdAt: -1 });
 propertySchema.index({ isFeatured: -1, createdAt: -1 });
 propertySchema.index({ district: 1, location: 1, type: 1 }); // Locational filtering
-propertySchema.index({ pricePerAcre: 1, totalAcres: 1 }); // Agri specific
+propertySchema.index({ areaSize: 1 }); // Unified Area Index
 
 // Text search index
 propertySchema.index({ title: 'text', location: 'text', district: 'text' });

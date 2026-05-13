@@ -14,7 +14,9 @@ import {
   formatSnapAddaPrice, 
   formatLandSize,
   smartAreaConverter,
-  calcPricePerUnit
+  calcPricePerUnit,
+  getEffectivePricePerUnit,
+  calcAgriTotalValue
 } from '../utils/priceUtils';
 import tr from '../utils/teluguTranslations';
 import { logUserActivity, ACTIONS } from '../services/activityTracker';
@@ -117,16 +119,18 @@ const PropertyCard = memo((props) => {
   };
   const typeStyle = getTypeStyle(type);
 
-  // Agri / Land logic
-  const agriTotalValue = (pricePerAcre && totalAcres) ? Math.round(Number(pricePerAcre) * Number(totalAcres)) : 0;
+  // Robust pricing derivation via standardized utility
+  const unitPrices = getEffectivePricePerUnit(p);
+  const effectivePricePerAcre = unitPrices?.acre || 0;
+  const pricePerCent = unitPrices?.cent || 0;
+  const agriTotalValue = calcAgriTotalValue(effectivePricePerAcre, areaSize);
   
   // Area display logic — handles all property types
   const getAreaDisplay = () => {
     const unit = (measurementUnit || '').toLowerCase();
     const size = areaSize || 0;
     if (isAgri) {
-      if (totalAcres > 0) return `${Number(totalAcres).toFixed(2)} Acres`;
-      if (size > 0) return `${size} ${measurementUnit || 'Acres'}`;
+      if (areaSize > 0) return formatLandSize(areaSize, false);
       return null;
     }
     if (isPlot || isCRDA) {
@@ -138,9 +142,7 @@ const PropertyCard = memo((props) => {
       }
       return null;
     }
-    if (isIndustrial && size > 0) return `${size.toLocaleString()} ${measurementUnit || 'Sq.Ft'}`;
-    if (size > 0) return `${size.toLocaleString()} sq.ft`;
-    return null;
+    return size > 0 ? `${size} ${measurementUnit || 'Sq.Ft'}` : null;
   };
   const areaDisplay = getAreaDisplay();
 
@@ -501,9 +503,15 @@ const PropertyCard = memo((props) => {
                    </motion.span>
                  )}
                  {googleMapsLink && (
-                   <span style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(66, 133, 244, 0.15)', color: '#4285F4', border: '1px solid rgba(66, 133, 244, 0.35)', backdropFilter: 'blur(10px)', fontWeight: 700, padding: '4px 10px', borderRadius: '8px', fontSize: '0.65rem' }}>
+                   <a 
+                     href={googleMapsLink.trim().startsWith('http') ? googleMapsLink.trim() : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(googleMapsLink.trim())}`}
+                     target="_blank"
+                     rel="noopener noreferrer"
+                     onClick={(e) => e.stopPropagation()}
+                     style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(66, 133, 244, 0.15)', color: '#4285F4', border: '1px solid rgba(66, 133, 244, 0.35)', backdropFilter: 'blur(10px)', fontWeight: 700, padding: '4px 10px', borderRadius: '8px', fontSize: '0.65rem' }}
+                   >
                      <MapPin size={10} /> Map Link
-                   </span>
+                   </a>
                  )}
               </div>
 
@@ -534,11 +542,11 @@ const PropertyCard = memo((props) => {
                    <BedDouble size={10} style={{ color: 'var(--gold)' }} /> <span>{bhk || beds} BHK</span>
                  </div>
                ) : null}
-               {areaSize && (
-                 <div style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.05)', padding: '5px 10px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.72rem', color: 'white', fontWeight: 700 }}>
-                   {isAgri ? <Leaf size={12} style={{ color: 'var(--emerald)' }}/> : <Square size={12} style={{ color: 'var(--cyan)' }}/>} <span>{formatLandSize(areaSize, measurementUnit)}</span>
-                 </div>
-               )}
+                {areaDisplay && (
+                  <div style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.05)', padding: '5px 10px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.72rem', color: 'white', fontWeight: 700 }}>
+                    {isAgri ? <Leaf size={12} style={{ color: 'var(--emerald)' }}/> : <Square size={12} style={{ color: 'var(--cyan)' }}/>} <span>{areaDisplay}</span>
+                  </div>
+                )}
                {facing && facing !== 'Any' && (
                  <div style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.05)', padding: '5px 10px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.72rem', color: 'white', fontWeight: 700 }}>
                    <Compass size={12} style={{ color: 'var(--gold)' }} /> <span>{tr(facing)}</span>

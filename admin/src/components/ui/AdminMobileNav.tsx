@@ -1,6 +1,6 @@
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LayoutDashboard, Building2, Users, Settings, MessageSquare } from 'lucide-react';
+import { LayoutDashboard, Building, Users, Settings, MessageSquare } from 'lucide-react';
 
 interface AdminMobileNavProps {
   isVisible?: boolean;
@@ -8,10 +8,10 @@ interface AdminMobileNavProps {
 
 const navItems = [
   { id: 'dashboard',   icon: LayoutDashboard, label: 'Home',      path: '/admin' },
-  { id: 'properties',  icon: Building2,       label: 'Listings',  path: '/admin/properties' },
+  { id: 'properties',  icon: Building,        label: 'Assets',    path: '/admin/properties' },
   { id: 'leads',       icon: Users,           label: 'Leads',     path: '/admin/leads' },
-  { id: 'contacts',    icon: MessageSquare,   label: 'Contacts',  path: '/admin/contacts' },
-  { id: 'settings',    icon: Settings,        label: 'Settings',  path: '/admin/settings' },
+  { id: 'contacts',    icon: MessageSquare,   label: 'Comms',     path: '/admin/comms' },
+  { id: 'settings',    icon: Settings,        label: 'Setup',     path: '/admin/settings' },
 ];
 
 export const AdminMobileNav: React.FC<AdminMobileNavProps> = ({ isVisible = true }) => {

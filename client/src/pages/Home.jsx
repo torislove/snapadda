@@ -1027,16 +1027,37 @@ export default function Home() {
         </section>
 
         {/* Regional Market Hotspots (Interactive Map) */}
-        <section className="map-discovery-section" style={{ padding: '4rem 0', background: 'rgba(0,0,0,0.2)' }}>
+        <section id="hotspots" className="map-discovery-section" style={{ padding: '5rem 0', background: 'rgba(0,0,0,0.25)', position: 'relative', minHeight: '600px' }}>
           <div className="container">
-            <div className="section-head" style={{ marginBottom: '2rem' }}>
-              <div className="section-eyebrow">Visual Discovery</div>
-              <h2 className="section-title" style={{ color: 'white' }}>Explore Market Hotspots</h2>
-              <p className="section-subtitle">Browse premium listings across Andhra Pradesh using our interactive spatial search.</p>
+            <div className="section-head" style={{ marginBottom: '3rem', textAlign: isMobile ? 'center' : 'left' }}>
+              <div className="section-eyebrow" style={{ justifyContent: isMobile ? 'center' : 'flex-start' }}>
+                <Navigation2 size={14} style={{ marginRight: '6px' }} /> Visual Discovery
+              </div>
+              <h2 className="section-title" style={{ color: 'white', fontSize: isMobile ? '2rem' : '2.8rem' }}>Explore Market Hotspots</h2>
+              <p className="section-subtitle" style={{ maxWidth: '700px', margin: isMobile ? '0 auto' : '0' }}>
+                Browse premium listings across Andhra Pradesh using our interactive spatial search. 
+                Discover price trends and high-demand zones instantly.
+              </p>
             </div>
             
-            <div style={{ height: '500px', width: '100%', borderRadius: '32px', overflow: 'hidden', border: '1px solid rgba(232,184,75,0.2)', boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }}>
-              <PropertyMap properties={properties.slice(0, 50)} />
+            <div style={{ 
+              height: isMobile ? '400px' : '550px', 
+              width: '100%', 
+              borderRadius: '32px', 
+              overflow: 'hidden', 
+              border: '1px solid rgba(232,184,75,0.25)', 
+              boxShadow: '0 30px 70px rgba(0,0,0,0.6)',
+              background: 'rgba(10,15,30,0.4)',
+              position: 'relative'
+            }}>
+              {loading && !properties.length ? (
+                <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1.5rem', background: 'rgba(10,15,30,0.8)', zIndex: 10 }}>
+                  <div className="pulse-primary" style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--gold)' }} />
+                  <p style={{ color: 'var(--gold)', fontSize: '0.8rem', fontWeight: 800, letterSpacing: '0.1em' }}>INITIALIZING SPATIAL GRID...</p>
+                </div>
+              ) : (
+                <PropertyMap properties={properties.slice(0, 100)} />
+              )}
             </div>
           </div>
         </section>

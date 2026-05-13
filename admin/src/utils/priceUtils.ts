@@ -9,7 +9,13 @@ export const GAJAM_CONSTANTS = {
   CENT_TO_GAJAM: 48.4,
   GAJAM_TO_SQFT: 9,
   GUNTA_TO_GAJAM: 121,
-  SQ_YARD_TO_GAJAM: 1 // Standardizing Sq. Yard as Gajam
+  ANKANAM_TO_GAJAM: 8,
+  SQ_YARD_TO_GAJAM: 1,
+  ACRE_LABEL: 'Acre',
+  CENT_LABEL: 'Cent',
+  GAJAM_LABEL: 'Sq. Yard (Gajam)',
+  GUNTA_LABEL: 'Gunta',
+  ANKANAM_LABEL: 'Ankanam'
 };
 
 /**
@@ -25,7 +31,7 @@ export const calcPricePerCent = (pricePerAcre: any): number => {
 
 /**
  * Primary client-facing price formatter — Indian Numbering System
- * Standard: ₹ 1,50,0,000/- or ₹ 1.5 Cr/-
+ * Standard: ₹ 1,50,00,000/- or ₹ 1.5 Cr/-
  */
 export const formatSnapAddaPrice = (price: any, compact = true): string => {
   if (price === null || price === undefined || price === '' || isNaN(Number(price))) return '₹ 0/-';
@@ -82,7 +88,23 @@ export const formatLandSize = (totalAcres: any, forceAcresOnly = true): string =
   const { acres, cents } = decomposeAcres(totalAcres);
   if (acres === 0) return `${cents} Cents`;
   if (cents === 0) return `${acres} ${acres === 1 ? 'Acre' : 'Acres'}`;
-  return `${acres} ${acres === 1 ? 'Acre' : 'Acres'} ${cents} Cents`;
+  return `${acres} Ac ${cents} Cents`;
+};
+
+/**
+ * Calculate Price per unit (e.g. Price per Sq.Yard or Price per Cent)
+ */
+export const calcPricePerUnit = (totalPrice: number, size: number, unit: string) => {
+  const p = Number(totalPrice) || 0;
+  const s = Number(size) || 0;
+  if (!p || !s) return 0;
+  
+  const lowUnit = unit?.toLowerCase() || '';
+  if (lowUnit.includes('yard') || lowUnit.includes('gajam')) return Math.round(p / s);
+  if (lowUnit.includes('cent')) return Math.round(p / s);
+  if (lowUnit.includes('acre')) return Math.round(p / s);
+  
+  return Math.round(p / s);
 };
 
 /**
@@ -99,12 +121,14 @@ export const smartAreaConverter = (value: any, fromUnit: string) => {
   else if (u === 'sq.yards' || u === 'sq.yds' || u === 'gajam') acres = v / 4840;
   else if (u === 'sqft') acres = (v / 9) / 4840;
   else if (u === 'gunta') acres = (v * 121) / 4840;
+  else if (u === 'ankanam') acres = (v * 8) / 4840;
 
   const result = {
     acres: parseFloat(acres.toFixed(4)),
     cents: parseFloat((acres * 100).toFixed(2)),
     gajam: Math.round(acres * 4840),
     sqft: Math.round(acres * 4840 * 9),
+    ankanam: Math.round((acres * 4840) / 8),
     display: formatLandSize(acres)
   };
   return result;
@@ -120,4 +144,32 @@ export const getCents = (totalAcres: any): number => decomposeAcres(totalAcres).
 export const calcAgriTotalValue = (pricePerAcre: any, totalAcres: any): number => {
   if (!pricePerAcre || !totalAcres) return 0;
   return Math.round(Number(pricePerAcre) * Number(totalAcres));
+};
+
+/**
+ * Standardized utility to derive unit-based pricing for all property types.
+ * Solves "per acra and per cent are mismatching" by ensuring they always use a single source of truth.
+ */
+export const getEffectivePricePerUnit = (property: any) => {
+  if (!property) return null;
+  const type = (property?.type || '').toLowerCase();
+  const isAgri = type.includes('agri') || type.includes('farm');
+  const isPlot = type.includes('plot') || type.includes('layout') || type.includes('crda');
+  
+  if (isAgri) {
+    // Priority: Database pricePerAcre -> Calculated from total price
+    const ppa = property?.pricePerAcre || (property?.price && property?.totalAcres ? (property.price / property.totalAcres) : 0);
+    return {
+      acre: Math.round(ppa),
+      cent: Math.round(ppa / 100)
+    };
+  }
+  
+  if (isPlot && property.areaSize > 0) {
+    return {
+      sqYard: Math.round(Number(property.price) / Number(property.areaSize))
+    };
+  }
+  
+  return null;
 };

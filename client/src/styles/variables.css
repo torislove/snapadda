@@ -16,7 +16,14 @@
   --gold-light: #fcd58e;
   --royal-gold: #e8b84b;
   --royal-gold-lt: #fcd58e;
-  --gold-dim: rgba(232, 184, 75, 0.12);
+  --gold-glow: rgba(232, 184, 75, 0.4);
+  --glass-border: rgba(255, 255, 255, 0.12);
+  --glass-bg: rgba(255, 255, 255, 0.03);
+  
+  /* Layout Constants */
+  --max-content-width: 1280px;
+  --section-padding: clamp(3rem, 10vw, 6rem);
+  --centered-gap: clamp(1.5rem, 5vw, 3rem);
   --gold-border: rgba(212, 175, 55, 0.3);
   --teal: #0fa3b1;
   --teal-light: #2ec4d2;
@@ -39,6 +46,9 @@
 
   /* ── Shadows ── */
   --shadow-3d: 0 8px 24px rgba(0, 0, 0, 0.6), 0 0 0 1px var(--border-light);
+  --shadow-elite: 0 30px 60px -12px rgba(0, 0, 0, 0.5), 0 18px 36px -18px rgba(0, 0, 0, 0.6);
+  --shadow-glow: 0 0 30px var(--gold-glow);
+  --shadow-holographic: 0 0 40px rgba(66, 133, 244, 0.2), 0 0 80px rgba(66, 133, 244, 0.1);
   --shadow-gold: 0 0 16px rgba(212, 175, 55, 0.18);
   --neon-glow: 0 0 12px rgba(34, 217, 224, 0.18);
 

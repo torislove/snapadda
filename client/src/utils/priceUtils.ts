@@ -9,11 +9,13 @@ export const GAJAM_CONSTANTS = {
   CENT_TO_GAJAM: 48.4,
   GAJAM_TO_SQFT: 9,
   GUNTA_TO_GAJAM: 121,
-  SQ_YARD_TO_GAJAM: 1, // Standardizing Sq. Yard as Gajam
+  ANKANAM_TO_GAJAM: 8,
+  SQ_YARD_TO_GAJAM: 1,
   ACRE_LABEL: 'Acre',
   CENT_LABEL: 'Cent',
   GAJAM_LABEL: 'Sq. Yard (Gajam)',
-  GUNTA_LABEL: 'Gunta'
+  GUNTA_LABEL: 'Gunta',
+  ANKANAM_LABEL: 'Ankanam'
 };
 
 /**
@@ -119,12 +121,14 @@ export const smartAreaConverter = (value: any, fromUnit: string) => {
   else if (u === 'sq.yards' || u === 'sq.yds' || u === 'gajam') acres = v / 4840;
   else if (u === 'sqft') acres = (v / 9) / 4840;
   else if (u === 'gunta') acres = (v * 121) / 4840;
+  else if (u === 'ankanam') acres = (v * 8) / 4840;
 
   const result = {
     acres: parseFloat(acres.toFixed(4)),
     cents: parseFloat((acres * 100).toFixed(2)),
     gajam: Math.round(acres * 4840),
     sqft: Math.round(acres * 4840 * 9),
+    ankanam: Math.round((acres * 4840) / 8),
     display: formatLandSize(acres)
   };
   return result;
@@ -140,4 +144,60 @@ export const getCents = (totalAcres: any): number => decomposeAcres(totalAcres).
 export const calcAgriTotalValue = (pricePerAcre: any, totalAcres: any): number => {
   if (!pricePerAcre || !totalAcres) return 0;
   return Math.round(Number(pricePerAcre) * Number(totalAcres));
+};
+
+/**
+ * Standardized Plot Valuation: Price per Sq.Yard (Gajam)
+ */
+export const calcPlotTotalValue = (pricePerSqYard: any, areaInSqYards: any): number => {
+  if (!pricePerSqYard || !areaInSqYards) return 0;
+  return Math.round(Number(pricePerSqYard) * Number(areaInSqYards));
+};
+
+/**
+ * Standardized Construction Valuation: Price per Sq.Ft
+ */
+export const calcConstructionTotalValue = (pricePerSqFt: any, areaInSqFt: any): number => {
+  if (!pricePerSqFt || !areaInSqFt) return 0;
+  return Math.round(Number(pricePerSqFt) * Number(areaInSqFt));
+};
+
+/**
+ * Standardized utility to derive unit-based pricing for all property types.
+ * Solves "per acra and per cent are mismatching" by ensuring they always use a single source of truth (areaSize).
+ */
+export const getEffectivePricePerUnit = (property: any) => {
+  if (!property || !property.areaSize || !property.price) return null;
+  const type = (property?.type || '').toLowerCase();
+  const isAgri = type.includes('agri') || type.includes('farm');
+  const isPlot = type.includes('plot') || type.includes('layout') || type.includes('crda');
+  const isResidential = type.includes('flat') || type.includes('house') || type.includes('apartment') || type.includes('villa');
+  const area = Number(property.areaSize);
+  const price = Number(property.price);
+
+  if (isAgri) {
+    // If unit is Acres, calc per acre and per cent
+    const ppa = property.measurementUnit === 'Acres' ? (price / area) : (price / (area / 100));
+    return {
+      acre: Math.round(ppa),
+      cent: Math.round(ppa / 100),
+      label: 'Acre'
+    };
+  }
+  
+  if (isPlot) {
+    return {
+      sqYard: Math.round(price / area),
+      label: 'Sq. Yard'
+    };
+  }
+
+  if (isResidential || type.includes('commercial')) {
+    return {
+      sqFt: Math.round(price / area),
+      label: 'Sq. Ft'
+    };
+  }
+  
+  return null;
 };

@@ -323,7 +323,9 @@ const AdminLayout = () => {
 
         {/* Page Content */}
         <div className="admin-page-content animate-fade-in">
-          <Outlet />
+          <div className="admin-page-inner">
+            <Outlet />
+          </div>
         </div>
 
         {/* Mobile Floating Action Button (FAB) - Hidden on Properties page as it has its own FAB */}

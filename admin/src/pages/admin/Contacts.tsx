@@ -4,6 +4,7 @@ import { Star, Phone, Mail, Search, Upload, Plus, Edit3, MessageCircle, X, Build
 import { Button } from '../../components/ui/Button';
 import { ConnectivityBanner } from '../../components/ui/ConnectivityBanner';
 import { fetchContactStats, updateContact, addContactNote } from '../../services/api';
+import { locationService } from '../../services/locationService';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -145,6 +146,25 @@ const AdminContacts = () => {
   const [noteText, setNoteText] = useState('');
   const [stats, setStats] = useState({ realtors: 0, clients: 0, whatsappSent: 0, newThisWeek: 0 });
   const fileRef = useRef<HTMLInputElement>(null);
+  const [pincodeLoading, setPincodeLoading] = useState(false);
+  const [villages, setVillages] = useState<string[]>([]);
+
+  const handlePincodeChange = async (code: string) => {
+    setFormData(p => ({ ...p, location: code })); // Temporarily using location field for pincode or adding one
+    if (code.length === 6) {
+      setPincodeLoading(true);
+      const data = await locationService.fetchByPincode(code);
+      if (data) {
+        setVillages(data.allVillages);
+        setFormData(p => ({
+          ...p,
+          district: data.district,
+          location: data.mandal,
+        }));
+      }
+      setPincodeLoading(false);
+    }
+  };
 
   const [formData, setFormData] = useState({
     name: '', phone: '', email: '', type: 'Client' as 'Realtor' | 'Client',
@@ -405,9 +425,30 @@ const AdminContacts = () => {
                 <input placeholder="Company / Agency" value={formData.company} onChange={e => setFormData(p => ({ ...p, company: e.target.value }))} />
               )}
               <div style={{ display: 'flex', gap: '8px' }}>
-                <input placeholder="City / Area" value={formData.location} onChange={e => setFormData(p => ({ ...p, location: e.target.value }))} style={{ flex: 1 }} />
+                <div style={{ flex: 1, position: 'relative' }}>
+                  <input 
+                    placeholder="Pincode" 
+                    maxLength={6}
+                    value={formData.location} 
+                    onChange={e => handlePincodeChange(e.target.value)} 
+                    style={{ width: '100%', border: pincodeLoading ? '1px solid var(--accent-gold)' : '1px solid var(--border-subtle)' }}
+                  />
+                  {pincodeLoading && <div style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', fontSize: '0.6rem', color: 'var(--accent-gold)' }}>Loading...</div>}
+                </div>
                 <input placeholder="District" value={formData.district} onChange={e => setFormData(p => ({ ...p, district: e.target.value }))} style={{ flex: 1 }} />
               </div>
+              
+              {villages.length > 0 && (
+                <select 
+                  className="admin-select"
+                  value={formData.location.includes(',') ? formData.location.split(',')[0] : ''}
+                  onChange={(e) => setFormData(p => ({ ...p, location: `${e.target.value}, ${formData.location}` }))}
+                  style={{ width: '100%', background: 'rgba(16,217,140,0.05)', borderColor: 'rgba(16,217,140,0.2)', fontSize: '0.85rem' }}
+                >
+                  <option value="">-- Select Village / Locality --</option>
+                  {villages.map(v => <option key={v} value={v}>{v}</option>)}
+                </select>
+              )}
               <input placeholder="Tags (comma separated)" value={formData.tags} onChange={e => setFormData(p => ({ ...p, tags: e.target.value }))} />
               <Button type="submit" style={{ width: '100%' }}>
                 <Check size={16} /> Save Contact

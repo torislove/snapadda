@@ -8,7 +8,7 @@ import './PropertyCard.css';
 import { 
   formatSnapAddaPrice, 
   formatLandSize,
-  smartAreaConverter 
+  getEffectivePricePerUnit
 } from '../../../../client/src/utils/priceUtils';
 
 // Type-specific accent colors (synchronized with client)
@@ -34,15 +34,12 @@ interface LivePreviewCardProps {
   beds?: number | string;
   baths?: number | string;
   areaSize?: number | string;
-  sqft?: number | string;
   type?: string;
   purpose?: string;
   measurementUnit?: string;
   approval?: string;
   approvalAuthority?: string;
   facing?: string;
-  totalAcres?: number | string;
-  pricePerAcre?: number | string;
   bhk?: string;
   floorNo?: string | number;
   totalFloors?: string | number;
@@ -60,8 +57,8 @@ export const LivePreviewCard: React.FC<LivePreviewCardProps> = (props) => {
   const {
     image, images = [], title = 'Property Title', price = 0, location = 'Location', 
     beds, bhk, type = 'Apartment', purpose = 'Sale', measurementUnit = 'Sq.Ft',
-    sqft, areaSize, totalAcres, pricePerAcre,
-    approval, approvalAuthority, facing,
+    areaSize,
+    approval, approvalAuthority,
     isVerified, isFeatured, vastuCompliant, listerType, isGated, constructionStatus
   } = props;
 
@@ -76,16 +73,13 @@ export const LivePreviewCard: React.FC<LivePreviewCardProps> = (props) => {
   const authority = approval || approvalAuthority;
 
   // Real-time calculation logic (mirrors client)
-  const isAgri = type === 'Agricultural Land';
+  const isAgri = type === 'Agricultural Land' || type?.toLowerCase().includes('agri');
   const isPlot = type?.includes('Plot');
-  const isResidential = ['Apartment', 'Villa', 'Independent House', 'Farmhouse'].includes(type);
-  const isCommercial = type === 'Commercial Space';
-  const isVastuFacing = facing && ['east', 'north', 'north-east'].includes(facing?.toLowerCase());
+  const isResidential = ['Apartment', 'Villa', 'Independent House', 'Farmhouse'].some(t => type?.includes(t));
+  const isCommercial = type?.toLowerCase().includes('commercial') || type?.toLowerCase().includes('space');
   
-  const agriTotalValue = (pricePerAcre && totalAcres) ? Math.round(Number(pricePerAcre) * Number(totalAcres)) : 0;
-  const gajamInfo = smartAreaConverter(areaSize || 0, (measurementUnit?.toLowerCase()?.includes('yard') ? 'gajam' : measurementUnit?.toLowerCase()) || 'gajam');
-  const displayGajam = (isPlot && (measurementUnit === 'Sq.Yards' || !measurementUnit)) ? gajamInfo.gajam : null;
-  const displayPrice = (isAgri && agriTotalValue > 0) ? agriTotalValue : price;
+  const unitInfo = getEffectivePricePerUnit({ price, areaSize, type, measurementUnit });
+  const displayPrice = price;
 
   const cycleImage = (e: React.MouseEvent, dir: number) => {
     e.preventDefault(); e.stopPropagation();
@@ -108,7 +102,6 @@ export const LivePreviewCard: React.FC<LivePreviewCardProps> = (props) => {
           {/* Price badge */}
           <div className="pc-price-badge">
             <span className="pc-price">{formatSnapAddaPrice(displayPrice)}</span>
-            {isAgri && agriTotalValue > 0 && <span className="pc-price-sub">Total Value</span>}
           </div>
 
           {/* Top left badges */}
@@ -171,21 +164,21 @@ export const LivePreviewCard: React.FC<LivePreviewCardProps> = (props) => {
             )}
           </div>
 
-          {/* Type-Specific Features (exact logic from client) */}
+          {/* Type-Specific Features */}
           <div className="pc-features">
             {isAgri && (
               <>
                 <div className="pc-feat">
                   <span className="pc-feat-val" style={{ color: typeStyle.accent }}>
-                    {totalAcres ? formatLandSize(totalAcres) : (areaSize ? `${areaSize} ${measurementUnit}` : '—')}
+                    {areaSize ? formatLandSize(areaSize) : '—'}
                   </span>
                   <span className="pc-feat-lbl">Total Area</span>
                 </div>
-                {Number(pricePerAcre) > 0 && (
+                {unitInfo?.acre && (
                   <>
                     <div className="pc-feat-div"/>
                     <div className="pc-feat">
-                      <span className="pc-feat-val" style={{ color: '#e8b84b' }}>{formatSnapAddaPrice(pricePerAcre)}</span>
+                      <span className="pc-feat-val" style={{ color: '#e8b84b' }}>{formatSnapAddaPrice(unitInfo.acre)}</span>
                       <span className="pc-feat-lbl">Per Acre</span>
                     </div>
                   </>
@@ -197,18 +190,16 @@ export const LivePreviewCard: React.FC<LivePreviewCardProps> = (props) => {
               <>
                 <div className="pc-feat">
                   <span className="pc-feat-val" style={{ color: typeStyle.accent }}>
-                    {displayGajam ? `${displayGajam.toLocaleString('en-IN')}` : (areaSize || '—')}
+                    {areaSize || '—'}
                   </span>
-                  <span className="pc-feat-lbl">{displayGajam ? 'Gajaalu' : (measurementUnit || 'Sq.Yds')}</span>
+                  <span className="pc-feat-lbl">{measurementUnit || 'Sq.Yards'}</span>
                 </div>
-                {facing && (
+                {unitInfo?.sqYard && (
                   <>
                     <div className="pc-feat-div"/>
                     <div className="pc-feat">
-                      <span className="pc-feat-val" style={{ color: isVastuFacing ? '#e8b84b' : 'inherit' }}>
-                        {facing} {isVastuFacing && '🧭'}
-                      </span>
-                      <span className="pc-feat-lbl">Facing</span>
+                      <span className="pc-feat-val" style={{ color: '#e8b84b' }}>₹{unitInfo.sqYard.toLocaleString()}</span>
+                      <span className="pc-feat-lbl">Per Yard</span>
                     </div>
                   </>
                 )}
@@ -223,18 +214,9 @@ export const LivePreviewCard: React.FC<LivePreviewCardProps> = (props) => {
                 </div>
                 <div className="pc-feat-div"/>
                 <div className="pc-feat">
-                  <span className="pc-feat-val">{areaSize || sqft || '—'}</span>
+                  <span className="pc-feat-val">{areaSize || '—'}</span>
                   <span className="pc-feat-lbl">{measurementUnit || 'Sq.Ft'}</span>
                 </div>
-                {facing && (
-                  <>
-                    <div className="pc-feat-div"/>
-                    <div className="pc-feat">
-                      <span className="pc-feat-val">{facing}</span>
-                      <span className="pc-feat-lbl">Facing</span>
-                    </div>
-                  </>
-                )}
               </>
             )}
 
@@ -263,14 +245,6 @@ export const LivePreviewCard: React.FC<LivePreviewCardProps> = (props) => {
             <div className="pc-btn pc-btn-wa"><MessageSquare size={13}/> WhatsApp</div>
           </div>
         </div>
-      </div>
-      
-      {/* Admin Meta Debug Info */}
-      <div style={{ marginTop: '15px', padding: '12px', background: 'rgba(255,255,255,0.03)', borderRadius: '12px', border: '1px dashed rgba(255,255,255,0.1)', fontSize: '0.7rem', color: '#9d99c4' }}>
-        <p style={{ marginBottom: '4px', fontWeight: 700, color: 'var(--gold)' }}>🛠️ ADMIN PREVIEW DATA</p>
-        <p>Type: {type}</p>
-        <p>Area: {isAgri ? formatLandSize(totalAcres) : `${areaSize} ${measurementUnit}`}</p>
-        <p>Images: {allImages.length} attached</p>
       </div>
     </div>
   );
