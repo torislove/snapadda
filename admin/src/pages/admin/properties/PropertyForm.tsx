@@ -391,12 +391,13 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
                         type="number" 
                         value={liveData.areaSize || ''} 
                         onChange={(e) => {
-                          const size = parseFloat(e.target.value) || 0;
-                          const pUnit = liveData.pricePerUnit || 0;
+                          const val = e.target.value;
+                          const size = parseFloat(val) || 0;
+                          const pUnit = Number(liveData.pricePerUnit) || 0;
                           setLiveData((p: any) => ({ 
                             ...p, 
-                            areaSize: size,
-                            price_raw: pUnit > 0 ? (size * pUnit) : p.price_raw
+                            areaSize: val,
+                            price_raw: pUnit > 0 ? Math.round(size * pUnit) : p.price_raw
                           }));
                         }}
                         className="admin-input" 
@@ -413,6 +414,14 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
                           onChange={(e) => {
                             const unit = e.target.value;
                             setLiveData((p: any) => ({ ...p, measurementUnit: unit }));
+                            
+                            // Re-sync price_raw if pricePerUnit exists
+                            if (liveData.pricePerUnit && liveData.areaSize) {
+                              setLiveData((p: any) => ({
+                                ...p,
+                                price_raw: Math.round(Number(p.areaSize) * Number(p.pricePerUnit))
+                              }));
+                            }
                           }}
                           style={{ border: '1px solid var(--violet)', background: 'rgba(155,89,245,0.05)' }}
                         >
@@ -431,12 +440,13 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
                         type="number" 
                         value={liveData.pricePerUnit || ''} 
                         onChange={(e) => {
-                          const pUnit = parseFloat(e.target.value) || 0;
-                          const size = parseFloat(liveData.areaSize) || 0;
+                          const val = e.target.value;
+                          const pUnit = parseFloat(val) || 0;
+                          const size = Number(liveData.areaSize) || 0;
                           setLiveData((p: any) => ({ 
                             ...p, 
-                            pricePerUnit: pUnit,
-                            price_raw: size > 0 ? (size * pUnit) : p.price_raw
+                            pricePerUnit: val,
+                            price_raw: size > 0 ? Math.round(size * pUnit) : p.price_raw
                           }));
                         }}
                         className="admin-input" 

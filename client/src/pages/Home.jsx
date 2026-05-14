@@ -318,7 +318,7 @@ export default function Home() {
       fetchSetting('site_stats').then(setSiteStats),
       fetchSetting('seo').then(setSeoData),
       fetchSetting('design_tokens').then(setDesignTokens),
-      fetchSetting('site_control').then(d => setSiteControl(d || { postPropertyEnabled: true, expertHelpEnabled: true, verifyAssistEnabled: true })),
+      fetchSetting('site_control').then(d => setSiteControl(prev => ({ ...prev, ...(d || {}) }))),
       fetchPromotions('segment=hero').then(d => {
         setPromotions(d?.data || (Array.isArray(d) ? d : []));
       })
@@ -894,7 +894,7 @@ export default function Home() {
         {/* ── Services Bento Grid ── */}
         <section className="section-wrap" style={{ padding: '1rem 0 3rem' }}>
           <div className="container">
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '1rem' }}>
+            <div className="bento-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '1rem' }}>
               {siteControl.postPropertyEnabled && (
                 <motion.div 
                   whileHover={{ scale: 1.02, y: -4 }}
@@ -1015,20 +1015,20 @@ export default function Home() {
 
         {/* Sell Property CTA */}
         {siteControl.postPropertyEnabled && (
-          <section className="section-wrap animate-on-scroll" style={{ background: 'linear-gradient(180deg, transparent, rgba(16,217,140,0.02))', padding: '1.5rem 0' }}>
+          <section className="section-wrap" style={{ background: 'linear-gradient(180deg, transparent, rgba(16,217,140,0.02))', padding: '1rem 0' }}>
             <div className="container">
               <motion.div 
                 className="glass-elite" 
-                initial={{ opacity: 0, scale: 0.98 }}
-                whileInView={{ opacity: 1, scale: 1 }}
+                initial={{ opacity: 0, y: 10 }}
+                whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                style={{ height: 'auto', padding: '2.5rem', textAlign: 'center', background: 'linear-gradient(135deg, rgba(5,10,20,0.8) 0%, rgba(16,217,140,0.03) 100%)', border: '1px solid rgba(16,217,140,0.15)', borderRadius: '32px' }}
+                style={{ height: 'auto', padding: '1.5rem 2rem', textAlign: 'center', background: 'linear-gradient(135deg, rgba(5,10,20,0.8) 0%, rgba(16,217,140,0.03) 100%)', border: '1px solid rgba(16,217,140,0.15)', borderRadius: '24px' }}
               >
-                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: 'var(--emerald)', fontSize: '0.7rem', fontWeight: 900, letterSpacing: '0.25em', textTransform: 'uppercase', marginBottom: '1.25rem' }}>
-                  <Zap size={14} fill="var(--emerald)" /> Direct Posting
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: 'var(--emerald)', fontSize: '0.65rem', fontWeight: 900, letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: '0.75rem' }}>
+                  <Zap size={12} fill="var(--emerald)" /> Direct Posting
                 </div>
-                <h2 style={{ fontSize: 'clamp(1.75rem, 5vw, 2.25rem)', marginBottom: '0.75rem', color: 'white', fontWeight: 900 }}>మీ ప్రాపర్టీని అమ్మాలనుకుంటున్నారా?</h2>
-                <p style={{ fontSize: '0.95rem', color: 'var(--txt-secondary)', maxWidth: '600px', margin: '0 auto 2rem', lineHeight: 1.6 }}>
+                <h2 style={{ fontSize: '1.5rem', marginBottom: '0.5rem', color: 'white', fontWeight: 900 }}>మీ ప్రాపర్టీని అమ్మాలనుకుంటున్నారా?</h2>
+                <p style={{ fontSize: '0.85rem', color: 'var(--txt-secondary)', maxWidth: '550px', margin: '0 auto 1.5rem', lineHeight: 1.5 }}>
                   వేలాది మంది కొనుగోలుదారులకు మీ ప్రాపర్టీని నేరుగా చూపండి.
                 </p>
                 <button 
@@ -1037,9 +1037,9 @@ export default function Home() {
                     navigate('/post-property');
                   }}
                   className="hero-btn hero-btn-primary btn-3d-liquid" 
-                  style={{ padding: '1rem 3rem', fontSize: '1rem', background: '#10d98c', color: 'black' }}
+                  style={{ padding: '0.75rem 2.5rem', fontSize: '0.9rem', background: '#10d98c', color: 'black', borderRadius: '16px' }}
                 >
-                  POST PROPERTY <Plus size={18} style={{ marginLeft: '8px' }} />
+                  POST PROPERTY <Plus size={16} style={{ marginLeft: '6px' }} />
                 </button>
               </motion.div>
             </div>

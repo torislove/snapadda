@@ -1,15 +1,20 @@
 import { useState, useEffect, useRef } from 'react';
 import { Star, Quote, MapPin, X } from 'lucide-react';
 
-export default function ClientReviews() {
-  const [reviews, setReviews] = useState([]);
-  const [loading, setLoading] = useState(true);
+export default function ClientReviews({ testimonials = [] }) {
+  const [reviews, setReviews] = useState(testimonials);
+  const [loading, setLoading] = useState(testimonials.length === 0);
   const [paused, setPaused] = useState(false);
   const trackRef = useRef(null);
   const [trackWidth, setTrackWidth] = useState(0);
   const [selectedReview, setSelectedReview] = useState(null);
 
   useEffect(() => {
+    if (testimonials.length > 0) {
+      setReviews(testimonials);
+      setLoading(false);
+      return;
+    }
     fetch('/api/testimonials')
       .then(res => res.json())
       .then(data => {
@@ -18,7 +23,7 @@ export default function ClientReviews() {
       })
       .catch(console.error)
       .finally(() => setLoading(false));
-  }, []);
+  }, [testimonials]);
 
   useEffect(() => {
     if (trackRef.current && reviews.length > 0) {
@@ -26,7 +31,16 @@ export default function ClientReviews() {
     }
   }, [reviews]);
 
-  if (loading || reviews.length === 0) return null;
+  if (loading) {
+    return (
+      <div className="container" style={{ padding: '2rem 0', textAlign: 'center' }}>
+        <div className="pulse-primary" style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--gold)', margin: '0 auto' }} />
+        <p style={{ color: 'var(--gold)', fontSize: '0.7rem', fontWeight: 800, marginTop: '1rem', letterSpacing: '0.1em' }}>GATHERING SUCCESS STORIES...</p>
+      </div>
+    );
+  }
+
+  if (reviews.length === 0) return null;
 
   // Pause helpers
   const pause = () => setPaused(true);
@@ -34,7 +48,7 @@ export default function ClientReviews() {
 
   return (
     <section className="section-wrap" style={{ 
-      padding: '2rem 0', 
+      padding: '1.5rem 0', 
       background: 'linear-gradient(to bottom, transparent, rgba(212,175,55,0.03), transparent)',
       overflow: 'hidden',
       position: 'relative'
@@ -44,22 +58,22 @@ export default function ClientReviews() {
       <div style={{ position: 'absolute', bottom: '10%', right: '5%', width: '300px', height: '300px', background: 'var(--cyan)', opacity: 0.03, filter: 'blur(100px)', borderRadius: '50%', pointerEvents: 'none' }} />
 
       <div className="container" style={{ position: 'relative', zIndex: 5 }}>
-        <div className="section-head" style={{ textAlign: 'center', marginBottom: '4rem' }}>
+        <div className="section-head" style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
           <div
             className="section-eyebrow"
-            style={{ color: 'var(--gold)', display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(212,175,55,0.1)', padding: '6px 16px', borderRadius: '20px', fontWeight: 800, fontSize: '0.75rem', letterSpacing: '1px' }}
+            style={{ color: 'var(--gold)', display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(212,175,55,0.1)', padding: '4px 12px', borderRadius: '20px', fontWeight: 800, fontSize: '0.65rem', letterSpacing: '1px' }}
           >
-            <Star size={12} fill="var(--gold)" /> TRUSTED BY THOUSANDS
+            <Star size={10} fill="var(--gold)" /> TRUSTED BY THOUSANDS
           </div>
-          <h2 className="section-title" style={{ color: '#ffffff', marginTop: '1.5rem', fontSize: '1.8rem' }}>What Our Clients Say</h2>
-          <p className="section-subtitle" style={{ color: 'var(--txt-secondary)', maxWidth: '600px', margin: '1rem auto 0' }}>
+          <h2 className="section-title" style={{ color: '#ffffff', marginTop: '0.75rem', fontSize: '1.5rem' }}>What Our Clients Say</h2>
+          <p className="section-subtitle" style={{ color: 'var(--txt-secondary)', maxWidth: '550px', margin: '0.5rem auto 0', fontSize: '0.85rem' }}>
             Experience the SnapAdda difference through the eyes of our successful investors and homeowners.
           </p>
         </div>
       </div>
 
       <div
-        style={{ position: 'relative', width: '100%' }}
+        style={{ position: 'relative', width: '100%', minHeight: '320px' }}
         onMouseEnter={pause}
         onMouseLeave={resume}
         onTouchStart={pause}
@@ -73,10 +87,10 @@ export default function ClientReviews() {
           ref={trackRef}
           style={{
             display: 'flex',
-            gap: '2.5rem',
+            gap: '1.5rem',
             width: 'max-content',
-            padding: '1rem 2rem',
-            animation: `snapadda-marquee 160s linear infinite`,
+            padding: '1rem',
+            animation: `snapadda-marquee 80s linear infinite`,
             animationPlayState: paused ? 'paused' : 'running',
             willChange: 'transform',
           }}
@@ -86,64 +100,64 @@ export default function ClientReviews() {
               key={`${r._id}-${i}`}
               className="review-card glass-premium"
               style={{
-                width: '300px',
-                padding: '1.5rem',
-                borderRadius: '24px',
+                width: '260px',
+                padding: '1.25rem',
+                borderRadius: '20px',
                 border: '1px solid rgba(255,255,255,0.05)',
                 background: 'rgba(10,12,20,0.6)',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '1.5rem',
+                gap: '1.25rem',
                 position: 'relative',
                 backdropFilter: 'blur(20px)',
-                boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
+                boxShadow: '0 15px 30px rgba(0,0,0,0.3)',
                 flexShrink: 0,
                 transition: 'transform 0.25s ease, box-shadow 0.25s ease',
                 cursor: 'pointer',
               }}
               onClick={() => setSelectedReview(r)}
               onMouseEnter={e => {
-                e.currentTarget.style.transform = 'translateY(-4px)';
-                e.currentTarget.style.boxShadow = '0 28px 55px rgba(0,0,0,0.45)';
+                e.currentTarget.style.transform = 'translateY(-3px)';
+                e.currentTarget.style.boxShadow = '0 20px 45px rgba(0,0,0,0.45)';
               }}
               onMouseLeave={e => {
                 e.currentTarget.style.transform = '';
-                e.currentTarget.style.boxShadow = '0 20px 40px rgba(0,0,0,0.3)';
+                e.currentTarget.style.boxShadow = '0 15px 30px rgba(0,0,0,0.3)';
               }}
             >
-              <Quote size={32} style={{ color: 'rgba(212,175,55,0.05)', position: 'absolute', top: '1.5rem', right: '1.5rem' }} />
+              <Quote size={24} style={{ color: 'rgba(212,175,55,0.05)', position: 'absolute', top: '1.25rem', right: '1.25rem' }} />
               
               <div style={{ display: 'flex', gap: '4px' }}>
                 {Array(5).fill(0).map((_, idx) => (
                   <Star
                     key={idx}
-                    size={14}
+                    size={12}
                     fill={idx < (r.rating || 5) ? "var(--gold)" : "transparent"}
                     color={idx < (r.rating || 5) ? "var(--gold)" : "rgba(255,255,255,0.1)"}
                   />
                 ))}
               </div>
               
-              <p style={{ color: 'rgba(255,255,255,0.95)', fontSize: '1.05rem', lineHeight: '1.7', flex: 1, fontWeight: 500 }}>
+              <p style={{ color: 'rgba(255,255,255,0.95)', fontSize: '0.9rem', lineHeight: '1.6', flex: 1, fontWeight: 500 }}>
                 &ldquo;{r.text}&rdquo;
               </p>
               
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', marginTop: '0.5rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginTop: '0.25rem' }}>
                 <div style={{ position: 'relative' }}>
                   {r.image ? (
-                    <img src={r.image} alt={r.name} style={{ width: '56px', height: '56px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--gold)' }} />
+                    <img src={r.image} alt={r.name} style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--gold)' }} />
                   ) : (
-                    <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: 'linear-gradient(45deg, var(--gold), #f5c842)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, color: 'var(--midnight)', fontSize: '1.4rem' }}>
+                    <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'linear-gradient(45deg, var(--gold), #f5c842)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, color: 'var(--midnight)', fontSize: '1.2rem' }}>
                       {(r.name || 'U').charAt(0)}
                     </div>
                   )}
-                  <div style={{ position: 'absolute', bottom: -2, right: -2, background: 'var(--emerald)', width: '16px', height: '16px', borderRadius: '50%', border: '3px solid #0a0c14' }} title="Verified Review" />
+                  <div style={{ position: 'absolute', bottom: -1, right: -1, background: 'var(--emerald)', width: '14px', height: '14px', borderRadius: '50%', border: '2px solid #0a0c14' }} title="Verified Review" />
                 </div>
                 <div>
-                  <div style={{ color: 'white', fontWeight: 800, fontSize: '1rem', letterSpacing: '0.5px' }}>{r.name}</div>
+                  <div style={{ color: 'white', fontWeight: 800, fontSize: '0.9rem', letterSpacing: '0.5px' }}>{r.name}</div>
                   {r.location && (
-                    <div style={{ color: 'var(--txt-muted)', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '4px' }}>
-                      <MapPin size={12} style={{ color: 'var(--gold)' }} /> {r.location}
+                    <div style={{ color: 'var(--txt-muted)', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
+                      <MapPin size={10} style={{ color: 'var(--gold)' }} /> {r.location}
                     </div>
                   )}
                 </div>

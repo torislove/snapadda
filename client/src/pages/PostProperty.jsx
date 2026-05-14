@@ -81,8 +81,41 @@ const StepTechnicals = memo(({ formData, handleChange, setFormData, t }) => {
             {isAgri ? 'Total Acres (ఎకరాలు)' : (isPlot ? 'Plot Area' : t('post.size'))}
           </label>
           <div style={{ display: 'flex', gap: '10px' }}>
-            <input id="pp-areaSize" name="areaSize" type="number" value={formData.areaSize} onChange={handleChange} placeholder="Value" className="elite-input" style={{ flex: 1 }} />
-            <select id="pp-measurementUnit" name="measurementUnit" value={formData.measurementUnit} onChange={handleChange} className="elite-input" style={{ width: '130px' }}>
+            <input 
+              id="pp-areaSize" 
+              name="areaSize" 
+              type="number" 
+              value={formData.areaSize} 
+              onChange={(e) => {
+                const size = parseFloat(e.target.value) || 0;
+                const pUnit = parseFloat(formData.pricePerUnit) || 0;
+                setFormData(prev => ({ 
+                  ...prev, 
+                  areaSize: e.target.value,
+                  price: pUnit > 0 ? Math.round(size * pUnit) : prev.price
+                }));
+              }} 
+              placeholder="Value" 
+              className="elite-input" 
+              style={{ flex: 1 }} 
+            />
+            <select 
+              id="pp-measurementUnit" 
+              name="measurementUnit" 
+              value={formData.measurementUnit} 
+              onChange={(e) => {
+                const unit = e.target.value;
+                const size = parseFloat(formData.areaSize) || 0;
+                const pUnit = parseFloat(formData.pricePerUnit) || 0;
+                setFormData(prev => ({ 
+                  ...prev, 
+                  measurementUnit: unit,
+                  price: (size > 0 && pUnit > 0) ? Math.round(size * pUnit) : prev.price
+                }));
+              }} 
+              className="elite-input" 
+              style={{ width: '130px' }}
+            >
               {isAgri ? (
                 <>
                   <option value="Acres">Acres</option>
@@ -129,12 +162,13 @@ const StepTechnicals = memo(({ formData, handleChange, setFormData, t }) => {
               name="pricePerUnit" 
               value={formData.pricePerUnit || ''} 
               onChange={(e) => {
-                const pUnit = parseFloat(e.target.value) || 0;
+                const val = e.target.value;
+                const pUnit = parseFloat(val) || 0;
                 const size = parseFloat(formData.areaSize) || 0;
                 setFormData(prev => ({ 
                   ...prev, 
-                  pricePerUnit: pUnit,
-                  price: size > 0 ? (size * pUnit) : prev.price
+                  pricePerUnit: val,
+                  price: size > 0 ? Math.round(size * pUnit) : prev.price
                 }));
               }} 
               placeholder="e.g. 25000" 
