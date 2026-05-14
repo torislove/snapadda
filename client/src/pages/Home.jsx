@@ -238,6 +238,8 @@ export default function Home() {
 
   // State
   const [properties, setProperties] = useState(getCachedProperties() || []);
+  const [agriProperties, setAgriProperties] = useState([]);
+  const [plotProperties, setPlotProperties] = useState([]);
   const [loading, setLoading] = useState(!getCachedProperties());
   const [citiesLoading, setCitiesLoading] = useState(true);
   const [cities, setCities] = useState([]);
@@ -255,6 +257,7 @@ export default function Home() {
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const [apiError, setApiError] = useState(false);  
   const [promotions, setPromotions] = useState([]);
+  const [heroPromotion, setHeroPromotion] = useState(null);
   // Dynamic Settings
   const [heroContent, setHeroContent] = useState(null);
   const [designTokens, setDesignTokens] = useState(null);
@@ -278,7 +281,6 @@ export default function Home() {
   const [sortBy, setSortBy] = useState('newest');
   const [showAutocomplete, setShowAutocomplete] = useState(false);
   const [filterCount, setFilterCount] = useState(0);
-  const [isSearchSticky, setIsSearchSticky] = useState(false);
 
   const [debouncedKeyword, setDebouncedKeyword] = useState(keyword);
   useEffect(() => {
@@ -288,11 +290,58 @@ export default function Home() {
     return () => clearTimeout(handler);
   }, [keyword]);
 
+  // Critical Data Fetch (Hero & Initial Properties)
+  useEffect(() => {
+    const loadCritical = async () => {
+      try {
+        const [propData, agriData, plotData, promoData, control] = await Promise.all([
+          fetchProperties({ limit: 12 }),
+          fetchProperties({ type: 'Agricultural Land', limit: 8 }),
+          fetchProperties({ type: 'Residential Plot', limit: 8 }),
+          fetchPromotions('segment=hero'),
+          fetchSetting('site_control')
+        ]);
+
+        setProperties(propData?.data || (Array.isArray(propData) ? propData : []));
+        setAgriProperties(agriData?.data || (Array.isArray(agriData) ? agriData : []));
+        setPlotProperties(plotData?.data || (Array.isArray(plotData) ? plotData : []));
+        setPromotions(promoData?.data || (Array.isArray(promoData) ? promoData : []));
+        setHeroPromotion(Array.isArray(promoData?.data) ? promoData?.data[0] : null);
+        setSiteControl(prev => ({ ...prev, ...(control || {}) }));
+        setLoading(false);
+      } catch (err) {
+        console.error("Critical load failed:", err);
+        setLoading(false);
+      }
+    };
+
+    loadCritical();
+
+    // Deferred Data Fetch (Background / Idle)
+    const loadDeferred = async () => {
+      fetchSetting('site_stats').then(setSiteStats);
+      fetchTestimonials().then(setTestimonials);
+      fetchSetting('seo').then(setSeoData);
+      fetchSetting('design_tokens').then(setDesignTokens);
+      fetchCities().then(data => {
+        setCities(data);
+        setCitiesLoading(false);
+      });
+    };
+
+    // Use requestIdleCallback or a timeout to defer
+    if (window.requestIdleCallback) {
+      window.requestIdleCallback(() => loadDeferred());
+    } else {
+      setTimeout(loadDeferred, 1500);
+    }
+  }, []);
+
   // 120Hz Smooth Geolocation & Data Sync
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
     const handleScroll = () => {
-      setIsSearchSticky(window.scrollY > 500);
+      // Logic for scroll effects can be added here if needed
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
     
@@ -307,24 +356,6 @@ export default function Home() {
         { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
       );
     }
-    
-    // Parallelize settings fetch for faster FCP
-    Promise.all([
-      fetchCities().then(d => { setCities(d); setCitiesLoading(false); }),
-      fetchTestimonials().then(setTestimonials),
-      fetchSetting('appearance').then(d => setAppearance(d || {})),
-      fetchSetting('support_info').then(d => setSupportInfo(d || {})),
-      fetchSetting('hero_content').then(setHeroContent),
-      fetchSetting('site_stats').then(setSiteStats),
-      fetchSetting('seo').then(setSeoData),
-      fetchSetting('design_tokens').then(setDesignTokens),
-      fetchSetting('site_control').then(d => setSiteControl(prev => ({ ...prev, ...(d || {}) }))),
-      fetchPromotions('segment=hero').then(d => {
-        setPromotions(d?.data || (Array.isArray(d) ? d : []));
-      })
-    ]).catch(err => {
-      console.error('Error fetching settings:', err);
-    });
 
     return () => window.removeEventListener('resize', handleResize);
   }, []);
@@ -590,37 +621,6 @@ export default function Home() {
         <meta property="og:image" content="https://snapadda.com/og-image.jpg" />
         <link rel="canonical" href="https://snapadda.com/" />
       </Helmet>
-      <AnimatePresence>
-        {isSearchSticky && (
-          <motion.div 
-            initial={{ y: -100, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: -100, opacity: 0 }}
-            style={{ 
-              position: 'fixed', top: '15px', left: '50%', transform: 'translateX(-50%)',
-              width: '90%', maxWidth: '600px', zIndex: 9999,
-              background: 'rgba(10,15,30,0.9)', backdropFilter: 'blur(30px)',
-              border: '1px solid rgba(232,184,75,0.3)', borderRadius: '40px',
-              padding: '8px 20px', display: 'flex', alignItems: 'center', gap: '12px',
-              boxShadow: '0 20px 40px rgba(0,0,0,0.6)'
-            }}
-          >
-            <Search size={18} color="var(--gold)" />
-            <input 
-              type="text" value={keyword} onChange={(e) => setKeyword(e.target.value)}
-              placeholder="Search mandal, city, project..."
-              style={{ flex: 1, background: 'transparent', border: 'none', color: 'white', fontSize: '0.9rem', outline: 'none' }}
-            />
-            <button 
-              id="btn-home-sticky-search"
-              onClick={() => navigate(`/search?keyword=${keyword}`)}
-              style={{ background: 'var(--gold)', color: 'black', border: 'none', padding: '6px 16px', borderRadius: '20px', fontWeight: 900, fontSize: '0.75rem', cursor: 'pointer' }}
-            >
-              GO
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
       <MobileOnboarding onLocationDetected={(city) => { setKeyword(city); setDebouncedKeyword(city); }} />
       <div 
         className="app-container"
@@ -659,6 +659,17 @@ export default function Home() {
             alignItems: 'center'
           }}
         >
+        {/* Video Background Layer - Deferred Load for Performance */}
+        {heroPromotion?.videoUrl && (
+          <video 
+            autoPlay loop muted playsInline 
+            key={heroPromotion.videoUrl}
+            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.4 }}
+            onCanPlayThrough={(e) => e.target.classList.add('video-loaded')}
+          >
+            <source src={heroPromotion.videoUrl} type="video/mp4" />
+          </video>
+        )}
           <div className="container" style={{ position: 'relative', zIndex: 10, height: '100%' }}>
             <RecentlySoldTicker />
             
@@ -969,18 +980,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ── Offers & Promotions (Revamped) ── */}
-        <section className="section-wrap" style={{ padding: '0.5rem 0' }}>
-          <div className="container">
-            <div className="section-head" style={{ textAlign: 'center', marginBottom: '1rem' }}>
-              <div className="section-eyebrow" style={{ justifyContent: 'center' }}>Limited Deals</div>
-              <h2 className="section-title" style={{ fontSize: '1.5rem', color: 'white' }}>Exclusive Opportunities</h2>
-            </div>
-          </div>
-          <OfferSection designTokens={designTokens?.adCard} />
-        </section>
-
-        <section id="cities" className="section-wrap" style={{ padding: '1.5rem 0' }}>
+        <section id="cities" className="section-wrap" style={{ padding: '2rem 0' }}>
           <div className="container">
             <div className="section-head" style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
               <div className="section-eyebrow" style={{ justifyContent: 'center' }}>{t('cities.eyebrow')}</div>
