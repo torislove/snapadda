@@ -63,6 +63,14 @@ const StepTechnicals = memo(({ formData, handleChange, setFormData, t }) => {
   const isResidential = ['apartment', 'villa', 'independent house'].some(t => type.includes(t));
   const isCommercial = ['commercial', 'office', 'showroom'].some(t => type.includes(t));
 
+  const formatPriceInWords = (value) => {
+    const num = parseFloat(value);
+    if (!num || isNaN(num)) return "";
+    if (num >= 10000000) return `(₹ ${(num / 10000000).toFixed(2)} Crore)`;
+    if (num >= 100000) return `(₹ ${(num / 100000).toFixed(2)} Lakh)`;
+    return `(₹ ${num.toLocaleString("en-IN")})`;
+  };
+
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
       
@@ -106,6 +114,59 @@ const StepTechnicals = memo(({ formData, handleChange, setFormData, t }) => {
             <option>North-East</option><option>South-East</option><option>North-West</option><option>South-West</option>
           </select>
         </div>
+      </div>
+
+      {/* PRICE & AREA CALCULATOR */}
+      <div style={{ padding: '1.5rem', background: 'rgba(232,184,75,0.03)', borderRadius: '20px', border: '1px solid rgba(232,184,75,0.1)', marginTop: '1rem' }}>
+        <h4 style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--gold)', textTransform: 'uppercase', marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <IndianRupee size={14} /> Price & Area Calculator
+        </h4>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
+          <div className="field-group">
+            <label className="elite-lbl">Price Per {formData.measurementUnit?.slice(0, -1) || 'Unit'}</label>
+            <input 
+              type="number" 
+              name="pricePerUnit" 
+              value={formData.pricePerUnit || ''} 
+              onChange={(e) => {
+                const pUnit = parseFloat(e.target.value) || 0;
+                const size = parseFloat(formData.areaSize) || 0;
+                setFormData(prev => ({ 
+                  ...prev, 
+                  pricePerUnit: pUnit,
+                  price: size > 0 ? (size * pUnit) : prev.price
+                }));
+              }} 
+              placeholder="e.g. 25000" 
+              className="elite-input" 
+            />
+          </div>
+          <div className="field-group">
+            <label className="elite-lbl" style={{ display: 'flex', justifyContent: 'space-between' }}>
+                Total Calculated Price <span style={{ color: 'var(--gold)', fontWeight: 800 }}>{formatPriceInWords(formData.price)}</span>
+            </label>
+            <input 
+              type="number" 
+              name="price" 
+              value={formData.price || ''} 
+              onChange={(e) => {
+                const total = parseFloat(e.target.value) || 0;
+                const size = parseFloat(formData.areaSize) || 0;
+                setFormData(prev => ({ 
+                  ...prev, 
+                  price: total,
+                  pricePerUnit: size > 0 ? Math.round(total / size) : prev.pricePerUnit
+                }));
+              }} 
+              placeholder="Total Price" 
+              className="elite-input" 
+              style={{ fontWeight: 900, color: 'var(--gold)', background: 'rgba(232,184,75,0.05)' }}
+            />
+          </div>
+        </div>
+        <p style={{ fontSize: '0.65rem', color: 'rgba(232,184,75,0.5)', marginTop: '10px' }}>
+          Total Price = Area × Price Per Unit. Changing either will auto-calculate the other.
+        </p>
       </div>
 
       {/* AGRI SPECIFIC - Hidden for others */}
@@ -290,16 +351,8 @@ const StepLocation = memo(({ formData, handleChange, setFormData, formErrors, t,
 
 const StepMedia = memo(({ formData, handleImageUpload, removeImage, t, formErrors, handleChange }) => (
   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-    <div className={`field-group ${formErrors.includes('price') ? 'error' : ''}`}>
-      <label htmlFor="pp-price" className="elite-lbl">{t('post.price')} <span className="required-asterisk">*</span></label>
-      <div style={{ position: 'relative' }}>
-        <IndianRupee size={18} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--gold)' }} />
-        <input id="pp-price" name="price" type="number" value={formData.price} onChange={handleChange} placeholder="e.g. 8500000" className="elite-input" style={{ paddingLeft: '44px' }} />
-      </div>
-    </div>
-
     <div className="field-group">
-      <label className="elite-lbl">{t('post.photos')}</label>
+      <label className="elite-lbl">{t('post.photos')} & Gallery Sequence</label>
       <div 
         className="upload-dropzone"
         onClick={() => document.getElementById('imgInput').click()}
@@ -317,16 +370,55 @@ const StepMedia = memo(({ formData, handleImageUpload, removeImage, t, formError
       </div>
 
       {formData.images.length > 0 && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '12px', marginTop: '1.5rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: '16px', marginTop: '1.5rem' }}>
           {formData.images.map((img, i) => (
-            <div key={i} style={{ position: 'relative', borderRadius: '14px', overflow: 'hidden', height: '100px', border: '1px solid rgba(255,255,255,0.1)' }}>
+            <div key={i} style={{ position: 'relative', borderRadius: '18px', overflow: 'hidden', height: '120px', border: i === 0 ? '2px solid var(--gold)' : '1px solid rgba(255,255,255,0.1)' }}>
               <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              
+              {/* Order Indicator */}
+              <div style={{ position: 'absolute', top: '8px', left: '8px', background: 'rgba(0,0,0,0.6)', color: 'white', fontSize: '10px', fontWeight: 900, padding: '2px 6px', borderRadius: '4px', zIndex: 5 }}>
+                #{i + 1} {i === 0 && 'COVER'}
+              </div>
+
+              {/* Delete Button */}
               <button 
                 onClick={(e) => { e.stopPropagation(); removeImage(i); }}
-                style={{ position: 'absolute', top: '4px', right: '4px', width: '24px', height: '24px', borderRadius: '50%', background: 'rgba(245,57,123,0.8)', border: 'none', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                style={{ position: 'absolute', top: '4px', right: '4px', width: '26px', height: '26px', borderRadius: '50%', background: 'rgba(245,57,123,0.9)', border: 'none', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10 }}
               >
                 <Trash2 size={12} />
               </button>
+
+              {/* Move Buttons */}
+              <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', justifyContent: 'center', gap: '8px', padding: '4px' }}>
+                <button 
+                  disabled={i === 0}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const newImgs = [...formData.images];
+                    const newFiles = [...formData.imageFiles];
+                    [newImgs[i-1], newImgs[i]] = [newImgs[i], newImgs[i-1]];
+                    [newFiles[i-1], newFiles[i]] = [newFiles[i], newFiles[i-1]];
+                    setFormData(prev => ({ ...prev, images: newImgs, imageFiles: newFiles }));
+                  }}
+                  style={{ background: 'none', border: 'none', color: 'white', cursor: i === 0 ? 'not-allowed' : 'pointer', opacity: i === 0 ? 0.3 : 1 }}
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                <button 
+                  disabled={i === formData.images.length - 1}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const newImgs = [...formData.images];
+                    const newFiles = [...formData.imageFiles];
+                    [newImgs[i+1], newImgs[i]] = [newImgs[i], newImgs[i+1]];
+                    [newFiles[i+1], newFiles[i]] = [newFiles[i], newFiles[i+1]];
+                    setFormData(prev => ({ ...prev, images: newImgs, imageFiles: newFiles }));
+                  }}
+                  style={{ background: 'none', border: 'none', color: 'white', cursor: i === formData.images.length - 1 ? 'not-allowed' : 'pointer', opacity: i === formData.images.length - 1 ? 0.3 : 1 }}
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
             </div>
           ))}
         </div>

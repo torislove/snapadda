@@ -321,8 +321,11 @@ export const updateProperty = async (req, res) => {
       if (coords) updateData.coordinates = coords;
     }
 
-    const property = await Property.findByIdAndUpdate(req.params.id, updateData, { new: true, runValidators: true });
+    const property = await Property.findById(req.params.id);
     if (!property) return res.status(404).json({ message: 'Property not found' });
+
+    Object.assign(property, updateData);
+    await property.save();
     
     // Sync to Firebase for real-time (Non-blocking)
     syncToFirebase(property).catch(err => console.error('FIREBASE_SYNC_ERR:', err));
@@ -478,7 +481,6 @@ export const publicSubmitProperty = async (req, res) => {
     }
     
     const property = new Property(propertyData);
-    property.propertyCode = `SNA-${property._id.toString().slice(-5).toUpperCase()}`;
     await property.save();
     
     // Invalidate cache since a new (though pending) record exists

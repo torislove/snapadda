@@ -230,10 +230,12 @@ export const usePropertyManager = () => {
           ...updatedData, 
           price_raw: p_raw, 
           price: p,
-          // Sync calculator fields if they were changed
+          // Sync calculator fields
           pricePerUnit: updatedData.pricePerUnit || prev.pricePerUnit,
-          areaSize: updatedData.areaSize || prev.areaSize
+          areaSize: updatedData.areaSize || prev.areaSize,
+          measurementUnit: updatedData.measurementUnit || prev.measurementUnit
         };
+
       });
     }, 350);
   };

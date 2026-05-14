@@ -59,6 +59,14 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
   const isCommercial = propType.includes('commercial') || propType.includes('shop') || propType.includes('office');
   const isResidential = !isLand && !isCommercial;
 
+  const formatPriceInWords = (value: any) => {
+    const num = parseFloat(value);
+    if (!num || isNaN(num)) return "";
+    if (num >= 10000000) return `(₹ ${(num / 10000000).toFixed(2)} Crore)`;
+    if (num >= 100000) return `(₹ ${(num / 100000).toFixed(2)} Lakh)`;
+    return `(₹ ${num.toLocaleString("en-IN")})`;
+  };
+
   const handleLocSearch = (val: string) => {
     setLocInput(val);
     if (val.length >= 2) {
@@ -402,11 +410,17 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
                           name="measurementUnit" 
                           value={liveData.measurementUnit || 'Sq.Yards'} 
                           className="admin-select"
-                          onChange={(e) => setLiveData((p: any) => ({ ...p, measurementUnit: e.target.value }))}
+                          onChange={(e) => {
+                            const unit = e.target.value;
+                            setLiveData((p: any) => ({ ...p, measurementUnit: unit }));
+                          }}
+                          style={{ border: '1px solid var(--violet)', background: 'rgba(155,89,245,0.05)' }}
                         >
-                          <option value="Sq.Yards">Sq. Yards</option>
+                          <option value="Sq.Yards">Sq. Yards (Gajalu)</option>
                           <option value="Cents">Cents</option>
                           <option value="Acres">Acres</option>
+                          <option value="Ankanams">Ankanams (Nellore/Tirupati)</option>
+                          <option value="Guntas">Guntas (Telangana Border)</option>
                         </select>
                       </div>
                     )}
@@ -418,7 +432,7 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
                         value={liveData.pricePerUnit || ''} 
                         onChange={(e) => {
                           const pUnit = parseFloat(e.target.value) || 0;
-                          const size = liveData.areaSize || 0;
+                          const size = parseFloat(liveData.areaSize) || 0;
                           setLiveData((p: any) => ({ 
                             ...p, 
                             pricePerUnit: pUnit,
@@ -426,19 +440,29 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
                           }));
                         }}
                         className="admin-input" 
-                        placeholder="e.g. 25000" 
+                        placeholder={`Price per ${liveData.measurementUnit?.slice(0, -1) || 'Unit'}`}
                       />
                     </div>
                     <div>
-                      <label className="admin-label">Total Price Result (Calculated)</label>
+                      <label className="admin-label" style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        Total Price Result {formatPriceInWords(liveData.price_raw) && <span style={{ color: 'var(--gold)', fontWeight: 700 }}>{formatPriceInWords(liveData.price_raw)}</span>}
+                      </label>
                       <div style={{ display: 'flex', gap: '8px' }}>
                         <input 
                           name="price" 
                           type="number" 
                           value={liveData.price_raw || ''} 
-                          onChange={(e) => setLiveData((p: any) => ({ ...p, price_raw: e.target.value }))}
+                          onChange={(e) => {
+                            const total = parseFloat(e.target.value) || 0;
+                            const size = parseFloat(liveData.areaSize) || 0;
+                            setLiveData((p: any) => ({ 
+                                ...p, 
+                                price_raw: total,
+                                pricePerUnit: size > 0 ? Math.round(total / size) : p.pricePerUnit
+                            }));
+                          }}
                           className="admin-input" 
-                          style={{ flex: 1, fontWeight: 900, color: 'var(--gold)', background: 'rgba(232,184,75,0.05)' }}
+                          style={{ flex: 1, fontWeight: 950, color: 'white', background: 'rgba(34,217,224,0.1)', borderColor: 'var(--cyan)', fontSize: '1.1rem' }}
                           required
                         />
                         <select 

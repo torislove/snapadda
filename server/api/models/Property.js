@@ -4,6 +4,8 @@ const propertySchema = new mongoose.Schema({
   title: { type: String, default: '' },
   description: String,
   price: { type: Number, default: 0 },
+  priceDisplay: { type: String, default: '' },
+  pricePerUnit: { type: Number, default: 0 },
   location: { type: String, default: '' },
   address: { type: String, default: '' },
   district: { type: String, default: '' }, // AP district
@@ -146,8 +148,24 @@ propertySchema.pre('save', function(next) {
   if (!this.propertyCode && this._id) {
     this.propertyCode = 'SNA-' + this._id.toString().slice(-5).toUpperCase();
   }
+
+  // Generate human-readable priceDisplay
+  if (this.price > 0) {
+    const val = this.price;
+    if (val >= 10000000) {
+      this.priceDisplay = `₹ ${(val / 10000000).toFixed(2)} Crore`;
+    } else if (val >= 100000) {
+      this.priceDisplay = `₹ ${(val / 100000).toFixed(2)} Lakh`;
+    } else {
+      this.priceDisplay = `₹ ${val.toLocaleString('en-IN')}`;
+    }
+  } else {
+    this.priceDisplay = 'Contact for Price';
+  }
+  
   next();
 });
+
 
 // Performance Indexes - Aggressive Compound Indexing for Real Estate Filters
 propertySchema.index({ status: 1, createdAt: -1 });
