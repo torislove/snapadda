@@ -4,7 +4,7 @@ import SiteSetting from '../models/SiteSetting.js';
 import { getCitiesNearby } from '../data/apCoordinates.js';
 import { getCached, setCached, invalidateCache, buildCacheKey } from '../cache/propertyCache.js';
 import { cleanPropertyData } from '../utils/propertyCleaner.js';
-import { extractCoordsFromLink } from '../utils/geoUtils.js';
+import { resolveAndExtractCoords } from '../utils/geoUtils.js';
 
 // Lean projection for card list views (avoids fetching 50+ unused fields)
 const CARD_FIELDS = 'title price priceDisplay pricePerUnit location district type purpose subType images image status isVerified isFeatured bhk beds baths areaSize measurementUnit facing furnishing constructionStatus approvalAuthority isGated vastuCompliant listerType propertyCode googleMapsLink coordinates createdAt likeCount';
@@ -254,7 +254,7 @@ export const createProperty = async (req, res) => {
     
     // Extract coordinates if link is provided
     if (propertyData.googleMapsLink && (!propertyData.coordinates || !propertyData.coordinates.lat)) {
-      const coords = extractCoordsFromLink(propertyData.googleMapsLink);
+      const coords = await resolveAndExtractCoords(propertyData.googleMapsLink);
       if (coords) propertyData.coordinates = coords;
     }
     
@@ -317,7 +317,7 @@ export const updateProperty = async (req, res) => {
 
     // Update coordinates if link changed or coordinates are missing
     if (updateData.googleMapsLink) {
-      const coords = extractCoordsFromLink(updateData.googleMapsLink);
+      const coords = await resolveAndExtractCoords(updateData.googleMapsLink);
       if (coords) updateData.coordinates = coords;
     }
 
@@ -473,7 +473,7 @@ export const publicSubmitProperty = async (req, res) => {
     
     // Extract coordinates if link is provided
     if (propertyData.googleMapsLink) {
-      const coords = extractCoordsFromLink(propertyData.googleMapsLink);
+      const coords = await resolveAndExtractCoords(propertyData.googleMapsLink);
       if (coords) propertyData.coordinates = coords;
     }
     

@@ -6,7 +6,7 @@ import { Plus, X, Zap, Trash2 } from 'lucide-react';
 import { MediaManager } from '../../../components/ui/MediaManager';
 import { LivePreviewCard } from '../../../components/ui/LivePreviewCard';
 import { getFuzzySuggestions } from '../../../services/SearchParser';
-import { Search, Sparkles, User } from 'lucide-react';
+import { Search, Sparkles, ShieldCheck, Users } from 'lucide-react';
 import { locationService } from '../../../services/locationService';
 
 
@@ -177,7 +177,6 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
                     <option value="Apartment">Apartment / Flat</option>
                     <option value="Independent House">Independent House</option>
                     <option value="Villa">Villa / Duplex</option>
-                    <option value="Gated Community Plot">Gated Community Plot</option>
                     <option value="Residential Plot">Residential Plot</option>
                   </optgroup>
                   <optgroup label="Special / CRDA">
@@ -192,16 +191,32 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
                     <option value="Showroom">Showroom / Retail</option>
                   </optgroup>
                   <optgroup label="Agricultural">
-                    <option value="Agricultural Land">Agricultural Land (Farm)</option>
-                    <option value="Farmhouse">Farmhouse / Farm Villa</option>
+                    <option value="Agricultural Land">Agricultural Land</option>
+                    <option value="Farmhouse">Farmhouse</option>
                   </optgroup>
                   <optgroup label="Industrial">
                     <option value="Industrial Shed">Industrial Shed</option>
-                    <option value="Warehouse">Warehouse / Godown</option>
-                    <option value="Factory">Factory / Unit</option>
+                    <option value="Warehouse">Warehouse</option>
+                    <option value="Factory">Factory</option>
                   </optgroup>
                 </select>
               </div>
+
+              <div>
+                <label className="admin-label">Lister Type <span className="required-asterisk">*</span></label>
+                <select 
+                  name="listerType" 
+                  defaultValue={editingProperty?.listerType || 'SnapAdda Admin'} 
+                  className="admin-select"
+                  onChange={(e) => setLiveData((p: any) => ({ ...p, listerType: e.target.value }))}
+                >
+                  <option value="SnapAdda Admin">Added by Admin</option>
+                  <option value="Verified Realtor">Added for Realtor</option>
+                  <option value="Direct Owner">Direct Owner Listing</option>
+                </select>
+              </div>
+
+
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                   <label className="admin-label" style={{ marginBottom: 0 }}>City / Area <span className="required-asterisk">*</span></label>
@@ -353,32 +368,99 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
                 />
               </div>
 
-              <div>
-                <label className="admin-label">Price <span className="required-asterisk">*</span></label>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <input 
-                    name="price" 
-                    type="number" 
-                    step="0.01"
-                    value={liveData.price_raw || ''} 
-                    onChange={(e) => setLiveData((p: any) => ({ ...p, price_raw: e.target.value }))}
-                    className="admin-input" 
-                    placeholder="Amount"
-                    style={{ flex: 1 }}
-                    required
-                  />
-                  <select 
-                    className="admin-select" 
-                    style={{ width: '80px' }}
-                    value={priceUnit}
-                    onChange={(e) => setPriceUnit(e.target.value as any)}
-                  >
-                    <option value="Total">Rs</option>
-                    <option value="Lakhs">L</option>
-                    <option value="Cr">Cr</option>
-                  </select>
+              <div className="col-span-full">
+                <div style={{ padding: '2rem', background: 'rgba(100,100,255,0.04)', borderRadius: '24px', border: '1px solid rgba(100,100,255,0.1)' }}>
+                  <h4 style={{ fontSize: '0.8rem', fontWeight: 900, color: 'var(--violet)', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Zap size={16} /> PRICE & AREA CALCULATOR
+                  </h4>
+                  <div className="responsive-form-grid">
+                    <div>
+                      <label className="admin-label">
+                        {isLand ? `Total Area (${liveData.measurementUnit || 'Sq.Yards'})` : 'Built-up Area (Sq.Ft)'}
+                      </label>
+                      <input 
+                        name="areaSize" 
+                        type="number" 
+                        value={liveData.areaSize || ''} 
+                        onChange={(e) => {
+                          const size = parseFloat(e.target.value) || 0;
+                          const pUnit = liveData.pricePerUnit || 0;
+                          setLiveData((p: any) => ({ 
+                            ...p, 
+                            areaSize: size,
+                            price_raw: pUnit > 0 ? (size * pUnit) : p.price_raw
+                          }));
+                        }}
+                        className="admin-input" 
+                        placeholder="e.g. 200" 
+                      />
+                    </div>
+                    {isLand && (
+                      <div>
+                        <label className="admin-label">Unit Type</label>
+                        <select 
+                          name="measurementUnit" 
+                          value={liveData.measurementUnit || 'Sq.Yards'} 
+                          className="admin-select"
+                          onChange={(e) => setLiveData((p: any) => ({ ...p, measurementUnit: e.target.value }))}
+                        >
+                          <option value="Sq.Yards">Sq. Yards</option>
+                          <option value="Cents">Cents</option>
+                          <option value="Acres">Acres</option>
+                        </select>
+                      </div>
+                    )}
+                    <div>
+                      <label className="admin-label">Price Per {isLand ? (liveData.measurementUnit?.slice(0, -1) || 'Unit') : 'Sq.Ft'}</label>
+                      <input 
+                        name="pricePerUnit" 
+                        type="number" 
+                        value={liveData.pricePerUnit || ''} 
+                        onChange={(e) => {
+                          const pUnit = parseFloat(e.target.value) || 0;
+                          const size = liveData.areaSize || 0;
+                          setLiveData((p: any) => ({ 
+                            ...p, 
+                            pricePerUnit: pUnit,
+                            price_raw: size > 0 ? (size * pUnit) : p.price_raw
+                          }));
+                        }}
+                        className="admin-input" 
+                        placeholder="e.g. 25000" 
+                      />
+                    </div>
+                    <div>
+                      <label className="admin-label">Total Price Result (Calculated)</label>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <input 
+                          name="price" 
+                          type="number" 
+                          value={liveData.price_raw || ''} 
+                          onChange={(e) => setLiveData((p: any) => ({ ...p, price_raw: e.target.value }))}
+                          className="admin-input" 
+                          style={{ flex: 1, fontWeight: 900, color: 'var(--gold)', background: 'rgba(232,184,75,0.05)' }}
+                          required
+                        />
+                        <select 
+                          className="admin-select" 
+                          style={{ width: '80px' }}
+                          value={priceUnit}
+                          onChange={(e) => setPriceUnit(e.target.value as any)}
+                        >
+                          <option value="Total">Rs</option>
+                          <option value="Lakhs">L</option>
+                          <option value="Cr">Cr</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ marginTop: '1rem', fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--emerald)' }} />
+                    Auto-synchronized with SnapAdda valuation engine.
+                  </div>
                 </div>
               </div>
+
               <div>
                 <label className="admin-label">Purpose</label>
                 <select name="purpose" defaultValue={editingProperty?.purpose || 'Sale'} className="admin-select">
@@ -400,38 +482,6 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
                 <label className="admin-label">Property Title <span className="required-asterisk">*</span></label>
                 <input name="title" defaultValue={editingProperty?.title || ''} className="admin-input" placeholder="e.g. 6 Acres of CRM Land in Mangalagiri" required />
               </div>
-              {/* Unified Area Input */}
-              <div className="col-span-full">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                  <label className="admin-label" style={{ marginBottom: 0 }}>
-                    {isLand ? 'Total Land Area' : 'Super Builtup Area (Sq.Ft)'} <span className="required-asterisk">*</span>
-                  </label>
-                  {isLand && (
-                    <select 
-                      name="measurementUnit" 
-                      value={liveData.measurementUnit || 'Sq.Yards'} 
-                      className="admin-select"
-                      style={{ width: 'auto', padding: '4px 8px', height: '30px', fontSize: '0.75rem' }}
-                      onChange={(e) => setLiveData((p: any) => ({ ...p, measurementUnit: e.target.value }))}
-                    >
-                      <option value="Sq.Yards">Sq. Yards</option>
-                      <option value="Cents">Cents</option>
-                      <option value="Acres">Acres</option>
-                    </select>
-                  )}
-                </div>
-                <input 
-                  name="areaSize" 
-                  type="number" 
-                  step="0.01" 
-                  value={liveData.areaSize || ''} 
-                  className="admin-input" 
-                  placeholder={isLand ? "e.g. 1500" : "e.g. 1850"}
-                  onChange={(e) => setLiveData((p: any) => ({ ...p, areaSize: e.target.value }))}
-                  required
-                  style={{ fontSize: '1.2rem', fontWeight: 800 }}
-                />
-              </div>
 
               {isResidential && (
                 <div>
@@ -441,6 +491,7 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
                   </select>
                 </div>
               )}
+
             </div>
           </section>
 
@@ -487,6 +538,30 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
                   <input name="googleMapsLink" defaultValue={editingProperty?.googleMapsLink || ''} className="admin-input" placeholder="Google Maps URL" />
                 </div>
                 <div>
+                  <label className="admin-label">Exact Latitude (for Map Hotspot)</label>
+                  <input 
+                    name="coordinates.lat" 
+                    type="number"
+                    step="any"
+                    value={liveData.coordinates?.lat || ''} 
+                    onChange={(e) => setLiveData((p: any) => ({ ...p, coordinates: { ...p.coordinates, lat: parseFloat(e.target.value) } }))}
+                    className="admin-input" 
+                    placeholder="e.g. 16.5062" 
+                  />
+                </div>
+                <div>
+                  <label className="admin-label">Exact Longitude (for Map Hotspot)</label>
+                  <input 
+                    name="coordinates.lng" 
+                    type="number"
+                    step="any"
+                    value={liveData.coordinates?.lng || ''} 
+                    onChange={(e) => setLiveData((p: any) => ({ ...p, coordinates: { ...p.coordinates, lng: parseFloat(e.target.value) } }))}
+                    className="admin-input" 
+                    placeholder="e.g. 80.6480" 
+                  />
+                </div>
+                <div>
                   <label className="admin-label">RERA ID</label>
                   <input name="reraId" defaultValue={editingProperty?.reraId || ''} className="admin-input" placeholder="e.g. P0240000..." />
                 </div>
@@ -520,8 +595,23 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
                         <option value="Fully Furnished">Fully Furnished</option>
                       </select>
                     </div>
+                    <div>
+                      <label className="admin-label">Maintenance Fee / Mo</label>
+                      <input name="maintenanceFee" type="number" defaultValue={editingProperty?.maintenanceFee || ''} className="admin-input" placeholder="e.g. 5000" />
+                    </div>
+                    <div>
+                      <label className="admin-label">Balconies</label>
+                      <input name="balconies" type="number" defaultValue={editingProperty?.balconies || ''} className="admin-input" placeholder="e.g. 3" />
+                    </div>
+                    <div>
+                      <label className="admin-label">Security Level</label>
+                      <select name="securityLevel" defaultValue={editingProperty?.securityLevel || 'Standard'} className="admin-select">
+                        <option>Standard</option><option>24/7 Security</option><option>CCTV Monitored</option><option>Elite Gated Security</option>
+                      </select>
+                    </div>
                   </>
                 )}
+
                 {isCommercial && (
                   <div>
                     <label className="admin-label">Power Supply (KVA)</label>
@@ -591,28 +681,126 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
                       <option>Borewell</option><option>Canal</option><option>Both</option><option>None</option>
                     </select>
                   </div>
+                  <div>
+                    <label className="admin-label">Survey Number</label>
+                    <input name="surveyNo" defaultValue={editingProperty?.surveyNo || ''} className="admin-input" placeholder="e.g. 124/A" />
+                  </div>
                 </>
               )}
 
               {isLand && (
-                <div>
-                  <label className="admin-label">Approval Authority</label>
-                  <select name="approvalAuthority" defaultValue={editingProperty?.approvalAuthority || 'GP'} className="admin-select">
-                    <option>GP</option><option>DTCP</option><option>HMDA</option><option>AP CRDA</option><option>VMRDA</option><option>Clear Title</option>
-                  </select>
-                </div>
+                <>
+                  <div>
+                    <label className="admin-label">Approval Authority</label>
+                    <select name="approvalAuthority" defaultValue={editingProperty?.approvalAuthority || 'GP'} className="admin-select">
+                      <option>GP</option><option>DTCP</option><option>HMDA</option><option>AP CRDA</option><option>VMRDA</option><option>Clear Title</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="admin-label">Road Width (Feet)</label>
+                    <input name="roadWidth" type="number" defaultValue={editingProperty?.roadWidth || ''} className="admin-input" placeholder="e.g. 40" />
+                  </div>
+                </>
+              )}
+
+              {(isResidential || isCommercial) && (
+                <>
+                  <div>
+                    <label className="admin-label">Floor Type</label>
+                    <select name="floorType" defaultValue={editingProperty?.floorType || 'Vitrified Tiles'} className="admin-select">
+                      <option>Vitrified Tiles</option><option>Marble</option><option>Granite</option><option>Mosaic</option><option>Wooden</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="admin-label">Power Supply (KVA)</label>
+                    <input name="powerKVA" type="number" defaultValue={editingProperty?.powerKVA || ''} className="admin-input" placeholder="e.g. 15" />
+                  </div>
+                </>
               )}
             </div>
+          </section>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '2rem', marginTop: '2rem', flexWrap: 'wrap' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: 'white', fontSize: '0.85rem' }}>
-                <input name="vastuCompliant" type="checkbox" defaultChecked={editingProperty?.vastuCompliant} /> Vastu Compliant
-              </label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: 'white', fontSize: '0.85rem' }}>
-                <input name="isGated" type="checkbox" defaultChecked={editingProperty?.isGated} /> Gated Community
-              </label>
+          <section>
+            <h3 style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--gold)', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '1.75rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ width: '20px', height: '1px', background: 'var(--gold)' }} /> 3. VERIFICATION & STATUS
+            </h3>
+            <div className="responsive-form-grid">
+              <div className="glass-card" style={{ gridColumn: '1 / -1', padding: '1.5rem', background: 'rgba(255,255,255,0.02)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                  <div>
+                    <h4 style={{ color: 'white', fontSize: '0.8rem', fontWeight: 700, marginBottom: '4px' }}>Quality Assurance Log</h4>
+                    <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>Record site visits or agent calls to verify asset authenticity.</p>
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <input 
+                      id="vLogAction" 
+                      placeholder="Action (e.g. Site Visit)" 
+                      className="admin-input" 
+                      style={{ fontSize: '0.7rem', padding: '8px', background: 'rgba(255,255,255,0.02)' }} 
+                    />
+                    <input 
+                      id="vLogNotes" 
+                      placeholder="Notes (e.g. Photos taken)" 
+                      className="admin-input" 
+                      style={{ fontSize: '0.7rem', padding: '8px', background: 'rgba(255,255,255,0.02)' }} 
+                    />
+                    <button 
+                      type="button" 
+                      className="btn-violet" 
+                      style={{ fontSize: '0.6rem', padding: '0 12px', whiteSpace: 'nowrap' }}
+                      onClick={() => {
+                        const actionEl = document.getElementById('vLogAction') as HTMLInputElement;
+                        const notesEl = document.getElementById('vLogNotes') as HTMLInputElement;
+                        if (actionEl.value) {
+                          setLiveData((p: any) => ({
+                            ...p,
+                            verificationLog: [...(p.verificationLog || []), { 
+                              action: actionEl.value, 
+                              notes: notesEl.value, 
+                              timestamp: new Date().toISOString() 
+                            }]
+                          }));
+                          actionEl.value = '';
+                          notesEl.value = '';
+                        }
+                      }}
+                    >
+                      COMMIT LOG
+                    </button>
+                  </div>
+
+                </div>
+                <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                  {(liveData.verificationLog || []).length > 0 ? (
+                    liveData.verificationLog.map((log: any, idx: number) => (
+                      <div key={idx} style={{ padding: '10px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', gap: '15px' }}>
+                        <div style={{ fontSize: '0.6rem', color: 'var(--gold)', minWidth: '80px' }}>{new Date(log.timestamp).toLocaleDateString()}</div>
+                        <div>
+                          <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'white' }}>{log.action}</div>
+                          <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>{log.notes}</div>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div style={{ textAlign: 'center', padding: '20px', fontSize: '0.7rem', color: 'var(--text-muted)', border: '1px dashed rgba(255,255,255,0.1)', borderRadius: '8px' }}>
+                      No verification logs found for this property.
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              <div style={{ display: 'flex', alignItems: 'center', gap: '2rem', marginTop: '1rem', flexWrap: 'wrap', gridColumn: '1 / -1' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: 'white', fontSize: '0.85rem' }}>
+                  <input name="isVerified" type="checkbox" checked={isVerified} onChange={e => setIsVerified(e.target.checked)} /> Trust Seal (Verified)
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: 'white', fontSize: '0.85rem' }}>
+                  <input name="isFeatured" type="checkbox" checked={isFeatured} onChange={e => setIsFeatured(e.target.checked)} /> Elite Featured Status
+                </label>
+              </div>
             </div>
           </section>
+
+
 
 
              <section>
@@ -682,45 +870,95 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
             </section>
 
 
-          {/* STEP 7: REALTOR ASSIGNMENT */}
+          {/* STEP 4: BRANDING & COMMUNICATION HUB */}
           <section>
             <h3 style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--gold)', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '1.75rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <div style={{ width: '20px', height: '1px', background: 'var(--gold)' }} /> 7. REALTOR ASSIGNMENT
+              <div style={{ width: '20px', height: '1px', background: 'var(--gold)' }} /> 4. BRANDING & COMMUNICATION HUB
             </h3>
-            <div style={{ padding: '1.25rem', background: 'rgba(232,184,75,0.04)', borderRadius: '16px', border: '1px solid rgba(232,184,75,0.15)', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-              
-              <div>
-                <label className="admin-label">Select Agent from CRM <span className="required-asterisk">*</span></label>
-                <select
-                  className="admin-select"
-                  value={realtorData.contactId || ''}
-                  onChange={handleRealtorSelect}
-                  required
-                  style={{ border: '1px solid rgba(232,184,75,0.3)', fontSize: '1rem', fontWeight: 700 }}
-                >
-                  <option value="">-- Choose Agent --</option>
-                  {realtors.map((r: any) => (
-                    <option key={r._id} value={r._id}>
-                      {r.name} {r.company ? `(${r.company})` : ''} — {r.phone}
-                    </option>
-                  ))}
-                </select>
+            
+            <div className="glass-card" style={{ padding: '1.5rem', background: 'rgba(232,184,75,0.03)', border: '1px solid rgba(232,184,75,0.15)' }}>
+              <div className="responsive-form-grid" style={{ gap: '2rem' }}>
                 
-                {realtorData.contactId && (
-                  <div style={{ marginTop: '1.5rem', display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '1.5rem', padding: '1rem', background: 'rgba(16,217,140,0.05)', borderRadius: '12px', border: '1px solid rgba(16,217,140,0.2)' }}>
-                    <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', overflow: 'hidden' }}>
-                      {realtorData.photo ? <img src={realtorData.photo} alt={realtorData.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--gold)' }}><User size={30} /></div>}
+                {/* Identity Toggle */}
+                <div>
+                  <label className="admin-label">Public Identity Source</label>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                    <button 
+                      type="button"
+                      onClick={() => setLiveData((p: any) => ({ ...p, displayContactType: 'Admin', listerType: 'SnapAdda Admin' }))}
+                      style={{ 
+                        padding: '12px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.1)', 
+                        background: liveData.displayContactType !== 'Lister' ? 'var(--gold)' : 'transparent',
+                        color: liveData.displayContactType !== 'Lister' ? 'black' : 'white',
+                        fontSize: '0.7rem', fontWeight: 900, cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
+                      }}
+                    >
+                      <ShieldCheck size={16} /> INSTITUTIONAL
+                    </button>
+                    <button 
+                      type="button"
+                      onClick={() => setLiveData((p: any) => ({ ...p, displayContactType: 'Lister' }))}
+                      style={{ 
+                        padding: '12px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.1)', 
+                        background: liveData.displayContactType === 'Lister' ? 'var(--emerald)' : 'transparent',
+                        color: liveData.displayContactType === 'Lister' ? 'black' : 'white',
+                        fontSize: '0.7rem', fontWeight: 900, cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
+                      }}
+                    >
+                      <Users size={16} /> DIRECT CONTACT
+                    </button>
+
+                  </div>
+                  
+                  <div style={{ marginTop: '1.25rem' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', color: 'white', fontSize: '0.8rem', fontWeight: 700 }}>
+                      <input 
+                        type="checkbox" 
+                        name="isOwnerListing"
+                        checked={liveData.isOwnerListing || false} 
+                        onChange={(e) => setLiveData((p: any) => ({ ...p, isOwnerListing: e.target.checked }))} 
+                      />
+                      MARK AS "DIRECT OWNER" LISTING
+                    </label>
+                  </div>
+                </div>
+
+                {/* Live Preview & Realtor Select */}
+                <div>
+                  <label className="admin-label">Public Phone Preview</label>
+                  <div style={{ padding: '1rem', background: 'rgba(0,0,0,0.3)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '1rem' }}>
+                    <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '4px' }}>Displayed on Client Portal:</div>
+                    <div style={{ fontSize: '1.25rem', fontWeight: 950, color: liveData.displayContactType === 'Lister' ? 'var(--emerald)' : 'var(--gold)' }}>
+                      {liveData.displayContactType === 'Lister' 
+                        ? (realtorData.phone || 'Select Realtor Below') 
+                        : '+91 93467 93364'}
                     </div>
-                    <div>
-                      <div style={{ fontSize: '1.1rem', fontWeight: 900, color: 'white' }}>{realtorData.name}</div>
-                      <div style={{ fontSize: '0.8rem', color: 'var(--emerald)', fontWeight: 700 }}>{realtorData.phone} • {realtorData.agency || 'Independent'}</div>
-                      <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', marginTop: '4px' }}>CRM ID: {realtorData.contactId}</div>
+                    <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)', marginTop: '4px' }}>
+                      Label: {liveData.isOwnerListing ? 'Contact Owner' : (realtorData.name ? `Contact ${realtorData.name}` : 'Contact Agent')}
                     </div>
                   </div>
-                )}
+
+                  {liveData.displayContactType === 'Lister' && (
+                    <select
+                      className="admin-select"
+                      value={realtorData.contactId || ''}
+                      onChange={handleRealtorSelect}
+                      style={{ border: '1px solid var(--emerald)', fontSize: '0.9rem', fontWeight: 700 }}
+                    >
+                      <option value="">-- Choose Realtor from CRM --</option>
+                      {realtors.map((r: any) => (
+                        <option key={r._id} value={r._id}>{r.name} — {r.phone}</option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+
               </div>
             </div>
           </section>
+
 
           <section>
             <div style={{ gridColumn: '1 / -1' }}>

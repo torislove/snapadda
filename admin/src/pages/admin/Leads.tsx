@@ -3,8 +3,9 @@ import { useTranslation } from 'react-i18next';
 import { 
   MessageSquare, Search, Target, 
   MoreHorizontal, User, Bot, Sparkles, AlertCircle, RefreshCcw,
-  Star, LayoutGrid, List
+  Star, LayoutGrid, List, PhoneCall, PhoneForwarded
 } from 'lucide-react';
+
 import { motion, AnimatePresence } from 'framer-motion';
 import { Activity, Zap, Clock } from 'lucide-react';
 import { ConnectivityBanner } from '../../components/ui/ConnectivityBanner';
@@ -190,8 +191,8 @@ const LeadCard = ({ lead, onStatusChange, onFlag }: {
       exit={{ opacity: 0, scale: 0.9 }}
       className="glass-card"
       style={{
-        padding: '1rem',
-        marginBottom: '0.75rem',
+        padding: '0.75rem',
+        marginBottom: '0.5rem',
         opacity: updating ? 0.6 : 1,
         borderLeft: `3px solid ${STATUS_CONFIG[lead.status]?.color || 'var(--violet)'}`
       }}
@@ -299,11 +300,22 @@ const LeadCard = ({ lead, onStatusChange, onFlag }: {
           </button>
           <a 
             href={`tel:${lead.phone}`}
-            style={{ flex: 1, textDecoration: 'none', padding: '7px', borderRadius: '10px', border: '1px solid var(--emerald)', background: 'rgba(16,217,140,0.1)', color: 'var(--emerald)', fontSize: '0.65rem', fontWeight: 800, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            onClick={(e) => e.stopPropagation()}
+            style={{ flex: 1, textDecoration: 'none', padding: '7px', borderRadius: '10px', border: '1px solid var(--emerald)', background: 'rgba(16,217,140,0.1)', color: 'var(--emerald)', fontSize: '0.65rem', fontWeight: 800, textAlign: 'center', display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'center' }}
           >
-            CALL NOW
+            <PhoneCall size={12} /> CALL
+          </a>
+          <a 
+            href={`https://wa.me/${lead.phone.replace(/\D/g, '')}?text=${encodeURIComponent(`Hi ${lead.name}, this is SnapAdda Admin. Regarding your inquiry for ${lead.propertyId?.title || 'a property'}...`)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            style={{ flex: 1, textDecoration: 'none', padding: '7px', borderRadius: '10px', border: '1px solid #25D366', background: 'rgba(37,211,102,0.1)', color: '#25D366', fontSize: '0.65rem', fontWeight: 800, textAlign: 'center', display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'center' }}
+          >
+            <MessageSquare size={12} /> WA
           </a>
         </div>
+
 
         {showTimeline && <LeadTimeline lead={lead} />}
         {lead.message && <LeadAIInsight text={lead.message} />}
@@ -345,7 +357,7 @@ const InquiryCard = ({ inq, onAnswer }: { inq: any; onAnswer: (id: string, text:
     >
       <div
         onClick={() => { setExpanded(e => !e);  }}
-        style={{ padding: '1rem', cursor: 'pointer', display: 'flex', gap: '0.875rem', alignItems: 'flex-start' }}
+        style={{ padding: '0.75rem', cursor: 'pointer', display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}
       >
         <div style={{
           width: '38px', height: '38px', borderRadius: '10px', flexShrink: 0,
@@ -542,7 +554,7 @@ const AdminLeads = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <div style={{ fontSize: '0.65rem', fontWeight: 900, letterSpacing: '0.2rem', textTransform: 'uppercase', color: 'var(--emerald)', marginBottom: '0.4rem', fontFamily: 'var(--font-mono)' }}>✦ CRM HUB</div>
-          <h1 style={{ fontSize: '2.2rem', fontWeight: 900, background: 'linear-gradient(135deg,#fff,#10d98c)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: '0.2rem', fontFamily: 'var(--font-heading)', letterSpacing: '-0.02em' }}>{t('leads.title', 'Management')}</h1>
+          <h1 style={{ fontSize: '1.8rem', fontWeight: 900, background: 'linear-gradient(135deg,#fff,#10d98c)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: '0.2rem', fontFamily: 'var(--font-heading)', letterSpacing: '-0.02em' }}>{t('leads.title', 'Management')}</h1>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem', background: 'rgba(255,255,255,0.03)', padding: '4px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
           <button 
@@ -635,10 +647,10 @@ const AdminLeads = () => {
               {['New', 'Contacted', 'Qualified', 'Follow Up', 'Closed', 'Lost'].map(status => {
                 const columnLeads = filteredLeads.filter(l => (l.status || 'New') === status);
                 return (
-                  <div key={status} style={{ minWidth: '280px', maxWidth: '320px', flex: 1 }}>
+                  <div key={status} style={{ minWidth: '240px', maxWidth: '260px', flex: 1 }}>
                     <div style={{ 
                       display: 'flex', justifyContent: 'space-between', alignItems: 'center', 
-                      padding: '0.875rem 1.25rem', marginBottom: '1rem', 
+                      padding: '0.6rem 0.8rem', marginBottom: '0.75rem', 
                       background: 'rgba(255,255,255,0.02)', borderRadius: '16px',
                       border: '1px solid rgba(255,255,255,0.04)',
                       position: 'sticky', top: 0, zIndex: 5, backdropFilter: 'blur(10px)'

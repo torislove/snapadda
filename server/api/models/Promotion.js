@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 const promotionSchema = new mongoose.Schema({
   type: {
     type: String,
-    enum: ['festival', 'ad', 'update'],
+    enum: ['festival', 'ad', 'update', 'institutional', 'offer'],
     required: true
   },
   title: {

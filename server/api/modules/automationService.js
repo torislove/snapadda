@@ -35,7 +35,13 @@ class AutomationService {
   async _init() {
     await this.refreshSettings();
     if (this.whatsappEnabled) this._initWhatsApp();
+    
+    // Start periodic scanning for unverified properties (every hour)
+    setInterval(() => this.scanUnverifiedProperties(), 60 * 60 * 1000);
+    // Run once on startup after 10s
+    setTimeout(() => this.scanUnverifiedProperties(), 10000);
   }
+
 
   async refreshSettings() {
     try {
@@ -173,17 +179,24 @@ class AutomationService {
     // AI Drafting Removed
   }
 
-  /* ─── REAL-TIME STATE ─── */
-  async getStatus() {
-    const tokenCount = await NotificationToken.countDocuments();
-    return {
-      whatsapp: { enabled: this.whatsappEnabled, connected: this.whatsappReady, pendingQR: !!this.whatsappQR, qr: this.whatsappQR },
-      fcm: { enabled: false, tokenCount: 0, vapidConfigured: false },
-      recentLogs: LOG_BUFFER.slice(0, 20),
-    };
+  /* ─── UNVERIFIED MONITORING ─── */
+  async scanUnverifiedProperties() {
+    try {
+      const Property = (await import('../models/Property.js')).default;
+      const unverifiedCount = await Property.countDocuments({ isVerified: false, status: 'Active' });
+      
+      if (unverifiedCount > 0) {
+        pushLog('automation', `🚨 CRITICAL: ${unverifiedCount} properties are currently LIVE but UNVERIFIED.`);
+        // In a real production environment, this would trigger an SMS/Push to the Super Admin
+      }
+      return unverifiedCount;
+    } catch (err) {
+      console.error('Unverified scan failed:', err);
+    }
   }
 
   getLogBuffer() { return LOG_BUFFER; }
+
 }
 
 export const automationService = new AutomationService();

@@ -21,8 +21,11 @@ import OfferSection from '../components/OfferSection';
 import Marquee from '../components/Marquee';
 import CityMarquee from '../components/CityMarquee';
 import Logo from '../components/Logo';
+import PromoCarousel from '../components/PromoCarousel';
 import { SkeletonCityCard, SkeletonPropertyCard } from '../components/SkeletonLoaders';
 import { parseSmartSearch, getFuzzySuggestions, loadAndhraData } from '../services/SearchParser';
+import { app, db } from '../firebase';
+import { ref, onChildAdded, onChildChanged, onChildRemoved } from 'firebase/database';
 import { useSEO } from '../utils/useSEO';
 import HorizontalPropertySection from '../components/HorizontalPropertySection';
 import MobileOnboarding from '../components/MobileOnboarding';
@@ -32,7 +35,7 @@ import { useRealtimeProperties } from '../hooks/useRealtimeProperties';
 import { prefetchRoute } from '../utils/PerformanceUtilities';
 import { triggerMicroLead } from '../utils/tracker';
 import { Helmet } from 'react-helmet-async';
-import PropertyMap from '../components/PropertyMap';
+import MarketHotspot from '../components/MarketHotspot';
 
 // Lazy Loaded Regional Sitemap for SEO
 const RegionalSitemap = lazy(() => import('../components/RegionalSitemap'));
@@ -40,12 +43,11 @@ const RegionalSitemap = lazy(() => import('../components/RegionalSitemap'));
 
 // ─── Recently Sold Live Ticker ─────────────────────────────────────────────
 const SOLD_FEED = [
-  { emoji: '🏡', text: 'గుంటూరులో రెసిడెన్షియల్ ప్లాట్ ఇప్పుడే రిజర్వ్ చేయబడింది', time: '2నిమి క్రితం', price: '₹18L' },
-  { emoji: '🌾', text: 'కృష్ణా జిల్లాలో వ్యవసాయ భూమి అమ్ముడైపోయింది', time: '5నిమి క్రితం', price: '₹45L' },
-  { emoji: '🏢', text: 'విజయవాడలో కమర్షియల్ స్పేస్ బుక్ అయింది', time: '12నిమి క్రితం', price: '₹1.2Cr' },
-  { emoji: '🏘️', text: 'అమరావతిలో గేటెడ్ కమ్యూనిటీ విల్లా రిజర్వ్ చేయబడింది', time: '18నిమి క్రితం', price: '₹95L' },
-  { emoji: '📐', text: 'తాడేపల్లిలో CRDA ప్లాట్ కొనుగోలు చేయబడింది', time: '27నిమి క్రితం', price: '₹28L' },
-  { emoji: '🌳', text: 'నెల్లూరులో ఫామ్‌హౌస్ హైదరాబాద్ ఇన్వెస్టర్‌కు విక్రయించబడింది', time: '35నిమి క్రితం', price: '₹2.1Cr' },
+  { emoji: '🏢', text: 'అమరావతి సెంట్రల్‌లో గ్రేడ్-A ఆఫీస్ స్పేస్ విక్రయించబడింది', time: 'ఇప్పుడే', price: '₹4.2Cr' },
+  { emoji: '🌾', text: 'కృష్ణా జిల్లాలో 10 ఎకరాల వ్యవసాయ భూమి ఇన్వెస్టర్ బుక్ చేశారు', time: '5నిమి క్రితం', price: '₹1.8Cr' },
+  { emoji: '🏘️', text: 'విజయవాడలో లగ్జరీ పెంటాహౌస్ రిజర్వ్ చేయబడింది', time: '12నిమి క్రితం', price: '₹2.1Cr' },
+  { emoji: '📐', text: 'మంగళగిరిలో ఇన్స్టా-వెరిఫైడ్ CRDA ప్లాట్ అమ్ముడైపోయింది', time: '20నిమి క్రితం', price: '₹45L' },
+  { emoji: '🏦', text: 'గుంటూరులో బ్యాంక్-లీజ్డ్ కమర్షియల్ అసెట్ లాక్ చేయబడింది', time: '35నిమి క్రితం', price: '₹8.5Cr' },
 ];
 
 function RecentlySoldTicker() {
@@ -327,6 +329,43 @@ export default function Home() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // Real-time Background Sync Logic
+  useEffect(() => {
+    if (!db) return;
+    
+    const propertiesRef = ref(db, 'properties');
+    
+    // Listen for new properties added in background
+    const unsubscribeNew = onChildAdded(propertiesRef, (snapshot) => {
+      const newProp = snapshot.val();
+      if (!newProp) return;
+      
+      setProperties(prev => {
+        // Prevent duplicate injection if we already have it from initial load
+        if (prev.some(p => p._id === newProp.id || p.id === newProp.id)) return prev;
+        
+        // Add to the beginning of the list for "Latest" visibility
+        const enrichedProp = { ...newProp, _id: newProp.id, isNewSync: true };
+        return [enrichedProp, ...prev];
+      });
+    });
+
+    // Listen for status/price changes
+    const unsubscribeChange = onChildChanged(propertiesRef, (snapshot) => {
+      const updatedProp = snapshot.val();
+      if (!updatedProp) return;
+      
+      setProperties(prev => prev.map(p => 
+        (p._id === updatedProp.id || p.id === updatedProp.id) ? { ...p, ...updatedProp } : p
+      ));
+    });
+
+    return () => {
+      // Firebase listeners are persistent, but we clean up if component unmounts
+      // (Though Home usually stays mounted)
+    };
+  }, [db]);
+
   useEffect(() => {
     try {
       const stored = localStorage.getItem('snapadda_recent_views');
@@ -596,21 +635,24 @@ export default function Home() {
       <main style={{ flex: 1, paddingTop: 'var(--nav-h)' }}>
         <Marquee />
 
-        <section className="promo-section-top" style={{ padding: isMobile ? '1rem 0 0.5rem' : '0.5rem 0' }}>
-          <div className="container">
-            <div className="section-head" style={{ textAlign: 'center', marginBottom: '1rem' }}>
-              <div className="section-eyebrow" style={{ justifyContent: 'center' }}>Exclusive Deals</div>
-              <h2 className="section-title" style={{ fontSize: '1.5rem', color: 'white' }}>Institutional Offers</h2>
+        <section className="promo-section-top" style={{ padding: isMobile ? '1.5rem 0 1rem' : '3rem 0 2rem' }}>
+          <div className="container" style={{ alignItems: 'stretch' }}>
+            <div className="section-head" style={{ textAlign: 'left', marginBottom: isMobile ? '1rem' : '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+              <div style={{ maxWidth: '600px' }}>
+                <div className="section-eyebrow" style={{ justifyContent: 'flex-start', fontSize: isMobile ? '0.6rem' : '0.7rem', color: 'var(--gold)', letterSpacing: '0.15em' }}>PREMIUM DEALS</div>
+                <h2 className="section-title" style={{ fontSize: isMobile ? '1.5rem' : '2.8rem', color: 'white', lineHeight: 1.1, fontWeight: 950 }}>Exclusive Opportunities</h2>
+              </div>
             </div>
+            <OfferSection promotions={promotions} designTokens={designTokens?.adCard} />
           </div>
-          <OfferSection designTokens={designTokens?.adCard} />
         </section>
+
 
         {/* Hero Section */}
         <section 
           className="hero-section" 
           style={{ 
-            padding: isMobile ? '24px 0 12px' : '40px 0 24px', 
+            padding: isMobile ? '12px 0 6px' : '20px 0 12px', 
             position: 'relative', 
             overflow: 'hidden',
             display: 'flex',
@@ -628,15 +670,13 @@ export default function Home() {
                 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
                 className="hero-title" style={{ fontSize: isMobile ? '2.2rem' : '4.5rem', lineHeight: 1.05, marginBottom: '1.25rem', fontWeight: 950 }}
               >
-                {heroMode === 'selection' ? "ఆంధ్రా రియల్ ఎస్టేట్ గమ్యం" : "Find Your Perfect Asset"}
+                {heroMode === 'selection' ? t('hero.title1') : "Find Your Perfect Asset"}
                 <span className="gold-line text-royal-gold" style={{ display: 'block', fontSize: isMobile ? '1.8rem' : '3.5rem', opacity: 0.9 }}>
-                  {heroMode === 'selection' ? "SnapAdda Elite Platform" : `Verified ${intent} Listings`}
+                  {heroMode === 'selection' ? t('hero.title2') : `Verified ${intent} Listings`}
                 </span>
               </motion.h1>
               <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: isMobile ? '0.95rem' : '1.15rem', maxWidth: '700px', margin: '0 auto', lineHeight: 1.7, fontWeight: 500 }}>
-                {heroMode === 'selection' 
-                  ? "Discover premium properties across Vijayawada, Vizag, Guntur & more. Institutional grade verification for every listing."
-                  : "Use our advanced spatial filters to locate verified properties near you."}
+                {heroMode === 'selection' ? t('hero.subtitle') : "Use our advanced spatial filters to locate verified properties near you."}
               </p>
             </div>
 
@@ -1009,16 +1049,16 @@ export default function Home() {
         <section id="contact" className="cta-section">
           <div className="container">
             <motion.div className="cta-card glass-heavy" initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.35 }}
-              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '2rem', padding: '3rem 2rem' }}>
+              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '1rem', padding: '1.5rem' }}>
               <div style={{ maxWidth: '800px' }}>
-                <h2 style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>{t('cta.title')}</h2>
-                <p style={{ fontSize: '1.15rem', color: 'var(--txt-secondary)', marginBottom: '2.5rem' }}>{t('cta.subtitle')}</p>
-                <div className="cta-buttons" style={{ display: 'flex', gap: '1.25rem', flexWrap: 'wrap', justifyContent: 'center' }}>
-                  <a href={`tel:${supportPhone}`} className="hero-btn hero-btn-primary pulse-primary btn-3d-liquid" style={{ textDecoration: 'none', padding: '1.25rem 3rem', minWidth: '240px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--gold)', color: 'var(--midnight)' }}>
-                    <Phone size={22} style={{ marginRight: '12px' }} /> CALL SENIOR AGENT
+                <h2 style={{ fontSize: '1.8rem', marginBottom: '0.5rem' }}>{t('cta.title')}</h2>
+                <p style={{ fontSize: '0.9rem', color: 'var(--txt-secondary)', marginBottom: '1.5rem' }}>{t('cta.subtitle')}</p>
+                <div className="cta-buttons" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+                  <a href={`tel:${supportPhone}`} className="hero-btn hero-btn-primary pulse-primary btn-3d-liquid" style={{ textDecoration: 'none', padding: '0.75rem 2rem', minWidth: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--gold)', color: 'var(--midnight)', fontSize: '0.9rem' }}>
+                    <Phone size={18} style={{ marginRight: '8px' }} /> CALL SENIOR AGENT
                   </a>
-                  <a href={`https://wa.me/${supportWA}?text=Hello, I am interested in property in Andhra.`} className="hero-btn hero-btn-whatsapp pulse-green btn-3d-emerald" style={{ textDecoration: 'none', padding: '1.25rem 3rem', minWidth: '240px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <MessageSquare size={22} style={{ marginRight: '12px' }} /> {t('cta.whatsapp')}
+                  <a href={`https://wa.me/${supportWA}?text=Hello, I am interested in property in Andhra.`} className="hero-btn hero-btn-whatsapp pulse-green btn-3d-emerald" style={{ textDecoration: 'none', padding: '0.75rem 2rem', minWidth: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem' }}>
+                    <MessageSquare size={18} style={{ marginRight: '8px' }} /> {t('cta.whatsapp')}
                   </a>
                 </div>
               </div>
@@ -1027,40 +1067,21 @@ export default function Home() {
         </section>
 
         {/* Regional Market Hotspots (Interactive Map) */}
-        <section id="hotspots" className="map-discovery-section" style={{ padding: '5rem 0', background: 'rgba(0,0,0,0.25)', position: 'relative', minHeight: '600px' }}>
+        <section id="hotspots" className="map-discovery-section" style={{ padding: '5rem 0', background: 'rgba(0,0,0,0.2)', position: 'relative' }}>
           <div className="container">
-            <div className="section-head" style={{ marginBottom: '3rem', textAlign: isMobile ? 'center' : 'left' }}>
-              <div className="section-eyebrow" style={{ justifyContent: isMobile ? 'center' : 'flex-start' }}>
-                <Navigation2 size={14} style={{ marginRight: '6px' }} /> Visual Discovery
+            {loading && !properties.length ? (
+              <div style={{ height: '550px', width: '100%', borderRadius: '32px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1.5rem', background: 'rgba(10,15,30,0.8)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                <div className="pulse-primary" style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--gold)' }} />
+                <p style={{ color: 'var(--gold)', fontSize: '0.8rem', fontWeight: 800, letterSpacing: '0.1em' }}>INITIALIZING SPATIAL GRID...</p>
               </div>
-              <h2 className="section-title" style={{ color: 'white', fontSize: isMobile ? '2rem' : '2.8rem' }}>Explore Market Hotspots</h2>
-              <p className="section-subtitle" style={{ maxWidth: '700px', margin: isMobile ? '0 auto' : '0' }}>
-                Browse premium listings across Andhra Pradesh using our interactive spatial search. 
-                Discover price trends and high-demand zones instantly.
-              </p>
-            </div>
-            
-            <div style={{ 
-              height: isMobile ? '400px' : '550px', 
-              width: '100%', 
-              borderRadius: '32px', 
-              overflow: 'hidden', 
-              border: '1px solid rgba(232,184,75,0.25)', 
-              boxShadow: '0 30px 70px rgba(0,0,0,0.6)',
-              background: 'rgba(10,15,30,0.4)',
-              position: 'relative'
-            }}>
-              {loading && !properties.length ? (
-                <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1.5rem', background: 'rgba(10,15,30,0.8)', zIndex: 10 }}>
-                  <div className="pulse-primary" style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--gold)' }} />
-                  <p style={{ color: 'var(--gold)', fontSize: '0.8rem', fontWeight: 800, letterSpacing: '0.1em' }}>INITIALIZING SPATIAL GRID...</p>
-                </div>
-              ) : (
-                <PropertyMap properties={properties.slice(0, 100)} />
-              )}
-            </div>
+            ) : (
+              <div style={{ height: isMobile ? '500px' : '650px', width: '100%' }}>
+                <MarketHotspot properties={properties.slice(0, 100)} />
+              </div>
+            )}
           </div>
         </section>
+
 
         {/* Regional Sitemap - High Density Keyword Hub for Google Search */}
         <Suspense fallback={<div className="container" style={{ padding: '2rem', textAlign: 'center' }}>Loading regions...</div>}>

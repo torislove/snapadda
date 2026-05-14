@@ -10,7 +10,7 @@ const CityMarquee = ({ cities, loading }) => {
     return (
       <div style={{ display: 'flex', gap: '20px', padding: '20px 0', overflow: 'hidden' }}>
         {[...Array(6)].map((_, i) => (
-          <div key={i} style={{ minWidth: '280px', height: '180px', borderRadius: '24px', background: 'rgba(255,255,255,0.03)', animation: 'pulse 1.5s infinite' }} />
+          <div key={i} style={{ minWidth: '200px', height: '130px', borderRadius: '24px', background: 'rgba(255,255,255,0.03)', animation: 'pulse 1.5s infinite' }} />
         ))}
       </div>
     );
@@ -35,8 +35,8 @@ const CityMarquee = ({ cities, loading }) => {
             onClick={() => navigate(`/search?city=${encodeURIComponent(city.name)}`)}
             style={{
               position: 'relative',
-              width: '280px',
-              height: '180px',
+              width: '200px',
+              height: '130px',
               borderRadius: '24px',
               overflow: 'hidden',
               cursor: 'pointer',
@@ -84,7 +84,7 @@ const CityMarquee = ({ cities, loading }) => {
       <style dangerouslySetInnerHTML={{ __html: `
         @keyframes cityScroll {
           0% { transform: translateX(0); }
-          100% { transform: translateX(calc(-280px * ${cities.length} - 20px * ${cities.length})); }
+          100% { transform: translateX(calc(-200px * ${cities.length} - 20px * ${cities.length})); }
         }
         .city-marquee-outer:hover .city-marquee-track {
           animation-play-state: paused;

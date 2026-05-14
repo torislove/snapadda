@@ -12,6 +12,9 @@ import markerIcon from 'leaflet/dist/images/marker-icon.png';
 import markerIconRetina from 'leaflet/dist/images/marker-icon-2x.png';
 import markerShadow from 'leaflet/dist/images/marker-shadow.png';
 
+// CSS filter for OSM to make it Elite Dark
+const osmFilter = 'brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7)';
+
 const DefaultIcon = L.icon({
   iconUrl: markerIcon,
   iconRetinaUrl: markerIconRetina,
@@ -39,61 +42,40 @@ const GoldIcon = L.divIcon({
   popupAnchor: [0, -32],
 });
 
-// AP cities + districts + mandalheadquarters (comprehensive lookup table)
-const AP_COORDS = [
-  { name: 'Vijayawada', aliases: ['vijayawada', 'bezawada', 'benz'], lat: 16.5062, lng: 80.6480 },
-  { name: 'Guntur', aliases: ['guntur'], lat: 16.3067, lng: 80.4365 },
-  { name: 'Visakhapatnam', aliases: ['visakhapatnam', 'vizag', 'vishakhapatnam', 'waltair'], lat: 17.6868, lng: 83.2185 },
-  { name: 'Tirupati', aliases: ['tirupati', 'tirumala'], lat: 13.6288, lng: 79.4192 },
-  { name: 'Nellore', aliases: ['nellore', 'nelore'], lat: 14.4426, lng: 79.9865 },
-  { name: 'Kurnool', aliases: ['kurnool', 'kurnul'], lat: 15.8281, lng: 78.0373 },
-  { name: 'Rajahmundry', aliases: ['rajahmundry', 'rajamahendravaram', 'rajam'], lat: 17.0005, lng: 81.8040 },
-  { name: 'Kakinada', aliases: ['kakinada', 'cocanada'], lat: 16.9891, lng: 82.2475 },
-  { name: 'Eluru', aliases: ['eluru', 'ellore'], lat: 16.7107, lng: 81.0952 },
-  { name: 'Ongole', aliases: ['ongole'], lat: 15.5057, lng: 80.0499 },
-  { name: 'Anantapur', aliases: ['anantapur', 'anantapuram'], lat: 14.6819, lng: 77.6006 },
-  { name: 'Kadapa', aliases: ['kadapa', 'cuddapah', 'ysr'], lat: 14.4674, lng: 78.8241 },
-  { name: 'Srikakulam', aliases: ['srikakulam'], lat: 18.2949, lng: 83.8994 },
-  { name: 'Vizianagaram', aliases: ['vizianagaram', 'vizianagram'], lat: 18.1067, lng: 83.3956 },
-  { name: 'Amaravati', aliases: ['amaravati', 'amaravathi'], lat: 16.5731, lng: 80.3565 },
-  { name: 'Mangalagiri', aliases: ['mangalagiri', 'manglagiri'], lat: 16.4303, lng: 80.5572 },
-  { name: 'Tadepalli', aliases: ['tadepalli', 'tadepalle'], lat: 16.4783, lng: 80.6012 },
-  { name: 'Tenali', aliases: ['tenali'], lat: 16.2418, lng: 80.6384 },
-  { name: 'Narasaraopet', aliases: ['narasaraopet', 'narsaraopet'], lat: 16.2347, lng: 80.0497 },
-  { name: 'Bapatla', aliases: ['bapatla'], lat: 15.9072, lng: 80.4673 },
-  { name: 'Chirala', aliases: ['chirala'], lat: 15.8277, lng: 80.3556 },
-  { name: 'Markapur', aliases: ['markapur'], lat: 15.7349, lng: 79.2694 },
-  { name: 'Pattikonda', aliases: ['pattikonda'], lat: 15.3883, lng: 77.5826 },
-  { name: 'Tadipatri', aliases: ['tadipatri'], lat: 14.9020, lng: 78.0115 },
-  { name: 'Adoni', aliases: ['adoni'], lat: 15.6287, lng: 77.2740 },
-  { name: 'Nandyal', aliases: ['nandyal'], lat: 15.4778, lng: 78.4846 },
-  { name: 'Machilipatnam', aliases: ['machilipatnam', 'masulipatnam', 'bandar'], lat: 16.1875, lng: 81.1350 },
-  { name: 'Bhimavaram', aliases: ['bhimavaram'], lat: 16.5449, lng: 81.5212 },
-  { name: 'Narasapuram', aliases: ['narasapuram'], lat: 16.4355, lng: 81.6887 },
-  { name: 'Palasa', aliases: ['palasa', 'kasibugga'], lat: 18.7704, lng: 84.4118 },
-  { name: 'Tarakarama Nagar', aliases: ['tarakarama'], lat: 16.3000, lng: 80.5000 },
-  { name: 'Penamaluru', aliases: ['penamaluru'], lat: 16.4600, lng: 80.5700 },
-  { name: 'Ibrahimpatnam', aliases: ['ibrahimpatnam'], lat: 16.4500, lng: 80.6200 },
-  { name: 'Nuzvid', aliases: ['nuzvid'], lat: 16.7868, lng: 80.8427 },
-  { name: 'Gudivada', aliases: ['gudivada'], lat: 16.4351, lng: 80.9928 },
-  { name: 'Jagannadhapuram', aliases: ['jagannadhapuram', 'jnpuram'], lat: 16.4800, lng: 80.6100 },
-];
+// Elite Institutional Icon
+const InstitutionalIcon = L.divIcon({
+  className: '',
+  html: `<div style="
+    width:32px;height:32px;border-radius:50%;
+    background:#0a0a14;
+    border:2px solid #e8b84b;
+    box-shadow:0 0 15px rgba(232,184,75,0.8);
+    display:flex;align-items:center;justify-content:center;
+    position:relative;
+  ">
+    <div style="width:8px;height:8px;background:#e8b84b;border-radius:50%;box-shadow:0 0 10px #e8b84b;"></div>
+    <div style="position:absolute;top:-4px;right:-4px;width:12px;height:12px;background:#10d98c;border-radius:50%;border:1px solid white;"></div>
+  </div>`,
+  iconSize: [32, 32],
+  iconAnchor: [16, 16],
+  popupAnchor: [0, -16],
+});
+
+// Strict Google Maps Coordinate Resolver
+
 
 function resolveCoords(property) {
+  if (!property) return null;
+
   // 1. Direct coordinates field on property (Stored by backend)
   if (property.coordinates?.lat && property.coordinates?.lng) {
-    return [property.coordinates.lat, property.coordinates.lng];
+    return [parseFloat(property.coordinates.lat), parseFloat(property.coordinates.lng)];
   }
   
-  // legacy or raw coords
-  if (property.lat && property.lng) {
-    return [property.lat, property.lng];
-  }
-
-  // 2. Parse Google Maps Link if available (Fallback for client-only data)
-  if (property.googleMapsLink) {
+  // 2. Parse Google Maps Link (Strict User Requirement)
+  const url = property.googleMapsLink;
+  if (url && typeof url === 'string') {
     try {
-      const url = property.googleMapsLink;
       // Pattern 1: @lat,lng
       const atMatch = url.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
       if (atMatch) return [parseFloat(atMatch[1]), parseFloat(atMatch[2])];
@@ -102,45 +84,34 @@ function resolveCoords(property) {
       const qMatch = url.match(/q=(-?\d+\.\d+),(-?\d+\.\d+)/);
       if (qMatch) return [parseFloat(qMatch[1]), parseFloat(qMatch[2])];
 
-      // Pattern 3: /dir/lat,lng
-      const dirMatch = url.match(/\/dir\/(-?\d+\.\d+),(-?\d+\.\d+)/);
+      // Pattern 3: !3d lat !4d lng
+      const d3dMatch = url.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/);
+      if (d3dMatch) return [parseFloat(d3dMatch[1]), parseFloat(d3dMatch[2])];
+
+      // Pattern 4: /place/name/lat,lng
+      const placeMatch = url.match(/\/place\/[^/]+\/(-?\d+\.\d+),(-?\d+\.\d+)/);
+      if (placeMatch) return [parseFloat(placeMatch[1]), parseFloat(placeMatch[2])];
+
+      // Pattern 5: /dir/lat,lng
+      const dirMatch = url.match(/\/dir\/[^/]+\/(-?\d+\.\d+),(-?\d+\.\d+)/);
       if (dirMatch) return [parseFloat(dirMatch[1]), parseFloat(dirMatch[2])];
-      
-      // Pattern 4: ll=lat,lng
+
+      // Pattern 6: ll=lat,lng
       const llMatch = url.match(/ll=(-?\d+\.\d+),(-?\d+\.\d+)/);
       if (llMatch) return [parseFloat(llMatch[1]), parseFloat(llMatch[2])];
+
+      // Pattern 7: Brute force fallback
+      const bruteMatch = url.match(/(-?\d+\.\d{5,}),\s*(-?\d+\.\d{5,})/);
+      if (bruteMatch) return [parseFloat(bruteMatch[1]), parseFloat(bruteMatch[2])];
     } catch (e) {
-      console.warn('Failed to parse googleMapsLink for coords:', e);
+      console.warn('Map link parsing error:', e);
     }
-  }
-
-  // 3. customFeatures lat/lng lookup
-  const latF = property.customFeatures?.find(f => /lat/i.test(f.label));
-  const lngF = property.customFeatures?.find(f => /lng|lon/i.test(f.label));
-  if (latF && lngF) {
-    const lat = parseFloat(latF.value);
-    const lng = parseFloat(lngF.value);
-    if (!isNaN(lat) && !isNaN(lng)) return [lat, lng];
-  }
-
-  // 4. AP Regional Fallback (Using AP_COORDS)
-  const loc = (property.location || '').toLowerCase();
-  const dist = (property.district || '').toLowerCase();
-  
-  const match = AP_COORDS.find(c => 
-    c.aliases.some(a => loc.includes(a) || dist.includes(a)) ||
-    loc.includes(c.name.toLowerCase()) || 
-    dist.includes(c.name.toLowerCase())
-  );
-
-  if (match) {
-    // Add slight random jitter so markers in same city don't overlap perfectly
-    const jitter = () => (Math.random() - 0.5) * 0.01;
-    return [match.lat + jitter(), match.lng + jitter()];
   }
 
   return null;
 }
+
+
 
 function ChangeView({ center, zoom, bounds }) {
   const map = useMap();
@@ -210,7 +181,7 @@ const PropertyMap = ({ properties = [], selectedProperty, onMarkerClick }) => {
       <MapContainer
         center={mapCenter}
         zoom={zoom}
-        scrollWheelZoom={true}
+        scrollWheelZoom={false}
         attributionControl={false}
         style={{ height: '100%', width: '100%', background: '#05050a' }}
       >
@@ -221,14 +192,15 @@ const PropertyMap = ({ properties = [], selectedProperty, onMarkerClick }) => {
           bounds={mapBounds}
         />
         <TileLayer
-          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          className="elite-osm-layer"
         />
 
         {markers.map((p) => (
           <Marker
             key={p._id}
             position={p.coords}
-            icon={p.isFeatured ? GoldIcon : DefaultIcon}
+            icon={p.isVerified && p.isFeatured ? InstitutionalIcon : (p.isFeatured ? GoldIcon : DefaultIcon)}
             eventHandlers={{ click: () => onMarkerClick && onMarkerClick(p) }}
           >
             <Tooltip permanent direction="top" offset={[0, -32]} className="elite-map-tag">
@@ -236,26 +208,43 @@ const PropertyMap = ({ properties = [], selectedProperty, onMarkerClick }) => {
                 {priceDisplay(p)}
               </span>
             </Tooltip>
-            <Popup className="property-popup" minWidth={220}>
-              <div style={{ padding: '4px', minWidth: '210px' }}>
-                <img
-                  src={p.image || (p.images && p.images[0]) || '/placeholder.jpg'}
-                  alt={p.title}
-                  style={{ width: '100%', height: '100px', objectFit: 'cover', borderRadius: '12px', marginBottom: '8px' }}
-                  onError={e => { e.target.style.display = 'none'; }}
-                />
-                <div style={{ fontWeight: 900, fontSize: '14px', marginBottom: '4px', color: '#0f172a', lineHeight: 1.2 }}>
-                  {p.title}
+            <Popup className="property-popup advanced-popup" minWidth={280}>
+              <div style={{ padding: '0px', minWidth: '270px', overflow: 'hidden' }}>
+                <div style={{ position: 'relative' }}>
+                  <img
+                    src={p.image || (p.images && p.images[0]) || '/placeholder.jpg'}
+                    alt={p.title}
+                    style={{ width: '100%', height: '140px', objectFit: 'cover', borderBottom: '2px solid var(--gold)' }}
+                    onError={e => { e.target.style.display = 'none'; }}
+                  />
+                  {p.isVerified && (
+                    <div style={{ position: 'absolute', top: '10px', left: '10px', background: 'rgba(16,217,140,0.9)', backdropFilter: 'blur(4px)', color: 'white', padding: '4px 8px', borderRadius: '8px', fontSize: '10px', fontWeight: 900 }}>
+                      VERIFIED
+                    </div>
+                  )}
+                  <div style={{ position: 'absolute', bottom: '10px', right: '10px', background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(4px)', border: '1px solid var(--gold)', color: 'var(--gold)', padding: '6px 10px', borderRadius: '8px', fontSize: '14px', fontWeight: 900 }}>
+                    {priceDisplay(p)}
+                  </div>
                 </div>
-                <div style={{ color: '#b45309', fontWeight: 900, fontSize: '14px', marginBottom: '6px' }}>
-                  {priceDisplay(p)}
-                </div>
-                <div style={{ fontSize: '11px', color: '#64748b', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '10px' }}>
-                  📍 {[p.location, p.district].filter(Boolean).join(', ')}
-                </div>
+                
+                <div style={{ padding: '12px' }}>
+                  <div style={{ fontWeight: 950, fontSize: '15px', marginBottom: '8px', color: '#1e293b', lineHeight: 1.3 }}>
+                    {p.title}
+                  </div>
+                  
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
+                    <div style={{ background: '#f1f5f9', padding: '6px', borderRadius: '6px', fontSize: '11px', fontWeight: 700, color: '#475569', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <TrendingUp size={12} color="var(--gold)" />
+                      {p.areaSize ? `${p.areaSize} ${p.measurementUnit || 'Sq.Yds'}` : (p.bhk ? `${p.bhk} BHK` : 'Premium Asset')}
+                    </div>
+                    <div style={{ background: '#f1f5f9', padding: '6px', borderRadius: '6px', fontSize: '11px', fontWeight: 700, color: '#475569', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <MapPin size={12} color="var(--cyan)" />
+                      {[p.location, p.district].filter(Boolean).join(', ')}
+                    </div>
+                  </div>
                 <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
-                  <Link
-                    to={`/property/${p._id}`}
+                  <a
+                    href={`/property/${p._id}`}
                     style={{
                       flex: 1, padding: '10px', background: '#0f172a', color: 'white',
                       borderRadius: '10px', fontSize: '11px', fontWeight: 800, textDecoration: 'none',
@@ -263,7 +252,7 @@ const PropertyMap = ({ properties = [], selectedProperty, onMarkerClick }) => {
                     }}
                   >
                     VIEW ASSET <ExternalLink size={10} />
-                  </Link>
+                  </a>
                   {p.googleMapsLink && (
                     <a
                       href={p.googleMapsLink}
@@ -278,6 +267,7 @@ const PropertyMap = ({ properties = [], selectedProperty, onMarkerClick }) => {
                       <MapPin size={14} />
                     </a>
                   )}
+                </div>
                 </div>
               </div>
             </Popup>

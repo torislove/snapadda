@@ -1,6 +1,15 @@
+import dotenv from 'dotenv';
+dotenv.config();
+
 import mongoose from 'mongoose';
 import { v2 as cloudinary } from 'cloudinary';
 import { db } from './firebase.js';
+
+// Ensure DB connects for diagnostic
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/snapadda';
+if (mongoose.connection.readyState === 0) {
+  mongoose.connect(MONGODB_URI).catch(e => console.error('DIAG_DB_ERR:', e));
+}
 
 export const runFullDiagnostic = async () => {
   const results = {
@@ -14,6 +23,11 @@ export const runFullDiagnostic = async () => {
   // 1. MongoDB Diagnostic
   try {
     const start = Date.now();
+    // Ensure DB is connected
+    if (mongoose.connection.readyState !== 1) {
+      const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/snapadda';
+      await mongoose.connect(MONGODB_URI);
+    }
     // Test a simple query on the database
     await mongoose.connection.db.admin().ping();
     results.mongodb.latency = Date.now() - start;

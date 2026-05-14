@@ -1,4 +1,19 @@
-import locations from '../data/AndhraLocations.json';
+// Location data — typed via LocationData.d.ts
+import { ALL_AP_LOCATIONS } from '../utils/LocationData';
+
+// Merge bundled location data with the JSON atlas (if available)
+let _jsonLocations: { name: string; type?: string; district?: string; pincode?: string }[] = [];
+try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  _jsonLocations = require('../data/AndhraLocations.json') as typeof _jsonLocations;
+} catch { /* JSON atlas not present */ }
+
+const _seedLocations = ALL_AP_LOCATIONS.map(name => ({ name, type: 'Mandal / Town', district: '' }));
+const _jsonNames = new Set(_jsonLocations.map(l => l.name.toLowerCase()));
+const locations = [..._jsonLocations, ..._seedLocations.filter(l => !_jsonNames.has(l.name.toLowerCase()))];
+
+
+
 
 /**
  * Smart Search Parser for SnapAdda Admin (Refined V3)

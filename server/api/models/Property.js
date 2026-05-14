@@ -80,8 +80,30 @@ const propertySchema = new mongoose.Schema({
   franchiseId: { type: String, default: null },
   
   listerType: { type: String, default: 'Individual Owner' },
+  displayContactType: { type: String, enum: ['Admin', 'Lister'], default: 'Admin' },
+  isOwnerListing: { type: Boolean, default: false },
+  listerLabelOverride: { type: String, default: '' },
+
+
+  // Technical Specs
+  surveyNo: { type: String, default: '' },
+  roadWidth: { type: Number, default: 0 },
+  powerKVA: { type: Number, default: 0 },
+  waterSource: { type: String, default: 'N/A' },
+  roadType: { type: String, default: 'N/A' },
+  floorType: { type: String, default: 'N/A' },
+  securityFeatures: [{ type: String }],
+  
+  // Verification Log
+  verificationLog: [{
+    action: String, // 'Called Realtor', 'Site Visited', etc.
+    notes: String,
+    performedBy: String,
+    timestamp: { type: Date, default: Date.now }
+  }],
 
   // Realtor / Source Agent (who submitted this property to SnapAdda)
+
   realtor: {
     name:      { type: String, default: '' },
     phone:     { type: String, default: '' },

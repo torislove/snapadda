@@ -61,7 +61,11 @@ try {
 
     foreach ($path in @("admin/.env", "client/.env", "server/.env")) {
         Write-Host "   Updating $path..." -ForegroundColor Gray
-        Set-EnvVar $path "NODE_ENV" "production"
+        # Robustly remove NODE_ENV if it exists to avoid Vite warnings
+        if (Test-Path $path) {
+            $c = Get-Content $path | Where-Object { $_ -notmatch "^NODE_ENV=" }
+            $c | Set-Content $path -Encoding UTF8
+        }
         
         # Performance & Consistency: Use relative paths for Hosting->Functions connectivity
         # Use relative paths for production to avoid CORS and multi-domain issues

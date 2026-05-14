@@ -4,7 +4,7 @@ import User from '../models/User.js';
 
 // Predefined Admin Credentials assigned by User Config
 const PREDEFINED_ADMIN_EMAIL = 'admin@snapadda.com';
-const PREDEFINED_ADMIN_PASS = 'Manoj587487';
+const PREDEFINED_ADMIN_PASS = 'Snapadda@587487';
 const JWT_SECRET = process.env.JWT_SECRET || 'snapadda_super_secret_key_123';
 
 export const adminLogin = async (req, res) => {
@@ -12,7 +12,13 @@ export const adminLogin = async (req, res) => {
     const { email, password } = req.body;
 
     // Seeder mechanism: If the admin user doesn't exist yet, we silently create it on first attempt.
-    let adminUser = await User.findOne({ email: PREDEFINED_ADMIN_EMAIL });
+    // Check by both email and the special 'admin_local_account' googleId to prevent collisions.
+    let adminUser = await User.findOne({ 
+      $or: [
+        { email: PREDEFINED_ADMIN_EMAIL },
+        { googleId: 'admin_local_account' }
+      ]
+    });
     
     if (!adminUser) {
       console.log("Admin user not found. Seeding original admin account...");
@@ -28,6 +34,15 @@ export const adminLogin = async (req, res) => {
         onboardingCompleted: true
       });
       await adminUser.save();
+      console.log("Admin account seeded successfully.");
+    } else {
+      // Emergency Reset: If found but password might be old/incorrect from previous turns
+      // We force update the password to the latest PREDEFINED_ADMIN_PASS for this specific account
+      const salt = await bcrypt.genSalt(10);
+      adminUser.password = await bcrypt.hash(PREDEFINED_ADMIN_PASS, salt);
+      adminUser.role = 'admin';
+      await adminUser.save();
+      console.log("Admin account credentials synchronized.");
     }
 
     // Now proceed with normal login verification
@@ -62,8 +77,16 @@ export const adminLogin = async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Admin Login Error:", error);
-    res.status(500).json({ status: 'error', message: 'Internal Server Error' });
+    console.error("CRITICAL_ADMIN_LOGIN_ERROR:", {
+      message: error.message,
+      stack: error.stack,
+      body: req.body
+    });
+    res.status(500).json({ 
+      status: 'error', 
+      message: 'Internal Server Error', 
+      debug: process.env.NODE_ENV !== 'production' ? error.message : undefined 
+    });
   }
 };
 

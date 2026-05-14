@@ -32,6 +32,7 @@
     "mongoose": "^8.11.0",
     "multer": "^1.4.5-lts.1",
     "multer-storage-cloudinary": "^4.0.0",
+    "node-fetch": "^3.3.2",
     "nodemailer": "^8.0.5",
     "peer": "^1.0.2",
     "qrcode-terminal": "^0.12.0",

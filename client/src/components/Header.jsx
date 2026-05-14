@@ -8,6 +8,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import Logo from './Logo';
+import LanguageToggle from './LanguageToggle';
 
 // ─── Avatar Dropdown ─────────────────────────────────────────────────────────
 function AvatarDropdown({ user, logout }) {
@@ -153,7 +154,7 @@ export default function Header() {
           <Link 
             id="lnk-nav-logo"
             to="/" aria-label="SnapAdda Home" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', flexShrink: 0 }}>
-            <Logo size={scrolled ? 26 : 30} showText />
+            <Logo size={scrolled ? 13 : 15} showText />
           </Link>
 
           {/* Desktop center links */}
@@ -179,37 +180,17 @@ export default function Header() {
                 onPointerEnter={e => { e.currentTarget.style.color = 'var(--gold)'; e.currentTarget.style.background = 'rgba(232,184,75,0.07)'; }}
                 onPointerLeave={e => { e.currentTarget.style.color = location.pathname === link.path.split('#')[0] ? 'var(--gold)' : 'rgba(255,255,255,0.6)'; e.currentTarget.style.background = 'transparent'; }}
               >
-                {link.label}
+                {link.icon} {link.label}
               </a>
             ))}
           </nav>
 
           {/* Right side */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', flexShrink: 0 }}>
+          <div className="nav-actions-right" style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', flexShrink: 0 }}>
             {/* Language toggle — desktop */}
-            <button
-              id="btn-nav-lang-toggle"
-              onClick={toggleLang}
-              aria-label="Toggle language"
-              className="desktop-only"
-              style={{
-                background: 'rgba(255,255,255,0.05)',
-                border: '1px solid rgba(255,255,255,0.1)',
-                color: 'rgba(255,255,255,0.7)',
-                padding: '0 12px',
-                borderRadius: '10px',
-                fontSize: '0.68rem',
-                fontWeight: 800,
-                cursor: 'pointer',
-                letterSpacing: '0.04em',
-                transition: 'all 0.2s',
-                display: 'flex', alignItems: 'center', gap: '5px',
-                minHeight: '36px',
-              }}
-            >
-              <Globe size={13} />
-              {i18n.language === 'en' ? 'తెలుగు' : 'ENG'}
-            </button>
+            <div className="desktop-only">
+              <LanguageToggle variant="compact" />
+            </div>
 
             {/* Auth area */}
             {user ? (
@@ -281,7 +262,7 @@ export default function Header() {
             transition={{ duration: 0.2, ease: 'easeOut' }}
             style={{
               position: 'fixed',
-              top: '52px', left: 0, right: 0,
+              top: '26px', left: 0, right: 0,
               background: 'rgba(4, 4, 10, 0.97)',
               backdropFilter: 'blur(28px)',
               WebkitBackdropFilter: 'blur(28px)',

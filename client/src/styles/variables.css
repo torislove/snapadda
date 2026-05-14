@@ -21,8 +21,8 @@
   --glass-bg: rgba(255, 255, 255, 0.03);
   
   /* Layout Constants */
-  --max-content-width: 1280px;
-  --section-padding: clamp(3rem, 10vw, 6rem);
+  --max-content-width: 1200px;
+  --section-padding: clamp(3rem, 8vw, 6rem);
   --centered-gap: clamp(1.5rem, 5vw, 3rem);
   --gold-border: rgba(212, 175, 55, 0.3);
   --teal: #0fa3b1;
@@ -58,14 +58,14 @@
   --font-mono: "Space Grotesk", monospace;
 
   /* ── Spacing (tightened) ── */
-  --sp-1: 0.25rem;   /* 4px */
-  --sp-2: 0.5rem;    /* 8px */
-  --sp-3: 0.75rem;   /* 12px */
-  --sp-4: 1rem;      /* 16px */
-  --sp-6: 1.25rem;   /* 20px */
-  --sp-8: 1.75rem;   /* 28px */
-  --section-gap-mobile: 1.25rem;
-  --section-gap-desktop: 1.75rem;
+  --sp-1: 0.2rem;     /* 3.2px */
+  --sp-2: 0.4rem;     /* 6.4px */
+  --sp-3: 0.6rem;     /* 9.6px */
+  --sp-4: 0.8rem;     /* 12.8px */
+  --sp-6: 1.1rem;     /* 17.6px */
+  --sp-8: 1.5rem;     /* 24px */
+  --section-gap-mobile: 1rem;
+  --section-gap-desktop: 1.5rem;
 
   /* ── Radius ── */
   --r-sm: 8px;
@@ -81,8 +81,8 @@
   --touch-min: 48px;
 
   /* ── Layout ── */
-  --nav-h: 60px;
-  --nav-h-mobile: 52px;
+  --nav-h: 64px;
+  --nav-h-mobile: 56px;
   --bottom-nav-h: 64px;
   --container-max: 1200px;
   --sp-precision: clamp(0.75rem, 3vw, 1.5rem);

@@ -29,6 +29,7 @@ const Privacy = lazy(() => import('./pages/Privacy'));
 const ComparisonRadar = lazy(() => import('./pages/ComparisonRadar'));
 const PostProperty = lazy(() => import('./pages/PostProperty'));
 const LocalAgency = lazy(() => import('./pages/LocalAgency'));
+const PromotionDetail = lazy(() => import('./pages/PromotionDetail'));
 
 import Logo from './components/Logo';
 import { useGoogleMarketing } from './utils/useGoogleMarketing';
@@ -87,6 +88,7 @@ function AppContent() {
             <Route path="/" element={<Home />} />
             <Route path="/search" element={<SearchResults />} />
             <Route path="/property/:id" element={<PropertyDetails />} />
+            <Route path="/promotion/:id" element={<PromotionDetail />} />
             <Route path="/local-agency/:city" element={<LocalAgency />} />
             <Route path="/post-property" element={<PostProperty />} />
             <Route path="/compare" element={<ComparisonRadar />} />

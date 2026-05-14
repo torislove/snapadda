@@ -170,6 +170,17 @@ export const fetchPromotions = async (query = '') => {
   }
 };
 
+export const fetchPromotionById = async (id) => {
+  try {
+    const res = await safeFetch(`${API_BASE}/promotions/${id}`);
+    if (!res.ok) throw new Error(`Failed to fetch promotion: ${res.status}`);
+    return await res.json();
+  } catch (e) {
+    console.error('API Error:', e);
+    throw e;
+  }
+};
+
 /**
  * Promotion Analytics Tracking
  */

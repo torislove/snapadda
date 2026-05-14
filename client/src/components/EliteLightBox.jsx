@@ -232,18 +232,21 @@ const EliteLightBox = ({ images = [], videos = [], startIdx = 0, onClose, title 
         )}
       </div>
 
-      {/* ── Thumbnail Strip ── */}
+      {/* ── Thumbnail Strip (Improved for Mobile) ── */}
       {allAssets.length > 1 && (
         <div style={{
           flexShrink: 0,
-          padding: '12px 16px 20px',
-          background: 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 100%)',
+          padding: isMobile ? '12px 10px 30px' : '12px 16px 20px',
+          background: 'linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0.8) 50%, transparent 100%)',
+          borderTop: '1px solid rgba(255,255,255,0.05)',
+          zIndex: 10
         }}>
           <div
             ref={thumbsRef}
             style={{
-              display: 'flex', gap: '8px', overflowX: 'auto',
-              justifyContent: 'center', paddingBottom: '4px'
+              display: 'flex', gap: isMobile ? '10px' : '8px', overflowX: 'auto',
+              justifyContent: isMobile ? 'flex-start' : 'center', 
+              padding: isMobile ? '0 10px' : '0'
             }}
             className="hide-scrollbar"
           >
@@ -253,12 +256,15 @@ const EliteLightBox = ({ images = [], videos = [], startIdx = 0, onClose, title 
                 onClick={() => { setPage(i); setZoom(false); }}
                 style={{
                   flexShrink: 0,
-                  width: '56px', height: '40px',
-                  borderRadius: '6px', overflow: 'hidden', padding: 0,
-                  border: i === page ? '2px solid var(--gold,#e8b84b)' : '2px solid rgba(255,255,255,0.15)',
-                  opacity: i === page ? 1 : 0.55,
-                  transition: 'border-color 0.25s, opacity 0.25s',
-                  cursor: 'pointer', background: '#111'
+                  width: isMobile ? '70px' : '56px', 
+                  height: isMobile ? '50px' : '40px',
+                  borderRadius: '10px', overflow: 'hidden', padding: 0,
+                  border: i === page ? '2.5px solid var(--gold,#e8b84b)' : '1px solid rgba(255,255,255,0.2)',
+                  opacity: i === page ? 1 : 0.4,
+                  transform: i === page ? 'scale(1.05)' : 'scale(1)',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  cursor: 'pointer', background: '#111',
+                  boxShadow: i === page ? '0 0 15px rgba(232,184,75,0.3)' : 'none'
                 }}
                 aria-label={`Go to ${asset.type} ${i + 1}`}
               >
@@ -276,8 +282,8 @@ const EliteLightBox = ({ images = [], videos = [], startIdx = 0, onClose, title 
                     />
                   )
                 ) : (
-                  <div style={{ width: '100%', height: '100%', background: '#1a1a2a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Eye size={12} color="var(--gold,#e8b84b)" />
+                  <div style={{ width: '100%', height: '100%', background: 'linear-gradient(45deg, #1a1a2a, #05050a)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Eye size={16} color="var(--gold,#e8b84b)" />
                   </div>
                 )}
               </button>
@@ -285,6 +291,7 @@ const EliteLightBox = ({ images = [], videos = [], startIdx = 0, onClose, title 
           </div>
         </div>
       )}
+
 
       <style>{`
         .lightbox-nav-btn {

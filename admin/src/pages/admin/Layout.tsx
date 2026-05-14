@@ -3,7 +3,7 @@ import { Outlet, Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Building, Users, 
   Settings, Menu, Megaphone, X, LogOut, BookOpen, Activity, Search,
-  MessageSquare, Plus
+  MessageSquare, Plus, ShieldCheck
 } from 'lucide-react';
 import { Logo } from '../../components/ui/Logo';
 import { useAdminAuth } from '../../contexts/AdminAuthContext';
@@ -82,8 +82,9 @@ const LanguageSwitcher = () => {
 
 const NAV_ITEMS = [
   { to: '/admin',            label: 'nav.dashboard',      icon: LayoutDashboard, exact: true,  activeClass: 'active-dashboard',  color: 'var(--gold)'    },
-  { to: '/admin/properties', label: 'nav.properties',     icon: Building,        exact: false, activeClass: 'active-properties', color: 'var(--violet)'  },
-  { to: '/admin/leads',      label: 'nav.leads',          icon: Users,           exact: false, activeClass: 'active-leads',      color: 'var(--emerald)' },
+  { to: '/admin/properties',   label: 'nav.properties',     icon: Building,        exact: false, activeClass: 'active-properties', color: 'var(--violet)'  },
+  { to: '/admin/verification', label: 'Verification',       icon: ShieldCheck,     exact: false, activeClass: 'active-leads',      color: 'var(--gold)'    },
+  { to: '/admin/leads',        label: 'nav.leads',          icon: Users,           exact: false, activeClass: 'active-leads',      color: 'var(--emerald)' },
   { to: '/admin/promotions', label: 'nav.engagement',     icon: Megaphone,       exact: false, activeClass: 'active-promotions', color: 'var(--gold)'    },
   { to: '/admin/engagement', label: 'nav.analytics',      icon: Activity,        exact: false, activeClass: 'active-engagement', color: 'var(--rose)'    },
   { to: '/admin/comms',      label: 'nav.messages',       icon: MessageSquare,   exact: false, activeClass: 'active-settings',   color: 'var(--cyan)'    },

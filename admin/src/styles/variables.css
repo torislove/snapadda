@@ -52,19 +52,19 @@
   --orange-dim:     rgba(255, 140, 66, 0.15);
 
   /* ── Layout ── */
-  --nav-h:          56px;
-  --sidebar-w:      240px;
-  --bottom-nav-h:   64px;
-  --max-content-width: 1200px;
+  --nav-h:          48px;
+  --sidebar-w:      180px;
+  --bottom-nav-h:   56px;
+  --max-content-width: 1300px;
 
   /* ── Spacing ── */
-  --spacing-xs:     0.25rem;
-  --spacing-sm:     0.5rem;
-  --spacing-md:     0.875rem;
-  --spacing-lg:     1.25rem;
-  --spacing-xl:     1.75rem;
-  --spacing-xxl:    2.5rem;
-  --touch-min:      44px;
+  --spacing-xs:     0.2rem;
+  --spacing-sm:     0.4rem;
+  --spacing-md:     0.75rem;
+  --spacing-lg:     1rem;
+  --spacing-xl:     1.5rem;
+  --spacing-xxl:    2rem;
+  --touch-min:      40px;
 
   /* ── Radii ── */
   --radius-sm:      8px;

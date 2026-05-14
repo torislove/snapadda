@@ -2,7 +2,7 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ShieldCheck, MapPin, Building, Leaf, Square,
-  Compass, CheckCircle2, Edit3, Trash2, Zap, ChevronLeft,
+  CheckCircle2, Edit3, Trash2, Zap, ChevronLeft,
   ChevronRight, Image as ImageIcon, Home as HomeIcon, TrendingUp,
   Clock, Copy, X, Play, BedDouble, EyeOff, CheckCircle
 } from 'lucide-react';
@@ -204,12 +204,12 @@ export const AdminPropertyCard: React.FC<Props> = ({
     onClick: () => void; icon: React.ReactNode; label: string;
     color?: string; border?: string; textColor?: string;
   }> = ({ onClick, icon, label, color = 'rgba(255,255,255,0.08)', border = 'rgba(255,255,255,0.15)', textColor = 'white' }) => (
-    <button onClick={onClick}
+        <button onClick={onClick}
       style={{ 
-        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, 
-        padding: isMobile ? '8px 2px' : '10px 4px',
-        background: color, border: `1px solid ${border}`, borderRadius: 10, color: textColor, backdropFilter: 'blur(10px)',
-        cursor: 'pointer', fontSize: isMobile ? '0.62rem' : '0.7rem', fontWeight: 900, transition: 'all 0.2s', minHeight: isMobile ? '38px' : '42px',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3, 
+        padding: '6px 2px',
+        background: color, border: `1px solid ${border}`, borderRadius: 8, color: textColor, backdropFilter: 'blur(10px)',
+        cursor: 'pointer', fontSize: '0.6rem', fontWeight: 900, transition: 'all 0.2s', minHeight: '32px',
         touchAction: 'manipulation', width: '100%' 
       }}>
       {icon} {label}
@@ -258,9 +258,9 @@ export const AdminPropertyCard: React.FC<Props> = ({
         whileHover={isMobile ? {} : { y: -8, transition: { duration: 0.3 } }}
         whileTap={{ scale: 0.98 }}
         style={{
-          margin: isMobile ? '0 0.5rem 1rem' : '0',
-          height: isMobile ? 'auto' : '540px',
-          minHeight: isMobile ? '380px' : '540px',
+          margin: isMobile ? '0 0.5rem 0.75rem' : '0',
+          height: isMobile ? 'auto' : '460px',
+          minHeight: isMobile ? '340px' : '460px',
         }}
       >
         <HolographicWrapper
@@ -284,7 +284,7 @@ export const AdminPropertyCard: React.FC<Props> = ({
           <div style={{ 
             position: isMobile ? 'relative' : 'absolute', 
             inset: isMobile ? 'unset' : 0, 
-            height: isMobile ? '200px' : '100%',
+            height: isMobile ? '160px' : '100%',
             zIndex: 0,
             overflow: 'hidden'
           }} onMouseEnter={startCycle} onMouseLeave={stopCycle}>
@@ -310,15 +310,15 @@ export const AdminPropertyCard: React.FC<Props> = ({
             
             {/* Top Bar Badges */}
             <div style={{ position: 'absolute', top: 12, left: 12, right: 12, display: 'flex', justifyContent: 'space-between', zIndex: 10 }}>
-              <div style={{ display: 'flex', gap: '6px' }}>
+              <div style={{ display: 'flex', gap: '4px' }}>
                 {imgs.length > 1 && (
-                  <div style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)', color: 'white', padding: '3px 8px', borderRadius: '10px', fontSize: '0.6rem', fontWeight: 800, border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <ImageIcon size={10} /> {(imgIdx % imgs.length) + 1}/{imgs.length}
+                  <div style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)', color: 'white', padding: '2px 6px', borderRadius: '8px', fontSize: '0.55rem', fontWeight: 800, border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                    <ImageIcon size={9} /> {(imgIdx % imgs.length) + 1}/{imgs.length}
                   </div>
                 )}
                 {vids.length > 0 && (
-                  <div style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)', color: '#22d9e0', padding: '3px 8px', borderRadius: '10px', fontSize: '0.6rem', fontWeight: 800, border: '1px solid rgba(34,217,224,0.3)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <Play size={10} fill="#22d9e0" /> VIDEO
+                  <div style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)', color: '#22d9e0', padding: '2px 6px', borderRadius: '8px', fontSize: '0.55rem', fontWeight: 800, border: '1px solid rgba(34,217,224,0.3)', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                    <Play size={9} fill="#22d9e0" /> VIDEO
                   </div>
                 )}
               </div>
@@ -358,7 +358,7 @@ export const AdminPropertyCard: React.FC<Props> = ({
           <div style={{ 
             position: isMobile ? 'relative' : 'absolute', 
             bottom: 0, left: 0, right: 0, 
-            padding: isMobile ? '0.875rem' : '1.25rem', 
+            padding: isMobile ? '0.6rem' : '0.8rem', 
             zIndex: 20, 
             display: 'flex', 
             flexDirection: 'column',
@@ -368,28 +368,27 @@ export const AdminPropertyCard: React.FC<Props> = ({
             
             {/* Price Row */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '8px' }}>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
-                <span style={{ fontFamily: 'var(--font-serif)', fontSize: '1.5rem', fontWeight: 900, color: 'white', textShadow: '0 2px 10px rgba(0,0,0,0.8)' }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
+                <span style={{ fontFamily: 'var(--font-serif)', fontSize: '1.15rem', fontWeight: 900, color: 'white', textShadow: '0 2px 10px rgba(0,0,0,0.8)' }}>
                   {fmt(prop.price)}
                 </span>
                 {(() => {
                   const unitPrices: any = getEffectivePricePerUnit(prop);
                   if (unitPrices) {
-                    if (isAgri && unitPrices.acre && unitPrices.acre > 0) return <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>{fmt(unitPrices.acre)}/Ac</span>;
+                    if (isAgri && unitPrices.acre && unitPrices.acre > 0) return <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.8)' }}>{fmt(unitPrices.acre)}/Ac</span>;
                     const isPlot = (prop.type||'').toLowerCase().includes('plot') || (prop.type||'').toLowerCase().includes('crda');
-                    if (isPlot && unitPrices.sqYard && unitPrices.sqYard > 0) return <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>{fmt(unitPrices.sqYard)}/SqYd</span>;
+                    if (isPlot && unitPrices.sqYard && unitPrices.sqYard > 0) return <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.8)' }}>{fmt(unitPrices.sqYard)}/SqYd</span>;
                   }
                   return null;
                 })()}
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'white', fontSize: '0.75rem', fontWeight: 600, background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(12px)', padding: '4px 10px', borderRadius: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'white', fontSize: '0.65rem', fontWeight: 600, background: 'rgba(255,255,255,0.12)', backdropFilter: 'blur(12px)', padding: '3px 8px', borderRadius: '8px' }}>
                 <span style={{ color: typeStyle.accent }}>{typeStyle.icon}</span> <span>{prop.type}</span>
-                {prop.purpose && <span style={{ marginLeft: '4px', color: prop.purpose === 'Rent' ? '#22d9e0' : '#10d98c' }}>{prop.purpose}</span>}
               </div>
             </div>
 
             {/* Title + SNA Code */}
-            <h3 style={{ fontFamily: 'var(--font-body)', fontSize: '1.05rem', fontWeight: 800, color: 'white', margin: '0 0 4px 0', lineHeight: 1.3, textShadow: '0 2px 4px rgba(0,0,0,0.8)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{prop.title}</h3>
+            <h3 style={{ fontFamily: 'var(--font-body)', fontSize: '0.9rem', fontWeight: 800, color: 'white', margin: '0 0 4px 0', lineHeight: 1.2, textShadow: '0 2px 4px rgba(0,0,0,0.8)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{prop.title}</h3>
             
             {/* SNA Property Code with copy */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
@@ -426,34 +425,29 @@ export const AdminPropertyCard: React.FC<Props> = ({
               </div>
             )}
             {/* Location & Meta */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'rgba(255,255,255,0.7)', fontSize: '0.8rem', textShadow: '0 1px 3px rgba(0,0,0,0.8)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
-                <MapPin size={14} style={{ color: 'var(--gold)' }} /> {[prop.location, prop.district].filter(Boolean).join(', ')}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'rgba(255,255,255,0.7)', fontSize: '0.75rem', textShadow: '0 1px 3px rgba(0,0,0,0.8)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+                <MapPin size={12} style={{ color: 'var(--gold)' }} /> {[prop.location, prop.district].filter(Boolean).join(', ')}
               </div>
               {daysAgo !== null && (
-                <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.5)', display: 'flex', alignItems: 'center', gap: 3 }}>
-                  <Clock size={10} /> {daysAgo}d
+                <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.5)', display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Clock size={9} /> {daysAgo}d
                 </div>
               )}
             </div>
 
 
             {/* Advanced Specs Grid */}
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '12px' }}>
                {isResidential && (prop.bhk > 0 || prop.beds > 0) ? (
-                 <div style={{ background: 'rgba(255,255,255,0.08)', backdropFilter: 'blur(12px)', padding: '5px 10px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.68rem', color: 'white', fontWeight: 700, border: '1px solid rgba(255,255,255,0.1)' }}>
-                   <BedDouble size={11} style={{ color: 'var(--gold)' }} /> <span>{prop.bhk || prop.beds} BHK</span>
+                 <div style={{ background: 'rgba(255,255,255,0.08)', backdropFilter: 'blur(12px)', padding: '4px 8px', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.62rem', color: 'white', fontWeight: 700, border: '1px solid rgba(255,255,255,0.1)' }}>
+                   <BedDouble size={10} style={{ color: 'var(--gold)' }} /> <span>{prop.bhk || prop.beds} BHK</span>
                  </div>
                ) : null}
                {(prop.areaSize > 0 || prop.totalAcres > 0) && (
-                 <div style={{ background: 'rgba(255,255,255,0.08)', backdropFilter: 'blur(12px)', padding: '5px 10px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.68rem', color: 'white', fontWeight: 700, border: '1px solid rgba(255,255,255,0.1)' }}>
-                   {isAgri ? <Leaf size={11} style={{ color: '#10d98c' }}/> : <Square size={11} style={{ color: '#22d9e0' }}/>} 
+                 <div style={{ background: 'rgba(255,255,255,0.08)', backdropFilter: 'blur(12px)', padding: '4px 8px', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.62rem', color: 'white', fontWeight: 700, border: '1px solid rgba(255,255,255,0.1)' }}>
+                   {isAgri ? <Leaf size={10} style={{ color: '#10d98c' }}/> : <Square size={10} style={{ color: '#22d9e0' }}/>} 
                    <span>{isAgri ? `${Number(prop.totalAcres||0).toFixed(2)} Ac` : `${prop.areaSize} ${prop.measurementUnit||'Sq.Yards'}`}</span>
-                 </div>
-               )}
-               {prop.facing && !['Any','N/A'].includes(prop.facing) && (
-                 <div style={{ background: 'rgba(255,255,255,0.08)', backdropFilter: 'blur(12px)', padding: '5px 10px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.68rem', color: 'white', fontWeight: 700, border: '1px solid rgba(255,255,255,0.1)' }}>
-                   <Compass size={11} style={{ color: 'var(--gold)' }} /> <span>{prop.facing} Facing</span>
                  </div>
                )}
             </div>
@@ -461,10 +455,10 @@ export const AdminPropertyCard: React.FC<Props> = ({
             {/* Action Button Group */}
             <div style={{ 
               display: 'grid', 
-              gridTemplateColumns: isMobile ? '1fr 1fr 1fr' : 'repeat(auto-fit, minmax(90px, 1fr))', 
-              gap: isMobile ? '8px' : '10px', 
+              gridTemplateColumns: 'repeat(auto-fit, minmax(70px, 1fr))', 
+              gap: '6px', 
               borderTop: '1px solid rgba(255,255,255,0.08)', 
-              paddingTop: '12px',
+              paddingTop: '10px',
               width: '100%'
             }}>
               <Btn onClick={() => handleEdit(prop)} icon={<Edit3 size={12}/>} label="Edit" />
@@ -555,11 +549,11 @@ export const AdminPropertyCard: React.FC<Props> = ({
             <a href={`https://snapadda.com/property/${id}`} target="_blank" rel="noopener noreferrer"
               style={{ 
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                gap: 5, padding: '10px', background: 'rgba(34,217,224,0.08)', 
+                gap: 4, padding: '6px', background: 'rgba(34,217,224,0.08)', 
                 border: '1px solid rgba(34,217,224,0.25)',
-                borderRadius: 12, color: '#22d9e0', fontSize: '0.7rem', 
-                fontWeight: 900, textDecoration: 'none', minHeight: '44px',
-                marginTop: '10px', transition: 'all 0.2s'
+                borderRadius: 10, color: '#22d9e0', fontSize: '0.65rem', 
+                fontWeight: 900, textDecoration: 'none', minHeight: '34px',
+                marginTop: '8px', transition: 'all 0.2s'
               }}>
               🖥 Client View
             </a>

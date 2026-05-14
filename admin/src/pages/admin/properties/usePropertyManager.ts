@@ -139,6 +139,10 @@ export const usePropertyManager = () => {
     propData.isVerified = isVerified;
     propData.isFeatured = isFeatured;
 
+    // Realtor-CRM validation removed for frictionless posting
+
+
+
     // Duplicate Detection (Simple Title + Location match)
     const isDuplicate = properties.some(p => 
       (p._id || p.id) !== (editingProperty?._id || editingProperty?.id) && 
@@ -185,8 +189,11 @@ export const usePropertyManager = () => {
         images: imagesList,
         image: imagesList.length > 0 ? imagesList[0] : '',
         realtor: realtorData,  // include realtor info
+        displayContactType: liveData.displayContactType || 'Admin',
+        verificationLog: liveData.verificationLog || [],
         // Always set Active for new listings
         status: isEditing ? (propData.status || 'Active') : 'Active',
+
       };
 
       if (isEditing && editingProperty) {
@@ -215,18 +222,22 @@ export const usePropertyManager = () => {
     
     formTimeoutRef.current = setTimeout(() => {
       setLiveData((prev: any) => {
-        const p_raw = updatedData.price;
+        const p_raw = updatedData.price || prev.price_raw;
         const p = convertToValue(p_raw, priceUnit);
         
         return { 
           ...prev, 
           ...updatedData, 
           price_raw: p_raw, 
-          price: p
+          price: p,
+          // Sync calculator fields if they were changed
+          pricePerUnit: updatedData.pricePerUnit || prev.pricePerUnit,
+          areaSize: updatedData.areaSize || prev.areaSize
         };
       });
     }, 350);
   };
+
 
   const handleMediaChange = (urls: string[], files: File[]) => {
     setCurrentImageUrls(urls);

@@ -1,16 +1,27 @@
+import { ALL_AP_LOCATIONS } from '../utils/LocationData';
+
 let locations = [];
 
 /**
  * Ensures the localized Andhra location database is loaded.
- * Loaded dynamically to reduce initial bundle size.
+ * Preloads from the bundled LocationData.js and optionally merges the JSON atlas.
  */
 export const loadAndhraData = async () => {
   if (locations.length > 0) return;
+
+  // Seed immediately from the bundled, always-available LocationData.js
+  const seed = ALL_AP_LOCATIONS.map(name => ({ name, type: 'Mandal / Town', district: '' }));
+  locations = seed;
+
   try {
     const data = await import('../data/AndhraLocations.json');
-    locations = data.default || data;
-  } catch (error) {
-    console.error('Failed to load Andhra location intelligence:', error);
+    const jsonList = data.default || data;
+    // Merge: JSON entries take precedence (they have richer metadata like district/pincode)
+    const jsonNames = new Set(jsonList.map(l => l.name.toLowerCase()));
+    const extras = seed.filter(l => !jsonNames.has(l.name.toLowerCase()));
+    locations = [...jsonList, ...extras];
+  } catch {
+    // JSON atlas not found — bundled LocationData.js data is already loaded above
   }
 };
 

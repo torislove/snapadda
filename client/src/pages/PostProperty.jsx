@@ -355,6 +355,7 @@ export default function PostProperty() {
   }, []);
 
   const STEPS = [
+    { id: 'identity', title: 'Identity', icon: <User size={20} /> },
     { id: 'basics', title: t('post.basics'), icon: <Building size={20} /> },
     { id: 'technicals', title: t('post.technicals'), icon: <Layers size={20} /> },
     { id: 'location', title: t('post.location'), icon: <MapPin size={20} /> },
@@ -389,7 +390,10 @@ export default function PostProperty() {
       images: [], facing: 'East', furnishing: 'N/A',
 
       vastuCompliant: true, bhk: '', beds: '', baths: '', amenities: [],
-      constructionStatus: 'Ready to Move', listerType: 'Individual Owner',
+      constructionStatus: 'Ready to Move', 
+      listerType: 'Individual Owner',
+      displayContactType: 'Lister',
+      isOwnerListing: true,
       posterName: user?.name || '', posterPhone: user?.phone || '',
       address: '', googleMapsLink: '', reraId: '', approvalAuthority: 'N/A',
       surveyNo: '', waterSource: 'N/A',
@@ -399,6 +403,7 @@ export default function PostProperty() {
       imageFiles: [],
     };
   });
+
 
   useEffect(() => {
     const toSave = { ...formData };
@@ -579,9 +584,50 @@ export default function PostProperty() {
           <AnimatePresence mode="wait">
             {!isTransitioning && (
               <div key={step}>
-                {step === 0 && <StepBasics formData={formData} handleChange={handleChange} formErrors={formErrors} t={t} PROPERTY_TYPES={PROPERTY_TYPES} />}
-                {step === 1 && <StepTechnicals formData={formData} handleChange={handleChange} setFormData={setFormData} t={t} />}
-                {step === 2 && (
+                {step === 0 && (
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                    <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
+                      <h4 style={{ color: 'white', fontSize: '1.2rem', fontWeight: 900 }}>Who are you?</h4>
+                      <p style={{ color: 'var(--txt-muted)', fontSize: '0.8rem' }}>Choose your primary role for this listing.</p>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                      <button 
+                        type="button"
+                        onClick={() => setFormData(p => ({ ...p, listerType: 'Individual Owner', isOwnerListing: true }))}
+                        style={{ 
+                          padding: '3rem 1.5rem', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.1)',
+                          background: formData.listerType === 'Individual Owner' ? 'rgba(34,217,224,0.1)' : 'rgba(255,255,255,0.02)',
+                          borderColor: formData.listerType === 'Individual Owner' ? 'var(--cyan)' : 'rgba(255,255,255,0.1)',
+                          color: 'white', cursor: 'pointer', transition: 'all 0.3s',
+                          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem'
+                        }}
+                      >
+                        <User size={32} color={formData.listerType === 'Individual Owner' ? 'var(--cyan)' : 'rgba(255,255,255,0.4)'} />
+                        <div style={{ fontWeight: 900, fontSize: '0.9rem' }}>DIRECT OWNER</div>
+                        <p style={{ fontSize: '0.65rem', opacity: 0.5 }}>I am the legal owner of this property.</p>
+                      </button>
+                      <button 
+                        type="button"
+                        onClick={() => setFormData(p => ({ ...p, listerType: 'Verified Realtor', isOwnerListing: false }))}
+                        style={{ 
+                          padding: '3rem 1.5rem', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.1)',
+                          background: formData.listerType === 'Verified Realtor' ? 'rgba(155,89,245,0.1)' : 'rgba(255,255,255,0.02)',
+                          borderColor: formData.listerType === 'Verified Realtor' ? 'var(--violet)' : 'rgba(255,255,255,0.1)',
+                          color: 'white', cursor: 'pointer', transition: 'all 0.3s',
+                          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem'
+                        }}
+                      >
+                        <ShieldCheck size={32} color={formData.listerType === 'Verified Realtor' ? 'var(--violet)' : 'rgba(255,255,255,0.4)'} />
+                        <div style={{ fontWeight: 900, fontSize: '0.9rem' }}>VERIFIED REALTOR</div>
+                        <p style={{ fontSize: '0.65rem', opacity: 0.5 }}>I am a licensed agent or brokerage.</p>
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+                {step === 1 && <StepBasics formData={formData} handleChange={handleChange} formErrors={formErrors} t={t} PROPERTY_TYPES={PROPERTY_TYPES} />}
+
+                {step === 2 && <StepTechnicals formData={formData} handleChange={handleChange} setFormData={setFormData} t={t} />}
+                {step === 3 && (
                   <StepLocation 
                     formData={formData} 
                     handleChange={handleChange} 
@@ -594,8 +640,8 @@ export default function PostProperty() {
                     handlePincodeChange={handlePincodeChange}
                   />
                 )}
-                {step === 3 && <StepMedia formData={formData} handleImageUpload={handleImageUpload} removeImage={removeImage} t={t} formErrors={formErrors} handleChange={handleChange} />}
-                {step === 4 && (
+                {step === 4 && <StepMedia formData={formData} handleImageUpload={handleImageUpload} removeImage={removeImage} t={t} formErrors={formErrors} handleChange={handleChange} />}
+                {step === 5 && (
                   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
                     <div style={{ background: 'rgba(232,184,75,0.08)', padding: '2rem', borderRadius: '24px', border: '1px solid rgba(232,184,75,0.2)' }}>
                       <p>{t('post.audit')}</p>

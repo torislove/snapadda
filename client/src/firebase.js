@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-// import { getDatabase } from "firebase/database";
+import { getDatabase } from "firebase/database";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -20,17 +20,14 @@ if (firebaseConfig.apiKey && firebaseConfig.apiKey !== 'undefined') {
     app = initializeApp(firebaseConfig);
     const rtdbUrl = import.meta.env.VITE_RTDB_URL || firebaseConfig.databaseURL;
     if (rtdbUrl && rtdbUrl !== 'undefined') {
-      db = null; // Disabled RTDB to prevent unconfigured instance warning
-      // console.log("Firebase RTDB initialized:", rtdbUrl);
+      db = getDatabase(app);
+      console.log("✅ Firebase RTDB fully active for Elite Sync");
     } else {
-      console.warn("RTDB URL missing or invalid. Sync features will be limited.");
+      console.warn("RTDB URL missing or invalid.");
     }
-    
   } catch (err) {
     console.error("Firebase startup failure:", err);
   }
-} else {
-  console.warn("Firebase configuration missing. Real-time features will be disabled.");
 }
 
 export { app, db };

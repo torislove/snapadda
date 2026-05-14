@@ -38,7 +38,9 @@ const allowedOrigins = [
   'https://snapaddaadmin.firebaseapp.com',
   'https://www.snapadda.com',
   'https://snapadda.com',
+  'https://admin.snapadda.com',
   'http://localhost:3000',
+  'http://localhost:3001',
   'http://localhost:5173',
   'http://localhost:5174',
   'http://localhost:5175'

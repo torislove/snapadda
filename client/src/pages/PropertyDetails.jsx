@@ -24,9 +24,9 @@ import PropertyMap from '../components/PropertyMap';
 import SharePortal from '../components/SharePortal';
 import { DOMAIN } from '../utils/shareUtils';
 
-// ������������������������������������������������������������������������������������������
+// ----------------------------------------------------------------------------------
 // Toast
-// ������������������������������������������������������������������������������������������
+// ----------------------------------------------------------------------------------
 function Toast({ msg }) {
   return (
     <motion.div
@@ -97,6 +97,12 @@ export default function PropertyDetails() {
   const [toast, setToast] = useState('');
   const [shareModal, setShareModal] = useState(false);
   const galleryRef = useRef(null);
+
+  // Derived from property — safe defaults prevent ReferenceError
+  const isVerified = property?.isVerified ?? false;
+  const isFeatured = property?.isFeatured ?? false;
+
+
 
   // Q&A
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -184,7 +190,7 @@ export default function PropertyDetails() {
   const isValidMedia = (media) => {
     if (!media || typeof media !== 'string') return false;
     if (media.trim() === '' || media.length < 5) return false;
-    if (media.includes('placeholder') || media.includes('dummy') || media === 'null' || media === 'undefined') return false;
+    if (media.includes('placeholder') || media.includes('dummy') || media === 'null' || media === 'undefined' || media.includes('no-image') || media.includes('default-property')) return false;
     return true;
   };
 
@@ -210,10 +216,20 @@ export default function PropertyDetails() {
   const uniqueVideos = [...new Set(validVideos)];
 
   // Final gallery set for the scroller
-  const galleryMedia = [
+  let galleryMedia = [
     ...uniquePhotos.map(url => ({ type: 'image', url })),
     ...uniqueVideos.map(url => ({ type: 'video', url }))
   ];
+
+  const actualMediaCount = uniquePhotos.length + uniqueVideos.length;
+  // If absolutely no media, provide a premium architectural placeholder
+  if (galleryMedia.length === 0) {
+    galleryMedia = [{ 
+      type: 'image', 
+      url: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=1200&auto=format&fit=crop',
+      isPlaceholder: true 
+    }];
+  }
 
   // Fallback Google Maps Link generation if missing
   const finalGoogleMapsLink = property?.googleMapsLink?.trim().startsWith('http') 
@@ -340,12 +356,33 @@ export default function PropertyDetails() {
   );
 
   if (!property) return (
-    <div className="pd-page" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '2rem' }}>
-      <Building size={64} style={{ opacity: 0.2 }}/>
-      <h2>క్షమించండి! ఈ ప్రాపర్టీ వివరాలు అందుబాటులో లేవు.</h2>
-      <button className="pd-btn-primary" onClick={() => navigate('/')}>మళ్ళీ ప్రయత్నించండి</button>
+    <div className="pd-page" style={{ 
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', 
+      minHeight: '80vh', gap: '2rem', textAlign: 'center', padding: '2rem',
+      background: 'radial-gradient(circle at center, #0a0c14 0%, #05050a 100%)'
+    }}>
+      <div style={{ position: 'relative' }}>
+        <Building size={120} style={{ color: 'var(--gold)', opacity: 0.1 }}/>
+        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Shield size={48} style={{ color: 'var(--gold)', opacity: 0.4 }}/>
+        </div>
+      </div>
+      <div>
+        <h2 style={{ color: 'white', fontWeight: 900, fontSize: '1.5rem', marginBottom: '1rem' }}>క్షమించండి! ఈ ప్రాపర్టీ వివరాలు అందుబాటులో లేవు.</h2>
+        <p style={{ color: 'rgba(255,255,255,0.4)', maxWidth: '400px', margin: '0 auto 2rem', fontSize: '0.9rem', lineHeight: 1.6 }}>
+          Requested asset could not be retrieved. It may have been sold or removed from the SnapAdda inventory.
+        </p>
+      </div>
+      <button 
+        className="btn-3d-glass" 
+        onClick={() => navigate('/')}
+        style={{ padding: '12px 32px', borderRadius: '40px', background: 'var(--gold)', color: 'black', fontWeight: 900, border: 'none', cursor: 'pointer' }}
+      >
+        మళ్ళీ ప్రయత్నించండి (Back to Inventory)
+      </button>
     </div>
   );
+
 
   const supportPhone = (supportInfo?.phone || '+919346793364').replace(/\s+/g, '');
   const getOptimizedImg = (url, width = 800) => {
@@ -397,55 +434,81 @@ export default function PropertyDetails() {
       <section className="pd-gallery-section" style={{ position: 'relative', width: '100%', background: '#05050a', padding: isMobile ? '0' : '2rem 0' }}>
         <div className="container" style={{ maxWidth: '1440px' }}>
           {isMobile ? (
-            <div 
-              className="pd-snap-gallery hide-scrollbar" 
-              style={{ 
-                display: 'flex', 
-                overflowX: 'auto', 
-                scrollSnapType: 'x mandatory', 
-                height: '55vh',
-                width: '100%'
-              }}
-            >
-              {galleryMedia.map((media, i) => (
-                <div key={i} style={{ flex: '0 0 100%', scrollSnapAlign: 'start', position: 'relative' }} onClick={() => { setImgIdx(i); setLightbox(true); }}>
-                  <img src={getOptimizedImg(media.url, 1200)} alt={`${property.title} - ${i+1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                </div>
-              ))}
+            <div style={{ position: 'relative' }}>
+              <div 
+                className="pd-snap-gallery hide-scrollbar" 
+                style={{ 
+                  display: 'flex', 
+                  overflowX: 'auto', 
+                  scrollSnapType: 'x mandatory', 
+                  height: '50vh', // Slightly shorter for better context
+                  width: '100%',
+                  background: '#000'
+                }}
+              >
+                {galleryMedia.map((media, i) => (
+                  <div key={i} style={{ flex: '0 0 100%', scrollSnapAlign: 'start', position: 'relative' }} onClick={() => { setImgIdx(i); setLightbox(true); }}>
+                    <img src={getOptimizedImg(media.url, 800)} alt={`${property.title} - ${i+1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.4) 0%, transparent 40%)' }} />
+                  </div>
+                ))}
+              </div>
+
+              <button 
+                onClick={() => setLightbox(true)}
+                style={{
+                  position: 'absolute', bottom: '24px', right: '20px',
+                  background: 'rgba(232,184,75,0.9)', backdropFilter: 'blur(10px)', border: 'none',
+                  color: 'black', padding: '12px 20px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 900,
+                  display: 'flex', alignItems: 'center', gap: '8px', zIndex: 10,
+                  boxShadow: '0 10px 30px rgba(232,184,75,0.4)'
+                }}
+              >
+                <LayoutGrid size={18} /> {actualMediaCount} PHOTOS
+              </button>
+
             </div>
           ) : (
             <div style={{ 
               display: 'grid', 
-              gridTemplateColumns: '2fr 1fr', 
+              gridTemplateColumns: galleryMedia.length >= 4 ? '2.5fr 1.5fr' : '1fr', 
               gap: '12px', 
-              height: '600px', 
+              height: '650px', 
               width: '100%',
               borderRadius: '24px',
               overflow: 'hidden',
-              boxShadow: '0 30px 60px rgba(0,0,0,0.5)'
+              boxShadow: '0 40px 80px rgba(0,0,0,0.6)'
             }}>
-              <div style={{ position: 'relative', cursor: 'pointer' }} onClick={() => { setImgIdx(0); setLightbox(true); }}>
-                <img src={getOptimizedImg(galleryMedia[0]?.url, 1200)} alt={property.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              <div style={{ position: 'relative', cursor: 'pointer', overflow: 'hidden' }} onClick={() => { setImgIdx(0); setLightbox(true); }}>
+                <img src={getOptimizedImg(galleryMedia[0]?.url, 1200)} alt={property.title} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.6s cubic-bezier(0.165, 0.84, 0.44, 1)' }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'} />
+                {galleryMedia.length < 4 && (
+                  <div style={{ position: 'absolute', bottom: '30px', right: '30px', background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(10px)', padding: '12px 24px', borderRadius: '40px', border: '1px solid rgba(255,255,255,0.2)', color: 'white', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <LayoutGrid size={20} color="var(--gold)"/> VIEW GALLERY ({actualMediaCount} PHOTOS)
+                  </div>
+                )}
               </div>
-              <div style={{ display: 'grid', gridTemplateRows: '1fr 1fr', gap: '12px' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                  <div style={{ cursor: 'pointer', overflow: 'hidden' }} onClick={() => { setImgIdx(1); setLightbox(true); }}>
-                    <img src={getOptimizedImg(galleryMedia[1]?.url, 600)} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.4s' }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'} />
+
+              {galleryMedia.length >= 4 && (
+                <div style={{ display: 'grid', gridTemplateRows: '1fr 1fr', gap: '12px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                    <div style={{ cursor: 'pointer', overflow: 'hidden' }} onClick={() => { setImgIdx(1); setLightbox(true); }}>
+                      <img src={getOptimizedImg(galleryMedia[1]?.url, 600)} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.4s' }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'} />
+                    </div>
+                    <div style={{ cursor: 'pointer', overflow: 'hidden' }} onClick={() => { setImgIdx(2); setLightbox(true); }}>
+                      <img src={getOptimizedImg(galleryMedia[2]?.url, 600)} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.4s' }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'} />
+                    </div>
                   </div>
-                  <div style={{ cursor: 'pointer', overflow: 'hidden' }} onClick={() => { setImgIdx(2); setLightbox(true); }}>
-                    <img src={getOptimizedImg(galleryMedia[2]?.url, 600)} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.4s' }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'} />
-                  </div>
-                </div>
-                <div style={{ position: 'relative', cursor: 'pointer', overflow: 'hidden' }} onClick={() => { setImgIdx(3); setLightbox(true); }}>
-                  <img src={getOptimizedImg(galleryMedia[3]?.url, 800)} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.6 }} />
-                  <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}>
-                    <div style={{ textAlign: 'center' }}>
-                      <LayoutGrid size={32} color="var(--gold)" style={{ marginBottom: '8px' }} />
-                      <div style={{ color: 'white', fontWeight: 900, fontSize: '0.9rem' }}>VIEW ALL {galleryMedia.length} PHOTOS</div>
+                  <div style={{ position: 'relative', cursor: 'pointer', overflow: 'hidden' }} onClick={() => { setImgIdx(3); setLightbox(true); }}>
+                    <img src={getOptimizedImg(galleryMedia[3]?.url, 800)} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.7, transition: 'transform 0.4s' }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'} />
+                    <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)' }}>
+                      <div style={{ textAlign: 'center' }}>
+                        <LayoutGrid size={32} color="var(--gold)" style={{ marginBottom: '8px' }} />
+                        <div style={{ color: 'white', fontWeight: 900, fontSize: '0.9rem', letterSpacing: '0.1em' }}>VIEW ALL {actualMediaCount} PHOTOS</div>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
           )}
         </div>
@@ -481,48 +544,115 @@ export default function PropertyDetails() {
       </AnimatePresence>
 
       {/* --- ELITE HEADER SECTION (CENTERED) --- */}
-      <section className="pd-title-section" style={{ padding: '4rem 0 2rem', textAlign: 'center' }}>
+      {/* --- ELITE HEADER SECTION (CENTERED ON DESKTOP, LEFT ON MOBILE) --- */}
+      <section className="pd-title-section" style={{ padding: isMobile ? '2.5rem 1.5rem' : '4rem 0 3rem', textAlign: isMobile ? 'left' : 'center' }}>
         <div className="container elite-section">
-          <div className="pd-title-badges" style={{ justifyContent: 'center', marginBottom: '1.5rem', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-            {property.isVerified && <span className="pd-badge-green" style={{ background: 'rgba(16,217,140,0.1)', color: '#10d98c', border: '1px solid rgba(16,217,140,0.3)', padding: '6px 16px', borderRadius: '30px', fontSize: '0.75rem', fontWeight: 900 }}>సర్టిఫైడ్</span>}
-            <span className="pd-badge-type" style={{ background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', padding: '6px 16px', borderRadius: '30px', fontSize: '0.75rem', fontWeight: 900 }}>{tr(property.type)}</span>
+          <div className="pd-title-badges" style={{ 
+            justifyContent: isMobile ? 'flex-start' : 'center', 
+            marginBottom: '1.25rem', 
+            display: 'flex', 
+            gap: '8px', 
+            flexWrap: 'wrap' 
+          }}>
+            {property.isVerified && <span className="pd-badge-green" style={{ background: 'rgba(16,217,140,0.1)', color: '#10d98c', border: '1px solid rgba(16,217,140,0.3)', padding: '6px 14px', borderRadius: '30px', fontSize: '0.7rem', fontWeight: 900, textTransform: 'uppercase' }}>సర్టిఫైడ్</span>}
+            <span className="pd-badge-type" style={{ background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', padding: '6px 14px', borderRadius: '30px', fontSize: '0.7rem', fontWeight: 900, textTransform: 'uppercase' }}>{tr(property.type)}</span>
             <span className="pd-badge-purpose" style={{ 
                 background: property.purpose === 'Rent' ? 'rgba(34,217,224,0.1)' : 'rgba(39,201,125,0.1)',
                 color: property.purpose === 'Rent' ? '#22d9e0' : '#27c97d',
                 border: `1px solid ${property.purpose === 'Rent' ? '#22d9e033' : '#27c97d33'}`,
-                fontSize: '0.75rem', fontWeight: 900, padding: '6px 16px', borderRadius: '30px'
+                fontSize: '0.7rem', fontWeight: 900, padding: '6px 14px', borderRadius: '30px', textTransform: 'uppercase'
             }}>
                 {tr(property.purpose === 'Rent' ? 'For Rent' : 'For Sale')}
             </span>
           </div>
           
-          <h1 className="pd-h1" style={{ fontSize: isMobile ? '2rem' : '3.5rem', fontWeight: 950, marginBottom: '1.5rem', color: 'white', letterSpacing: '-0.02em', maxWidth: '1000px', margin: '0 auto 1.5rem' }}>{property.title}</h1>
+          <h1 className="pd-h1" style={{ 
+            fontSize: isMobile ? '1.85rem' : '3.5rem', 
+            fontWeight: 950, 
+            lineHeight: 1.15,
+            marginBottom: '1.5rem', 
+            color: 'white', 
+            letterSpacing: '-0.02em', 
+            maxWidth: isMobile ? '100%' : '1000px', 
+            margin: isMobile ? '0' : '0 auto' 
+          }}>
+            {property.title}
+          </h1>
           
-          <div style={{ color: 'var(--gold)', fontSize: isMobile ? '2.5rem' : '4.5rem', fontWeight: 950, marginBottom: '1rem', letterSpacing: '-0.02em' }}>
+          <div style={{ 
+            color: 'var(--gold)', 
+            fontSize: isMobile ? '2.25rem' : '4.5rem', 
+            fontWeight: 950, 
+            lineHeight: 1,
+            marginBottom: '0.75rem', 
+            letterSpacing: '-0.02em' 
+          }}>
             {formatSnapAddaPrice(displayPrice)}
           </div>
-          <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.85rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.2em', marginBottom: '2.5rem' }}>SNAPADDA EXCLUSIVE ASSET</div>
+          
+          <div style={{ 
+            color: 'rgba(255,255,255,0.4)', 
+            fontSize: '0.7rem', 
+            fontWeight: 800, 
+            textTransform: 'uppercase', 
+            letterSpacing: '0.2em', 
+            marginBottom: '3rem' 
+          }}>
+            SNAPADDA EXCLUSIVE ASSET
+          </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', alignItems: 'center', marginBottom: '4rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', justifyContent: 'center' }}>
-              <MapPin size={24} style={{ color: 'var(--gold)' }}/>
-              <span style={{ fontSize: isMobile ? '1.2rem' : '1.75rem', fontWeight: 800, color: 'white' }}>{property.location} {property.district ? `(${property.district})` : ''}</span>
+          <div style={{ 
+            display: 'flex', 
+            flexDirection: 'column', 
+            gap: '20px', 
+            alignItems: isMobile ? 'flex-start' : 'center', 
+            marginBottom: '2rem' 
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', justifyContent: isMobile ? 'flex-start' : 'center' }}>
+              <MapPin size={isMobile ? 22 : 28} style={{ color: 'var(--gold)' }}/>
+              <span style={{ fontSize: isMobile ? '1.15rem' : '1.75rem', fontWeight: 800, color: 'white', opacity: 0.95 }}>
+                {property.location} {property.district ? `(${property.district})` : ''}
+              </span>
             </div>
             
             <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-               <span style={{ background: 'rgba(232,184,75,0.15)', border: '1px solid rgba(232,184,75,0.3)', color: '#e8b84b', padding: '8px 20px', borderRadius: '14px', fontSize: '0.85rem', fontWeight: 900, letterSpacing: '0.1em' }}>
-                ASSET CODE: {property.propertyCode || `SNA-${(id || '').toString().slice(-5).toUpperCase()}`}
+               <span style={{ 
+                 background: 'rgba(232,184,75,0.1)', 
+                 border: '1px solid rgba(232,184,75,0.25)', 
+                 color: '#e8b84b', 
+                 padding: '10px 18px', 
+                 borderRadius: '16px', 
+                 fontSize: '0.75rem', 
+                 fontWeight: 900, 
+                 letterSpacing: '0.15em' 
+               }}>
+                SNA-{(id || '').toString().slice(-6).toUpperCase()}
               </span>
               <button 
                 onClick={() => setShareModal(true)}
-                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', padding: '8px 20px', borderRadius: '14px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 800, cursor: 'pointer' }}
+                style={{ 
+                  background: 'rgba(255,255,255,0.06)', 
+                  border: '1px solid rgba(255,255,255,0.12)', 
+                  color: 'white', 
+                  padding: '10px 18px', 
+                  borderRadius: '16px', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '10px', 
+                  fontWeight: 900, 
+                  fontSize: '0.75rem',
+                  letterSpacing: '0.05em',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
               >
-                <Share2 size={18} /> SHARE
+                <Share2 size={16} /> SHARE
               </button>
             </div>
           </div>
         </div>
       </section>
+
 
                 <div style={{ marginTop: '1.5rem', width: '100%', maxWidth: '600px', margin: '1.5rem auto 0' }}>
                   <div style={{ fontSize: '0.8rem', fontWeight: 900, color: 'var(--gold)', letterSpacing: '0.15em', marginBottom: '16px', textTransform: 'uppercase', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
@@ -650,10 +780,17 @@ export default function PropertyDetails() {
         </div>
       </div>
 
-      <div className="container">
-        <div className="pd-body-grid">
-          <main className="pd-main-col">
-            <section id="pd-overview" className="pd-section">
+      <div className="container" style={{ marginTop: isMobile ? '1.5rem' : '3rem' }}>
+        <div className="pd-body-grid" style={{ 
+          display: 'grid', 
+          gridTemplateColumns: isMobile ? '1fr' : 'minmax(0, 1.25fr) 360px', 
+          gap: isMobile ? '2.5rem' : '4rem', 
+          alignItems: 'start',
+          paddingBottom: '6rem'
+        }}>
+          <main className="pd-main-col" style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '2.5rem' : '4rem' }}>
+            <section id="pd-overview" className="pd-section" style={{ background: 'rgba(255,255,255,0.02)', padding: isMobile ? '1.5rem' : '2.5rem', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.05)' }}>
+
               <h2 className="pd-section-h">ప్రాంతం యొక్క అవలోకనం (Overview)</h2>
               <div className="pd-overview-grid">
                 {isAgri && (
@@ -934,27 +1071,46 @@ export default function PropertyDetails() {
           <aside className="pd-sidebar-col">
             <div className="pd-contact-sticky">
               <div className="pd-contact-card">
-                <div style={{ color: 'rgba(0,0,0,0.6)', fontSize: '0.7rem', fontWeight: 900, textTransform: 'uppercase', marginBottom: '1rem' }}>మరిన్ని వివరాల కోసం సంప్రదించండి</div>
-                <button onClick={() => window.location.href = `tel:${supportPhone}`} className="btn-3d-glass" style={{ width: '100%' }}>
+                <div style={{ color: 'rgba(0,0,0,0.6)', fontSize: '0.7rem', fontWeight: 900, textTransform: 'uppercase', marginBottom: '1rem' }}>
+                  {property.isOwnerListing ? 'సంప్రదించండి (Contact Owner)' : 'వివరాల కోసం సంప్రదించండి'}
+                </div>
+                
+                <button 
+                  onClick={() => window.location.href = `tel:${property.displayContactType === 'Lister' && property.realtor?.phone ? property.realtor.phone : supportPhone}`} 
+                  className="btn-3d-glass" 
+                  style={{ width: '100%' }}
+                >
                   <Phone size={20}/> కాల్ చేయండి
                 </button>
+
                 <div style={{ textAlign: 'center', margin: '0.75rem 0', opacity: 0.5, fontSize: '0.7rem', fontWeight: 800 }}>లేదా (OR)</div>
+                
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                  <button onClick={handleWhatsApp} className="btn-3d-glass-emerald" style={{ width: '100%' }}>
+                  <button 
+                    onClick={() => {
+                      const phone = (property.displayContactType === 'Lister' && property.realtor?.phone) ? property.realtor.phone : (supportInfo?.whatsapp || '919346793364');
+                      const waMsg = `నమస్కారం! మీ ప్లాట్‌ఫారమ్‌లోని ఈ ప్రాపర్టీ పై ఆసక్తి ఉంది:\n\n*${property?.title}*\nID: SNA-${(id || '').slice(-6).toUpperCase()}\n\nలింక్: ${window.location.href}`;
+                      window.open(`https://wa.me/${phone.replace(/\D/g, '')}?text=${encodeURIComponent(waMsg)}`, '_blank');
+                    }} 
+                    className="btn-3d-glass-emerald" 
+                    style={{ width: '100%' }}
+                  >
                     <MessageSquare size={18}/> వాట్సాప్ చాట్
                   </button>
                   <button onClick={() => navigate('/request-callback')} className="btn-3d-glass-dark" style={{ width: '100%' }}>
                     <Send size={18}/> కాల్‌బ్యాక్ అభ్యర్థించండి
                   </button>
                 </div>
+                
                 <div className="pd-trust-row">
                   <div className="pd-trust-item"><ShieldCheck size={14}/> 100% SnapAdda వెరిఫైడ్</div>
-                  <div className="pd-trust-item"><Award size={14}/> నమ్మకమైన రియల్ ఎస్టేట్ ప్లాట్‌ఫారమ్</div>
+                  <div className="pd-trust-item"><Award size={14}/> నమ్మకమైన ప్లాట్‌ఫారమ్</div>
                 </div>
               </div>
 
+
               <div className="pd-quick-specs">
-                <div style={{ fontSize: '0.7rem', fontWeight: 900, marginBottom: '1.5rem', color: 'var(--gold)' }}>ముఖ్యమైన వివరాలు</div>
+                <div style={{ fontSize: '0.7rem', fontWeight: 900, marginBottom: '1.5rem', color: 'var(--gold)', textAlign: 'center' }}>{isVerified && isFeatured ? '💎 Institutional Grade Asset' : 'ముఖ్యమైన వివరాలు'}</div>
                 <div className="pd-quick-row"><span className="pd-quick-lbl">మొత్తం ధర</span><span className="pd-quick-val" style={{ color: 'var(--gold)' }}>{formatSnapAddaPrice(displayPrice)}</span></div>
                 <div className="pd-quick-row"><span className="pd-quick-lbl">విస్తీర్ణం</span><span className="pd-quick-val">{property.areaSize} {tr(property.measurementUnit)}</span></div>
                 <div className="pd-quick-row"><span className="pd-quick-lbl">దిశ</span><span className="pd-quick-val">{tr(property.facing)}</span></div>
@@ -981,34 +1137,65 @@ export default function PropertyDetails() {
 
 
 
+      {/* Floating Gallery FAB (Mobile Only) */}
+      {isMobile && (
+        <motion.button
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          whileTap={{ scale: 0.9 }}
+          onClick={() => setLightbox(true)}
+          style={{
+            position: 'fixed', bottom: '100px', right: '20px', 
+            zIndex: 100001, width: '56px', height: '56px',
+            borderRadius: '50%', background: 'var(--gold)', color: 'black',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 15px 35px rgba(232,184,75,0.4)',
+            border: 'none', cursor: 'pointer'
+          }}
+        >
+          <LayoutGrid size={24} />
+        </motion.button>
+      )}
+
+      {/* Mobile Sticky Navigation (Refined) */}
+
       <div className="pd-mobile-ribbon" style={{ 
-        position: 'fixed', bottom: '25px', left: '20px', right: '20px', 
-        zIndex: 100002, display: 'flex', gap: '10px', alignItems: 'center',
-        background: 'rgba(10,12,20,0.85)', backdropFilter: 'blur(25px)',
-        padding: '8px 10px', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.12)',
-        boxShadow: '0 20px 50px rgba(0,0,0,0.8)'
+        position: 'fixed', bottom: '25px', left: '15px', right: '15px', 
+        zIndex: 100002, display: isMobile ? 'flex' : 'none', gap: '12px', alignItems: 'center',
+        background: 'rgba(12,15,25,0.92)', backdropFilter: 'blur(30px)',
+        padding: '10px 14px', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.12)',
+        boxShadow: '0 25px 60px rgba(0,0,0,0.8)'
       }}>
-        <div style={{ padding: '0 10px', flex: 1 }}>
-          <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.6rem', fontWeight: 800 }}>STARTING FROM</div>
-          <div style={{ color: 'var(--gold)', fontSize: '1.1rem', fontWeight: 950 }}>{formatSnapAddaPrice(displayPrice)}</div>
+        <div style={{ flex: 1, paddingLeft: '8px' }}>
+          <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.6rem', fontWeight: 800, letterSpacing: '0.1em' }}>{property.isOwnerListing ? 'CONTACT OWNER' : 'STARTING FROM'}</div>
+          <div style={{ color: 'var(--gold)', fontSize: '1.25rem', fontWeight: 950, letterSpacing: '-0.02em' }}>{formatSnapAddaPrice(displayPrice)}</div>
         </div>
         <div style={{ display: 'flex', gap: '8px' }}>
           <button 
-            onClick={() => window.location.href = `tel:${supportPhone}`}
-            style={{ width: '48px', height: '48px', borderRadius: '16px', background: 'rgba(255,255,255,0.1)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(255,255,255,0.1)' }}
+            onClick={() => {
+              const phone = (property.displayContactType === 'Lister' && property.realtor?.phone) ? property.realtor.phone : supportPhone;
+              window.location.href = `tel:${phone}`;
+            }}
+            style={{ width: '50px', height: '50px', borderRadius: '18px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           >
-            <Phone size={20}/>
+            <Phone size={22}/>
           </button>
           <button 
-            onClick={handleWhatsApp}
+            onClick={() => {
+              const phone = (property.displayContactType === 'Lister' && property.realtor?.phone) ? property.realtor.phone : (supportInfo?.whatsapp || '919346793364');
+              const waMsg = `నమస్కారం! మీ ప్లాట్‌ఫారమ్‌లోని ఈ ప్రాపర్టీ పై ఆసక్తి ఉంది:\n\n*${property?.title}*\nID: SNA-${(id || '').slice(-6).toUpperCase()}\n\nలింక్: ${window.location.href}`;
+              window.open(`https://wa.me/${phone.replace(/\D/g, '')}?text=${encodeURIComponent(waMsg)}`, '_blank');
+            }}
             className="btn-3d-liquid" 
-            style={{ background: 'var(--gold)', color: 'black', padding: '0 20px', height: '48px', borderRadius: '16px', fontWeight: 900, fontSize: '0.85rem' }}
+            style={{ background: 'var(--gold)', color: 'black', padding: '0 24px', height: '50px', borderRadius: '18px', fontWeight: 900, fontSize: '0.85rem', letterSpacing: '0.05em' }}
           >
             ENQUIRE
           </button>
         </div>
       </div>
+
       </div>
+
       <SharePortal 
         isOpen={shareModal} 
         onClose={() => setShareModal(false)} 

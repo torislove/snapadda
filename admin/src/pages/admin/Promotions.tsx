@@ -27,9 +27,11 @@ const getThemeBg = (c?: string) =>
   COLOR_PRESETS.find(p => p.id === c)?.bg ?? COLOR_PRESETS[0].bg;
 
 const TYPE_CONFIG: Record<string, { label: string; badgeColor: string; badge: string }> = {
-  festival: { label: 'Festival',    badgeColor: '#f5c842', badge: 'FEATURED EVENT' },
-  ad:       { label: 'Standard Ad', badgeColor: '#9b59f5', badge: 'PROMOTION'      },
-  update:   { label: 'Update',      badgeColor: '#22d9e0', badge: 'NEW UPDATE'     },
+  festival:      { label: 'Festival',      badgeColor: '#f5c842', badge: 'FEATURED EVENT' },
+  ad:            { label: 'Standard Ad', badgeColor: '#9b59f5', badge: 'PROMOTION'      },
+  update:        { label: 'Update',      badgeColor: '#22d9e0', badge: 'NEW UPDATE'     },
+  institutional: { label: 'Institutional', badgeColor: '#e8b84b', badge: 'INSTITUTIONAL' },
+  offer:         { label: 'Offer',        badgeColor: '#27c97d', badge: 'EXCLUSIVE OFFER' },
 };
 
 const isVideoUrl = (url?: string) => {
@@ -43,6 +45,7 @@ const EMPTY_FORM = {
   size: '1x1', countdownActive: false, cardColor: 'glass-dark',
   image: '', priority: 0, targetLocation: 'All', startDate: '', endDate: '',
   displaySegment: 'both', linkedPropertyId: '',
+  videoUrl: '', pdfUrl: '', videoSource: 'url', pdfSource: 'url'
 };
 
 /* ── Mini Live Preview ── */
@@ -52,11 +55,11 @@ const MiniPreview = ({ form }: { form: typeof EMPTY_FORM }) => (
     aspectRatio: '16/9', background: getThemeBg(form.cardColor),
     border: '1px solid rgba(255,255,255,0.08)', flexShrink: 0,
   }}>
-    {form.image && (
+    {(form.image || form.videoUrl) && (
       <>
-        {isVideoUrl(form.image) ? (
+        {(isVideoUrl(form.image) || isVideoUrl(form.videoUrl)) ? (
           <video 
-            src={form.image} 
+            src={form.videoUrl || form.image} 
             autoPlay muted loop playsInline 
             style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'cover' }} 
           />
@@ -74,12 +77,16 @@ const MiniPreview = ({ form }: { form: typeof EMPTY_FORM }) => (
         backdropFilter:'blur(4px)', alignSelf:'flex-start', border:'1px solid rgba(255,255,255,0.1)',
       }}>{TYPE_CONFIG[form.type]?.badge}</span>
       <div>
-        <div style={{ fontSize:'0.72rem', fontWeight:700, color:'#fff', lineHeight:1.2, marginBottom:'0.2rem' }}>
-          {form.title || 'Your Headline'}
-        </div>
-        <div style={{ fontSize:'0.58rem', color:'rgba(255,255,255,0.6)', lineHeight:1.3 }}>
-          {form.subtitle || 'Subtitle here...'}
-        </div>
+        {form.title && (
+          <div style={{ fontSize:'0.72rem', fontWeight:700, color:'#fff', lineHeight:1.2, marginBottom:'0.2rem' }}>
+            {form.title}
+          </div>
+        )}
+        {form.subtitle && (
+          <div style={{ fontSize:'0.58rem', color:'rgba(255,255,255,0.6)', lineHeight:1.3 }}>
+            {form.subtitle}
+          </div>
+        )}
         {form.actionText && (
           <div style={{
             marginTop:'0.4rem', fontSize:'0.55rem', fontWeight:700,
@@ -346,8 +353,8 @@ const StepContent = ({ activeStep, formData, setFormData, handleMediaChange }: {
             </div>
           </div>
           <div>
-            <label style={labelStyle}>Headline *</label>
-            <input required type="text" value={formData.title} onChange={e => setFormData((p: any) => ({...p, title: e.target.value}))} style={inputCls} placeholder="e.g. Grand Villa Launch" />
+            <label style={labelStyle}>Headline (Optional)</label>
+            <input type="text" value={formData.title} onChange={e => setFormData((p: any) => ({...p, title: e.target.value}))} style={inputCls} placeholder="e.g. Grand Villa Launch" />
           </div>
           <div>
             <label style={labelStyle}>Subtitle</label>
@@ -406,12 +413,55 @@ const StepContent = ({ activeStep, formData, setFormData, handleMediaChange }: {
             </div>
           </div>
           <div>
-            <label style={labelStyle}>Banner Image</label>
+            <label style={labelStyle}>Banner Image (Cloudinary Optimized)</label>
             <MediaManager 
               existingUrls={formData.image ? [formData.image] : []}
               maxFiles={1}
               onImagesChange={handleMediaChange}
             />
+            <p style={{ fontSize:'0.65rem', color:'var(--text-muted)', marginTop:'6px' }}>Recommended: 1200x1600px (3:4 Ratio) or 1920x1080px (16:9). Max 2MB.</p>
+          </div>
+
+          <div style={{ padding: '1rem', background: 'rgba(255,255,255,0.02)', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.06)' }}>
+            <label style={labelStyle}>Background Video</label>
+            <div style={{ display:'flex', gap:'8px', marginBottom:'0.75rem' }}>
+              {['url', 'upload'].map(s => (
+                <button key={s} type="button" onClick={() => setFormData((p: any) => ({ ...p, videoSource: s }))}
+                  style={{ flex:1, padding:'6px', borderRadius:'6px', fontSize:'0.7rem', fontWeight:700, textTransform:'uppercase', border: formData.videoSource === s ? '1px solid var(--gold)' : '1px solid rgba(255,255,255,0.1)', background: formData.videoSource === s ? 'rgba(232,184,75,0.1)' : 'transparent', color: formData.videoSource === s ? 'var(--gold)' : 'var(--text-muted)' }}
+                >{s}</button>
+              ))}
+            </div>
+            {formData.videoSource === 'url' ? (
+              <input type="text" value={formData.videoUrl} onChange={e => setFormData((p: any) => ({...p, videoUrl: e.target.value}))} style={inputCls} placeholder="Direct MP4 URL..." />
+            ) : (
+              <MediaManager 
+                existingUrls={formData.videoUrl ? [formData.videoUrl] : []}
+                maxFiles={1}
+                onImagesChange={(urls) => setFormData((p: any) => ({...p, videoUrl: urls[0] || ''}))}
+              />
+            )}
+            <p style={{ fontSize:'0.65rem', color:'var(--text-muted)', marginTop:'6px' }}>Specs: MP4 format, &lt; 10MB. Vertical for cards, Horizontal for pages.</p>
+          </div>
+
+          <div style={{ padding: '1rem', background: 'rgba(255,255,255,0.02)', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.06)' }}>
+            <label style={labelStyle}>Venture Brochure (PDF)</label>
+            <div style={{ display:'flex', gap:'8px', marginBottom:'0.75rem' }}>
+              {['url', 'upload'].map(s => (
+                <button key={s} type="button" onClick={() => setFormData((p: any) => ({ ...p, pdfSource: s }))}
+                  style={{ flex:1, padding:'6px', borderRadius:'6px', fontSize:'0.7rem', fontWeight:700, textTransform:'uppercase', border: formData.pdfSource === s ? '1px solid var(--gold)' : '1px solid rgba(255,255,255,0.1)', background: formData.pdfSource === s ? 'rgba(232,184,75,0.1)' : 'transparent', color: formData.pdfSource === s ? 'var(--gold)' : 'var(--text-muted)' }}
+                >{s}</button>
+              ))}
+            </div>
+            {formData.pdfSource === 'url' ? (
+              <input type="text" value={formData.pdfUrl} onChange={e => setFormData((p: any) => ({...p, pdfUrl: e.target.value}))} style={inputCls} placeholder="Direct PDF URL..." />
+            ) : (
+              <MediaManager 
+                existingUrls={formData.pdfUrl ? [formData.pdfUrl] : []}
+                maxFiles={1}
+                onImagesChange={(urls) => setFormData((p: any) => ({...p, pdfUrl: urls[0] || ''}))}
+              />
+            )}
+            <p style={{ fontSize:'0.65rem', color:'var(--text-muted)', marginTop:'6px' }}>Specs: Optimized PDF brochures only. &lt; 5MB.</p>
           </div>
         </div>
       );
@@ -600,7 +650,10 @@ export const Promotions = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.title) return;
+    if (!formData.image && !formData.videoUrl) {
+      showToast('Either Photo or Video is required', 'error');
+      return;
+    }
     setIsSubmitting(true);
     try {
       let finalImageUrl = formData.image;
@@ -647,6 +700,10 @@ export const Promotions = () => {
       startDate: promo.startDate ? new Date(promo.startDate).toISOString().slice(0, 16) : '',
       endDate: promo.endDate ? new Date(promo.endDate).toISOString().slice(0, 16) : '',
       displaySegment: promo.displaySegment || 'both',
+      videoUrl: promo.videoUrl || '',
+      pdfUrl: promo.pdfUrl || '',
+      videoSource: promo.videoUrl?.includes('cloudinary') ? 'upload' : 'url',
+      pdfSource: (promo.pdfUrl || promo.documentUrl)?.includes('cloudinary') ? 'upload' : 'url'
     });
     setActiveStep(0);
     setIsModalOpen(true);
@@ -957,9 +1014,9 @@ export const Promotions = () => {
                     <button type="button" onClick={() => setActiveStep(s => s - 1)} className="btn btn-ghost btn-sm">← Back</button>
                   )}
                   {activeStep < steps.length - 1 ? (
-                    <button type="button" onClick={() => setActiveStep(s => s + 1)} className="btn btn-gold btn-sm" disabled={!formData.title}>Next →</button>
+                    <button type="button" onClick={() => setActiveStep(s => s + 1)} className="btn btn-gold btn-sm">Next →</button>
                   ) : (
-                    <button type="submit" className="btn btn-gold" disabled={isSubmitting || !formData.title}>
+                    <button type="submit" className="btn btn-gold" disabled={isSubmitting}>
                       {isSubmitting ? <><Loader2 size={14} style={{ animation:'spin 1s linear infinite' }} /> Processing...</> : <><Zap size={14} /> {editingId ? 'Save Changes' : 'Launch Campaign'}</>}
                     </button>
                   )}

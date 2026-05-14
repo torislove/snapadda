@@ -55,12 +55,18 @@ const PropertyCard = memo((props) => {
     listerType = 'Individual Owner', googleMapsLink = '',
     createdAt, likeCount: initialLikeCount = 0, initialLiked = false,
     isGated, cornerProperty, constructionStatus,
-    supportPhone = '+919346793364', supportWA = '919346793364',
+    supportPhone: defaultSupportPhone = '+919346793364', supportWA = '919346793364',
+    displayContactType = 'Admin', realtor,
     status: propStatus = 'Active', pricePerSqYd, address,
     holographic = true, iridescent = false, propertyCode,
     designTokens, // Dynamic Institutional Tokens
     priority = false // Priority flag for LCP
   } = p;
+
+  const supportPhone = (displayContactType === 'Lister' && realtor?.phone) 
+    ? realtor.phone 
+    : defaultSupportPhone;
+
   const [activeImgIdx, setActiveImgIdx] = useState(0);
   const [liked, setLiked] = useState(initialLiked);
   const [likeCount, setLikeCount] = useState(initialLikeCount);
@@ -169,7 +175,7 @@ const PropertyCard = memo((props) => {
     const discount = ((avg - currentPrice) / avg) * 100;
     
     if (discount > 15) return { label: t('iq.highGrowth', '🌟 High Growth Local'), detail: `${Math.round(discount)}% Value Gap`, color: 'var(--emerald)' };
-    if (isVerified && isFeatured) return { label: t('iq.eliteYield', '💎 Institutional Grade'), detail: 'Primary Asset', color: 'var(--gold)' };
+    if (isVerified && isFeatured) return { label: t('iq.eliteYield', '💎 Institutional Grade'), detail: 'Primary Asset', color: '#e8b84b' };
     return null;
   };
 
@@ -355,7 +361,7 @@ const PropertyCard = memo((props) => {
         whileInView={{ opacity: 1 }}
         viewport={{ once: true, margin: "20px" }}
         transition={{ duration: 0.3 }}
-        style={{ height: isMobile ? '380px' : '440px', padding: isMobile ? '0 4px' : '0' }}
+        style={{ height: isMobile ? '340px' : '380px', padding: isMobile ? '0 3px' : '0' }}
         className="property-card-container"
       >
         <div 
@@ -420,13 +426,13 @@ const PropertyCard = memo((props) => {
             />
           )}
 
-          <div style={{ position: 'absolute', top: '12px', right: '12px', zIndex: 30, display: 'flex', gap: '6px', background: 'rgba(10, 15, 25, 0.75)', backdropFilter: 'blur(20px)', padding: '4px', borderRadius: '30px', border: '1px solid rgba(255,255,255,0.2)', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
+          <div style={{ position: 'absolute', top: '8px', right: '8px', zIndex: 30, display: 'flex', gap: '4px', background: 'rgba(10, 15, 25, 0.75)', backdropFilter: 'blur(20px)', padding: '3px', borderRadius: '30px', border: '1px solid rgba(255,255,255,0.2)', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
             <motion.button 
               whileTap={{ scale: 0.9 }}
               onClick={(e) => { e.preventDefault(); e.stopPropagation(); setQuickInquiryOpen(true);  }}
-              style={{ width: '38px', height: '38px', borderRadius: '50%', background: 'transparent', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: 'none' }}
+              style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'transparent', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: 'none' }}
             >
-              <MessageSquare size={18} />
+              <MessageSquare size={14} />
             </motion.button>
             <motion.button 
               whileTap={{ scale: 0.9 }}
@@ -436,23 +442,23 @@ const PropertyCard = memo((props) => {
                   detail: { id: propertyId, title, price, image: displayImages[0], isFeatured, isVerified } 
                 }));
               }}
-              style={{ width: '38px', height: '38px', borderRadius: '50%', background: 'transparent', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: 'none' }}
+              style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'transparent', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: 'none' }}
             >
-              <SlidersHorizontal size={18} />
+              <SlidersHorizontal size={14} />
             </motion.button>
             <motion.button 
               whileTap={{ scale: 0.9 }}
               onClick={handleShare}
-              style={{ width: '38px', height: '38px', borderRadius: '50%', background: 'transparent', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: 'none' }}
+              style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'transparent', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: 'none' }}
             >
-              <Share2 size={18} />
+              <Share2 size={14} />
             </motion.button>
             <motion.button 
               whileTap={{ scale: 0.9 }}
               onClick={handleLike}
-              style={{ width: '38px', height: '38px', borderRadius: '50%', background: 'transparent', color: liked ? 'var(--gold)' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: 'none' }}
+              style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'transparent', color: liked ? 'var(--gold)' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: 'none' }}
             >
-              <Heart size={18} fill={liked ? 'currentColor' : 'none'} />
+              <Heart size={14} fill={liked ? 'currentColor' : 'none'} />
             </motion.button>
           </div>
           
@@ -484,11 +490,6 @@ const PropertyCard = memo((props) => {
 
               <div style={{ pointerEvents: 'none', position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, transparent 25%, transparent 40%, rgba(5,10,20,0.95) 90%, rgba(5,10,20,1) 100%)', zIndex: 1 }} />
               
-              {displayImages.length > 1 && (
-                <div style={{ position: 'absolute', top: '16px', left: '16px', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)', color: 'white', padding: '4px 10px', borderRadius: '14px', fontSize: '0.65rem', fontWeight: 800, zIndex: 10, display: 'flex', alignItems: 'center', gap: '4px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                  <ImageIcon size={10} /> {(activeImgIdx % displayImages.length) + 1} / {displayImages.length}
-                </div>
-              )}
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'flex-end', position: 'absolute', top: '64px', right: '16px', zIndex: 10 }}>
                  {iq && <span style={{ background: 'rgba(10,15,25,0.8)', color: iq.color, border: `1px solid ${iq.color}66`, backdropFilter: 'blur(10px)', fontSize: '0.65rem', padding: '4px 10px', borderRadius: '8px', fontWeight: 700 }}>{iq.label}</span>}
@@ -515,15 +516,40 @@ const PropertyCard = memo((props) => {
                  )}
               </div>
 
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'flex-start', position: 'absolute', top: '16px', left: '16px', zIndex: 30 }}>
+                 {isOwnerListing && (
+                   <span style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(34,217,224,0.15)', color: 'var(--cyan)', border: '1px solid rgba(34,217,224,0.35)', backdropFilter: 'blur(10px)', fontWeight: 900, padding: '4px 10px', borderRadius: '10px', fontSize: '0.65rem', letterSpacing: '0.05em' }}>
+                     <User size={12} /> DIRECT OWNER
+                   </span>
+                 )}
+                 {listerType === 'Verified Realtor' && (
+                   <span style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(155,89,245,0.15)', color: 'var(--violet)', border: '1px solid rgba(155,89,245,0.35)', backdropFilter: 'blur(10px)', fontWeight: 900, padding: '4px 10px', borderRadius: '10px', fontSize: '0.65rem', letterSpacing: '0.05em' }}>
+                     <ShieldCheck size={12} /> VERIFIED REALTOR
+                   </span>
+                 )}
+                 {isNew && (
+                   <span style={{ background: 'rgba(245,57,123,0.15)', color: 'var(--rose)', border: '1px solid rgba(245,57,123,0.35)', backdropFilter: 'blur(10px)', fontWeight: 900, padding: '4px 10px', borderRadius: '10px', fontSize: '0.65rem' }}>
+                     NEW ASSET
+                   </span>
+                 )}
+                 {displayImages.length > 1 && (
+                    <div style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)', color: 'white', padding: '4px 10px', borderRadius: '14px', fontSize: '0.65rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '4px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                      <ImageIcon size={10} /> {(activeImgIdx % displayImages.length) + 1} / {displayImages.length}
+                    </div>
+                 )}
+              </div>
+
+
               {(propertyCode || propertyId) && (
                 <div style={{ position: 'absolute', bottom: '168px', left: '14px', zIndex: 10, background: 'rgba(232,184,75,0.15)', backdropFilter: 'blur(10px)', border: '1px solid rgba(232,184,75,0.35)', color: 'var(--gold)', padding: '3px 8px', borderRadius: '8px', fontSize: '0.6rem', fontWeight: 900, letterSpacing: '0.08em' }}>
                   {propertyCode || `SNA-${(propertyId || '').toString().slice(-5).toUpperCase()}`}
                 </div>
               )}
+
             </div>
           </div>
 
-          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: isMobile ? '0.6rem' : (designTokens?.padding || '0.8rem'), zIndex: 40, display: 'flex', flexDirection: 'column', background: 'linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.6) 50%, transparent 100%)' }}>
+          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: isMobile ? '0.4rem' : '0.6rem', zIndex: 40, display: 'flex', flexDirection: 'column', background: 'linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.6) 50%, transparent 100%)' }}>
             
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem', fontWeight: 600 }}>
@@ -534,7 +560,7 @@ const PropertyCard = memo((props) => {
               </div>
             </div>
 
-            <h3 style={{ fontFamily: 'var(--font-body)', fontSize: '1rem', fontWeight: 800, color: 'white', margin: '0 0 6px 0', lineHeight: 1.2 }}>{title}</h3>
+            <h3 style={{ fontFamily: 'var(--font-body)', fontSize: '0.9rem', fontWeight: 800, color: 'white', margin: '0 0 4px 0', lineHeight: 1.2 }}>{title}</h3>
             
             <div style={{ display: 'flex', gap: designTokens?.gap || '6px', flexWrap: 'wrap', marginBottom: '8px', overflowX: 'auto' }} className="hide-scrollbar">
                {isResidential && (bhk || beds) ? (
@@ -556,18 +582,18 @@ const PropertyCard = memo((props) => {
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto' }}>
               <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.5)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Price Starts From</span>
-                <span style={{ fontFamily: 'var(--font-serif)', fontSize: '1.5rem', fontWeight: 900, color: 'var(--gold)', textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>
+                <span style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.5)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Price Starts From</span>
+                <span style={{ fontFamily: 'var(--font-serif)', fontSize: '1.2rem', fontWeight: 900, color: 'var(--gold)', textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>
                   {displayPrice ? formatSnapAddaPrice(displayPrice) : 'On Request'}
                 </span>
               </div>
 
-              <div style={{ display: 'flex', gap: '8px' }}>
+              <div style={{ display: 'flex', gap: '6px' }}>
                 <a href={`tel:${supportPhone}`} onClick={(e) => {
                   e.stopPropagation();
                   triggerMicroLead({ source: 'Call Intent', propertyId, message: `User clicked Call for ${title}` });
-                }} style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.1)', width: '42px', height: '42px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '12px', color: 'white', transition: 'all 0.2s' }}>
-                  <Phone size={16}/>
+                }} style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.1)', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '10px', color: 'white', transition: 'all 0.2s' }}>
+                  <Phone size={14}/>
                 </a>
                 <button 
                   onClick={(e) => {
@@ -576,9 +602,9 @@ const PropertyCard = memo((props) => {
                     else navigate(`/property/${propertyId}`);
                   }}
                   className="btn-3d-liquid"
-                  style={{ background: 'var(--gold)', color: 'black', border: 'none', borderRadius: '12px', padding: '0 18px', height: '42px', fontSize: '0.8rem', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
+                  style={{ background: 'var(--gold)', color: 'black', border: 'none', borderRadius: '10px', padding: '0 14px', height: '36px', fontSize: '0.75rem', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}
                 >
-                  VIEW <ArrowRight size={14} />
+                  VIEW <ArrowRight size={12} />
                 </button>
               </div>
             </div>

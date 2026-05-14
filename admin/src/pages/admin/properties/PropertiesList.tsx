@@ -115,13 +115,13 @@ export const PropertiesList: React.FC<PropertiesListProps> = ({
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="admin-input" 
-              style={{ width: '100%', paddingLeft: '36px', borderRadius: '12px', minHeight: '44px' }}
+              style={{ width: '100%', paddingLeft: '32px', borderRadius: '10px', minHeight: '38px', fontSize: '0.85rem' }}
             />
           </div>
           <button 
             onClick={() => loadProperties()}
             className="btn-elite"
-            style={{ padding: '0.75rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', color: 'white', background: 'rgba(255,255,255,0.05)', height: '44px', width: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            style={{ padding: '0.5rem', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.1)', color: 'white', background: 'rgba(255,255,255,0.05)', height: '38px', width: '38px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           >
             <RefreshCw size={16} />
           </button>
@@ -213,8 +213,8 @@ export const PropertiesList: React.FC<PropertiesListProps> = ({
         display: 'grid',
         gridTemplateColumns: viewMode === 'grid'
           ? '1fr'
-          : 'repeat(auto-fill, minmax(310px, 1fr))',
-        gap: '1.5rem'
+          : 'repeat(auto-fill, minmax(230px, 1fr))',
+        gap: '0.75rem'
       }}>
         <AnimatePresence>
           {finalFiltered.length === 0 ? (

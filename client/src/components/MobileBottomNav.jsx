@@ -54,7 +54,7 @@ export default function MobileBottomNav() {
                   >
                     <Icon size={22} strokeWidth={2.5} color="#000" />
                   </motion.div>
-                  <span className="nav-label label-primary" style={{ color: 'var(--gold)', fontWeight: 800, marginTop: '2px' }}>
+                  <span className="nav-label label-primary" style={{ color: 'var(--gold)', fontWeight: 800 }}>
                     {item.label}
                   </span>
                 </div>

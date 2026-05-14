@@ -43,14 +43,17 @@ export const cleanPropertyData = (rawData, isPublicSubmission = false) => {
   });
 
   // 4. JSON Parsing for complex fields (handling both strings and objects)
-  const jsonFields = ['customFeatures', 'amenities'];
+  const jsonFields = ['customFeatures', 'amenities', 'realtor'];
   jsonFields.forEach(f => {
     if (typeof propertyData[f] === 'string' && propertyData[f].trim() !== '') {
-      try { propertyData[f] = JSON.parse(propertyData[f]); } catch { propertyData[f] = []; }
-    } else if (!Array.isArray(propertyData[f])) {
+      try { propertyData[f] = JSON.parse(propertyData[f]); } catch { propertyData[f] = (f === 'realtor' ? {} : []); }
+    } else if (f === 'realtor') {
+      propertyData[f] = propertyData[f] || {};
+    } else if (!Array.isArray(propertyData[f]) && f !== 'realtor') {
       propertyData[f] = [];
     }
   });
+
 
   // 5. Smart Defaults & Conditional Logic
   const landTypes = [

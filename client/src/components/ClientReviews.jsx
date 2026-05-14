@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Star, Quote, MapPin } from 'lucide-react';
+import { Star, Quote, MapPin, X } from 'lucide-react';
 
 export default function ClientReviews() {
   const [reviews, setReviews] = useState([]);
@@ -7,6 +7,7 @@ export default function ClientReviews() {
   const [paused, setPaused] = useState(false);
   const trackRef = useRef(null);
   const [trackWidth, setTrackWidth] = useState(0);
+  const [selectedReview, setSelectedReview] = useState(null);
 
   useEffect(() => {
     fetch('/api/testimonials')
@@ -33,7 +34,7 @@ export default function ClientReviews() {
 
   return (
     <section className="section-wrap" style={{ 
-      padding: '6rem 0', 
+      padding: '2rem 0', 
       background: 'linear-gradient(to bottom, transparent, rgba(212,175,55,0.03), transparent)',
       overflow: 'hidden',
       position: 'relative'
@@ -50,7 +51,7 @@ export default function ClientReviews() {
           >
             <Star size={12} fill="var(--gold)" /> TRUSTED BY THOUSANDS
           </div>
-          <h2 className="section-title" style={{ color: '#ffffff', marginTop: '1.5rem', fontSize: '2.5rem' }}>What Our Clients Say</h2>
+          <h2 className="section-title" style={{ color: '#ffffff', marginTop: '1.5rem', fontSize: '1.8rem' }}>What Our Clients Say</h2>
           <p className="section-subtitle" style={{ color: 'var(--txt-secondary)', maxWidth: '600px', margin: '1rem auto 0' }}>
             Experience the SnapAdda difference through the eyes of our successful investors and homeowners.
           </p>
@@ -85,9 +86,9 @@ export default function ClientReviews() {
               key={`${r._id}-${i}`}
               className="review-card glass-premium"
               style={{
-                width: '420px',
-                padding: '2.5rem',
-                borderRadius: '32px',
+                width: '300px',
+                padding: '1.5rem',
+                borderRadius: '24px',
                 border: '1px solid rgba(255,255,255,0.05)',
                 background: 'rgba(10,12,20,0.6)',
                 display: 'flex',
@@ -98,8 +99,9 @@ export default function ClientReviews() {
                 boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
                 flexShrink: 0,
                 transition: 'transform 0.25s ease, box-shadow 0.25s ease',
-                cursor: 'default',
+                cursor: 'pointer',
               }}
+              onClick={() => setSelectedReview(r)}
               onMouseEnter={e => {
                 e.currentTarget.style.transform = 'translateY(-4px)';
                 e.currentTarget.style.boxShadow = '0 28px 55px rgba(0,0,0,0.45)';
@@ -109,7 +111,7 @@ export default function ClientReviews() {
                 e.currentTarget.style.boxShadow = '0 20px 40px rgba(0,0,0,0.3)';
               }}
             >
-              <Quote size={48} style={{ color: 'rgba(212,175,55,0.05)', position: 'absolute', top: '2rem', right: '2rem' }} />
+              <Quote size={32} style={{ color: 'rgba(212,175,55,0.05)', position: 'absolute', top: '1.5rem', right: '1.5rem' }} />
               
               <div style={{ display: 'flex', gap: '4px' }}>
                 {Array(5).fill(0).map((_, idx) => (
@@ -158,6 +160,51 @@ export default function ClientReviews() {
           100% { transform: translateX(-33.333%); }
         }
       `}</style>
+
+      {/* Review Detail Modal */}
+      {selectedReview && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: 'rgba(5, 5, 10, 0.8)', backdropFilter: 'blur(10px)'
+        }} onClick={() => setSelectedReview(null)}>
+          <div style={{
+            width: '90%', maxWidth: '500px', background: 'var(--bg-panel)', border: '1px solid rgba(212,175,55,0.2)',
+            borderRadius: '24px', padding: '2rem', position: 'relative', boxShadow: '0 20px 40px rgba(0,0,0,0.5)'
+          }} onClick={e => e.stopPropagation()}>
+            <button 
+              onClick={() => setSelectedReview(null)}
+              style={{ position: 'absolute', top: '15px', right: '15px', background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', padding: '8px', cursor: 'pointer', color: 'white' }}
+            >
+              <X size={16} />
+            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
+              {selectedReview.image ? (
+                <img src={selectedReview.image} alt={selectedReview.name} style={{ width: '64px', height: '64px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--gold)' }} />
+              ) : (
+                <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'linear-gradient(45deg, var(--gold), #f5c842)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, color: 'var(--midnight)', fontSize: '1.8rem' }}>
+                  {(selectedReview.name || 'U').charAt(0)}
+                </div>
+              )}
+              <div>
+                <div style={{ color: 'white', fontWeight: 900, fontSize: '1.2rem' }}>{selectedReview.name}</div>
+                {selectedReview.location && (
+                  <div style={{ color: 'var(--txt-muted)', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
+                    <MapPin size={12} style={{ color: 'var(--gold)' }} /> {selectedReview.location}
+                  </div>
+                )}
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: '4px', marginBottom: '1rem' }}>
+              {Array(5).fill(0).map((_, idx) => (
+                <Star key={idx} size={16} fill={idx < (selectedReview.rating || 5) ? "var(--gold)" : "transparent"} color={idx < (selectedReview.rating || 5) ? "var(--gold)" : "rgba(255,255,255,0.1)"} />
+              ))}
+            </div>
+            <p style={{ color: 'rgba(255,255,255,0.95)', fontSize: '1.1rem', lineHeight: '1.8', fontWeight: 500 }}>
+              &ldquo;{selectedReview.text}&rdquo;
+            </p>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

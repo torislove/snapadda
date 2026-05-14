@@ -23,6 +23,7 @@ const AdminEngagement = lazy(() => import('./pages/admin/AdminEngagement'));
 const SystemGuide = lazy(() => import('./pages/admin/SystemGuide'));
 const AdminLogin = lazy(() => import('./pages/admin/Login'));
 const AdminCommsHub = lazy(() => import('./pages/admin/CommsHub'));
+const VerificationQueue = lazy(() => import('./pages/admin/VerificationQueue'));
 
 const AdminLoader = () => (
   <div style={{ 
@@ -152,6 +153,7 @@ function App() {
             <Route path="engagement" element={<AdminEngagement />} />
             <Route path="marquee" element={<AdminMarquee />} />
             <Route path="comms" element={<AdminCommsHub />} />
+            <Route path="verification" element={<VerificationQueue />} />
             <Route path="guide" element={<SystemGuide />} />
           </Route>
         </Routes>
