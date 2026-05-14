@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { 
   MessageSquare, Search, Target, 
   MoreHorizontal, User, Bot, Sparkles, AlertCircle, RefreshCcw,
-  Star, LayoutGrid, List, PhoneCall, PhoneForwarded
+  Star, LayoutGrid, List, PhoneCall
 } from 'lucide-react';
 
 import { motion, AnimatePresence } from 'framer-motion';
