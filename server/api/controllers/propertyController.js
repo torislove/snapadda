@@ -7,7 +7,7 @@ import { cleanPropertyData } from '../utils/propertyCleaner.js';
 import { resolveAndExtractCoords } from '../utils/geoUtils.js';
 
 // Lean projection for card list views (avoids fetching 50+ unused fields)
-const CARD_FIELDS = 'title price priceDisplay pricePerUnit location district type purpose subType images image status isVerified isFeatured bhk beds baths areaSize measurementUnit facing furnishing constructionStatus approvalAuthority isGated vastuCompliant listerType propertyCode googleMapsLink coordinates createdAt likeCount';
+const CARD_FIELDS = 'title price priceDisplay pricePerUnit location district type purpose subType images image status isVerified isFeatured bhk beds baths areaSize measurementUnit facing furnishing constructionStatus approvalAuthority isGated vastuCompliant listerType isOwnerListing propertyCode googleMapsLink coordinates createdAt likeCount';
 
 // Helper to sync to Firebase
 const syncToFirebase = async (property) => {
@@ -47,6 +47,7 @@ const syncToFirebase = async (property) => {
       isGated: property.isGated || false,
       vastuCompliant: property.vastuCompliant || false,
       listerType: property.listerType || 'Individual Owner',
+      isOwnerListing: property.isOwnerListing || false,
       amenities: property.amenities || [],
       customFeatures: property.customFeatures || [],
       googleMapsLink: property.googleMapsLink || '',

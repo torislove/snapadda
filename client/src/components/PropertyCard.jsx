@@ -59,6 +59,7 @@ const PropertyCard = memo((props) => {
     displayContactType = 'Admin', realtor,
     status: propStatus = 'Active', pricePerSqYd, address,
     holographic = true, iridescent = false, propertyCode,
+    isOwnerListing, // Added missing destructuring
     designTokens, // Dynamic Institutional Tokens
     priority = false // Priority flag for LCP
   } = p;

@@ -281,7 +281,8 @@ export default function PropertyDetails() {
   const getShareText = () => {
     const price = (isAgri && agriTotalValue > 0) ? agriTotalValue : property?.price;
     const code  = property?.propertyCode || '';
-    return `🏡 *${property?.title}*\n📍 ${property?.location}, ${property?.district || ''}\n🪪 Code: *${code}*\n₹ ${formatSnapAddaPrice(price)}\n\n🔗 ${getShareUrl()}\n\n_SnapAdda 📍 Andhra's Leading Property Platform_`;
+    const displayPriceStr = property?.priceDisplay || formatSnapAddaPrice(price);
+    return `🏡 *${property?.title}*\n📍 ${property?.location}, ${property?.district || ''}\n🪪 Code: *${code}*\n${displayPriceStr}\n\n🔗 ${getShareUrl()}\n\n_SnapAdda 📍 Andhra's Leading Property Platform_`;
   };
 
   const handleShare = () => setShareModal(true);
@@ -554,6 +555,11 @@ export default function PropertyDetails() {
             gap: '8px', 
             flexWrap: 'wrap' 
           }}>
+            {property.isOwnerListing && (
+              <span style={{ background: 'rgba(34,217,224,0.1)', color: 'var(--cyan)', border: '1px solid rgba(34,217,224,0.3)', padding: '6px 14px', borderRadius: '30px', fontSize: '0.7rem', fontWeight: 900, textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <User size={12} /> Direct Owner
+              </span>
+            )}
             {property.isVerified && <span className="pd-badge-green" style={{ background: 'rgba(16,217,140,0.1)', color: '#10d98c', border: '1px solid rgba(16,217,140,0.3)', padding: '6px 14px', borderRadius: '30px', fontSize: '0.7rem', fontWeight: 900, textTransform: 'uppercase' }}>సర్టిఫైడ్</span>}
             <span className="pd-badge-type" style={{ background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', padding: '6px 14px', borderRadius: '30px', fontSize: '0.7rem', fontWeight: 900, textTransform: 'uppercase' }}>{tr(property.type)}</span>
             <span className="pd-badge-purpose" style={{ 
@@ -587,7 +593,7 @@ export default function PropertyDetails() {
             marginBottom: '0.75rem', 
             letterSpacing: '-0.02em' 
           }}>
-            {formatSnapAddaPrice(displayPrice)}
+            {property.priceDisplay || formatSnapAddaPrice(displayPrice)}
           </div>
           
           <div style={{ 

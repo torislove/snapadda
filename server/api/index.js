@@ -271,14 +271,25 @@ app.get('/api/health/deep', async (req, res) => {
 
   // Try a lightweight Cloudinary ping (only if configured)
   let cloudinaryOk = false;
+  let cloudinaryMessage = '';
   if (cloudinaryConfigured) {
     try {
       // ping() is available in cloudinary SDK — lightweight API call
       await cloudinary.api.ping({ timeout: 4000 });
       cloudinaryOk = true;
-    } catch (_) {
-      cloudinaryOk = false;
+      cloudinaryMessage = 'Cloudinary API reachable';
+    } catch (err) {
+      // If we get a 420 (Rate Limit Exceeded), it means the service IS reachable and keys are correct
+      if (err.error?.http_code === 420) {
+        cloudinaryOk = true; 
+        cloudinaryMessage = 'Cloudinary OK (Rate Limited)';
+      } else {
+        cloudinaryOk = false;
+        cloudinaryMessage = err.message || 'Cloudinary ping failed';
+      }
     }
+  } else {
+    cloudinaryMessage = 'Cloudinary not configured';
   }
 
   const allOk = mongoOk && cloudinaryOk;
@@ -297,7 +308,7 @@ app.get('/api/health/deep', async (req, res) => {
         ok: cloudinaryOk,
         configured: cloudinaryConfigured,
         cloudName: cloudName ? `${cloudName.slice(0, 3)}***` : null,
-        message: cloudinaryOk ? 'Cloudinary API reachable' : (cloudinaryConfigured ? 'Cloudinary ping failed' : 'Cloudinary not configured')
+        message: cloudinaryMessage
       }
     }
   });

@@ -29,7 +29,8 @@ export const runFullDiagnostic = async () => {
       await mongoose.connect(MONGODB_URI);
     }
     // Test a simple query on the database
-    await mongoose.connection.db.admin().ping();
+    const db = mongoose.connection.db || mongoose.connection.getClient().db();
+    await db.admin().ping();
     results.mongodb.latency = Date.now() - start;
     results.mongodb.status = 'healthy';
     results.mongodb.details = `Connected to Cluster0 (ReadyState: ${mongoose.connection.readyState})`;
@@ -56,9 +57,18 @@ export const runFullDiagnostic = async () => {
     });
 
     // Ping Cloudinary API
-    const ping = await cloudinary.api.ping();
-    results.cloudinary.status = ping.status === 'ok' ? 'healthy' : 'degraded';
-    results.cloudinary.details = `Cloud: ${cloudName.slice(0, 3)}*** | API Key: Verified`;
+    try {
+      const ping = await cloudinary.api.ping();
+      results.cloudinary.status = ping.status === 'ok' ? 'healthy' : 'degraded';
+      results.cloudinary.details = `Cloud: ${cloudName.slice(0, 3)}*** | API Key: Verified`;
+    } catch (err) {
+      if (err.error?.http_code === 420) {
+        results.cloudinary.status = 'healthy';
+        results.cloudinary.details = `Cloud: ${cloudName.slice(0, 3)}*** | OK (Rate Limited)`;
+      } else {
+        throw err;
+      }
+    }
   } catch (err) {
     results.cloudinary.status = 'error';
     results.cloudinary.details = err.message;
