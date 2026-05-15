@@ -39,6 +39,7 @@ export const googleAuth = async (req, res) => {
       }
     }
 
+    user.lastActive = new Date();
     await user.save();
     res.status(200).json({ status: 'success', user });
   } catch (error) {
@@ -119,6 +120,21 @@ export const getFavorites = async (req, res) => {
     if (!user) return res.status(404).json({ message: 'User not found' });
 
     res.status(200).json({ status: 'success', data: user.favorites });
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: error.message });
+  }
+};
+
+export const updateLocation = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { lat, lng } = req.body;
+    
+    await User.findByIdAndUpdate(id, {
+      lastLocation: { lat, lng, timestamp: new Date() }
+    });
+    
+    res.status(200).json({ status: 'success' });
   } catch (error) {
     res.status(500).json({ status: 'error', message: error.message });
   }

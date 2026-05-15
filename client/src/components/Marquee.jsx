@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { Landmark, ShieldCheck, IndianRupee, Home as HomeIcon, CheckCircle2, MapPin, Award, Square, Compass, Building2, Phone, ArrowRight } from 'lucide-react';
 import { fetchSetting } from '../services/api';
 
@@ -27,32 +28,44 @@ function MarqueeIcon({ name }) {
 
 export default function Marquee() {
   const [config, setConfig] = useState(DEFAULT);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setReady(true), 200);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     fetchSetting('marquee_strips')
       .then(data => {
         if (data && (data.band1 || data.band2)) {
-          // Merge both bands into one for single-band layout
-          const merged = [
-            ...(data.band1 || DEFAULT.band1),
-            ...(data.band2 || []),
-          ];
+          const merged = [...(data.band1 || DEFAULT.band1), ...(data.band2 || [])];
           setConfig(prev => ({ ...prev, band1: merged.length > 0 ? merged : prev.band1 }));
         }
       })
-      .catch(() => {}); // Silent fail - defaults are fine
+      .catch(() => {});
   }, []);
 
   const items = config.band1 || DEFAULT.band1;
-  // Triplicate for seamless loop (50% = 1 set, so we need at least 2 sets)
-  const repeated = [...items, ...items, ...items];
+  const repeated = [...items, ...items, ...items, ...items];
+
+  if (!ready) return <div style={{ height: '40px', background: 'rgba(5, 5, 10, 0.6)' }} />;
 
   return (
     <div className="animated-marquee-wrapper">
       <div className="marquee-band-container">
-        <div
+        <motion.div
           className="marquee-track"
-          style={{ animationDuration: `${config.speed1 || 28}s` }}
+          animate={{ x: ['0%', '-25%'] }}
+          transition={{
+            x: {
+              repeat: Infinity,
+              repeatType: "loop",
+              duration: config.speed1 || 28,
+              ease: "linear",
+            },
+          }}
+          style={{ display: 'flex', width: 'max-content' }}
         >
           {repeated.map((item, i) => {
             const normalized = typeof item === 'string'
@@ -69,7 +82,7 @@ export default function Marquee() {
               </a>
             );
           })}
-        </div>
+        </motion.div>
       </div>
     </div>
   );

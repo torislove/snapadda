@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import {
   fetchTestimonials, createTestimonial, updateTestimonial,
-  deleteTestimonial, uploadMedia
+  uploadMedia
 } from '../../services/api';
 import {
-  Plus, Trash2, Loader2, X,
+  Plus, Loader2, X,
   Zap, CheckCircle, AlertCircle, Quote, Star, Edit3
 } from 'lucide-react';
 
@@ -21,9 +21,8 @@ const EMPTY_FORM = {
 };
 
 const TestimonialCard = ({
-  testimonial, onDelete, onEdit
+  testimonial, onEdit
 }: any) => {
-  const [confirmDelete, setConfirmDelete] = useState(false);
   const colorObj = COLOR_PRESETS.find(c => c.id === testimonial.color) || COLOR_PRESETS[0];
 
   return (
@@ -76,32 +75,6 @@ const TestimonialCard = ({
             >
               <Edit3 size={13} /> Edit
             </button>
-            {confirmDelete ? (
-              <button
-                onClick={() => { onDelete(testimonial._id); setConfirmDelete(false); }}
-                style={{
-                  flex: 1, padding: '0.45rem 0', fontSize: '0.75rem', fontWeight: 700,
-                  borderRadius: '10px', cursor: 'pointer', border: 'none',
-                  background: 'var(--rose)', color: '#fff',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px',
-                  animation: 'pulse 0.3s ease',
-                }}
-              >
-                <AlertCircle size={12} /> Confirm Deletion
-              </button>
-            ) : (
-              <button
-                onClick={() => setConfirmDelete(true)}
-                style={{
-                  padding: '0.45rem', fontSize: '0.75rem', fontWeight: 600, width: '100%',
-                  borderRadius: '10px', cursor: 'pointer', border: '1px solid rgba(245,57,123,0.2)',
-                  background: 'rgba(245,57,123,0.06)', color: 'var(--rose)',
-                  transition: 'all 0.2s ease', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px'
-                }}
-              >
-                <Trash2 size={13} /> Remove
-              </button>
-            )}
           </div>
         </div>
       </div>
@@ -178,13 +151,6 @@ export const Testimonials = () => {
     setIsModalOpen(true);
   };
 
-  const handleDelete = async (id: string) => {
-    try {
-      await deleteTestimonial(id);
-      setTestimonials(ps => ps.filter(p => p._id !== id));
-      showToast('Testimonial removed');
-    } catch { showToast('Delete failed', 'error'); }
-  };
 
   const inputCls: React.CSSProperties = {
     width:'100%', background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.09)',
@@ -212,6 +178,11 @@ export const Testimonials = () => {
           {toast.msg}
         </div>
       )}
+      <div style={{ background: 'rgba(242,153,74,0.05)', padding: '1rem', borderRadius: '14px', border: '1px solid rgba(242,153,74,0.1)', marginBottom: '1rem' }}>
+        <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--orange)', fontWeight: 600 }}>
+          💡 <strong>Help:</strong> On this page, you can add or change the reviews and kind words from your clients. These will show up in the "Reviews" section of your website.
+        </p>
+      </div>
 
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', flexWrap:'wrap', gap:'1rem' }}>
         <div>
@@ -247,7 +218,6 @@ export const Testimonials = () => {
             <TestimonialCard
               key={testimonial._id}
               testimonial={testimonial}
-              onDelete={handleDelete}
               onEdit={handleEdit}
             />
           ))}

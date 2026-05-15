@@ -2,9 +2,19 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { MapPin, Navigation2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { fetchSetting } from '../services/api';
 
 const CityMarquee = ({ cities, loading }) => {
   const navigate = useNavigate();
+  const [speed, setSpeed] = React.useState(80);
+
+  React.useEffect(() => {
+    fetchSetting('marquee_strips')
+      .then(res => {
+        if (res && res.citiesSpeed) setSpeed(res.citiesSpeed);
+      })
+      .catch(() => {});
+  }, []);
 
   if (loading) {
     return (
@@ -21,13 +31,23 @@ const CityMarquee = ({ cities, loading }) => {
 
   return (
     <div className="city-marquee-outer" style={{ position: 'relative', width: '100%', overflow: 'hidden', padding: '1rem 0' }}>
-      <div className="city-marquee-track" style={{ 
-        display: 'flex', 
-        gap: '20px', 
-        width: 'max-content',
-        animation: 'cityScroll 40s linear infinite',
-        willChange: 'transform'
-      }}>
+      <motion.div
+        className="city-marquee-track"
+        animate={{ x: ['0%', '-25%'] }}
+        transition={{
+          x: {
+            repeat: Infinity,
+            repeatType: "loop",
+            duration: speed,
+            ease: "linear",
+          },
+        }}
+        style={{ 
+          display: 'flex', 
+          gap: '20px', 
+          width: 'max-content',
+        }}
+      >
         {repeatedCities.map((city, idx) => (
           <motion.div
             key={`${city._id || city.name}-${idx}`}
@@ -79,32 +99,7 @@ const CityMarquee = ({ cities, loading }) => {
             <div className="city-shine" />
           </motion.div>
         ))}
-      </div>
-
-      <style dangerouslySetInnerHTML={{ __html: `
-        @keyframes cityScroll {
-          0% { transform: translateX(0); }
-          100% { transform: translateX(calc(-200px * ${cities.length} - 20px * ${cities.length})); }
-        }
-        .city-marquee-outer:hover .city-marquee-track {
-          animation-play-state: paused;
-        }
-        .city-marquee-track:hover .city-bg-img {
-          opacity: 0.85 !important;
-          transform: scale(1.05);
-        }
-        .city-shine {
-          position: absolute;
-          top: 0; left: -100%;
-          width: 50%; height: 100%;
-          background: linear-gradient(to right, transparent, rgba(255,255,255,0.1), transparent);
-          transform: skewX(-25deg);
-          transition: 0.75s;
-        }
-        .city-marquee-track div:hover .city-shine {
-          left: 150%;
-        }
-      `}} />
+      </motion.div>
     </div>
   );
 };

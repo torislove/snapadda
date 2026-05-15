@@ -180,9 +180,14 @@ export default function Onboarding() {
           </motion.button>
 
           {/* Trust signals */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginTop: '0.5rem' }}>
-            <ShieldCheck size={14} color="var(--emerald)" />
-            <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.35)' }}>Your number is private and never shared</span>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', marginTop: '0.8rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <ShieldCheck size={14} color="var(--emerald)" />
+              <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', fontWeight: 700 }}>Safe & Intelligent Search</span>
+            </div>
+            <p style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.25)', textAlign: 'center', lineHeight: 1.5, padding: '0 10px' }}>
+              We collect your contact and location data to deliver relevant advertisements and properties matching your specific searches. This ensures a significantly faster experience tailored to your requirements.
+            </p>
           </div>
         </form>
       </motion.div>

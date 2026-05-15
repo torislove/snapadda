@@ -16,6 +16,12 @@ interface MarketingSectionProps {
   setWaMessage: (v: string) => void;
   supportEmail: string;
   setSupportEmail: (v: string) => void;
+  supportPhone: string;
+  setSupportPhone: (v: string) => void;
+  heroTitle: string;
+  setHeroTitle: (v: string) => void;
+  heroSubtitle: string;
+  setHeroSubtitle: (v: string) => void;
   handleMarketingSave: (e: React.FormEvent) => void;
   lbl: any;
   inp: any;
@@ -25,9 +31,39 @@ interface MarketingSectionProps {
 export const MarketingSection: React.FC<MarketingSectionProps> = ({
   seoTitle, setSeoTitle, seoDesc, setSeoDesc, gaId, setGaId, fbPixel, setFbPixel,
   waNumber, setWaNumber, waMessage, setWaMessage, supportEmail, setSupportEmail,
+  supportPhone, setSupportPhone,
+  heroTitle, setHeroTitle, heroSubtitle, setHeroSubtitle,
   handleMarketingSave, lbl, inp, inputWrap
 }) => (
   <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+    <div style={{ background: 'rgba(232,184,75,0.05)', padding: '1rem', borderRadius: '14px', border: '1px solid rgba(232,184,75,0.1)', marginBottom: '1rem' }}>
+      <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--gold)', fontWeight: 600 }}>
+        💡 <strong>Help:</strong> This page controls how your website looks to users and search engines (like Google). You can change the main heading of your site, your contact details, and technical tracking codes here.
+      </p>
+    </div>
+
+    {/* Hero Content Section */}
+    <div className="glass-card" style={{ overflow: 'hidden', borderRadius: '24px' }}>
+      <div style={{ padding: '1.5rem', background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div style={{ padding: '10px', background: 'rgba(232,184,75,0.1)', borderRadius: '12px', color: 'var(--gold)' }}>
+          <Globe size={20} />
+        </div>
+        <div>
+          <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 900 }}>Website Main Heading</h3>
+          <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-muted)' }}>Change the big text shown at the top of your homepage.</p>
+        </div>
+      </div>
+      <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+        <div>
+          <label htmlFor="st-heroTitle" style={lbl}>Main Website Title</label>
+          <input id="st-heroTitle" type="text" value={heroTitle} onChange={e => setHeroTitle(e.target.value)} style={{ ...inp, paddingLeft: '12px' }} placeholder="Discover Your Dream Place in Andhra" />
+        </div>
+        <div>
+          <label htmlFor="st-heroSubtitle" style={lbl}>Website Subtitle (Smaller text)</label>
+          <textarea id="st-heroSubtitle" value={heroSubtitle} onChange={e => setHeroSubtitle(e.target.value)} style={{ ...inp, paddingLeft: '12px', height: '80px', paddingTop: '12px', resize: 'none' }} placeholder="Browse verified listings across Amaravati, Vijayawada, Guntur & beyond." />
+        </div>
+      </div>
+    </div>
     {/* SEO & Meta */}
     <div className="glass-card" style={{ overflow: 'hidden', borderRadius: '24px' }}>
       <div style={{ padding: '1.5rem', background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -94,6 +130,10 @@ export const MarketingSection: React.FC<MarketingSectionProps> = ({
           <div>
             <label htmlFor="st-supportEmail" style={lbl}>Institutional Email</label>
             {inputWrap(<Mail size={15}/>, <input id="st-supportEmail" type="email" value={supportEmail} onChange={e => setSupportEmail(e.target.value)} style={inp} placeholder="info@snapadda.com" />)}
+          </div>
+          <div>
+            <label htmlFor="st-supportPhone" style={lbl}>Support Phone Number</label>
+            {inputWrap(<Phone size={15}/>, <input id="st-supportPhone" type="text" value={supportPhone} onChange={e => setSupportPhone(e.target.value)} style={inp} placeholder="+91 93467 93364" />)}
           </div>
         </div>
         <div>

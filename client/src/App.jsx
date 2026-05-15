@@ -10,7 +10,6 @@ import LeadCaptureModal from './components/LeadCaptureModal';
 import { pruneResources } from './utils/PerformanceUtilities';
 
 // Global HUD components - Symmetrically aligned (Lazy Loaded to unblock main thread)
-const UnitConverter = lazy(() => import('./components/UnitConverter'));
 const ComparisonHud = lazy(() => import('./components/ComparisonHud'));
 const MobileBottomNav = lazy(() => import('./components/MobileBottomNav'));
 
@@ -35,28 +34,19 @@ import Logo from './components/Logo';
 import { useGoogleMarketing } from './utils/useGoogleMarketing';
 import ScrollToTop from './components/ScrollToTop';
 import { ToastProvider } from './contexts/ToastContext';
-// Minimalist High-Performance Loader
-const EliteLoader = () => (
-  <div style={{ 
-    height: '100vh', 
-    display: 'flex', 
-    flexDirection: 'column',
-    alignItems: 'center', 
-    justifyContent: 'center', 
-    backgroundColor: 'var(--bg-deep)',
-  }}>
-    <Logo size={42} showText={false} />
-    <div className="shimmer" style={{ width: '80px', height: '3px', background: 'var(--gold)', marginTop: '1.5rem', borderRadius: '4px' }} />
-  </div>
-);
+// SnapAdda Quantum Loader (Imported above)
 
 function ProtectedRoute({ children }) {
   const { user, isLoading } = useAuth();
   const location = useLocation();
 
-  if (isLoading) return <EliteLoader />;
+  if (isLoading) return <GlobalLoader mode="inline" />;
   if (!user) return <Navigate to="/login" replace state={{ from: location }} />;
-  if (user.role !== 'client') return <Navigate to="/" replace />;
+  
+  // Allow both clients and admins to access client routes to prevent redirect loops
+  const hasAccess = user.role === 'client' || user.role === 'admin';
+  if (!hasAccess) return <Navigate to="/" replace />;
+  
   if (!user.onboardingCompleted && location.pathname !== '/onboarding') return <Navigate to="/onboarding" replace />;
   return children;
 }
@@ -82,7 +72,7 @@ function AppContent() {
         width: '100%',
         paddingBottom: 0,
       }} className="app-main-content">
-        <Suspense fallback={<EliteLoader />}>
+        <Suspense fallback={<GlobalLoader mode="inline" />}>
           <Routes location={location}>
             <Route path="/login" element={<Login />} />
             <Route path="/" element={<Home />} />
@@ -102,7 +92,6 @@ function AppContent() {
           </Routes>
         </Suspense>
       </div>
-      <UnitConverter />
       <ComparisonHud />
       <FloatingOffers />
       <MobileBottomNav />
@@ -132,12 +121,12 @@ export default function App() {
       const keysToRemove = [];
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
-        if (key && key !== 'snapadda_user') keysToRemove.push(key);
+        if (key && key !== 'snapadda_user' && key !== 'snapadda_app_version') keysToRemove.push(key);
       }
       keysToRemove.forEach(k => localStorage.removeItem(k));
       if (savedUser) localStorage.setItem('snapadda_user', savedUser);
       localStorage.setItem('snapadda_app_version', currentVersion);
-      window.location.reload();
+      // Removed redundant window.location.reload() to prevent double-reload with PWA Service Worker
     } else if (currentVersion) {
       localStorage.setItem('snapadda_app_version', currentVersion);
     }

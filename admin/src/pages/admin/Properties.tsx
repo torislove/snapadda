@@ -2,7 +2,7 @@ import { usePropertyManager } from './properties/usePropertyManager';
 import { PropertiesList } from './properties/PropertiesList';
 import { PropertyForm } from './properties/PropertyForm';
 import { AnimatePresence } from 'framer-motion';
-import { Plus } from 'lucide-react';
+import { Plus, Share2 } from 'lucide-react';
 import { formatSnapAddaPrice } from '../../utils/priceUtils';
 import { ConnectivityBanner } from '../../components/ui/ConnectivityBanner';
 import { fetchRealtors } from '../../services/api';
@@ -24,6 +24,12 @@ const AdminProperties = () => {
       <ConnectivityBanner />
       
       {/* Header Section */}
+      <div style={{ background: 'rgba(155,89,245,0.05)', padding: '1rem', borderRadius: '14px', border: '1px solid rgba(155,89,245,0.1)', marginBottom: '2rem' }}>
+        <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--violet)', fontWeight: 600 }}>
+          💡 <strong>Help:</strong> On this page, you can manage all your real estate listings. You can add new properties, edit existing ones, or change their status (like marking them as "Sold").
+        </p>
+      </div>
+
       <div className="flex-row-mobile-stack" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1.5rem' }}>
         <div>
           <div style={{ fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.18em', color: 'var(--gold)', marginBottom: '0.6rem', fontFamily: 'var(--font-mono)' }}>✦ PROPERTY REGISTRY</div>
@@ -49,6 +55,17 @@ const AdminProperties = () => {
               style={{ padding: '0.6rem 1.2rem', borderRadius: '12px', fontSize: '0.8rem', border: '1px solid var(--violet)', color: 'var(--violet)' }}
             >
               + NEW FLAT
+            </button>
+            <button 
+              onClick={() => {
+                const url = 'https://snapadda.com/post-property';
+                navigator.clipboard.writeText(`List your property for FREE on SnapAdda. Fast, secure, and easy!\n${url}`);
+                alert('Copied Shareable Link to clipboard!');
+              }}
+              className="btn btn-ghost" 
+              style={{ padding: '0.6rem 1.2rem', borderRadius: '12px', fontSize: '0.8rem', border: '1px solid var(--gold)', color: 'var(--gold)', display: 'flex', gap: '6px', alignItems: 'center' }}
+            >
+              <Share2 size={14} /> SHARE POST LINK
             </button>
             <button 
               onClick={() => { manager.setLiveData({ type: 'Agricultural Land' }); manager.setIsAdding(true); }}
@@ -85,7 +102,6 @@ const AdminProperties = () => {
             handleEdit={manager.handleEdit}
             updateProperty={manager.updateProperty}
             createProperty={manager.createProperty}
-            deleteProperty={manager.deleteProperty}
             loadProperties={manager.loadProperties}
             setIsAdding={manager.setIsAdding}
           />

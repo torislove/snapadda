@@ -4,6 +4,9 @@ const propertySchema = new mongoose.Schema({
   title: { type: String, default: '' },
   description: String,
   price: { type: Number, default: 0 },
+  priceType: { type: String, enum: ['fixed', 'range'], default: 'fixed' },
+  minPrice: { type: Number, default: 0 },
+  maxPrice: { type: Number, default: 0 },
   priceDisplay: { type: String, default: '' },
   pricePerUnit: { type: Number, default: 0 },
   location: { type: String, default: '' },
@@ -61,6 +64,8 @@ const propertySchema = new mongoose.Schema({
   ownershipType: { type: String, default: 'N/A' },
   vastuCompliant: { type: Boolean, default: false },
   reraId: { type: String, default: '' },
+  approvalNumber: { type: String, default: '' }, // L.P. No for CRDA/DTCP
+  layoutName: { type: String, default: '' },     // Name of the venture/layout
   
   // Specifics
   cornerProperty: { type: Boolean, default: false },
@@ -78,6 +83,8 @@ const propertySchema = new mongoose.Schema({
   verificationStatus: { type: String, default: 'Draft' },
   isVerified: { type: Boolean, default: false },
   isFeatured: { type: Boolean, default: false },
+  isElite: { type: Boolean, default: false },        // Elite Asset status
+  isTrustVerified: { type: Boolean, default: false }, // SnapAdda Trust Seal
   propertyCode: { type: String, unique: true, sparse: true, default: '' },
   franchiseId: { type: String, default: null },
   
@@ -85,15 +92,17 @@ const propertySchema = new mongoose.Schema({
   displayContactType: { type: String, enum: ['Admin', 'Lister'], default: 'Admin' },
   isOwnerListing: { type: Boolean, default: false },
   listerLabelOverride: { type: String, default: '' },
+  posterName: { type: String, default: '' },
+  posterPhone: { type: String, default: '' },
+  posterEmail: { type: String, default: '' },
 
 
   // Technical Specs
-  surveyNo: { type: String, default: '' },
-  roadWidth: { type: Number, default: 0 },
-  powerKVA: { type: Number, default: 0 },
-  waterSource: { type: String, default: 'N/A' },
-  roadType: { type: String, default: 'N/A' },
+  ceilingHeight: { type: Number, default: 0 },
+  loadingDocks: { type: Number, default: 0 },
+  fireSafety: { type: Boolean, default: false },
   floorType: { type: String, default: 'N/A' },
+  waterSource: { type: String, default: 'N/A' },
   securityFeatures: [{ type: String }],
   
   // Verification Log
@@ -150,7 +159,15 @@ propertySchema.pre('save', function(next) {
   }
 
   // Generate human-readable priceDisplay
-  if (this.price > 0) {
+  if (this.priceType === 'range' && (this.minPrice || this.maxPrice)) {
+    const format = (val) => {
+      if (!val) return '—';
+      if (val >= 10000000) return `${(val / 10000000).toFixed(2)} Cr`;
+      if (val >= 100000) return `${(val / 100000).toFixed(2)} L`;
+      return val.toLocaleString('en-IN');
+    };
+    this.priceDisplay = `₹ ${format(this.minPrice)} - ${format(this.maxPrice)}`;
+  } else if (this.price > 0) {
     const val = this.price;
     if (val >= 10000000) {
       this.priceDisplay = `₹ ${(val / 10000000).toFixed(2)} Crore`;

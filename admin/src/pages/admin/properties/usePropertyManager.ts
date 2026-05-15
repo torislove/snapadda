@@ -11,6 +11,8 @@ export const usePropertyManager = () => {
   const [customFeatures, setCustomFeatures] = useState<{label: string, value: string}[]>([]);
   const [isVerified, setIsVerified] = useState(false);
   const [isFeatured, setIsFeatured] = useState(false);
+  const [isElite, setIsElite] = useState(false);
+  const [isTrustVerified, setIsTrustVerified] = useState(false);
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [liveData, setLiveData] = useState<any>({});
@@ -55,6 +57,8 @@ export const usePropertyManager = () => {
     setCustomFeatures([]);
     setIsVerified(false);
     setIsFeatured(false);
+    setIsElite(false);
+    setIsTrustVerified(false);
     setNewImageFiles([]);
     setCurrentImageUrls([]);
     setLiveData({});
@@ -68,6 +72,8 @@ export const usePropertyManager = () => {
     setCustomFeatures(prop.customFeatures || []);
     setIsVerified(prop.isVerified || false);
     setIsFeatured(prop.isFeatured || false);
+    setIsElite(prop.isElite || false);
+    setIsTrustVerified(prop.isTrustVerified || false);
     const existing = prop.images || (prop.image ? [prop.image] : []);
     setCurrentImageUrls(existing);
     setRealtorData(prop.realtor || {});
@@ -80,7 +86,10 @@ export const usePropertyManager = () => {
 
     setLiveData({
       ...prop,
-      price_raw: pRaw
+      price_raw: pRaw,
+      minPrice: prop.minPrice || '',
+      maxPrice: prop.maxPrice || '',
+      priceType: prop.priceType || 'fixed'
     });
 
     setIsEditing(true);
@@ -112,7 +121,15 @@ export const usePropertyManager = () => {
       };
 
       const description = await adminAIService.generate(
-        `Generate description for ${liveData.title} in ${liveData.location}`,
+        `Generate an ultra-high-end, expansive real estate description for "${liveData.title}" in ${liveData.location}. 
+         
+         Requirements:
+         1. Length: Extensive and detailed (approx 500-800 words).
+         2. Language: Bilingual. A sophisticated English section followed by a poetic, professional Telugu section.
+         3. Structure: Use elegant subheadings like 'The Architectural Vision', 'Strategic Positioning', 'Technical Specifications', and 'Investment Potential'.
+         4. Content: Incorporate specific details: Type: ${liveData.type}, Price: ${liveData.price || 'Contact for Price'}, Size: ${liveData.areaSize} ${liveData.measurementUnit}, Features: ${details.features}.
+         5. Tone: Institutional, elite, and persuasive. Focus on high growth and Vastu compliance where applicable.
+         6. Formatting: Use bullet points and strategic bolding for readability.`,
         'description',
         details
       );
@@ -138,6 +155,8 @@ export const usePropertyManager = () => {
     propData.customFeatures = customFeatures;
     propData.isVerified = isVerified;
     propData.isFeatured = isFeatured;
+    propData.isElite = isElite;
+    propData.isTrustVerified = isTrustVerified;
 
     // Realtor-CRM validation removed for frictionless posting
 
@@ -169,7 +188,14 @@ export const usePropertyManager = () => {
         }
       }
 
-      propData.price = convertToValue(propData.price, priceUnit);
+      if (liveData.priceType === 'range') {
+        propData.minPrice = convertToValue(liveData.minPrice, priceUnit);
+        propData.maxPrice = convertToValue(liveData.maxPrice, priceUnit);
+        propData.priceType = 'range';
+      } else {
+        propData.price = convertToValue(propData.price, priceUnit);
+        propData.priceType = 'fixed';
+      }
       propData.areaSize = Number(propData.areaSize) || 0;
 
       const isVideoUrl = (url: string) => /\.(mp4|mov|webm|ogg)$/i.test(url) || url.includes('/video/');
@@ -186,6 +212,8 @@ export const usePropertyManager = () => {
         customFeatures,
         isVerified,
         isFeatured,
+        isElite,
+        isTrustVerified,
         images: imagesList,
         image: imagesList.length > 0 ? imagesList[0] : '',
         realtor: realtorData,  // include realtor info
@@ -222,7 +250,7 @@ export const usePropertyManager = () => {
     
     formTimeoutRef.current = setTimeout(() => {
       setLiveData((prev: any) => {
-        const p_raw = updatedData.price || prev.price_raw;
+        const p_raw = updatedData.price !== undefined ? updatedData.price : prev.price_raw;
         const p = convertToValue(p_raw, priceUnit);
         
         return { 
@@ -230,14 +258,12 @@ export const usePropertyManager = () => {
           ...updatedData, 
           price_raw: p_raw, 
           price: p,
-          // Sync calculator fields
           pricePerUnit: updatedData.pricePerUnit || prev.pricePerUnit,
           areaSize: updatedData.areaSize || prev.areaSize,
           measurementUnit: updatedData.measurementUnit || prev.measurementUnit
         };
-
       });
-    }, 350);
+    }, 150);
   };
 
 
@@ -266,6 +292,8 @@ export const usePropertyManager = () => {
     customFeatures, setCustomFeatures,
     isVerified, setIsVerified,
     isFeatured, setIsFeatured,
+    isElite, setIsElite,
+    isTrustVerified, setIsTrustVerified,
     isGeneratingAI, isUploading,
     liveData, setLiveData,
     currentImageUrls, setCurrentImageUrls,

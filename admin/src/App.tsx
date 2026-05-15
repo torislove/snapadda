@@ -117,6 +117,18 @@ function App() {
     } else if (currentVersion) {
       localStorage.setItem('snapadda_admin_version', currentVersion);
     }
+
+    // ─── Passive Backend Keep-Alive (Zero Cost) ───
+    const API_URL = import.meta.env.VITE_API_URL || '/api';
+    const keepWarm = () => {
+      fetch(`${API_URL.replace(/\/+$/, '')}/health`, { method: 'HEAD', mode: 'no-cors' }).catch(() => {});
+    };
+    
+    // Ping every 10 minutes to prevent serverless suspension during business hours
+    const interval = setInterval(keepWarm, 10 * 60 * 1000);
+    keepWarm(); // Initial ping
+    
+    return () => clearInterval(interval);
   }, []);
 
   return (

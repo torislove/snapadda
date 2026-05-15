@@ -134,7 +134,15 @@ const resources = {
         "cents": "Cents",
         "perAcre": "Per Acre",
         "perCent": "Per Cent",
-        "totalArea": "Total Area"
+        "totalArea": "Total Area",
+        "facing_east": "East",
+        "facing_west": "West",
+        "facing_north": "North",
+        "facing_south": "South",
+        "facing_north-east": "North-East",
+        "facing_south-west": "South-West",
+        "facing_north-west": "North-West",
+        "facing_south-east": "South-East"
       },
       "footer": {
         "quick": "Quick Links",
@@ -253,6 +261,54 @@ const resources = {
         "agriculture": "Agricultural Land",
         "commercial": "Commercial Space",
         "house": "Independent House"
+      },
+      "purposes": {
+        "sale": "For Sale",
+        "rent": "For Rent",
+        "lease": "Lease"
+      },
+      "units": {
+        "sq.ft": "Sq.Ft",
+        "sq.yards": "Sq.Yards",
+        "acres": "Acres",
+        "cents": "Cents",
+        "gajam": "Gajam"
+      },
+      "facing": {
+        "any": "Any",
+        "east": "East",
+        "west": "West",
+        "north": "North",
+        "south": "South",
+        "north-east": "North-East",
+        "south-west": "South-West",
+        "north-west": "North-West",
+        "south-east": "South-East"
+      },
+      "ownership": {
+        "freehold": "Freehold",
+        "leasehold": "Leasehold",
+        "co-operative": "Co-operative",
+        "power of attorney": "Power of Attorney"
+      },
+      "transaction": {
+        "new": "New Launch",
+        "resale": "Resale"
+      },
+      "furnishing": {
+        "furnished": "Furnished",
+        "semi-furnished": "Semi-Furnished",
+        "unfurnished": "Unfurnished"
+      },
+      "parking": {
+        "none": "None",
+        "covered": "Covered",
+        "open": "Open"
+      },
+      "road": {
+        "mud": "Mud Road",
+        "tar": "Tar Road",
+        "cc": "CC Road"
       },
       "auth": {
         "welcome": "Welcome to SnapAdda",
@@ -515,9 +571,16 @@ const resources = {
         "config": "కాన్ఫిగరేషన్",
         "floor": "అంతస్తు",
         "status": "స్థితి",
-        "totalVal": "మొత్తం విలువ",
-        "viewing": "చూస్తున్నారు",
-        "sold": "అమ్ముడైపోయింది"
+        "perCent": "సెంటుకు ధర",
+        "totalArea": "మొత్తం విస్తీర్ణం",
+        "facing_east": "తూర్పు",
+        "facing_west": "పడమర",
+        "facing_north": "ఉత్తరం",
+        "facing_south": "దక్షిణం",
+        "facing_north-east": "ఈశాన్యం",
+        "facing_south-west": "నైరుతి",
+        "facing_north-west": "వాయువ్యం",
+        "facing_south-east": "ఆగ్నేయం"
       },
       "footer": {
         "quick": "త్వరిత లింకులు",
@@ -636,6 +699,54 @@ const resources = {
         "agriculture": "వ్యవసాయ భూమి",
         "commercial": "కమర్షియల్ స్పేస్",
         "house": "ఇండిపెండెంట్ హౌస్"
+      },
+      "purposes": {
+        "sale": "అమ్మకానికి",
+        "rent": "అద్దెకు",
+        "lease": "లీజుకు"
+      },
+      "units": {
+        "sq.ft": "చదరపు అడుగులు",
+        "sq.yards": "గజాలు",
+        "acres": "ఎకరాలు",
+        "cents": "సెంట్లు",
+        "gajam": "గజాలు"
+      },
+      "facing": {
+        "any": "ఏదైనా",
+        "east": "తూర్పు",
+        "west": "పడమర",
+        "north": "ఉత్తరం",
+        "south": "దక్షిణం",
+        "north-east": "ఈశాన్యం",
+        "south-west": "నైరుతి",
+        "north-west": "వాయువ్యం",
+        "south-east": "ఆగ్నేయం"
+      },
+      "ownership": {
+        "freehold": "ఫ్రీహోల్డ్",
+        "leasehold": "లీజుహోల్డ్",
+        "co-operative": "కోఆపరేటివ్",
+        "power of attorney": "పవర్ ఆఫ్ అటార్నీ"
+      },
+      "transaction": {
+        "new": "కొత్తది",
+        "resale": "రీసేల్"
+      },
+      "furnishing": {
+        "furnished": "పూర్తిగా అమర్చబడినది",
+        "semi-furnished": "పాక్షికంగా అమర్చబడినది",
+        "unfurnished": "అమర్చబడలేదు"
+      },
+      "parking": {
+        "none": "లేదు",
+        "covered": "కవర్డ్",
+        "open": "ఓపెన్"
+      },
+      "road": {
+        "mud": "మట్టి రోడ్డు",
+        "tar": "తారు రోడ్డు",
+        "cc": "సిమెంటు రోడ్డు"
       },
       "auth": {
         "welcome": "స్నాప్అడ్డాకు స్వాగతం",

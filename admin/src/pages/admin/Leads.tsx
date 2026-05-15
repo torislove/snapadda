@@ -287,6 +287,11 @@ const LeadCard = ({ lead, onStatusChange, onFlag }: {
             🏠 {lead.propertyId.title}
           </div>
         )}
+        {lead.preferredLocation && (
+          <div style={{ fontSize: '0.7rem', color: 'var(--emerald)', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '6px' }}>
+            📍 Target: {lead.preferredLocation}
+          </div>
+        )}
         <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.4)', background: 'rgba(255,255,255,0.02)', padding: '0.6rem', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.04)', lineHeight: 1.5 }}>
           {lead.message || 'Standard Inquiry Received.'}
         </div>

@@ -1,5 +1,5 @@
 import express from 'express';
-import { googleAuth, updatePreferences, getAllUsers, toggleFavorite, getFavorites } from '../controllers/userController.js';
+import { googleAuth, updatePreferences, getAllUsers, toggleFavorite, getFavorites, updateLocation } from '../controllers/userController.js';
 
 const router = express.Router();
 
@@ -8,6 +8,9 @@ router.post('/auth', googleAuth);
 
 // Preference update (Onboarding)
 router.post('/:id/preferences', updatePreferences);
+
+// Location tracking
+router.put('/:id/location', updateLocation);
 
 // Admin route
 router.get('/', getAllUsers);

@@ -13,7 +13,6 @@ export const prefetchPropertyData = async (id, fetchFn) => {
   if (!id || prefetchCache.has(id)) return;
   
   try {
-    // Only prefetch if on a high-speed connection or desktop
     const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
     if (conn && (conn.saveData || conn.effectiveType === '2g')) return;
 
@@ -33,6 +32,18 @@ export const prioritizeImage = (imgElement) => {
   if (!imgElement) return;
   imgElement.setAttribute('loading', 'eager');
   imgElement.setAttribute('fetchpriority', 'high');
+  imgElement.style.willChange = 'transform, opacity';
+};
+
+/**
+ * Forces GPU acceleration on an element.
+ */
+export const forceGPU = (element) => {
+  if (!element) return;
+  element.style.transform = 'translateZ(0)';
+  element.style.backfaceVisibility = 'hidden';
+  element.style.perspective = '1000px';
+  element.style.willChange = 'transform, opacity';
 };
 
 /**
@@ -42,16 +53,18 @@ export const prioritizeImage = (imgElement) => {
 export const pruneResources = () => {
   if ('requestIdleCallback' in window) {
     window.requestIdleCallback(() => {
-      // Clear large sets or temporary objects here if needed
       if (prefetchCache.size > 50) prefetchCache.clear();
+      // Additional memory cleanup
+      if (window.gc) window.gc(); 
     });
   }
 };
 
 /**
  * Predictive Route Prefetcher
- * Pre-loads the code for a route before navigation.
  */
 export const prefetchRoute = (importFn) => {
-  importFn();
+  if (typeof importFn === 'function') {
+    importFn();
+  }
 };

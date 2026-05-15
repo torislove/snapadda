@@ -8,3 +8,18 @@
 @import "./legacy.css";
 @import "./overrides.css";
 
+body {
+  font-family: var(--font-primary);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.6;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  padding-bottom: env(safe-area-inset-bottom, 0); /* Global safe area bottom */
+}
+
+@media (min-width: 768px) {
+  body {
+    zoom: 0.8;
+  }
+}

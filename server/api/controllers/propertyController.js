@@ -7,7 +7,7 @@ import { cleanPropertyData } from '../utils/propertyCleaner.js';
 import { resolveAndExtractCoords } from '../utils/geoUtils.js';
 
 // Lean projection for card list views (avoids fetching 50+ unused fields)
-const CARD_FIELDS = 'title price priceDisplay pricePerUnit location district type purpose subType images image status isVerified isFeatured bhk beds baths areaSize measurementUnit facing furnishing constructionStatus approvalAuthority isGated vastuCompliant listerType isOwnerListing propertyCode googleMapsLink coordinates createdAt likeCount';
+const CARD_FIELDS = 'title price priceDisplay pricePerUnit location district type purpose subType images image status isVerified isFeatured bhk beds baths areaSize measurementUnit facing furnishing constructionStatus approvalAuthority approvalNumber layoutName isGated vastuCompliant cornerProperty boundaryWall surveyNo roadType roadWidth powerKVA ceilingHeight loadingDocks fireSafety floorType listerType isOwnerListing propertyCode googleMapsLink coordinates createdAt likeCount';
 
 // Helper to sync to Firebase
 const syncToFirebase = async (property) => {
@@ -35,12 +35,24 @@ const syncToFirebase = async (property) => {
       verificationStatus: property.verificationStatus || 'Draft',
       isVerified: property.isVerified || false,
       isFeatured: property.isFeatured || false,
+      isElite: property.isElite || false,
+      isTrustVerified: property.isTrustVerified || false,
       bhk: property.bhk || 0,
       beds: property.beds || 0,
       baths: property.baths || 0,
       areaSize: property.areaSize || 0,
       measurementUnit: property.measurementUnit || 'SqFt',
       approvalAuthority: property.approvalAuthority || 'N/A',
+      approvalNumber: property.approvalNumber || '',
+      layoutName: property.layoutName || '',
+      surveyNo: property.surveyNo || '',
+      roadType: property.roadType || 'N/A',
+      roadWidth: property.roadWidth || 0,
+      powerKVA: property.powerKVA || 0,
+      ceilingHeight: property.ceilingHeight || 0,
+      loadingDocks: property.loadingDocks || 0,
+      fireSafety: property.fireSafety || false,
+      floorType: property.floorType || 'N/A',
       facing: property.facing || 'Any',
       furnishing: property.furnishing || 'N/A',
       constructionStatus: property.constructionStatus || 'N/A',

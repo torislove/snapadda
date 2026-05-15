@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Save, Plus, Trash2, ArrowUp, ArrowDown, Activity, Settings as SettingsIcon, Type, Link as LinkIcon, Image as ImageIcon } from 'lucide-react';
+import { Save, Plus, ArrowUp, ArrowDown, Activity, Settings as SettingsIcon, Type, Link as LinkIcon, Image as ImageIcon } from 'lucide-react';
 import { fetchSetting, saveSetting } from '../../services/api';
 
 interface MarqueeItem {
@@ -14,6 +14,8 @@ interface MarqueeSetting {
   band2: MarqueeItem[];
   speed1: number;
   speed2: number;
+  citiesSpeed: number;
+  reviewsSpeed: number;
 }
 
 const DEFAULT_STRIPS: MarqueeSetting = {
@@ -26,7 +28,9 @@ const DEFAULT_STRIPS: MarqueeSetting = {
   band2: [
     { id: '3', label: 'Invest in Plots ✨', link: '#search', icon: 'Square' },
     { id: '4', label: 'Under 50 Lakhs 🔥', link: '#search', icon: 'IndianRupee' },
-  ]
+  ],
+  citiesSpeed: 80,
+  reviewsSpeed: 100
 };
 
 // Available icons to choose from
@@ -83,12 +87,6 @@ export default function AdminMarquee() {
     }));
   };
 
-  const deleteItem = (band: 'band1' | 'band2', id: string) => {
-    setSettings(prev => ({
-      ...prev,
-      [band]: prev[band].filter(item => item.id !== id)
-    }));
-  };
 
   const moveItem = (band: 'band1' | 'band2', index: number, direction: 'up' | 'down') => {
     setSettings(prev => {
@@ -175,12 +173,6 @@ export default function AdminMarquee() {
               </div>
             </div>
 
-            <button 
-              onClick={() => deleteItem(bandName, item.id)}
-              style={{ padding: '0.6rem', background: 'rgba(240,93,94,0.1)', color: 'var(--rose)', border: '1px solid rgba(240,93,94,0.2)', borderRadius: '8px', cursor: 'pointer', alignSelf: 'flex-end', height: '40px' }}
-            >
-              <Trash2 size={16} />
-            </button>
           </div>
         ))}
         {settings[bandName].length === 0 && (
@@ -194,6 +186,12 @@ export default function AdminMarquee() {
 
   return (
     <div>
+      <div style={{ background: 'rgba(232,184,75,0.05)', padding: '1rem', borderRadius: '14px', border: '1px solid rgba(232,184,75,0.1)', marginBottom: '2rem' }}>
+        <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--gold)', fontWeight: 600 }}>
+          💡 <strong>Help:</strong> Here you can change the text that scrolls across the top and bottom of your website. You can also make the scrolling faster or slower by changing the "Speed" numbers.
+        </p>
+      </div>
+
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
         <div>
           <h1 style={{ fontSize: '2rem', margin: '0 0 0.25rem', color: 'var(--text-primary)' }}>Marquee Settings</h1>
@@ -217,6 +215,35 @@ export default function AdminMarquee() {
 
       {renderBandEditor('band1', 'Top Band (Flows Left)', 'speed1')}
       {renderBandEditor('band2', 'Bottom Band (Flows Right)', 'speed2')}
+
+      {/* Cities & Reviews Speeds */}
+      <div style={{ background: 'var(--bg-glass)', borderRadius: '16px', padding: '1.5rem', border: '1px solid var(--border)', marginBottom: '2rem' }}>
+        <h2 style={{ fontSize: '1.25rem', margin: '0 0 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <SettingsIcon size={20} style={{ color: 'var(--gold)' }} /> System Marquees
+        </h2>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '2rem' }}>
+          <div>
+            <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '8px', textTransform: 'uppercase' }}>Cities Marquee Speed (s)</label>
+            <input 
+              type="number" 
+              value={settings.citiesSpeed || 80} 
+              onChange={e => setSettings(prev => ({ ...prev, citiesSpeed: Number(e.target.value) }))}
+              style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)', color: 'white' }}
+            />
+            <p style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', marginTop: '6px' }}>Lower is faster. Default is 80s.</p>
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '8px', textTransform: 'uppercase' }}>Reviews Marquee Speed (s)</label>
+            <input 
+              type="number" 
+              value={settings.reviewsSpeed || 100} 
+              onChange={e => setSettings(prev => ({ ...prev, reviewsSpeed: Number(e.target.value) }))}
+              style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)', color: 'white' }}
+            />
+            <p style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', marginTop: '6px' }}>Lower is faster. Default is 100s.</p>
+          </div>
+        </div>
+      </div>
 
     </div>
   );

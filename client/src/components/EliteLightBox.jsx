@@ -14,10 +14,17 @@ const IMAGE_PLACEHOLDER = (
 );
 
 const EliteLightBox = ({ images = [], videos = [], startIdx = 0, onClose, title }) => {
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [page, setPage] = useState(startIdx < images.length ? startIdx : 0);
   const [zoom, setZoom] = useState(false);
   const [imgErrors, setImgErrors] = useState({});
   const thumbsRef = useRef(null);
+  
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const allAssets = [
     ...images.map(img => ({ type: 'image', url: img })),

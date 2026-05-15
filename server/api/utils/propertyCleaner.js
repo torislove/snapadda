@@ -18,7 +18,7 @@ export const cleanPropertyData = (rawData, isPublicSubmission = false) => {
   const numericFields = [
     'price', 'pricePerUnit', 'areaSize', 
     'bhk', 'beds', 'baths', 'totalFloors', 'floorNo', 'carpetArea', 
-    'superBuiltupArea', 'roadWidth'
+    'superBuiltupArea', 'roadWidth', 'powerKVA', 'ceilingHeight', 'loadingDocks'
   ];
   numericFields.forEach(f => {
     if (propertyData[f] !== undefined && propertyData[f] !== null && propertyData[f] !== '') {
@@ -34,7 +34,7 @@ export const cleanPropertyData = (rawData, isPublicSubmission = false) => {
   // 3. Boolean Parsing
   const boolFields = [
     'isVerified', 'isFeatured', 'vastuCompliant', 'isGated', 
-    'cornerProperty', 'boundaryWall'
+    'cornerProperty', 'boundaryWall', 'fireSafety'
   ];
   boolFields.forEach(f => {
     if (propertyData[f] !== undefined) {
@@ -58,7 +58,8 @@ export const cleanPropertyData = (rawData, isPublicSubmission = false) => {
   // 5. Smart Defaults & Conditional Logic
   const landTypes = [
     'Agricultural Land', 'CRDA Approved Plot', 'Open Plot', 'Farmhouse', 
-    'Residential Plot', 'Commercial Plot', 'Layout Plot'
+    'Residential Plot', 'Commercial Plot', 'Layout Plot',
+    'Industrial Shed', 'Warehouse', 'Factory'
   ];
   
   if (landTypes.includes(propertyData.type)) {

@@ -10,6 +10,18 @@ export default function LocalAgency() {
   const { city } = useParams();
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [supportInfo, setSupportInfo] = useState({ phone: '+91 93467 93364', whatsapp: '919346793364' });
+
+  useEffect(() => {
+    import('../services/api').then(api => {
+      api.fetchSetting('marketing_settings').then(data => {
+        if (data) setSupportInfo({
+          phone: data.supportPhone,
+          whatsapp: data.waNumber
+        });
+      });
+    });
+  }, []);
 
   // Dynamic SEO for the City
   useSEO({
@@ -118,10 +130,10 @@ export default function LocalAgency() {
               Get a free consultation on market values and upcoming projects in {city}.
             </p>
             <div style={{ display: 'flex', gap: '1.5rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-              <a href="tel:+919346793364" style={{ background: 'var(--gold)', color: 'black', padding: '1rem 3rem', borderRadius: '12px', fontWeight: 900, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <a href={`tel:${supportInfo.phone.replace(/\s+/g, '')}`} style={{ background: 'var(--gold)', color: 'black', padding: '1rem 3rem', borderRadius: '12px', fontWeight: 900, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <Phone size={20} /> CALL AGENCY
               </a>
-              <a href={`https://wa.me/919346793364?text=Hi SnapAdda, I'm interested in properties in ${city}.`} style={{ background: '#25D366', color: 'white', padding: '1rem 3rem', borderRadius: '12px', fontWeight: 900, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <a href={`https://wa.me/${supportInfo.whatsapp}?text=${encodeURIComponent(`Hi SnapAdda, I'm interested in properties in ${city}.`)}`} style={{ background: '#25D366', color: 'white', padding: '1rem 3rem', borderRadius: '12px', fontWeight: 900, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <MessageSquare size={20} /> WHATSAPP
               </a>
             </div>

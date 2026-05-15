@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
+import { motion } from 'framer-motion';
 import { Star, Quote, MapPin, X } from 'lucide-react';
+import { fetchSetting } from '../services/api';
 
 export default function ClientReviews({ testimonials = [] }) {
   const [reviews, setReviews] = useState([]);
@@ -8,6 +10,15 @@ export default function ClientReviews({ testimonials = [] }) {
   const trackRef = useRef(null);
   const [trackWidth, setTrackWidth] = useState(0);
   const [selectedReview, setSelectedReview] = useState(null);
+  const [speed, setSpeed] = useState(100);
+
+  useEffect(() => {
+    fetchSetting('marquee_strips')
+      .then(res => {
+        if (res && res.reviewsSpeed) setSpeed(res.reviewsSpeed);
+      })
+      .catch(() => {});
+  }, []);
 
   const FALLBACK_REVIEWS = [
     { id: 'f1', name: 'Ravi Teja', role: 'Investor', text: 'SnapAdda made my land investment in Amaravati seamless. Truly professional.', avatar: 'RT' },
@@ -99,20 +110,26 @@ export default function ClientReviews({ testimonials = [] }) {
         {/* Edge Fades */}
         <div style={{ position: 'absolute', inset: 0, zIndex: 10, pointerEvents: 'none', background: 'linear-gradient(to right, var(--bg-deep) 0%, transparent 15%, transparent 85%, var(--bg-deep) 100%)' }} />
 
-        {/* Marquee track — CSS animation for reliable pause */}
-        <div
+        {/* Marquee track — Framer Motion for stability */}
+        <motion.div
           ref={trackRef}
+          animate={paused ? {} : { x: ['0%', '-25%'] }}
+          transition={{
+            x: {
+              repeat: Infinity,
+              repeatType: "loop",
+              duration: speed,
+              ease: "linear",
+            },
+          }}
           style={{
             display: 'flex',
             gap: '1.5rem',
             width: 'max-content',
             padding: '1rem',
-            animation: `snapadda-marquee 80s linear infinite`,
-            animationPlayState: paused ? 'paused' : 'running',
-            willChange: 'transform',
           }}
         >
-          {[...reviews, ...reviews, ...reviews].map((r, i) => (
+          {[...reviews, ...reviews, ...reviews, ...reviews].map((r, i) => (
             <div
               key={`${r._id}-${i}`}
               className="review-card glass-premium"
@@ -181,16 +198,8 @@ export default function ClientReviews({ testimonials = [] }) {
               </div>
             </div>
           ))}
-        </div>
+        </motion.div>
       </div>
-
-      {/* Keyframe definition — injected once */}
-      <style>{`
-        @keyframes snapadda-marquee {
-          0%   { transform: translateX(0); }
-          100% { transform: translateX(-33.333%); }
-        }
-      `}</style>
 
       {/* Review Detail Modal */}
       {selectedReview && (

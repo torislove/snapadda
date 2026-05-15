@@ -1,31 +1,21 @@
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
-import path from 'path';
-import { fileURLToPath } from 'url';
+dotenv.config();
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const uri = process.env.MONGODB_URI;
+console.log('Connecting to:', uri ? uri.split('@')[1] : 'UNDEFINED');
 
-dotenv.config({ path: path.join(__dirname, '../../server/.env') });
-
-const PropertySchema = new mongoose.Schema({}, { strict: false });
-const Property = mongoose.model('Property', PropertySchema);
-
-async function checkProperties() {
-  try {
-    await mongoose.connect(process.env.MONGODB_URI);
-    console.log('Connected to MongoDB');
-    
-    const count = await Property.countDocuments();
-    console.log(`Total properties: ${count}`);
-    
-    const sample = await Property.find().limit(5);
-    console.log('Sample properties:', JSON.stringify(sample, null, 2));
-    
-    await mongoose.disconnect();
-  } catch (err) {
-    console.error('Error:', err);
-  }
+if (!uri) {
+  console.error('FAILURE: MONGODB_URI is not defined in .env');
+  process.exit(1);
 }
 
-checkProperties();
+mongoose.connect(uri)
+  .then(() => {
+    console.log('SUCCESS: Connected to MongoDB');
+    process.exit(0);
+  })
+  .catch(err => {
+    console.error('FAILURE: Could not connect to MongoDB:', err);
+    process.exit(1);
+  });

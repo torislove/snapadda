@@ -86,9 +86,9 @@ const ShareControlCenter = ({ isOpen, onClose, property }) => {
           }}
         >
           <motion.div 
-            initial={{ opacity: 0, scale: 0.9, y: 30 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 30 }}
+            initial={{ opacity: 0, scale: 0.6, y: 30 }}
+            animate={{ opacity: 1, scale: 0.7, y: 0 }}
+            exit={{ opacity: 0, scale: 0.6, y: 30 }}
             onClick={(e) => e.stopPropagation()}
             className="glass-premium"
             style={{ 
@@ -197,35 +197,20 @@ const ShareControlCenter = ({ isOpen, onClose, property }) => {
                   <div style={{ fontWeight: 800, fontSize: '0.85rem' }}>Text SMS</div>
                 </motion.button>
 
-                {/* Smart Copy */}
+                {/* Professional Marketing Copy */}
                 <motion.button 
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={handleCopy}
                   style={{ 
-                    gridColumn: 'span 1',
-                    background: 'rgba(255,255,255,0.03)',
-                    border: '1px solid rgba(255,255,255,0.08)',
-                    borderRadius: '20px', padding: '1rem', display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', color: copied ? '#10d98c' : 'white'
+                    gridColumn: 'span 2',
+                    background: 'rgba(232, 184, 75, 0.05)',
+                    border: '1px solid rgba(232, 184, 75, 0.1)',
+                    borderRadius: '20px', padding: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', cursor: 'pointer', color: copied ? '#10d98c' : 'var(--gold)'
                   }}
                 >
                   {copied ? <Check size={18} /> : <Copy size={18} />}
-                  <div style={{ fontWeight: 800, fontSize: '0.8rem' }}>{copied ? 'Copied!' : 'Smart Copy'}</div>
-                </motion.button>
-
-                {/* Universal Share */}
-                <motion.button 
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={handleNative}
-                  style={{ 
-                    background: 'rgba(155, 89, 245, 0.08)',
-                    border: '1px solid rgba(155, 89, 245, 0.15)',
-                    borderRadius: '20px', padding: '1rem', display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', color: '#9b59f5'
-                  }}
-                >
-                  <Share2 size={18} />
-                  <div style={{ fontWeight: 800, fontSize: '0.8rem' }}>Universal</div>
+                  <div style={{ fontWeight: 900, fontSize: '0.85rem', letterSpacing: '0.05em' }}>{copied ? 'COPIED TO CLIPBOARD' : 'COPY PROFESSIONAL MARKETING DATA'}</div>
                 </motion.button>
 
                 {/* Visual Snapshot */}
@@ -234,35 +219,40 @@ const ShareControlCenter = ({ isOpen, onClose, property }) => {
                   whileTap={{ scale: 0.98 }}
                   onClick={handleSnapshot}
                   style={{ 
-                    background: 'rgba(232, 184, 75, 0.12)',
+                    gridColumn: 'span 2',
+                    background: 'linear-gradient(135deg, rgba(232, 184, 75, 0.15) 0%, rgba(232, 184, 75, 0.05) 100%)',
                     border: '1px solid rgba(232, 184, 75, 0.3)',
-                    borderRadius: '20px', padding: '1rem', display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', color: 'var(--gold)'
+                    borderRadius: '20px', padding: '1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', cursor: 'pointer', color: 'var(--gold)'
                   }}
                 >
-                  <Zap size={18} fill="currentColor" />
-                  <div style={{ fontWeight: 800, fontSize: '0.8rem' }}>Elite Snapshot</div>
+                  <Zap size={20} fill="currentColor" />
+                  <div style={{ fontWeight: 950, fontSize: '0.9rem', letterSpacing: '0.1em' }}>GENERATE ELITE SNAPSHOT</div>
                 </motion.button>
               </div>
 
               {/* Live Preview */}
               <div style={{ marginBottom: '1.5rem' }}>
-                <label style={{ fontSize: '0.65rem', fontWeight: 900, color: 'rgba(255,255,255,0.3)', marginBottom: '0.75rem', display: 'block', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Live Content Preview</label>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                  <label style={{ fontSize: '0.65rem', fontWeight: 900, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Institutional Content Preview</label>
+                  <div style={{ fontSize: '0.6rem', background: 'rgba(16,217,140,0.1)', color: '#10d98c', padding: '2px 8px', borderRadius: '4px', fontWeight: 900 }}>REAL-TIME DATA</div>
+                </div>
                 <div style={{ 
-                  background: 'rgba(0,0,0,0.3)', 
-                  borderRadius: '20px', 
-                  padding: '1.25rem', 
-                  fontSize: '0.8rem', 
-                  lineHeight: '1.6', 
-                  color: 'rgba(255,255,255,0.7)',
+                  background: 'rgba(0,0,0,0.5)', 
+                  borderRadius: '24px', 
+                  padding: '1.5rem', 
+                  fontSize: '0.85rem', 
+                  lineHeight: '1.7', 
+                  color: 'rgba(255,255,255,0.85)',
                   whiteSpace: 'pre-wrap',
-                  border: '1px solid rgba(255,255,255,0.05)',
-                  maxHeight: '160px',
+                  border: '1px solid rgba(232,184,75,0.1)',
+                  maxHeight: '220px',
                   overflowY: 'auto',
-                  fontFamily: 'monospace',
-                  position: 'relative'
+                  fontFamily: '"Outfit", sans-serif',
+                  position: 'relative',
+                  boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.5)'
                 }}>
-                  <div style={{ position: 'absolute', top: '10px', right: '10px', opacity: 0.1 }}>
-                    <MessageSquare size={40} />
+                  <div style={{ position: 'absolute', top: '15px', right: '15px', opacity: 0.05 }}>
+                    <ShieldCheck size={60} />
                   </div>
                   {templates.whatsapp}
                 </div>

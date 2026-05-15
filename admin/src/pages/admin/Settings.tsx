@@ -1,7 +1,7 @@
 import React, { useState, useEffect, Suspense, lazy } from 'react';
 import {
   CheckCircle, AlertCircle, RefreshCw, Shield,
-  User, Palette, Trash2, X, Globe, Cpu
+  User, Palette, X, Globe, Cpu
 } from 'lucide-react';
 import {
   changeAdminPassword,
@@ -93,10 +93,16 @@ const AdminSettings = () => {
   const [waNumber, setWaNumber] = useState('');
   const [waMessage, setWaMessage] = useState('');
   const [supportEmail, setSupportEmail] = useState('');
+  const [supportPhone, setSupportPhone] = useState('');
+
+  // Hero Content
+  const [heroTitle, setHeroTitle] = useState('');
+  const [heroSubtitle, setHeroSubtitle] = useState('');
 
   // Automation
   const [onboardingQuestions, setOnboardingQuestions] = useState<any[]>([]);
   const [siteMaintenance, setSiteMaintenance] = useState(false);
+  const [siteStats, setSiteStats] = useState<any[]>([]);
 
   // Security
   const [currentPw, setCurrentPw] = useState('');
@@ -112,21 +118,24 @@ const AdminSettings = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        const [prof, app, mkt, auto] = await Promise.all([
+        const [prof, app, mkt, auto, hero] = await Promise.all([
           fetchSetting('admin_profile'),
           fetchSetting('appearance'),
           fetchSetting('marketing_settings'),
-          fetchSetting('automation_settings')
+          fetchSetting('automation_settings'),
+          fetchSetting('hero_content')
         ]);
-        if (prof?.data) setProfileName(prof.data.name || '');
-        if (app?.data) { setPrimaryColor(app.data.primaryColor || '#e8b84b'); setGlassOpacity(app.data.glassOpacity || 0.1); setBorderRadius(app.data.borderRadius || 20); }
-        if (mkt?.data) {
-          setSeoTitle(mkt.data.seoTitle || ''); setSeoDesc(mkt.data.seoDesc || '');
-          setGaId(mkt.data.gaId || ''); setFbPixel(mkt.data.fbPixel || '');
-          setWaNumber(mkt.data.waNumber || ''); setWaMessage(mkt.data.waMessage || '');
-          setSupportEmail(mkt.data.supportEmail || '');
+        if (prof?.name) setProfileName(prof.name || '');
+        if (app?.primaryColor) { setPrimaryColor(app.primaryColor || '#e8b84b'); setGlassOpacity(app.glassOpacity || 0.1); setBorderRadius(app.borderRadius || 20); }
+        if (mkt?.seoTitle !== undefined) {
+          setSeoTitle(mkt.seoTitle || ''); setSeoDesc(mkt.seoDesc || '');
+          setGaId(mkt.gaId || ''); setFbPixel(mkt.fbPixel || '');
+          setWaNumber(mkt.waNumber || ''); setWaMessage(mkt.waMessage || '');
+          setSupportEmail(mkt.supportEmail || '');
+          setSupportPhone(mkt.supportPhone || '');
         }
-        if (auto?.data) { setOnboardingQuestions(auto.data.questions || []); setSiteMaintenance(auto.data.maintenanceMode || false); }
+        if (Array.isArray(auto?.questions)) { setOnboardingQuestions(auto.questions || []); setSiteMaintenance(auto.maintenanceMode || false); setSiteStats(auto.stats || []); }
+        if (hero?.title) { setHeroTitle(hero.title || ''); setHeroSubtitle(hero.subtitle || ''); }
       } catch (err) { console.error('Settings load error', err); }
     };
     load();
@@ -154,8 +163,11 @@ const AdminSettings = () => {
   const handleMarketingSave = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await saveSetting('marketing_settings', { seoTitle, seoDesc, gaId, fbPixel, waNumber, waMessage, supportEmail });
-      setToast({ message: 'Global channels updated.', type: 'success' });
+      await Promise.all([
+        saveSetting('marketing_settings', { seoTitle, seoDesc, gaId, fbPixel, waNumber, waMessage, supportEmail, supportPhone }),
+        saveSetting('hero_content', { title: heroTitle, subtitle: heroSubtitle })
+      ]);
+      setToast({ message: 'Global channels and Hero content updated.', type: 'success' });
       setTimeout(() => setToast(null), 3000);
     } catch { setToast({ message: 'Marketing sync failed.', type: 'error' }); }
   };
@@ -163,8 +175,8 @@ const AdminSettings = () => {
   const handleAutomationSave = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await saveSetting('automation_settings', { questions: onboardingQuestions, maintenanceMode: siteMaintenance });
-      setToast({ message: 'Automation engine state synced.', type: 'success' });
+      await saveSetting('automation_settings', { questions: onboardingQuestions, maintenanceMode: siteMaintenance, stats: siteStats });
+      setToast({ message: 'Automation engine and Live Stats synced.', type: 'success' });
       setTimeout(() => setToast(null), 3000);
     } catch { setToast({ message: 'Automation save failed.', type: 'error' }); }
   };
@@ -244,6 +256,9 @@ const AdminSettings = () => {
                 gaId={gaId} setGaId={setGaId} fbPixel={fbPixel} setFbPixel={setFbPixel}
                 waNumber={waNumber} setWaNumber={setWaNumber} waMessage={waMessage} setWaMessage={setWaMessage}
                 supportEmail={supportEmail} setSupportEmail={setSupportEmail}
+                supportPhone={supportPhone} setSupportPhone={setSupportPhone}
+                heroTitle={heroTitle} setHeroTitle={setHeroTitle}
+                heroSubtitle={heroSubtitle} setHeroSubtitle={setHeroSubtitle}
                 handleMarketingSave={handleMarketingSave}
                 lbl={lbl} inp={inp} inputWrap={inputWrap}
               />
@@ -252,6 +267,7 @@ const AdminSettings = () => {
               <AutomationSection 
                 onboardingQuestions={onboardingQuestions} setOnboardingQuestions={setOnboardingQuestions}
                 siteMaintenance={siteMaintenance} setSiteMaintenance={setSiteMaintenance}
+                siteStats={siteStats} setSiteStats={setSiteStats}
                 handleAutomationSave={handleAutomationSave}
                 inp={inp}
               />
@@ -266,18 +282,6 @@ const AdminSettings = () => {
             )}
           </Suspense>
 
-          {/* Danger Zone */}
-          <div style={{ marginTop: '3rem', padding: '1.5rem', background: 'rgba(245,57,123,0.03)', borderRadius: '24px', border: '1px solid rgba(245,57,123,0.1)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#f5397b', marginBottom: '10px' }}>
-              <Trash2 size={18} />
-              <h4 style={{ margin: 0, fontWeight: 900 }}>Danger Protocol</h4>
-            </div>
-            <p style={{ fontSize: '0.75rem', color: 'rgba(245,57,123,0.6)', marginBottom: '1.5rem' }}>These actions are irreversible and will wipe core system data.</p>
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <button className="btn btn-outline" style={{ borderColor: '#f5397b', color: '#f5397b', fontSize: '0.7rem', borderRadius: '10px', padding: '8px 16px', background: 'transparent' }}>WIPE CACHE</button>
-              <button className="btn btn-outline" style={{ borderColor: '#f5397b', color: '#f5397b', fontSize: '0.7rem', borderRadius: '10px', padding: '8px 16px', background: 'transparent' }}>RESET ANALYTICS</button>
-            </div>
-          </div>
         </div>
       </div>
     </div>

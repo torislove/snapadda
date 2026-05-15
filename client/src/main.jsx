@@ -1,6 +1,10 @@
 import { StrictMode } from 'react';
 import { registerSW } from 'virtual:pwa-register';
 
+// ─── Zero-Cost Backend Wake-up (Pre-flight) ───
+const API_URL = import.meta.env.VITE_API_URL || '/api';
+fetch(`${API_URL.replace(/\/+$/, '')}/health`, { method: 'HEAD', mode: 'no-cors' }).catch(() => {});
+
 // Register Service Worker for Instant PWA Loading and Auto Update
 const updateSW = registerSW({
   onNeedRefresh() {

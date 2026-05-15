@@ -77,7 +77,18 @@ const userSchema = new mongoose.Schema({
     payload: { type: Object },
     context: { type: String },
     timestamp: { type: Date, default: Date.now }
-  }]
+  }],
+  lastActive: {
+    type: Date,
+    default: Date.now
+  },
+  lastLocation: {
+    lat: Number,
+    lng: Number,
+    area: String,
+    city: String,
+    timestamp: Date
+  }
 }, { timestamps: true });
 
 // Performance Indexes

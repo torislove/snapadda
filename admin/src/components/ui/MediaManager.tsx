@@ -118,7 +118,11 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
             } as any}
             className="media-item-container"
           >
-            <img src={item.url} alt="media" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            {item.file?.type.startsWith('video/') || item.url.match(/\.(mp4|webm|ogg|mov)$/i) ? (
+              <video src={item.url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            ) : (
+              <img src={item.url} alt="media" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            )}
             
             {/* Delete Button */}
             <button 

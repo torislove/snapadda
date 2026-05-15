@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Shield, MapPin, Plus, Trash2, Power, X, Check, Eye, EyeOff } from 'lucide-react';
+import { Shield, MapPin, Plus, Power, X, Check, Eye, EyeOff } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
@@ -56,11 +56,6 @@ const AdminFranchise = () => {
     fetchAdmins();
   };
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm('Remove this franchise admin?')) return;
-    await fetch(`${API_URL}/franchise/admins/${id}`, { method: 'DELETE' });
-    fetchAdmins();
-  };
 
   const togglePermission = (perm: string) => {
     setForm(prev => ({
@@ -173,9 +168,6 @@ const AdminFranchise = () => {
                   <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                     Joined {new Date(admin.createdAt).toLocaleDateString()}
                   </span>
-                  <Button size="sm" variant="ghost" onClick={() => handleDelete(admin._id)} style={{ color: 'var(--error)' }}>
-                    <Trash2 size={14} />
-                  </Button>
                 </div>
               </motion.div>
             ))}

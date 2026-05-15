@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { 
   MessageCircle, Send, RefreshCcw, Wifi, WifiOff,
-  Terminal, Bot, Users
+  Terminal, Bot, Users, Cpu
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { adminAIService } from '../../services/aiService';
@@ -50,7 +50,7 @@ const CommsHub = () => {
   const [status, setStatus] = useState<any>(null);
   const [logs, setLogs] = useState<any[]>([]);
   const [sseConnected, setSseConnected] = useState(false);
-  const [activeTab, setActiveTab] = useState<'logs' | 'chat'>('chat');
+  const [activeTab, setActiveTab] = useState<'logs' | 'chat' | 'broadcast' | 'setup'>('chat');
   
   // Chat Specific State
   const [chats, setChats] = useState<any[]>([]);
@@ -262,6 +262,8 @@ const CommsHub = () => {
         <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
           {[
             { id: 'chat', label: 'WhatsApp Chat', icon: MessageCircle },
+            { id: 'broadcast', label: 'Broadcaster', icon: Send },
+            { id: 'setup', label: 'Mobile Setup', icon: Cpu },
             { id: 'logs', label: 'System Logs', icon: Terminal },
           ].map(tab => (
             <button
@@ -416,7 +418,76 @@ const CommsHub = () => {
             </div>
           )}
 
-          {/* Push Content Removed */}
+          {/* BROADCASTER TAB */}
+          {activeTab === 'broadcast' && (
+            <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+              <div className="glass-card" style={{ padding: '2rem' }}>
+                <div style={{ fontSize: '0.75rem', fontWeight: 900, color: 'var(--gold)', marginBottom: '1.5rem', letterSpacing: '0.15em' }}>✦ CAMPAIGN BROADCASTER</div>
+                
+                <div style={{ marginBottom: '2rem' }}>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '10px' }}>Target Audience</label>
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                     {['All Registered Clients', 'Recent Leads (7 Days)', 'VIP Investors'].map(t => (
+                       <button key={t} className="btn btn-ghost btn-sm" style={{ flex: 1, border: '1px solid rgba(255,255,255,0.05)', borderRadius: '12px', fontSize: '0.75rem' }}>{t}</button>
+                     ))}
+                  </div>
+                </div>
+
+                <div style={{ marginBottom: '1.5rem' }}>
+                   <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '10px' }}>Notification Message (English & Telugu)</label>
+                   <textarea 
+                     className="admin-input" 
+                     rows={5} 
+                     placeholder="New property alert! కొత్త ప్రాపర్టీ వివరాలు ఇక్కడ చూడండి..."
+                     style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem' }}
+                   />
+                </div>
+
+                <div style={{ background: 'rgba(16,217,140,0.05)', border: '1px solid rgba(16,217,140,0.1)', padding: '1rem', borderRadius: '12px', marginBottom: '2rem' }}>
+                   <div style={{ fontSize: '0.7rem', color: 'var(--emerald)', fontWeight: 800 }}>ESTIMATED REACH: 128 users via WhatsApp & Web Push</div>
+                </div>
+
+                <button className="btn btn-violet" style={{ width: '100%', padding: '1.25rem', borderRadius: '16px', fontWeight: 900, fontSize: '1rem' }}>
+                  TRANSMIT BROADCAST NOW
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* MOBILE SETUP TAB */}
+          {activeTab === 'setup' && (
+            <div style={{ maxWidth: '600px', margin: '0 auto' }}>
+              <div className="glass-card" style={{ padding: '2rem', textAlign: 'center' }}>
+                <div style={{ width: '80px', height: '80px', background: 'var(--gold-dim)', color: 'var(--gold)', borderRadius: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem' }}>
+                   <Cpu size={40} />
+                </div>
+                <h2 style={{ fontSize: '1.5rem', fontWeight: 900, marginBottom: '0.5rem' }}>Install Admin Panel</h2>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '2rem' }}>Add SnapAdda Admin to your home screen for instant access and real-time notifications.</p>
+                
+                <div style={{ textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                   <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1.25rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                      <div style={{ fontWeight: 800, color: 'white', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'var(--gold)', color: 'black', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem' }}>1</span>
+                        On iPhone (Safari)
+                      </div>
+                      <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: 0 }}>Tap the <b>Share</b> icon (square with arrow) and select <b>"Add to Home Screen"</b>.</p>
+                   </div>
+
+                   <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1.25rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                      <div style={{ fontWeight: 800, color: 'white', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'var(--gold)', color: 'black', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem' }}>2</span>
+                        On Android (Chrome)
+                      </div>
+                      <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: 0 }}>Tap the <b>Three Dots</b> menu in top right and select <b>"Install App"</b> or "Add to Home screen".</p>
+                   </div>
+                </div>
+
+                <div style={{ marginTop: '2.5rem', fontSize: '0.75rem', color: 'var(--emerald)', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}>
+                   <Wifi size={14} /> PWA Service Worker Active v1.0.4
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

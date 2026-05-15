@@ -3,7 +3,7 @@ import { Outlet, Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Building, Users, 
   Settings, Menu, Megaphone, X, LogOut, BookOpen, Activity, Search,
-  MessageSquare, Plus, ShieldCheck
+  MessageSquare, Plus, ShieldCheck, UserCheck
 } from 'lucide-react';
 import { Logo } from '../../components/ui/Logo';
 import { useAdminAuth } from '../../contexts/AdminAuthContext';
@@ -81,15 +81,16 @@ const LanguageSwitcher = () => {
 };
 
 const NAV_ITEMS = [
-  { to: '/admin',            label: 'nav.dashboard',      icon: LayoutDashboard, exact: true,  activeClass: 'active-dashboard',  color: 'var(--gold)'    },
+  { to: '/admin',              label: 'nav.dashboard',      icon: LayoutDashboard, exact: true,  activeClass: 'active-dashboard',  color: 'var(--gold)'    },
   { to: '/admin/properties',   label: 'nav.properties',     icon: Building,        exact: false, activeClass: 'active-properties', color: 'var(--violet)'  },
   { to: '/admin/verification', label: 'Verification',       icon: ShieldCheck,     exact: false, activeClass: 'active-leads',      color: 'var(--gold)'    },
   { to: '/admin/leads',        label: 'nav.leads',          icon: Users,           exact: false, activeClass: 'active-leads',      color: 'var(--emerald)' },
-  { to: '/admin/promotions', label: 'nav.engagement',     icon: Megaphone,       exact: false, activeClass: 'active-promotions', color: 'var(--gold)'    },
-  { to: '/admin/engagement', label: 'nav.analytics',      icon: Activity,        exact: false, activeClass: 'active-engagement', color: 'var(--rose)'    },
-  { to: '/admin/comms',      label: 'nav.messages',       icon: MessageSquare,   exact: false, activeClass: 'active-settings',   color: 'var(--cyan)'    },
-  { to: '/admin/settings',   label: 'nav.settings',       icon: Settings,        exact: false, activeClass: 'active-settings',   color: 'var(--violet)'  },
-  { to: '/admin/guide',      label: 'nav.help',           icon: BookOpen,        exact: false, activeClass: 'active-settings',   color: 'var(--emerald)' },
+  { to: '/admin/clients',      label: 'Clients',            icon: UserCheck,       exact: false, activeClass: 'active-clients',    color: 'var(--rose)'    },
+  { to: '/admin/promotions',   label: 'nav.engagement',     icon: Megaphone,       exact: false, activeClass: 'active-promotions', color: 'var(--gold)'    },
+  { to: '/admin/engagement',   label: 'nav.analytics',      icon: Activity,        exact: false, activeClass: 'active-engagement', color: 'var(--rose)'    },
+  { to: '/admin/comms',        label: 'nav.messages',       icon: MessageSquare,   exact: false, activeClass: 'active-settings',   color: 'var(--cyan)'    },
+  { to: '/admin/settings',     label: 'nav.settings',       icon: Settings,        exact: false, activeClass: 'active-settings',   color: 'var(--violet)'  },
+  { to: '/admin/guide',        label: 'nav.help',           icon: BookOpen,        exact: false, activeClass: 'active-settings',   color: 'var(--emerald)' },
 ];
 
 
@@ -164,7 +165,11 @@ const AdminLayout = () => {
       )}
 
       {/* ── Sidebar ── */}
-      <aside className={`admin-sidebar ${isSidebarOpen ? 'open' : ''}`}>
+      <aside className={`admin-sidebar ${isSidebarOpen ? 'open' : ''}`} style={{
+        background: 'linear-gradient(180deg, #0a0c14 0%, #05050a 100%)',
+        boxShadow: '10px 0 40px rgba(0,0,0,0.5)',
+        borderRight: '1px solid rgba(255,255,255,0.03)'
+      }}>
         <div className="sidebar-header">
           <a 
             id="lnk-admin-logo"

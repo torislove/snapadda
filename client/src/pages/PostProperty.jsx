@@ -62,6 +62,7 @@ const StepTechnicals = memo(({ formData, handleChange, setFormData, t }) => {
   const isPlot = type.includes('plot') || type.includes('layout') || type.includes('crda');
   const isResidential = ['apartment', 'villa', 'independent house'].some(t => type.includes(t));
   const isCommercial = ['commercial', 'office', 'showroom'].some(t => type.includes(t));
+  const isIndustrial = ['industrial', 'shed', 'warehouse', 'factory'].some(t => type.includes(t));
 
   const formatPriceInWords = (value) => {
     const num = parseFloat(value);
@@ -154,6 +155,28 @@ const StepTechnicals = memo(({ formData, handleChange, setFormData, t }) => {
         <h4 style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--gold)', textTransform: 'uppercase', marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <IndianRupee size={14} /> Price & Area Calculator
         </h4>
+
+        {/* Price Type Selection */}
+        <div style={{ marginBottom: '1.5rem', display: 'flex', gap: '10px' }}>
+           {['fixed', 'range'].map(type => (
+             <button
+               key={type}
+               type="button"
+               onClick={() => setFormData(p => ({ ...p, priceType: type }))}
+               style={{
+                 flex: 1, padding: '10px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 800,
+                 background: formData.priceType === type ? 'var(--gold)' : 'rgba(255,255,255,0.03)',
+                 color: formData.priceType === type ? 'black' : 'rgba(255,255,255,0.5)',
+                 border: '1px solid',
+                 borderColor: formData.priceType === type ? 'var(--gold)' : 'rgba(255,255,255,0.1)',
+                 cursor: 'pointer', transition: 'all 0.2s', textTransform: 'uppercase'
+               }}
+             >
+               {type === 'fixed' ? 'Fixed Price' : 'Price Range'}
+             </button>
+           ))}
+        </div>
+
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
           <div className="field-group">
             <label className="elite-lbl">Price Per {formData.measurementUnit?.slice(0, -1) || 'Unit'}</label>
@@ -165,41 +188,81 @@ const StepTechnicals = memo(({ formData, handleChange, setFormData, t }) => {
                 const val = e.target.value;
                 const pUnit = parseFloat(val) || 0;
                 const size = parseFloat(formData.areaSize) || 0;
+                const calculatedTotal = size > 0 ? Math.round(size * pUnit) : 0;
+                
                 setFormData(prev => ({ 
                   ...prev, 
                   pricePerUnit: val,
-                  price: size > 0 ? Math.round(size * pUnit) : prev.price
+                  price: prev.priceType === 'fixed' ? calculatedTotal : prev.price,
+                  // If range, we don't auto-set min/max as easily from per-unit unless user wants, 
+                  // but usually per-unit is for fixed price.
                 }));
               }} 
               placeholder="e.g. 25000" 
               className="elite-input" 
             />
           </div>
-          <div className="field-group">
-            <label className="elite-lbl" style={{ display: 'flex', justifyContent: 'space-between' }}>
-                Total Calculated Price <span style={{ color: 'var(--gold)', fontWeight: 800 }}>{formatPriceInWords(formData.price)}</span>
-            </label>
-            <input 
-              type="number" 
-              name="price" 
-              value={formData.price || ''} 
-              onChange={(e) => {
-                const total = parseFloat(e.target.value) || 0;
-                const size = parseFloat(formData.areaSize) || 0;
-                setFormData(prev => ({ 
-                  ...prev, 
-                  price: total,
-                  pricePerUnit: size > 0 ? Math.round(total / size) : prev.pricePerUnit
-                }));
-              }} 
-              placeholder="Total Price" 
-              className="elite-input" 
-              style={{ fontWeight: 900, color: 'var(--gold)', background: 'rgba(232,184,75,0.05)' }}
-            />
-          </div>
+
+          {formData.priceType === 'fixed' ? (
+            <div className="field-group">
+              <label className="elite-lbl" style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  Total Price <span style={{ color: 'var(--gold)', fontWeight: 800 }}>{formatPriceInWords(formData.price)}</span>
+              </label>
+              <input 
+                type="number" 
+                name="price" 
+                value={formData.price || ''} 
+                onChange={(e) => {
+                  const total = parseFloat(e.target.value) || 0;
+                  const size = parseFloat(formData.areaSize) || 0;
+                  setFormData(prev => ({ 
+                    ...prev, 
+                    price: total,
+                    pricePerUnit: size > 0 ? Math.round(total / size) : prev.pricePerUnit
+                  }));
+                }} 
+                placeholder="Total Price" 
+                className="elite-input" 
+                style={{ fontWeight: 900, color: 'var(--gold)', background: 'rgba(232,184,75,0.05)' }}
+              />
+            </div>
+          ) : (
+            <div className="field-group" style={{ gridColumn: 'span 2' }}>
+              <label className="elite-lbl">Expected Price Range</label>
+              <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+                <div style={{ flex: 1 }}>
+                  <input 
+                    type="number" 
+                    name="minPrice" 
+                    value={formData.minPrice || ''} 
+                    onChange={handleChange} 
+                    placeholder="Min Price" 
+                    className="elite-input" 
+                    style={{ color: 'var(--gold)' }}
+                  />
+                  <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', marginTop: '4px' }}>{formatPriceInWords(formData.minPrice)}</div>
+                </div>
+                <div style={{ color: 'rgba(255,255,255,0.2)' }}>to</div>
+                <div style={{ flex: 1 }}>
+                  <input 
+                    type="number" 
+                    name="maxPrice" 
+                    value={formData.maxPrice || ''} 
+                    onChange={handleChange} 
+                    placeholder="Max Price" 
+                    className="elite-input" 
+                    style={{ color: 'var(--gold)' }}
+                  />
+                  <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', marginTop: '4px' }}>{formatPriceInWords(formData.maxPrice)}</div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
         <p style={{ fontSize: '0.65rem', color: 'rgba(232,184,75,0.5)', marginTop: '10px' }}>
-          Total Price = Area × Price Per Unit. Changing either will auto-calculate the other.
+          {formData.priceType === 'fixed' 
+            ? 'Total Price = Area × Price Per Unit. Changing either will auto-calculate the other.'
+            : 'Enter the minimum and maximum price you are expecting for this property.'}
         </p>
       </div>
 
@@ -243,9 +306,46 @@ const StepTechnicals = memo(({ formData, handleChange, setFormData, t }) => {
         </div>
       )}
 
+      {/* COMMERCIAL & INDUSTRIAL SPECIFIC */}
+      {(isCommercial || isIndustrial) && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', padding: '1.5rem', background: 'rgba(255,255,255,0.02)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}>
+           <div className="field-group">
+              <label className="elite-lbl">Power Load (KVA)</label>
+              <input name="powerKVA" type="number" value={formData.powerKVA || ''} onChange={handleChange} placeholder="e.g. 50" className="elite-input" />
+           </div>
+           <div className="field-group">
+              <label className="elite-lbl">Ceiling Height (Ft)</label>
+              <input name="ceilingHeight" type="number" value={formData.ceilingHeight || ''} onChange={handleChange} placeholder="e.g. 15" className="elite-input" />
+           </div>
+           {isIndustrial && (
+             <div className="field-group">
+                <label className="elite-lbl">Loading Docks</label>
+                <input name="loadingDocks" type="number" value={formData.loadingDocks || ''} onChange={handleChange} placeholder="e.g. 2" className="elite-input" />
+             </div>
+           )}
+           <div className="field-group">
+              <label className="elite-lbl">Floor Type</label>
+              <select name="floorType" value={formData.floorType} onChange={handleChange} className="elite-input">
+                <option value="N/A">N/A</option>
+                <option value="Cement">Cement</option>
+                <option value="VDF">VDF</option>
+                <option value="Epoxy">Epoxy</option>
+                <option value="Tile/Marble">Tile/Marble</option>
+              </select>
+           </div>
+           <div className="field-group">
+              <label className="elite-lbl">Fire Safety</label>
+              <div style={{ height: '54px', display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,0.02)', padding: '0 16px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.08)' }}>
+                <input id="pp-fireSafety" type="checkbox" name="fireSafety" checked={formData.fireSafety} onChange={handleChange} style={{ width: '20px', height: '20px', accentColor: 'var(--gold)' }} />
+                <label htmlFor="pp-fireSafety" style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', cursor: 'pointer' }}>Fire Hydrant/NoC</label>
+              </div>
+           </div>
+        </div>
+      )}
+
       {/* PLOT SPECIFIC CHECKBOXES */}
       {isPlot && (
-        <div style={{ display: 'flex', gap: '2rem', padding: '1rem', background: 'rgba(255,255,255,0.02)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1.5rem', padding: '1.5rem', background: 'rgba(255,255,255,0.02)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}>
            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem' }}>
               <input type="checkbox" name="cornerProperty" checked={formData.cornerProperty} onChange={handleChange} /> Corner Plot
            </label>
@@ -255,6 +355,14 @@ const StepTechnicals = memo(({ formData, handleChange, setFormData, t }) => {
            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem' }}>
               <input type="checkbox" name="vastuCompliant" checked={formData.vastuCompliant} onChange={handleChange} /> Vastu Compliant
            </label>
+           <div className="field-group" style={{ gridColumn: 'span 2' }}>
+              <label className="elite-lbl">Approval Number (L.P. No)</label>
+              <input name="approvalNumber" value={formData.approvalNumber || ''} onChange={handleChange} placeholder="e.g. 15/2024/CRDA" className="elite-input" />
+           </div>
+           <div className="field-group" style={{ gridColumn: 'span 2' }}>
+              <label className="elite-lbl">Layout / Venture Name</label>
+              <input name="layoutName" value={formData.layoutName || ''} onChange={handleChange} placeholder="e.g. Amaravati Green Layout" className="elite-input" />
+           </div>
         </div>
       )}
 
@@ -386,7 +494,7 @@ const StepLocation = memo(({ formData, handleChange, setFormData, formErrors, t,
 const StepMedia = memo(({ formData, handleImageUpload, removeImage, t, formErrors, handleChange }) => (
   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
     <div className="field-group">
-      <label className="elite-lbl">{t('post.photos')} & Gallery Sequence</label>
+      <label className="elite-lbl">{t('post.photos')} & Gallery (Photos/Videos)</label>
       <div 
         className="upload-dropzone"
         onClick={() => document.getElementById('imgInput').click()}
@@ -399,15 +507,19 @@ const StepMedia = memo(({ formData, handleImageUpload, removeImage, t, formError
       >
         <Camera size={32} style={{ margin: '0 auto 1.5rem', color: 'var(--gold)' }} />
         <h4 style={{ color: 'white', marginBottom: '8px' }}>{t('post.upload')}</h4>
-        <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)' }}>{t('post.uploadSub')}</p>
-        <input id="imgInput" type="file" multiple hidden onChange={handleImageUpload} accept="image/*" />
+        <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)' }}>{t('post.uploadSub')} (Photos & Videos)</p>
+        <input id="imgInput" type="file" multiple hidden onChange={handleImageUpload} accept="image/*,video/*" />
       </div>
 
       {formData.images.length > 0 && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: '16px', marginTop: '1.5rem' }}>
           {formData.images.map((img, i) => (
             <div key={i} style={{ position: 'relative', borderRadius: '18px', overflow: 'hidden', height: '120px', border: i === 0 ? '2px solid var(--gold)' : '1px solid rgba(255,255,255,0.1)' }}>
-              <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              {formData.imageFiles[i]?.type.startsWith('video/') ? (
+                <video src={img} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              ) : (
+                <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              )}
               
               {/* Order Indicator */}
               <div style={{ position: 'absolute', top: '8px', left: '8px', background: 'rgba(0,0,0,0.6)', color: 'white', fontSize: '10px', fontWeight: 900, padding: '2px 6px', borderRadius: '4px', zIndex: 5 }}>
@@ -474,7 +586,16 @@ export default function PostProperty() {
   const [formErrors, setFormErrors] = useState([]);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
-  const [supportInfo, setSupportInfo] = useState({ phone: '+919346793364', whatsapp: '919346793364' });
+  const [supportInfo, setSupportInfo] = useState({ phone: '+91 93467 93364', whatsapp: '919346793364' });
+
+  useEffect(() => {
+    fetchSetting('marketing_settings').then(data => {
+      if (data) setSupportInfo({
+        phone: data.supportPhone,
+        whatsapp: data.waNumber
+      });
+    });
+  }, []);
 
   useEffect(() => {
     fetchSetting('support_info').then(d => d && setSupportInfo(d));
@@ -511,7 +632,8 @@ export default function PostProperty() {
     }
     return {
       title: '', description: '', type: 'Apartment', purpose: 'Sale', subType: '',
-      price: '', areaSize: '', measurementUnit: 'Sq.Yds', location: '', city: '',
+      price: '', minPrice: '', maxPrice: '', priceType: 'fixed',
+      areaSize: '', measurementUnit: 'Sq.Yds', location: '', city: '',
       district: 'Guntur', mandal: '', village: '', pincode: '', state: 'Andhra Pradesh', 
       images: [], facing: 'East', furnishing: 'N/A',
 
@@ -520,7 +642,7 @@ export default function PostProperty() {
       listerType: 'Individual Owner',
       displayContactType: 'Lister',
       isOwnerListing: true,
-      posterName: user?.name || '', posterPhone: user?.phone || '',
+      posterName: user?.name || '', posterPhone: user?.phone || '', posterEmail: user?.email || '',
       address: '', googleMapsLink: '', reraId: '', approvalAuthority: 'N/A',
       surveyNo: '', waterSource: 'N/A',
       roadType: 'N/A', roadWidth: '', carpetArea: '', totalFloors: '',
@@ -606,25 +728,24 @@ export default function PostProperty() {
 
   const nextStep = () => {
     const missing = [];
-    if (step === 0 && !formData.title) missing.push('title');
-    if (step === 2 && !formData.city) missing.push('city');
-    if (step === 2 && !formData.location) missing.push('location');
-    if (step === 3 && !formData.price) missing.push('price');
+    if (step === 1 && !formData.title) missing.push('title');
+    if (step === 2 && !formData.price) missing.push('price');
+    if (step === 2 && !formData.areaSize) missing.push('areaSize');
+    if (step === 3 && !formData.city) missing.push('city');
+    if (step === 3 && !formData.location) missing.push('location');
     
     if (missing.length > 0) {
       setFormErrors(missing);
-      toast(`Required: ${missing.join(', ')}`, 'error');
+      toast(`Required: ${missing.map(m => m.charAt(0).toUpperCase() + m.slice(1)).join(', ')}`, 'error');
       return;
     }
     
     const nextS = Math.min(step + 1, STEPS.length - 1);
     setIsTransitioning(true);
     setTimeout(() => {
-      startTransition(() => {
-        setStep(nextS);
-        setIsTransitioning(false);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      });
+      setStep(nextS);
+      setIsTransitioning(false);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }, 150);
   };
   
@@ -632,17 +753,21 @@ export default function PostProperty() {
     const prevS = Math.max(step - 1, 0);
     setIsTransitioning(true);
     setTimeout(() => {
-      startTransition(() => {
-        setStep(prevS);
-        setIsTransitioning(false);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      });
+      setStep(prevS);
+      setIsTransitioning(false);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }, 150);
   };
 
   const handleSubmit = async () => {
-    if (!formData.price || !formData.posterPhone) {
-      toast('Required: Price & Contact', 'error'); return;
+    if (!formData.posterPhone) {
+      toast('Required: Contact Number', 'error'); return;
+    }
+    if (formData.priceType === 'fixed' && !formData.price) {
+      toast('Required: Price', 'error'); return;
+    }
+    if (formData.priceType === 'range' && (!formData.minPrice || !formData.maxPrice)) {
+      toast('Required: Min & Max Price', 'error'); return;
     }
     setLoading(true);
     try {
@@ -686,27 +811,58 @@ export default function PostProperty() {
   }
 
   return (
-    <div className="container" style={{ paddingTop: '120px', paddingBottom: '120px' }}>
-      <div style={{ maxWidth: '900px', margin: '0 auto' }}>
-        <div style={{ marginBottom: '3.5rem', textAlign: 'center' }}>
-          <h1 style={{ fontSize: '3rem', fontWeight: 950, marginBottom: '0.5rem' }}>{t('post.title')}</h1>
-          <p style={{ color: 'var(--txt-muted)' }}>{t('post.subtitle')}</p>
-        </div>
+    <div style={{ position: 'relative', minHeight: '100vh', background: 'var(--midnight)', overflow: 'hidden' }}>
+      {/* Background Ambience */}
+      <div style={{ position: 'absolute', top: '-10%', right: '-5%', width: '60%', height: '50%', background: 'radial-gradient(ellipse at center, rgba(155,89,245,0.06) 0%, transparent 70%)', filter: 'blur(60px)', pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', bottom: '0', left: '-10%', width: '50%', height: '50%', background: 'radial-gradient(ellipse at center, rgba(232,184,75,0.04) 0%, transparent 70%)', filter: 'blur(60px)', pointerEvents: 'none' }} />
+      
+      <div className="container" style={{ position: 'relative', zIndex: 1, paddingTop: '120px', paddingBottom: '120px' }}>
+        <div style={{ maxWidth: '900px', margin: '0 auto' }}>
+          
+          <div style={{ marginBottom: '3rem', textAlign: 'center' }}>
+            <motion.h1 
+              initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+              style={{ fontSize: 'clamp(2.2rem, 5vw, 3.5rem)', fontWeight: 950, marginBottom: '0.5rem', background: 'linear-gradient(135deg, #ffffff 0%, var(--gold) 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', letterSpacing: '-0.02em', textShadow: '0 0 40px rgba(232,184,75,0.2)' }}
+            >
+              {t('post.title')}
+            </motion.h1>
+            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }} style={{ color: 'rgba(255,255,255,0.5)', fontSize: '1.05rem', maxWidth: '600px', margin: '0 auto' }}>
+              Add your property details to list it online.
+            </motion.p>
+          </div>
 
-        {/* Progress Bar */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4rem', position: 'relative' }}>
-          <div style={{ position: 'absolute', top: '24px', left: 0, right: 0, height: '1px', background: 'rgba(255,255,255,0.08)' }} />
+        {/* Progress Bar - Glass Steps */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4rem', position: 'relative', padding: '0 20px' }}>
+          <div style={{ position: 'absolute', top: '50%', left: '40px', right: '40px', height: '2px', background: 'rgba(255,255,255,0.05)', transform: 'translateY(-50%)' }} />
           {STEPS.map((s, i) => (
             <div key={s.id} onClick={() => i < step && setStep(i)} style={{ position: 'relative', zIndex: 1, cursor: i < step ? 'pointer' : 'default' }}>
-              <motion.div animate={{ background: i <= step ? 'var(--gold)' : 'rgba(10,15,30,0.8)', scale: i === step ? 1.15 : 1 }}
-                style={{ width: '48px', height: '48px', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: i <= step ? 'black' : 'white' }}>
+              <motion.div 
+                animate={{ 
+                  background: i <= step ? 'linear-gradient(135deg, var(--gold), #ffdf91)' : 'rgba(5,5,10,0.8)', 
+                  scale: i === step ? 1.2 : 1,
+                  boxShadow: i <= step ? '0 0 20px rgba(232,184,75,0.4), inset 0 2px 0 rgba(255,255,255,0.4)' : 'inset 0 1px 0 rgba(255,255,255,0.1)',
+                  borderColor: i <= step ? 'transparent' : 'rgba(255,255,255,0.1)'
+                }}
+                style={{ width: '44px', height: '44px', borderRadius: '50%', border: '1px solid', display: 'flex', alignItems: 'center', justifyContent: 'center', color: i <= step ? 'black' : 'rgba(255,255,255,0.3)', backdropFilter: 'blur(10px)' }}>
                 {i < step ? <CheckCircle2 size={20} /> : s.icon}
               </motion.div>
+              <div style={{ position: 'absolute', top: '56px', left: '50%', transform: 'translateX(-50%)', whiteSpace: 'nowrap', fontSize: '0.65rem', fontWeight: 800, color: i <= step ? 'var(--gold)' : 'rgba(255,255,255,0.3)', letterSpacing: '0.05em' }}>
+                {s.label}
+              </div>
             </div>
           ))}
         </div>
 
-        <motion.div className="glass-panel" style={{ padding: '3rem', borderRadius: '32px', background: 'rgba(5,10,20,0.6)', minHeight: '400px', position: 'relative' }}>
+        <motion.div style={{ 
+          padding: 'clamp(1.5rem, 4vw, 4rem)', 
+          borderRadius: '32px', 
+          background: 'rgba(5, 5, 10, 0.45)', 
+          backdropFilter: 'blur(30px)',
+          WebkitBackdropFilter: 'blur(30px)',
+          border: '1px solid rgba(255,255,255,0.08)',
+          boxShadow: '0 30px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)',
+          minHeight: '400px', position: 'relative' 
+        }}>
           <AnimatePresence mode="wait">
             {!isTransitioning && (
               <div key={step}>
@@ -789,34 +945,25 @@ export default function PostProperty() {
           </AnimatePresence>
 
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4rem', gap: '1.5rem' }}>
-            <button onClick={prevStep} disabled={step === 0} className="hero-btn hero-btn-outline" style={{ flex: 1, opacity: step === 0 ? 0.2 : 1 }}>BACK</button>
+            <button onClick={prevStep} disabled={step === 0} className="hero-btn hero-btn-outline" style={{ flex: 1, opacity: step === 0 ? 0 : 1, pointerEvents: step === 0 ? 'none' : 'auto' }}>BACK</button>
             {step === STEPS.length - 1 ? (
               <button onClick={handleSubmit} disabled={loading} className="hero-btn hero-btn-primary" style={{ flex: 2 }}>{loading ? 'SYNCING...' : 'FINISH'}</button>
             ) : (
               <button onClick={nextStep} className="hero-btn hero-btn-primary" style={{ flex: 2 }}>PROCEED</button>
             )}
           </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '20px', marginTop: '3rem', paddingTop: '2rem', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-            <p style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>NEED HELP?</p>
-            <a href={`tel:${supportInfo.phone}`} style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--gold)', textDecoration: 'none', fontSize: '0.8rem', fontWeight: 800 }}>
-              <Phone size={14} /> CALL SUPPORT
-            </a>
-            <a href={`https://wa.me/${supportInfo.whatsapp}`} target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#10d98c', textDecoration: 'none', fontSize: '0.8rem', fontWeight: 800 }}>
-              <MessageSquare size={14} /> WHATSAPP
-            </a>
-          </div>
         </motion.div>
 
-        {error && <div style={{ marginTop: '2rem', padding: '1.25rem', background: 'rgba(245,57,123,0.1)', color: '#f5397b', borderRadius: '20px' }}>{error}</div>}
+        {error && <div style={{ marginTop: '2rem', padding: '1.25rem', background: 'rgba(245,57,123,0.1)', color: '#f5397b', borderRadius: '20px', border: '1px solid rgba(245,57,123,0.2)', textAlign: 'center', fontWeight: 700 }}>{error}</div>}
       </div>
 
       <style>{`
         .elite-lbl { display: block; font-size: 0.72rem; font-weight: 900; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.85rem; }
-        .elite-input { width: 100%; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 14px 18px; color: white; font-size: 1rem; outline: none; transition: all 0.3s; }
-        .elite-input:focus { border-color: var(--gold); }
-        .upload-dropzone:hover { border-color: var(--gold) !important; transform: translateY(-2px); }
+        .elite-input { width: 100%; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 16px 20px; color: white; font-size: 1.05rem; outline: none; transition: all 0.3s; box-shadow: inset 0 2px 10px rgba(0,0,0,0.2); }
+        .elite-input:focus { border-color: var(--gold); box-shadow: 0 0 0 4px rgba(232,184,75,0.1), inset 0 2px 10px rgba(0,0,0,0.2); }
+        .upload-dropzone:hover { border-color: var(--gold) !important; transform: translateY(-2px); box-shadow: 0 10px 30px rgba(232,184,75,0.1); }
       `}</style>
+    </div>
     </div>
   );
 }

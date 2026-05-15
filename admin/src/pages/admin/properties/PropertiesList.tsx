@@ -12,14 +12,13 @@ interface PropertiesListProps {
   handleEdit: (prop: any) => void;
   updateProperty: (id: string, payload: any) => Promise<any>;
   createProperty: (payload: any) => Promise<any>;
-  deleteProperty: (id: string) => Promise<any>;
   loadProperties: () => void;
   setIsAdding?: (v: boolean) => void;
 }
 
 export const PropertiesList: React.FC<PropertiesListProps> = ({
   filteredProperties, search, setSearch, viewMode, setViewMode,
-  handleEdit, updateProperty, createProperty, deleteProperty, loadProperties, setIsAdding
+  handleEdit, updateProperty, createProperty, loadProperties, setIsAdding
 }) => {
   const [statusFilter, setStatusFilter] = React.useState('all');
   const [selectedIds, setSelectedIds] = React.useState<string[]>([]);
@@ -44,21 +43,6 @@ export const PropertiesList: React.FC<PropertiesListProps> = ({
     }
   };
 
-  const handleBulkDelete = async () => {
-    if (selectedIds.length === 0 || isBulkUpdating) return;
-    if (!window.confirm(`Are you sure you want to delete ${selectedIds.length} properties?`)) return;
-    setIsBulkUpdating(true);
-    try {
-      await Promise.all(selectedIds.map(id => deleteProperty(id)));
-      setSelectedIds([]);
-      loadProperties();
-    } catch (e) {
-      console.error(e);
-      alert("Bulk delete failed partially.");
-    } finally {
-      setIsBulkUpdating(false);
-    }
-  };
 
   const finalFiltered = React.useMemo(() => {
     if (statusFilter === 'all') return filteredProperties;
@@ -98,7 +82,6 @@ export const PropertiesList: React.FC<PropertiesListProps> = ({
                 <button onClick={() => handleBulkStatus('Sold')} disabled={isBulkUpdating} style={{ background: 'rgba(232,184,75,0.1)', border: '1px solid rgba(232,184,75,0.3)', color: 'var(--gold)', padding: '8px 16px', borderRadius: '10px', fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer' }}>SET SOLD</button>
                 <button onClick={() => handleBulkStatus('Draft')} disabled={isBulkUpdating} style={{ background: 'rgba(155,89,245,0.1)', border: '1px solid rgba(155,89,245,0.3)', color: '#9b59f5', padding: '8px 16px', borderRadius: '10px', fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer' }}>SET DRAFT</button>
                 <div style={{ width: '1px', background: 'rgba(255,255,255,0.1)', margin: '0 5px' }} />
-                <button onClick={handleBulkDelete} disabled={isBulkUpdating} style={{ background: 'rgba(245,57,123,0.1)', border: '1px solid rgba(245,57,123,0.3)', color: '#f5397b', padding: '8px 16px', borderRadius: '10px', fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer' }}>DELETE ALL</button>
               </div>
             </div>
           </motion.div>
@@ -230,7 +213,6 @@ export const PropertiesList: React.FC<PropertiesListProps> = ({
                 handleEdit={handleEdit}
                 updateProperty={updateProperty}
                 createProperty={createProperty}
-                deleteProperty={deleteProperty}
                 loadProperties={loadProperties}
                 selected={selectedIds.includes(prop._id || prop.id)}
                 onSelect={toggleSelect}

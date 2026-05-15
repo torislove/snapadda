@@ -142,6 +142,28 @@ export const addLeadNote = async (leadId, text, addedBy = 'Admin') => {
   }
 };
 
+export const logActivity = async (payload) => {
+  try {
+    const userString = localStorage.getItem('snapadda_user');
+    const user = userString ? JSON.parse(userString) : null;
+    const userId = user?._id || user?.id || null;
+    
+    // Only log if user is authenticated (can't track guests securely without session IDs)
+    if (!userId) return { status: 'ignored' };
+
+    const res = await fetch(`${API_BASE}/activity/log`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...payload, userId }),
+    });
+    if (!res.ok) throw new Error('Failed to log activity');
+    return await res.json();
+  } catch (e) {
+    console.warn('Activity tracking failed:', e.message);
+    return { status: 'error' };
+  }
+};
+
 export const fetchLeadStats = async (franchiseId) => {
   try {
     const q = franchiseId ? `?franchiseId=${franchiseId}` : '';
@@ -229,6 +251,7 @@ const SETTING_DEFAULTS = {
   ],
   marquee_strips: {
     speed1: 30, speed2: 35,
+    citiesSpeed: 80, reviewsSpeed: 100,
     band1: [
       { id: '1', label: 'Amaravati Region', link: '#cities', icon: 'Landmark' },
       { id: '2', label: 'Verified Listings ✅', link: '#properties', icon: 'ShieldCheck' },
@@ -248,6 +271,16 @@ const SETTING_DEFAULTS = {
     { id: 'purpose', key: 'purpose', title: 'Preferred purpose', type: 'options', options: ['Personal Use', 'Investment', 'Agriculture'], enabled: true },
     { id: 'additionalNotes', key: 'additionalNotes', title: 'Additional details', type: 'text', options: [], enabled: true }
   ],
+  marketing_settings: {
+    seoTitle: "SnapAdda | Andhra's #1 Property Hub",
+    seoDesc: "Discover verified properties across Andhra Pradesh.",
+    gaId: "",
+    fbPixel: "",
+    waNumber: "919346793364",
+    waMessage: "Hi SnapAdda, I'm interested in a property.",
+    supportEmail: "info@snapadda.com",
+    supportPhone: "+91 93467 93364"
+  }
 };
 
 export const fetchSetting = async (key) => {

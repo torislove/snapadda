@@ -7,6 +7,23 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  const trackLocation = async (currentUser) => {
+    if (!currentUser || !(currentUser._id || currentUser.id)) return;
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(async (position) => {
+        const { latitude, longitude } = position.coords;
+        try {
+          // Use fetch directly to avoid dependency on api.js in context if needed
+          await fetch(`/api/users/${currentUser._id || currentUser.id}/location`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ lat: latitude, lng: longitude })
+          });
+        } catch (err) { console.warn('Location sync failed'); }
+      }, null, { enableHighAccuracy: false, timeout: 5000 });
+    }
+  };
+
   useEffect(() => {
     try {
       const stored = localStorage.getItem('snapadda_user');
@@ -14,6 +31,7 @@ export const AuthProvider = ({ children }) => {
         const parsed = JSON.parse(stored);
         if (parsed && (parsed._id || parsed.id || parsed.token)) {
           setUser(parsed);
+          trackLocation(parsed);
           console.log('AuthProvider: Restored session for', parsed.email || parsed.name);
         }
       }
@@ -23,7 +41,6 @@ export const AuthProvider = ({ children }) => {
     } finally {
       setIsLoading(false);
       console.log('AuthProvider: Initialization complete.');
-      // Trigger a silent warmup call to pre-heat serverless functions and DB connection
       fetch('/api/warmup').catch(() => {});
     }
   }, []);
@@ -31,16 +48,16 @@ export const AuthProvider = ({ children }) => {
   const login = (userData) => {
     setUser(userData);
     localStorage.setItem('snapadda_user', JSON.stringify(userData));
-    // Trigger warmup after login to ensure immediate property fetches succeed
+    trackLocation(userData);
     fetch('/api/warmup').catch(() => {});
   };
 
   const loginGoogle = (userData) => {
     const userWithToken = { ...userData.user, token: userData.token || 'mock_token' };
     localStorage.setItem('snapadda_user', JSON.stringify(userWithToken));
-    setIsLoading(false); // Force loading off BEFORE user set to avoid blink stalls
+    setIsLoading(false);
     setUser(userWithToken);
-    // Trigger warmup after Google login
+    trackLocation(userWithToken);
     fetch('/api/warmup').catch(() => {});
   };
 

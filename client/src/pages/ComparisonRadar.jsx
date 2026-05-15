@@ -8,9 +8,10 @@ import {
 } from 'lucide-react';
 import { fetchProperties } from '../services/api';
 import { formatSnapAddaPrice } from '../utils/priceUtils';
-import tr from '../utils/teluguTranslations';
+import { useTranslation } from 'react-i18next';
 
 const ComparisonRadar = () => {
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [properties, setProperties] = useState([]);
@@ -45,10 +46,10 @@ const ComparisonRadar = () => {
 
   const attributes = [
     { label: 'Price', key: 'price', format: (v) => formatSnapAddaPrice(v), icon: <IndianRupee size={16} /> },
-    { label: 'Type', key: 'type', format: (v) => tr(v), icon: <Building size={16} /> },
+    { label: 'Type', key: 'type', format: (v) => t(`types.${(v || '').toLowerCase()}`, v), icon: <Building size={16} /> },
     { label: 'Location', key: 'location', format: (v) => v, icon: <MapPin size={16} /> },
     { label: 'Size', key: 'areaSize', format: (v, p) => `${v} ${p.measurementUnit || 'Sq.Ft'}`, icon: <Square size={16} /> },
-    { label: 'Facing', key: 'facing', format: (v) => tr(v), icon: <Compass size={16} /> },
+    { label: 'Facing', key: 'facing', format: (v) => t(`card.facing_${(v || '').toLowerCase()}`, v), icon: <Compass size={16} /> },
     { label: 'Verified', key: 'isVerified', format: (v) => v ? <CheckCircle2 color="var(--emerald)" size={16}/> : <XCircle color="var(--rose)" size={16}/>, icon: <ShieldCheck size={16} /> },
     { label: 'Vastu', key: 'vastuCompliant', format: (v) => v ? 'Yes' : 'N/A', icon: <Compass size={16} /> },
     { label: 'Status', key: 'status', format: (v) => v || 'Active', icon: <SlidersHorizontal size={16} /> },

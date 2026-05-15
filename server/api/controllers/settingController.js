@@ -54,7 +54,8 @@ export const updateSetting = async (req, res) => {
     // Real-time Sync for critical UI/Logic settings
     const rtdbSyncKeys = [
       'whatsapp_settings', 'hero_content', 'onboarding_questions', 
-      'site_stats', 'site_appearance', 'seo', 'support_info', 'automation_settings'
+      'site_stats', 'site_appearance', 'seo', 'support_info', 'automation_settings',
+      'marquee_strips', 'marketing_settings', 'appearance'
     ];
 
     if (rtdb && rtdbSyncKeys.includes(normalizedKey)) {

@@ -35,7 +35,11 @@ const VerificationQueue = () => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
       <ConnectivityBanner />
-      
+      <div style={{ background: 'rgba(155,89,245,0.05)', padding: '1rem', borderRadius: '14px', border: '1px solid rgba(155,89,245,0.1)', marginBottom: '1rem' }}>
+        <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--violet)', fontWeight: 600 }}>
+          💡 <strong>Help:</strong> This is your "To-Do List" for new property requests. When other people (Realtors or Owners) submit properties to your site, they wait here for you to check and "Verify" them before they go live.
+        </p>
+      </div>
       <div className="flex-row-mobile-stack" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1.5rem' }}>
         <div>
           <div style={{ fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.18em', color: 'var(--violet)', marginBottom: '0.6rem', fontFamily: 'var(--font-mono)' }}>✦ QUALITY ASSURANCE</div>
@@ -105,7 +109,6 @@ const VerificationQueue = () => {
                 handleEdit={manager.handleEdit}
                 updateProperty={manager.updateProperty}
                 createProperty={manager.createProperty}
-                deleteProperty={manager.deleteProperty}
                 loadProperties={manager.loadProperties}
                 setIsAdding={manager.setIsAdding}
             />

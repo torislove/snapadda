@@ -53,6 +53,21 @@ export const formatSnapAddaPrice = (price: any, compact = true): string => {
 };
 
 /**
+ * Format a price range: ₹ 50 L - ₹ 1 Cr or ₹ 1.5 Cr Fixed
+ */
+export const formatSnapAddaPriceRange = (p: any, compact = true): string => {
+  if (!p) return 'Price on Request';
+  
+  if (p.priceType === 'range') {
+    const min = formatSnapAddaPrice(p.minPrice, compact);
+    const max = formatSnapAddaPrice(p.maxPrice, compact);
+    return `${min} - ${max}`;
+  }
+  
+  return formatSnapAddaPrice(p.price, compact);
+};
+
+/**
  * Pure Indian formatting with commas for Admin HUD
  */
 export const formatIndianRupees = (n: number | string): string => {

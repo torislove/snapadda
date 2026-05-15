@@ -23,6 +23,8 @@ body {
   -moz-osx-font-smoothing: grayscale;
   min-height: 100vh;
   min-height: 100dvh;
+  text-rendering: optimizeSpeed;
+  image-rendering: -webkit-optimize-contrast;
 }
 
 #root {
@@ -125,4 +127,20 @@ select option {
   position: absolute; width: 1px; height: 1px;
   padding: 0; margin: -1px; overflow: hidden;
   clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+}
+
+/* ── Performance Optimizations ── */
+.gpu-accelerated {
+  will-change: transform, opacity;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+.admin-card, .dashboard-widget, .data-table-container {
+  content-visibility: auto;
+  contain-intrinsic-size: 1px 300px;
+}
+
+button, .action-link {
+  touch-action: manipulation;
 }

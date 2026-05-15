@@ -36,6 +36,7 @@ import { prefetchRoute } from '../utils/PerformanceUtilities';
 import { triggerMicroLead } from '../utils/tracker';
 import { Helmet } from 'react-helmet-async';
 import MarketHotspot from '../components/MarketHotspot';
+import FreeListingCTA from '../components/FreeListingCTA';
 
 // Lazy Loaded Regional Sitemap for SEO
 const RegionalSitemap = lazy(() => import('../components/RegionalSitemap'));
@@ -50,7 +51,7 @@ const SOLD_FEED = [
   { emoji: '🏦', text: 'గుంటూరులో బ్యాంక్-లీజ్డ్ కమర్షియల్ అసెట్ లాక్ చేయబడింది', time: '35నిమి క్రితం', price: '₹8.5Cr' },
 ];
 
-function RecentlySoldTicker() {
+const RecentlySoldTicker = React.memo(function RecentlySoldTicker() {
   const [idx, setIdx] = useState(0);
   const [visible, setVisible] = useState(true);
   useEffect(() => {
@@ -82,7 +83,7 @@ function RecentlySoldTicker() {
       <span style={{ fontSize: '0.7rem', color: 'var(--txt-muted)', flexShrink: 0, marginLeft: '4px' }}>{item.time}</span>
     </div>
   );
-}
+});
 
 const TYPE_TABS = (t) => [
   { label: t('filter.all', 'All Properties'), value: 'all', icon: <Filter size={15} /> },
@@ -259,10 +260,13 @@ export default function Home() {
   const [promotions, setPromotions] = useState([]);
   const [heroPromotion, setHeroPromotion] = useState(null);
   // Dynamic Settings
-  const [heroContent, setHeroContent] = useState(null);
+  const [siteStats, setSiteStats] = useState([]);
+  const [heroContent, setHeroContent] = useState({ 
+    title: 'Discover Your Dream Place in Andhra', 
+    subtitle: 'Browse verified listings across Amaravati, Vijayawada, Guntur & beyond.' 
+  });
   const [designTokens, setDesignTokens] = useState(null);
   const [budgetFilter, setBudgetFilter] = useState('all');
-  const [siteStats, setSiteStats] = useState([]);
 
   const [seoData, setSeoData] = useState(null);
   const [siteControl, setSiteControl] = useState({ postPropertyEnabled: true, expertHelpEnabled: true, verifyAssistEnabled: true });
@@ -320,12 +324,22 @@ export default function Home() {
     // Deferred Data Fetch (Background / Idle)
     const loadDeferred = async () => {
       fetchSetting('site_stats').then(setSiteStats);
+      fetchSetting('hero_content').then(res => {
+        if (res) setHeroContent(res);
+      });
       fetchTestimonials().then(setTestimonials);
       fetchSetting('seo').then(setSeoData);
       fetchSetting('design_tokens').then(setDesignTokens);
       fetchCities().then(data => {
         setCities(data);
         setCitiesLoading(false);
+      });
+      fetchSetting('marketing_settings').then(data => {
+        if (data) setSupportInfo({
+          phone: data.supportPhone,
+          whatsapp: data.waNumber,
+          email: data.supportEmail
+        });
       });
     };
 
@@ -360,42 +374,6 @@ export default function Home() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Real-time Background Sync Logic
-  useEffect(() => {
-    if (!db) return;
-    
-    const propertiesRef = ref(db, 'properties');
-    
-    // Listen for new properties added in background
-    const unsubscribeNew = onChildAdded(propertiesRef, (snapshot) => {
-      const newProp = snapshot.val();
-      if (!newProp) return;
-      
-      setProperties(prev => {
-        // Prevent duplicate injection if we already have it from initial load
-        if (prev.some(p => p._id === newProp.id || p.id === newProp.id)) return prev;
-        
-        // Add to the beginning of the list for "Latest" visibility
-        const enrichedProp = { ...newProp, _id: newProp.id, isNewSync: true };
-        return [enrichedProp, ...prev];
-      });
-    });
-
-    // Listen for status/price changes
-    const unsubscribeChange = onChildChanged(propertiesRef, (snapshot) => {
-      const updatedProp = snapshot.val();
-      if (!updatedProp) return;
-      
-      setProperties(prev => prev.map(p => 
-        (p._id === updatedProp.id || p.id === updatedProp.id) ? { ...p, ...updatedProp } : p
-      ));
-    });
-
-    return () => {
-      // Firebase listeners are persistent, but we clean up if component unmounts
-      // (Though Home usually stays mounted)
-    };
-  }, [db]);
 
   useEffect(() => {
     try {
@@ -411,28 +389,13 @@ export default function Home() {
 
   useEffect(() => {
     if (liveList && liveList.length > 0) {
-      setProperties(prev => {
-        const prevMap = new Map((prev || []).map(p => [p._id || p.id, p]));
-        let hasChanges = false;
-        
-        liveList.forEach(lp => {
-          const id = lp._id || lp.id;
-          if (!id) return; // skip entries with no valid ID
-          const existing = prevMap.get(id);
-          // Only update if data is different or new
-          if (!existing || JSON.stringify(existing) !== JSON.stringify(lp)) {
-            prevMap.set(id, { ...(existing || {}), ...lp });
-            hasChanges = true;
-          }
-        });
-        
-        if (!hasChanges) return prev;
-        
-        // Deduplicate and sort — Map already guarantees unique _id keys
-        return Array.from(prevMap.values()).sort((a, b) => 
-          new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
-        );
-      });
+      // If REST API is slow (still loading), prioritize the Realtime snapshot immediately
+      setProperties(liveList);
+      setLoading(false);
+      
+      // Categorize for specialized sections if needed
+      setAgriProperties(liveList.filter(p => (p.type || '').toLowerCase().includes('agri') || (p.type || '').toLowerCase().includes('farm')).slice(0, 8));
+      setPlotProperties(liveList.filter(p => (p.type || '').toLowerCase().includes('plot') || (p.type || '').toLowerCase().includes('crda')).slice(0, 8));
     }
   }, [liveList]);
 
@@ -556,10 +519,10 @@ export default function Home() {
     return arr;
   }, [properties, sortBy]);
 
-  const openLead = (type) => { setModalType(type); setModalOpen(true); };
-  const resetFilters = () => { setTypeFilter('all'); setCityFilter(null); setKeyword(''); setSmartPill('all'); setAdvFilters({ ...EMPTY_FILTERS }); setSortBy('newest'); setBudget(''); };
+  const openLead = useCallback((type) => { setModalType(type); setModalOpen(true); }, []);
+  const resetFilters = useCallback(() => { setTypeFilter('all'); setCityFilter(null); setKeyword(''); setSmartPill('all'); setAdvFilters({ ...EMPTY_FILTERS }); setSortBy('newest'); setBudget(''); }, []);
 
-  const supportPhone = (supportInfo?.phone || '+919346793364').replace(/\s+/g, '');
+  const supportPhone = (supportInfo?.phone || '+91 93467 93364').replace(/\s+/g, '');
   const supportWA = supportInfo?.whatsapp || '919346793364';
 
   const optimizedBg = useMemo(() => {
@@ -990,6 +953,10 @@ export default function Home() {
           <CityMarquee cities={cities} loading={citiesLoading} />
         </section>
 
+        <div className="container">
+          <FreeListingCTA />
+        </div>
+
         <div className="container" style={{ marginTop: '2rem', marginBottom: '2rem' }}>
           <ClientReviews testimonials={testimonials} />
         </div>
@@ -1082,6 +1049,11 @@ export default function Home() {
           </div>
         </section>
 
+
+        {/* Free Listing CTA */}
+        <div className="container">
+          <FreeListingCTA supportWA={supportWA} supportPhone={supportPhone} />
+        </div>
 
         {/* Regional Sitemap - High Density Keyword Hub for Google Search */}
         <Suspense fallback={<div className="container" style={{ padding: '2rem', textAlign: 'center' }}>Loading regions...</div>}>

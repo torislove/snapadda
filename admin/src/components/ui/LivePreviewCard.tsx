@@ -7,6 +7,7 @@ import {
 import './PropertyCard.css';
 import { 
   formatSnapAddaPrice, 
+  formatSnapAddaPriceRange,
   formatLandSize,
   getEffectivePricePerUnit
 } from '../../../../client/src/utils/priceUtils';
@@ -51,6 +52,9 @@ interface LivePreviewCardProps {
   createdAt?: string;
   isGated?: boolean;
   constructionStatus?: string;
+  priceType?: string;
+  minPrice?: number | string;
+  maxPrice?: number | string;
 }
 
 export const LivePreviewCard: React.FC<LivePreviewCardProps> = (props) => {
@@ -59,7 +63,8 @@ export const LivePreviewCard: React.FC<LivePreviewCardProps> = (props) => {
     beds, bhk, type = 'Apartment', purpose = 'Sale', measurementUnit = 'Sq.Ft',
     areaSize,
     approval, approvalAuthority,
-    isVerified, isFeatured, vastuCompliant, listerType, isGated, constructionStatus
+    isVerified, isFeatured, vastuCompliant, listerType, isGated, constructionStatus,
+    priceType, minPrice, maxPrice
   } = props;
 
   const [imgIdx, setImgIdx] = useState(0);
@@ -79,7 +84,6 @@ export const LivePreviewCard: React.FC<LivePreviewCardProps> = (props) => {
   const isCommercial = type?.toLowerCase().includes('commercial') || type?.toLowerCase().includes('space');
   
   const unitInfo = getEffectivePricePerUnit({ price, areaSize, type, measurementUnit });
-  const displayPrice = price;
 
   const cycleImage = (e: React.MouseEvent, dir: number) => {
     e.preventDefault(); e.stopPropagation();
@@ -101,7 +105,7 @@ export const LivePreviewCard: React.FC<LivePreviewCardProps> = (props) => {
 
           {/* Price badge */}
           <div className="pc-price-badge">
-            <span className="pc-price">{formatSnapAddaPrice(displayPrice)}</span>
+            <span className="pc-price">{formatSnapAddaPriceRange({ price, minPrice, maxPrice, priceType })}</span>
           </div>
 
           {/* Top left badges */}

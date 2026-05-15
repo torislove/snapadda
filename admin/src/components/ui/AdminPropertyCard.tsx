@@ -2,9 +2,9 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ShieldCheck, MapPin, Building, Leaf, Square,
-  CheckCircle2, Edit3, Trash2, Zap, ChevronLeft,
+  CheckCircle2, Edit3, Zap, ChevronLeft,
   ChevronRight, Image as ImageIcon, Home as HomeIcon, TrendingUp,
-  Clock, Copy, X, Play, BedDouble, EyeOff, CheckCircle
+  Clock, Copy, X, Play, BedDouble, EyeOff, CheckCircle, Phone
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { getEffectivePricePerUnit } from '../../utils/priceUtils';
@@ -14,7 +14,6 @@ interface Props {
   prop: any;
   handleEdit: (p: any) => void;
   updateProperty: (id: string, data: any) => Promise<any>;
-  deleteProperty: (id: string) => Promise<any>;
   createProperty: (data: any) => Promise<any>;
   loadProperties: () => void;
   selected?: boolean;
@@ -66,12 +65,11 @@ const completeness = (p: any) => {
 };
 
 export const AdminPropertyCard: React.FC<Props> = ({
-  prop, handleEdit, updateProperty, deleteProperty, createProperty,
+  prop, handleEdit, updateProperty, createProperty,
   loadProperties, selected, onSelect,
 }) => {
   const [imgIdx, setImgIdx] = useState(0);
   const [lightbox, setLightbox] = useState(false);
-  const [deleting, setDeleting] = useState(false);
   const [copying, setCopying] = useState(false);
   const [busy, setBusy] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
@@ -143,20 +141,6 @@ export const AdminPropertyCard: React.FC<Props> = ({
     } finally { setBusy(false); }
   }, [id, busy, updateProperty, loadProperties]);
 
-  const handleDelete = useCallback(async () => {
-    if (deleting) return;
-    if (!window.confirm(`Delete property: ${prop.title}?`)) return;
-    setDeleting(true);
-    const loadingToast = toast.loading("Deleting property...");
-    try {
-      await deleteProperty(id);
-      toast.success("Property Deleted", { id: loadingToast });
-      loadProperties(); 
-    } catch { 
-      toast.error("Delete failed", { id: loadingToast });
-      setDeleting(false); 
-    }
-  }, [id, prop.title, deleteProperty, loadProperties]);
 
   const handleCopy = useCallback(async () => {
     if (copying || !createProperty) return;
@@ -408,7 +392,7 @@ export const AdminPropertyCard: React.FC<Props> = ({
               </button>
             </div>
             
-            {/* Realtor Badge */}
+            {/* Realtor / Agency Badge */}
             {prop.realtor?.name && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', padding: '6px 10px', background: 'rgba(255,255,255,0.04)', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.06)' }}>
                 {prop.realtor.photo ? (
@@ -422,6 +406,21 @@ export const AdminPropertyCard: React.FC<Props> = ({
                   <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'white', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{prop.realtor.name}</div>
                   {prop.realtor.agency && <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.4)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{prop.realtor.agency}</div>}
                 </div>
+              </div>
+            )}
+
+            {/* Submitter Attribution Box */}
+            {(prop.posterName || prop.posterPhone || prop.submittedBy) && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginBottom: '8px', padding: '6px 8px', background: 'rgba(34,217,224,0.04)', borderRadius: '10px', border: '1px solid rgba(34,217,224,0.1)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.6rem', fontWeight: 800, color: 'var(--cyan)' }}>POSTED BY {prop.listerType === 'Individual Owner' ? '(OWNER)' : '(REALTOR)'}</span>
+                </div>
+                <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'white' }}>{prop.posterName || 'Unknown User'}</div>
+                {prop.posterPhone && (
+                  <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.6)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <Phone size={9} /> {prop.posterPhone}
+                  </div>
+                )}
               </div>
             )}
             {/* Location & Meta */}
@@ -477,8 +476,6 @@ export const AdminPropertyCard: React.FC<Props> = ({
               <Btn onClick={handleCopy} icon={<Copy size={12}/>} label={copying ? '...' : 'Clone'}
                 color="rgba(155,89,245,0.08)" border="rgba(155,89,245,0.2)" textColor="#9b59f5" />
               
-              <Btn onClick={handleDelete} icon={<Trash2 size={12}/>} label={deleting ? '...' : 'Delete'}
-                color="rgba(245,57,123,0.08)" border="rgba(245,57,123,0.2)" textColor="#f5397b" />
               
               {/* Status Management Toggles */}
               {prop.status === 'Active' && (

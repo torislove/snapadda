@@ -308,7 +308,8 @@ if (loading) return (
           >
             {greeting}, {adminUser?.name?.split(' ')[0] || 'Admin'}
           </motion.h1>
-          <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', maxWidth: '450px', lineHeight: 1.5 }}>
+          <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', maxWidth: '450px', lineHeight: 1.5, display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ display: 'inline-flex', width: '8px', height: '8px', borderRadius: '50%', background: health.allOk ? 'var(--emerald)' : '#f5c842', boxShadow: health.allOk ? '0 0 12px var(--emerald)' : '0 0 12px #f5c842', animation: 'pulse 2s infinite' }} />
             System is <strong style={{ color: health.allOk ? 'var(--emerald)' : '#f5c842' }}>{health.allOk ? 'Live' : 'Degraded'}</strong>. Pipeline activity is stable.
           </p>
         </div>

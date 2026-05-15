@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   fetchAllPromotions, createPromotion, updatePromotion,
-  deletePromotion, reorderPromotions, uploadMedia, sendPushNotification
+  reorderPromotions, uploadMedia, sendPushNotification
 } from '../../services/api';
 import {
-  Plus, Trash2, Loader2,
+  Plus, Loader2,
   Sparkles,
   TrendingUp, MousePointer2, Calendar,
   Zap, GripVertical, Eye, EyeOff, X, CheckCircle, AlertCircle, Building
@@ -108,9 +108,8 @@ const calculateCTR = (views: number = 0, clicks: number = 0) => {
 
 /* ── Promotion Card in Grid ── */
 const PromoCard = ({
-  promo, onToggle, onDelete, onEdit, onDragStart, onDragOver, onDrop, isDragging
+  promo, onToggle, onEdit, onDragStart, onDragOver, onDrop, isDragging
 }: any) => {
-  const [confirmDelete, setConfirmDelete] = useState(false);
   const cfg = TYPE_CONFIG[promo.type] || TYPE_CONFIG.ad;
   const color = COLOR_PRESETS.find(c => c.id === promo.cardColor)?.accent ?? '#71717a';
   
@@ -281,32 +280,6 @@ const PromoCard = ({
           >
             Edit
           </button>
-          {confirmDelete ? (
-            <button
-              onClick={() => { onDelete(promo._id); setConfirmDelete(false); }}
-              style={{
-                flex: 1, padding: '0.45rem 0', fontSize: '0.75rem', fontWeight: 700,
-                borderRadius: '10px', cursor: 'pointer', border: 'none',
-                background: 'var(--rose)', color: '#fff',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px',
-                animation: 'pulse 0.3s ease',
-              }}
-            >
-              <AlertCircle size={12} /> Confirm
-            </button>
-          ) : (
-            <button
-              onClick={() => setConfirmDelete(true)}
-              style={{
-                padding: '0.45rem 0.65rem', fontSize: '0.75rem', fontWeight: 600,
-                borderRadius: '10px', cursor: 'pointer', border: '1px solid rgba(245,57,123,0.2)',
-                background: 'rgba(245,57,123,0.06)', color: 'var(--rose)',
-                transition: 'all 0.2s ease',
-              }}
-            >
-              <Trash2 size={13} />
-            </button>
-          )}
         </div>
       </div>
     </div>
@@ -716,13 +689,6 @@ export const Promotions = () => {
     } catch { showToast('Update failed', 'error'); }
   };
 
-  const handleDelete = async (id: string) => {
-    try {
-      await deletePromotion(id);
-      setPromotions(ps => ps.filter(p => p._id !== id));
-      showToast('Campaign removed');
-    } catch { showToast('Delete failed', 'error'); }
-  };
 
   /* ── Drag-and-Drop ── */
   const handleDragStart = (idx: number) => { setDragSrcIdx(idx); };
@@ -829,6 +795,12 @@ export const Promotions = () => {
       )}
 
       {/* ── Header ── */}
+      <div style={{ background: 'rgba(232,184,75,0.05)', padding: '1rem', borderRadius: '14px', border: '1px solid rgba(232,184,75,0.1)', marginBottom: '1rem' }}>
+        <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--gold)', fontWeight: 600 }}>
+          💡 <strong>Help:</strong> On this page, you can create "Ads" or "Banners" that appear on the main website. You can also send "Push Notifications" (messages that pop up on users' phones) from the second tab.
+        </p>
+      </div>
+
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', flexWrap:'wrap', gap:'1rem' }}>
         <div>
           <div style={{ fontSize:'0.7rem', fontWeight:700, letterSpacing:'0.12em', textTransform:'uppercase', color:'var(--gold)', marginBottom:'0.25rem', fontFamily:'var(--font-mono)' }}>✦ Campaign Manager</div>
@@ -886,7 +858,6 @@ export const Promotions = () => {
                   promo={promo}
                   isDragging={dragSrcIdx === idx}
                   onToggle={handleToggle}
-                  onDelete={handleDelete}
                   onEdit={handleEdit}
                   onDragStart={() => handleDragStart(idx)}
                   onDragOver={() => handleDragOver(idx)}

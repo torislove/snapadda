@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { fetchQuestions, answerQuestion, deleteQuestion } from '../../services/api';
-import { MessageSquare, Trash2, X, Send } from 'lucide-react';
+import { fetchQuestions, answerQuestion } from '../../services/api';
+import { MessageSquare, X, Send } from 'lucide-react';
 
 export default function AdminQuestions() {
   const [questions, setQuestions] = useState<any[]>([]);
@@ -59,15 +59,6 @@ export default function AdminQuestions() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this client question?')) return;
-    try {
-      await deleteQuestion(id);
-      loadQuestions();
-    } catch (err) {
-      console.error(err);
-    }
-  };
 
   const filteredQuestions = questions.filter(q => {
     if (filter === 'All') return true;
@@ -76,6 +67,12 @@ export default function AdminQuestions() {
 
   return (
     <div className="admin-page-content">
+      <div style={{ background: 'rgba(232,184,75,0.05)', padding: '1rem', borderRadius: '14px', border: '1px solid rgba(232,184,75,0.1)', marginBottom: '2rem' }}>
+        <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--gold)', fontWeight: 600 }}>
+          💡 <strong>Help:</strong> This is where you see questions from users about specific properties. When you answer them, the answers will show up on the website for everyone to see.
+        </p>
+      </div>
+      
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <h1 style={{ fontSize: '1.75rem', fontFamily: 'var(--font-heading)', color: 'var(--text-primary)', marginBottom: '0.25rem' }}>Client Questions (Q&A)</h1>
@@ -167,12 +164,6 @@ export default function AdminQuestions() {
                       <Send size={14} /> Answer
                     </button>
                   )}
-                  <button 
-                    onClick={() => handleDelete(q._id)}
-                    style={{ background: 'rgba(244, 63, 94, 0.1)', color: 'var(--rose)', border: 'none', padding: '0.5rem', borderRadius: '8px', cursor: 'pointer' }}
-                  >
-                    <Trash2 size={16} />
-                  </button>
                 </div>
               </div>
               

@@ -68,13 +68,13 @@ const SharePortal = ({ isOpen, onClose, property }) => {
               left: isMobile ? 0 : '50%',
               transform: isMobile ? 'none' : 'translate(-50%, -50%)',
               width: '100%',
-              maxWidth: isMobile ? '100%' : '440px',
-              height: isMobile ? '90vh' : 'auto',
+              maxWidth: isMobile ? '100%' : '380px',
+              height: isMobile ? '70vh' : 'auto',
               background: 'linear-gradient(165deg, #10121a 0%, #050508 100%)',
               borderRadius: isMobile ? '32px 32px 0 0' : '32px',
               border: '1px solid rgba(255,255,255,0.12)',
               borderBottom: isMobile ? 'none' : '1px solid rgba(255,255,255,0.12)',
-              padding: isMobile ? '2.5rem 2rem' : '3rem 2.5rem',
+              padding: isMobile ? '2rem 1.5rem' : '2.5rem 2rem',
               boxShadow: '0 -20px 80px rgba(0,0,0,0.8)',
               overflow: 'hidden',
               display: 'flex',
@@ -84,14 +84,30 @@ const SharePortal = ({ isOpen, onClose, property }) => {
           >
             {/* Grabber for Mobile */}
             {isMobile && (
-              <div style={{ width: '40px', height: '5px', background: 'rgba(255,255,255,0.1)', borderRadius: '10px', marginBottom: '2rem' }} />
+              <div style={{ width: '40px', height: '5px', background: 'rgba(255,255,255,0.1)', borderRadius: '10px', marginBottom: '1.5rem' }} />
             )}
 
             <button 
               onClick={onClose}
-              style={{ position: 'absolute', top: '2rem', right: '2rem', background: 'rgba(255,255,255,0.05)', border: 'none', color: 'white', cursor: 'pointer', width: '40px', height: '40px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              style={{ 
+                position: 'absolute', 
+                top: '1.25rem', 
+                right: '1.25rem', 
+                background: 'rgba(255,255,255,0.08)', 
+                border: '1px solid rgba(255,255,255,0.1)', 
+                color: 'white', 
+                cursor: 'pointer', 
+                width: '36px', 
+                height: '36px', 
+                borderRadius: '50%', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center',
+                zIndex: 10,
+                boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
+              }}
             >
-              <X size={20} />
+              <X size={18} />
             </button>
 
             <div style={{ 

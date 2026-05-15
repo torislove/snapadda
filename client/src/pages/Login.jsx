@@ -9,10 +9,17 @@ import { authGoogle } from '../services/api';
 import Logo from '../components/Logo';
 
 export default function Login() {
-  const { loginGoogle } = useAuth();
+  const { loginGoogle, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const from = location.state?.from?.pathname || location.state?.from || '/';
+
+  // Prevent logged in users from seeing the login page
+  useEffect(() => {
+    if (user) {
+      navigate(from, { replace: true });
+    }
+  }, [user, navigate, from]);
 
   const [step, setStep] = useState('contact');   // 'contact' | 'google'
   const [phone, setPhone] = useState('');

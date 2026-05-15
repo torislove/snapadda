@@ -340,7 +340,6 @@ app.use((err, req, res, next) => {
 export const api = onRequest({ 
   memory: "1GiB",
   timeoutSeconds: 300,
-  minInstances: 1,  // Keep at least 1 warm instance to eliminate cold-start login delay
   maxInstances: 10,
   // We handle CORS manually in Express middleware above
 }, app);

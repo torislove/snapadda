@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '../../components/ui/Button';
-import { fetchCities, createCity, updateCity, deleteCity, uploadMedia } from '../../services/api';
-import { Trash2, Edit3, Plus, X } from 'lucide-react';
+import { fetchCities, createCity, updateCity, uploadMedia } from '../../services/api';
+import { Edit3, Plus, X } from 'lucide-react';
 import { MediaManager } from '../../components/ui/MediaManager';
 
 const AdminCities = () => {
@@ -38,16 +38,6 @@ const AdminCities = () => {
     setIsAdding(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this region? All properties in this region will be unlinked.')) return;
-    try {
-      await deleteCity(id);
-      loadCities();
-      alert('Region deleted successfully');
-    } catch (error) {
-      alert('Delete failed');
-    }
-  };
 
   const handleAddSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -102,6 +92,12 @@ const AdminCities = () => {
 
   return (
     <div>
+      <div style={{ background: 'rgba(34,217,224,0.05)', padding: '1rem', borderRadius: '14px', border: '1px solid rgba(34,217,224,0.1)', marginBottom: '2rem' }}>
+        <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--cyan)', fontWeight: 600 }}>
+          💡 <strong>Help:</strong> Here you can add or edit the cities and regions (like Vizag or Amaravati) that appear on your website. Each city can have its own cover image to make the site look beautiful.
+        </p>
+      </div>
+
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--spacing-xl)' }}>
         <h1>Andhra Regions & Cities</h1>
         <Button 
@@ -196,9 +192,6 @@ const AdminCities = () => {
                     <Button variant="ghost" size="sm" onClick={() => handleEdit(city)}>
                       <Edit3 size={16} />
                     </Button>
-                    <Button variant="ghost" size="sm" onClick={() => handleDelete(city._id || city.id)} style={{ color: 'var(--error)' }}>
-                      <Trash2 size={16} />
-                    </Button>
                   </td>
                 </tr>
               ))}
@@ -234,7 +227,6 @@ const AdminCities = () => {
             </div>
             <div style={{ display: 'flex', gap: '0.5rem' }}>
               <button onClick={() => handleEdit(city)} style={{ padding: '8px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: 'none', color: 'white' }}><Edit3 size={16} /></button>
-              <button onClick={() => handleDelete(city._id || city.id)} style={{ padding: '8px', borderRadius: '8px', background: 'rgba(245,57,123,0.1)', border: 'none', color: 'var(--rose)' }}><Trash2 size={16} /></button>
             </div>
           </div>
         ))}

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -6,13 +6,12 @@ import {
   ChevronLeft, ChevronRight, Eye, CheckCircle2, Building, User,
   BedDouble, Bath, Square, Compass, Award, Send, Star, Leaf, Maximize2,
   Droplets, Truck, FileText, ZoomIn, X, TreePine, TrendingUp, IndianRupee,
-  LayoutGrid, Play
+  LayoutGrid, Play, Zap
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { fetchProperty, fetchSetting, askQuestion, fetchPropertyFAQs, likeProperty, shareProperty, fetchSimilarProperties } from '../services/api';
+import { fetchProperty, fetchSetting, askQuestion, fetchPropertyFAQs, likeProperty, shareProperty, fetchSimilarProperties, logActivity } from '../services/api';
 import PropertyCard from '../components/PropertyCard';
-import { formatSnapAddaPrice, formatLandSize, calcAgriTotalValue, getAcres, getCents, getEffectivePricePerUnit } from '../utils/priceUtils';
-import tr from '../utils/teluguTranslations';
+import { formatSnapAddaPrice, formatSnapAddaPriceRange, formatLandSize, calcAgriTotalValue, getAcres, getCents, getEffectivePricePerUnit } from '../utils/priceUtils';
 import { useTranslation } from 'react-i18next';
 import VisualCompass from '../components/VisualCompass';
 import EliteLightBox from '../components/EliteLightBox';
@@ -21,7 +20,7 @@ import { prefetchRoute } from '../utils/PerformanceUtilities';
 import { useRealtimeProperties } from '../hooks/useRealtimeProperties';
 import { Helmet } from 'react-helmet-async';
 import PropertyMap from '../components/PropertyMap';
-import SharePortal from '../components/SharePortal';
+import ShareControlCenter from '../components/ShareControlCenter';
 import { DOMAIN } from '../utils/shareUtils';
 
 // ----------------------------------------------------------------------------------
@@ -59,17 +58,17 @@ function SpecCard({ label, value, accent = 'white', icon }) {
     <div className="pd-spec-item" style={{ 
       '--ov-accent': accent, 
       padding: '1.25rem', 
-      background: 'rgba(255,255,255,0.03)', 
-      border: '1px solid rgba(255,255,255,0.08)', 
+      background: 'rgba(255,255,255,0.05)', 
+      border: '1px solid rgba(255,255,255,0.12)', 
       borderRadius: '20px', 
       display: 'flex', 
       flexDirection: 'column', 
-      gap: '6px' 
+      gap: '8px' 
     }}>
-      <div className="pd-spec-lbl" style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+      <div className="pd-spec-lbl" style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
         {icon} {label}
       </div>
-      <div className="pd-spec-val" style={{ color: accent, fontSize: '0.95rem', fontWeight: 900 }}>{value}</div>
+      <div className="pd-spec-val" style={{ color: 'white', fontSize: '1rem', fontWeight: 900 }}>{value}</div>
     </div>
   );
 }
@@ -89,6 +88,16 @@ export default function PropertyDetails() {
   const [activeTab, setActiveTab] = useState('overview');
   const [qna, setQna] = useState([]);
   const [supportInfo, setSupportInfo] = useState(null);
+
+  useEffect(() => {
+    fetchSetting('marketing_settings').then(data => {
+      if (data) setSupportInfo({
+        phone: data.supportPhone,
+        whatsapp: data.waNumber,
+        email: data.supportEmail
+      });
+    });
+  }, []);
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
   const [imgIdx, setImgIdx] = useState(0);
@@ -101,6 +110,8 @@ export default function PropertyDetails() {
   // Derived from property — safe defaults prevent ReferenceError
   const isVerified = property?.isVerified ?? false;
   const isFeatured = property?.isFeatured ?? false;
+  const isElite = property?.isElite ?? false;
+  const isTrustVerified = property?.isTrustVerified ?? false;
 
 
 
@@ -173,6 +184,13 @@ export default function PropertyDetails() {
         // Smart Recommendation Engine: Log View
         logPropertyView(data.type, data.location);
 
+        // Server-side Activity Logging for Admin Tracking
+        logActivity({
+          type: 'PROPERTY_VIEW',
+          payload: { propertyId: data._id, title: data.title, type: data.type, location: data.location },
+          context: window.location.pathname
+        });
+
         // Update page title
         document.title = `${data.title} | ${data.type} in ${data.location} | SnapAdda`;
       })
@@ -198,30 +216,32 @@ export default function PropertyDetails() {
     ...(property?.images || []),
     ...(property?.gallery || []),
     property?.image
-  ];
-  
-  const validPhotos = rawImages
-    .filter(isValidMedia)
-    .slice(0, 10);
+  ].filter(isValidMedia);
   
   // Deduplicate
-  const uniquePhotos = [...new Set(validPhotos)];
+  const uniqueRaw = [...new Set(rawImages)];
 
+  const photoUrls = uniqueRaw.filter(url => !url.match(/\.(mp4|webm|ogg|mov)(\?.*)?$/i));
+  const videoUrlsFromImages = uniqueRaw.filter(url => url.match(/\.(mp4|webm|ogg|mov)(\?.*)?$/i));
+
+  const validPhotos = photoUrls.slice(0, 15);
+  
   const validVideos = [
+    ...videoUrlsFromImages,
     ...(property?.videos || []),
     property?.videoUrl
   ].filter(isValidMedia)
-    .slice(0, 3);
+    .slice(0, 5);
   
   const uniqueVideos = [...new Set(validVideos)];
 
   // Final gallery set for the scroller
   let galleryMedia = [
-    ...uniquePhotos.map(url => ({ type: 'image', url })),
+    ...validPhotos.map(url => ({ type: 'image', url })),
     ...uniqueVideos.map(url => ({ type: 'video', url }))
   ];
 
-  const actualMediaCount = uniquePhotos.length + uniqueVideos.length;
+  const actualMediaCount = (validPhotos || []).length + (uniqueVideos || []).length;
   // If absolutely no media, provide a premium architectural placeholder
   if (galleryMedia.length === 0) {
     galleryMedia = [{ 
@@ -230,19 +250,100 @@ export default function PropertyDetails() {
       isPlaceholder: true 
     }];
   }
-
   // Fallback Google Maps Link generation if missing
   const finalGoogleMapsLink = property?.googleMapsLink?.trim().startsWith('http') 
     ? property.googleMapsLink.trim() 
     : (property?.googleMapsLink ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(property.googleMapsLink.trim())}` : null);
-  const hasMapLink = !!finalGoogleMapsLink;
+  const hasMapLink = !!finalGoogleMapsLink;  
+  
+  const propType = (property?.type || '').toLowerCase();
+  const isAgri = propType.includes('agri') || propType.includes('farm');
+  const isPlot = propType.includes('plot') || propType.includes('layout') || propType.includes('crda');
+  const isCommercial = propType.includes('commercial') || propType.includes('shop') || propType.includes('office') || propType.includes('showroom');
+  const isIndustrial = propType.includes('industrial') || propType.includes('shed') || propType.includes('warehouse') || propType.includes('factory');
+  const isLand = isAgri || isPlot || isIndustrial;
+  const isResidential = !isLand && !isCommercial && !isIndustrial;
 
-  const isAgri = ['agricultural land', 'farmhouse'].some(t => (property?.type || '').toLowerCase().includes(t));
-  const isPlot = ['plot', 'crda', 'layout'].some(t => (property?.type || '').toLowerCase().includes(t));
-  const isResidential = ['Apartment', 'Villa', 'Independent House', 'Farmhouse', 'Villa / Duplex', 'Apartment / Flat'].some(t => (property?.type || '').includes(t));
-  const isIndustrial = ['industrial', 'warehouse', 'factory'].some(t => (property?.type || '').toLowerCase().includes(t));
-  const isCommercial = ['commercial', 'office', 'showroom', 'shop', 'space'].some(t => (property?.type || '').toLowerCase().includes(t));
-  const isLand = isAgri || isPlot;
+  const specGroups = useMemo(() => {
+    if (!property) return [];
+    const p = property;
+    
+    return [
+      {
+        title: 'చట్టపరమైన & గుర్తింపు (SnapAdda ID)',
+        icon: <Shield size={18} />,
+        items: [
+          { label: 'Asset ID', value: `SNA-${(p._id || '').toString().slice(-6).toUpperCase()}` },
+          { label: 'Property Code', value: p.propertyCode },
+          { label: 'RERA ID', value: p.reraId },
+          { label: 'Approval Authority', value: p.approvalAuthority },
+          { label: 'Approval Number (L.P. No)', value: p.approvalNumber },
+          { label: 'Layout / Venture Name', value: p.layoutName },
+          { label: 'Survey Number', value: p.surveyNo },
+          { label: 'Ownership Type', value: p.ownershipType },
+          { label: 'Vastu Compliant', value: p.vastuCompliant ? 'Yes ✅' : 'No' }
+        ]
+      },
+      {
+        title: 'ప్రాంతం & రహదారి (Location & Road)',
+        icon: <MapPin size={18} />,
+        items: [
+          { label: 'Mandal / Tahsil', value: p.mandal },
+          { label: 'Village / Locality', value: p.village },
+          { label: 'District', value: p.district },
+          { label: 'Pincode', value: p.pincode },
+          { label: 'Road Type', value: p.roadType },
+          { label: 'Road Width', value: p.roadWidth ? `${p.roadWidth} Feet` : null },
+          { label: 'Overlooking', value: p.overlooking }
+        ]
+      },
+      {
+        title: 'నిర్మాణం & రూపకల్పన (Building & Structure)',
+        icon: <Building size={18} />,
+        items: [
+          { label: 'Configuration', value: p.bhk ? `${p.bhk} BHK` : p.beds ? `${p.beds} Bedrooms` : null },
+          { label: 'Floor Level', value: p.floorNo ? `Floor ${p.floorNo}` : null },
+          { label: 'Total Floors', value: p.totalFloors },
+          { label: 'Property Age', value: p.propertyAge },
+          { label: 'Construction Status', value: p.constructionStatus },
+          { label: 'Furnishing', value: p.furnishing },
+          { label: 'Corner Property', value: p.cornerProperty ? 'Yes' : null }
+        ]
+      },
+      {
+        title: 'సౌకర్యాలు & నిర్వహణ (Utilities & Maint)',
+        icon: <Zap size={18} />,
+        items: [
+          { label: 'Parking', value: p.parking },
+          { label: 'Water Supply', value: p.waterSupply || p.waterSource },
+          { label: 'Electricity Power', value: p.powerKVA ? `${p.powerKVA} KVA` : null },
+          { label: 'Security Level', value: p.securityLevel },
+          { label: 'Fire Safety', value: p.fireSafety ? 'Certified ✅' : null },
+          { label: 'Maintenance Fee', value: p.maintenanceFee ? `₹ ${p.maintenanceFee} / Mo` : null }
+        ]
+      },
+      {
+        title: 'పారిశ్రామిక & సాంకేతిక (Industrial & Technical)',
+        icon: <Zap size={18} />,
+        items: [
+          { label: 'Ceiling Height', value: p.ceilingHeight ? `${p.ceilingHeight} Feet` : null },
+          { label: 'Loading Docks', value: p.loadingDocks || null },
+          { label: 'Floor Type', value: p.floorType !== 'N/A' ? p.floorType : null },
+          { label: 'Water Source', value: p.waterSource !== 'N/A' ? p.waterSource : null }
+        ]
+      }
+    ].map(g => ({
+      ...g,
+      items: g.items.filter(i => i.value && i.value !== 'N/A' && i.value !== '0' && i.value !== 0)
+    })).filter(g => g.items.length > 0);
+  }, [property]);
+
+  const pricePerUnitLabel = useMemo(() => {
+    if (!property) return '';
+    if (isAgri) return 'ఎకరా ధర (Per Acre)';
+    if (isPlot) return 'గజం ధర (Per Sq.Yard)';
+    return 'చదరపు అడుగు ధర (Per Sq.Ft)';
+  }, [property, isAgri, isPlot]);
 
   const agriAcres = getAcres(property?.areaSize);
   const agriCents = getCents(property?.areaSize);
@@ -252,7 +353,10 @@ export default function PropertyDetails() {
   const effectivePricePerAcre = unitPrices?.acre || 0;
   const pricePerCent = unitPrices?.cent || 0;
   const agriTotalValue = calcAgriTotalValue(effectivePricePerAcre, property?.areaSize);
+  
+  // Effective price for single-value logic (like sharing)
   const displayPrice = (isAgri && agriTotalValue > 0) ? agriTotalValue : property?.price;
+  const rangeDisplay = formatSnapAddaPriceRange(property);
 
   const handleLike = async () => {
     if (!user) { navigate('/login', { state: { from: window.location.pathname } }); return; }
@@ -281,7 +385,7 @@ export default function PropertyDetails() {
   const getShareText = () => {
     const price = (isAgri && agriTotalValue > 0) ? agriTotalValue : property?.price;
     const code  = property?.propertyCode || '';
-    const displayPriceStr = property?.priceDisplay || formatSnapAddaPrice(price);
+    const displayPriceStr = property?.priceDisplay || formatSnapAddaPriceRange(property);
     return `🏡 *${property?.title}*\n📍 ${property?.location}, ${property?.district || ''}\n🪪 Code: *${code}*\n${displayPriceStr}\n\n🔗 ${getShareUrl()}\n\n_SnapAdda 📍 Andhra's Leading Property Platform_`;
   };
 
@@ -289,7 +393,7 @@ export default function PropertyDetails() {
 
   const handleWhatsApp = () => {
     const wa = supportInfo?.whatsapp || '919346793364';
-    const waMsg = `నమస్కారం SnapAdda! మీ ప్లాట్‌ఫారమ్‌లోని ఈ ప్రాపర్టీ పై ఆసక్తి ఉంది:\n\n*${property?.title}*\nరకం: ${tr(property?.type)}\nప్రాంతం: ${property?.location}\nధర: ${formatSnapAddaPrice(displayPrice)}\n\nలింక్: ${window.location.href}`;
+    const waMsg = `నమస్కారం SnapAdda! మీ ప్లాట్‌ఫారమ్‌లోని ఈ ప్రాపర్టీ పై ఆసక్తి ఉంది:\n\n*${property?.title}*\nరకం: ${t(`types.${(property?.type || 'apartment').toLowerCase()}`)}\nప్రాంతం: ${property?.location}\nధర: ${formatSnapAddaPriceRange(property)}\n\nలింక్: ${window.location.href}`;
     window.open(`https://wa.me/${wa}?text=${encodeURIComponent(waMsg)}`, '_blank');
   };
 
@@ -356,6 +460,86 @@ export default function PropertyDetails() {
     </div>
   );
 
+  // --- PREMIUM AUTH GATE ---
+  // Show a blurred preview with a sign-in overlay for guests
+  if (!loading && !user && property) {
+    return (
+      <div style={{ minHeight: '100vh', background: '#05050a', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
+        {/* Blurred background preview */}
+        <div style={{ position: 'absolute', inset: 0, filter: 'blur(12px)', opacity: 0.3, backgroundImage: `url(${property.images?.[0] || property.image || ''})`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'rgba(5,5,10,0.85)' }} />
+        
+        {/* Auth Card */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9, y: 30 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+          style={{
+            position: 'relative', zIndex: 10,
+            width: '90%', maxWidth: '480px',
+            background: 'rgba(10,12,20,0.95)',
+            border: '1px solid rgba(232,184,75,0.3)',
+            borderRadius: '32px', padding: '2.5rem',
+            boxShadow: '0 40px 100px rgba(0,0,0,0.8), 0 0 60px rgba(232,184,75,0.05)',
+            backdropFilter: 'blur(40px)',
+            textAlign: 'center'
+          }}
+        >
+          {/* Property Preview Info */}
+          <div style={{ marginBottom: '2rem' }}>
+            <div style={{ fontSize: '0.6rem', fontWeight: 900, letterSpacing: '0.2em', color: 'var(--gold)', marginBottom: '0.75rem', textTransform: 'uppercase' }}>SnapAdda Premium Listing</div>
+            <h2 style={{ color: 'white', fontSize: '1.3rem', fontWeight: 900, marginBottom: '0.5rem', lineHeight: 1.3 }}>{property.title}</h2>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', color: 'rgba(255,255,255,0.5)', fontSize: '0.85rem', marginBottom: '1rem' }}>
+              <MapPin size={14} style={{ color: 'var(--gold)' }} />
+              {property.location}{property.district ? `, ${property.district}` : ''}
+            </div>
+            <div style={{ fontSize: '1.6rem', fontWeight: 950, color: 'var(--gold)', letterSpacing: '-0.02em' }}>
+              {property.priceDisplay || formatSnapAddaPriceRange(property)}
+            </div>
+          </div>
+
+          {/* Divider */}
+          <div style={{ height: '1px', background: 'rgba(255,255,255,0.06)', margin: '1.5rem 0' }} />
+
+          {/* Sign-in CTA */}
+          <div style={{ marginBottom: '1.5rem' }}>
+            <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)', marginBottom: '1.25rem', lineHeight: 1.6 }}>
+              🔒 Sign in to view full property details, contact the agent, and save this listing
+            </div>
+            <motion.button
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={() => {
+                sessionStorage.setItem('snapadda_redirect', `/property/${id}`);
+                navigate('/login');
+              }}
+              style={{
+                width: '100%', padding: '16px', borderRadius: '18px',
+                background: 'linear-gradient(135deg, var(--gold), #f5c842)',
+                color: 'black', border: 'none', fontWeight: 950,
+                fontSize: '1rem', cursor: 'pointer', letterSpacing: '0.05em',
+                boxShadow: '0 15px 35px rgba(232,184,75,0.3)'
+              }}
+            >
+              Sign In to View Details →
+            </motion.button>
+            <div style={{ marginTop: '0.75rem', fontSize: '0.7rem', color: 'rgba(255,255,255,0.25)', fontWeight: 700 }}>
+              Free · 10 seconds · No spam
+            </div>
+          </div>
+
+          {/* Back link */}
+          <button
+            onClick={() => navigate('/')}
+            style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', fontSize: '0.8rem', cursor: 'pointer', fontWeight: 700 }}
+          >
+            ← Back to Listings
+          </button>
+        </motion.div>
+      </div>
+    );
+  }
+
   if (!property) return (
     <div className="pd-page" style={{ 
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', 
@@ -385,7 +569,7 @@ export default function PropertyDetails() {
   );
 
 
-  const supportPhone = (supportInfo?.phone || '+919346793364').replace(/\s+/g, '');
+  const supportPhone = (supportInfo?.phone || '+91 93467 93364').replace(/\s+/g, '');
   const getOptimizedImg = (url, width = 800) => {
     if (!url || !url.includes('cloudinary.com')) return url;
     const parts = url.split('/upload/');
@@ -402,7 +586,14 @@ export default function PropertyDetails() {
 
   return (
     <>
-      <div className="pd-page">
+      <div className="pd-page" style={{ 
+          width: isMobile ? '100%' : '50%', 
+          margin: '0 auto', 
+          background: '#05050a', 
+          minHeight: '100vh',
+          borderLeft: isMobile ? 'none' : '1px solid rgba(255,255,255,0.05)',
+          borderRight: isMobile ? 'none' : '1px solid rgba(255,255,255,0.05)'
+      }}>
       <Helmet>
         <title>{property?.title ? `${property.title} | SnapAdda` : 'Property Details | SnapAdda'}</title>
         <meta name="description" content={generateDesc(property || {})} />
@@ -425,117 +616,179 @@ export default function PropertyDetails() {
         <link rel="canonical" href={window.location.href} />
       </Helmet>
 
-      <SharePortal 
+      <ShareControlCenter 
         isOpen={shareModal} 
         onClose={() => setShareModal(false)} 
         property={property} 
       />
 
-      {/* --- ELITE GALLERY SECTION --- */}
-      <section className="pd-gallery-section" style={{ position: 'relative', width: '100%', background: '#05050a', padding: isMobile ? '0' : '2rem 0' }}>
+      {/* --- UNIFIED SPLIT HERO SECTION --- */}
+      <section className="pd-hero-split" style={{ background: '#05050a', paddingTop: isMobile ? '0' : '2rem' }}>
         <div className="container" style={{ maxWidth: '1440px' }}>
-          {isMobile ? (
-            <div style={{ position: 'relative' }}>
-              <div 
-                className="pd-snap-gallery hide-scrollbar" 
-                style={{ 
-                  display: 'flex', 
-                  overflowX: 'auto', 
-                  scrollSnapType: 'x mandatory', 
-                  height: '50vh', // Slightly shorter for better context
-                  width: '100%',
-                  background: '#000'
-                }}
-              >
-                {galleryMedia.map((media, i) => (
-                  <div key={i} style={{ flex: '0 0 100%', scrollSnapAlign: 'start', position: 'relative' }} onClick={() => { setImgIdx(i); setLightbox(true); }}>
-                    <img src={getOptimizedImg(media.url, 800)} alt={`${property.title} - ${i+1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.4) 0%, transparent 40%)' }} />
-                  </div>
-                ))}
-              </div>
-
-              <button 
-                onClick={() => setLightbox(true)}
-                style={{
-                  position: 'absolute', bottom: '24px', right: '20px',
-                  background: 'rgba(232,184,75,0.9)', backdropFilter: 'blur(10px)', border: 'none',
-                  color: 'black', padding: '12px 20px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 900,
-                  display: 'flex', alignItems: 'center', gap: '8px', zIndex: 10,
-                  boxShadow: '0 10px 30px rgba(232,184,75,0.4)'
-                }}
-              >
-                <LayoutGrid size={18} /> {actualMediaCount} PHOTOS
-              </button>
-
-            </div>
-          ) : (
-            <div style={{ 
-              display: 'grid', 
-              gridTemplateColumns: galleryMedia.length >= 4 ? '2.5fr 1.5fr' : '1fr', 
-              gap: '12px', 
-              height: '650px', 
-              width: '100%',
-              borderRadius: '24px',
-              overflow: 'hidden',
-              boxShadow: '0 40px 80px rgba(0,0,0,0.6)'
-            }}>
-              <div style={{ position: 'relative', cursor: 'pointer', overflow: 'hidden' }} onClick={() => { setImgIdx(0); setLightbox(true); }}>
-                <img src={getOptimizedImg(galleryMedia[0]?.url, 1200)} alt={property.title} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.6s cubic-bezier(0.165, 0.84, 0.44, 1)' }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'} />
-                {galleryMedia.length < 4 && (
-                  <div style={{ position: 'absolute', bottom: '30px', right: '30px', background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(10px)', padding: '12px 24px', borderRadius: '40px', border: '1px solid rgba(255,255,255,0.2)', color: 'white', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <LayoutGrid size={20} color="var(--gold)"/> VIEW GALLERY ({actualMediaCount} PHOTOS)
-                  </div>
-                )}
-              </div>
-
-              {galleryMedia.length >= 4 && (
-                <div style={{ display: 'grid', gridTemplateRows: '1fr 1fr', gap: '12px' }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                    <div style={{ cursor: 'pointer', overflow: 'hidden' }} onClick={() => { setImgIdx(1); setLightbox(true); }}>
-                      <img src={getOptimizedImg(galleryMedia[1]?.url, 600)} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.4s' }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'} />
-                    </div>
-                    <div style={{ cursor: 'pointer', overflow: 'hidden' }} onClick={() => { setImgIdx(2); setLightbox(true); }}>
-                      <img src={getOptimizedImg(galleryMedia[2]?.url, 600)} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.4s' }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'} />
-                    </div>
-                  </div>
-                  <div style={{ position: 'relative', cursor: 'pointer', overflow: 'hidden' }} onClick={() => { setImgIdx(3); setLightbox(true); }}>
-                    <img src={getOptimizedImg(galleryMedia[3]?.url, 800)} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.7, transition: 'transform 0.4s' }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'} />
-                    <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)' }}>
-                      <div style={{ textAlign: 'center' }}>
-                        <LayoutGrid size={32} color="var(--gold)" style={{ marginBottom: '8px' }} />
-                        <div style={{ color: 'white', fontWeight: 900, fontSize: '0.9rem', letterSpacing: '0.1em' }}>VIEW ALL {actualMediaCount} PHOTOS</div>
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: isMobile ? '1fr' : '1fr', 
+            gap: isMobile ? '0' : '3rem',
+            alignItems: 'start'
+          }}>
+            
+            {/* LEFT SIDE: Media & Gallery (Smaller) */}
+            <div style={{ position: 'relative', width: '100%', borderRadius: isMobile ? '0' : '24px', overflow: 'hidden', boxShadow: isMobile ? 'none' : '0 30px 60px rgba(0,0,0,0.5)' }}>
+              {isMobile ? (
+                <div style={{ position: 'relative' }}>
+                  <div 
+                    className="pd-snap-gallery hide-scrollbar" 
+                    style={{ 
+                      display: 'flex', 
+                      overflowX: 'auto', 
+                      scrollSnapType: 'x mandatory', 
+                      height: '45vh',
+                      width: '100%',
+                      background: '#000'
+                    }}
+                  >
+                    {galleryMedia.map((media, i) => (
+                      <div key={i} style={{ flex: '0 0 100%', scrollSnapAlign: 'start', position: 'relative' }} onClick={() => { setImgIdx(i); setLightbox(true); }}>
+                        {media.type === 'video' ? (
+                          <div style={{ width: '100%', height: '100%', position: 'relative' }}>
+                            <video src={media.url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.3)' }}>
+                              <div style={{ width: '50px', height: '50px', borderRadius: '50%', background: 'rgba(232,184,75,0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <Play size={24} fill="black" color="black" />
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <img src={getOptimizedImg(media.url, 800)} alt={`${property.title} - ${i+1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        )}
+                        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.4) 0%, transparent 40%)' }} />
                       </div>
-                    </div>
+                    ))}
                   </div>
+                  <button 
+                    onClick={() => setLightbox(true)}
+                    style={{
+                      position: 'absolute', bottom: '20px', right: '15px',
+                      background: 'rgba(232,184,75,0.9)', backdropFilter: 'blur(10px)', border: 'none',
+                      color: 'black', padding: '10px 16px', borderRadius: '15px', fontSize: '0.7rem', fontWeight: 900,
+                      display: 'flex', alignItems: 'center', gap: '6px', zIndex: 10
+                    }}
+                  >
+                    <LayoutGrid size={14} /> {actualMediaCount} PHOTOS
+                  </button>
+                </div>
+              ) : (
+                <div style={{ height: '560px', position: 'relative', cursor: 'pointer' }} onClick={() => { setImgIdx(0); setLightbox(true); }}>
+                   <img src={getOptimizedImg(galleryMedia[0]?.url, 1000)} alt={property.title} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.8s cubic-bezier(0.165, 0.84, 0.44, 1)' }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'} />
+                   <div style={{ position: 'absolute', bottom: '24px', left: '24px', right: '24px', display: 'flex', justifyContent: 'center' }}>
+                      <button style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(15px)', border: '1px solid rgba(255,255,255,0.2)', color: 'white', padding: '12px 24px', borderRadius: '40px', fontWeight: 900, fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <LayoutGrid size={16} color="var(--gold)"/> VIEW ALL {actualMediaCount} MEDIA
+                      </button>
+                   </div>
                 </div>
               )}
             </div>
-          )}
-        </div>
-        
-        {/* Floating Controls */}
-        {!isMobile && (
-          <div style={{ position: 'absolute', top: '40px', left: '40px', zIndex: 100, display: 'flex', gap: '12px' }}>
-            <button 
-              onClick={() => navigate(-1)}
-              style={{ 
-                background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.2)', 
-                color: 'white', padding: '10px 20px', borderRadius: '24px', display: 'flex', alignItems: 'center', gap: '8px', 
-                fontWeight: 800, fontSize: '0.9rem', cursor: 'pointer', boxShadow: '0 10px 30px rgba(0,0,0,0.3)'
-              }}
-            >
-              <ArrowLeft size={18}/> వెనక్కి
-            </button>
+
+            {/* RIGHT SIDE: Header Info & Actions */}
+            <div style={{ padding: isMobile ? '2rem 1.5rem' : '1rem 0' }}>
+               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
+                  <span style={{ background: 'rgba(232,184,75,0.1)', color: 'var(--gold)', border: '1px solid rgba(232,184,75,0.25)', padding: '6px 14px', borderRadius: '30px', fontSize: '0.65rem', fontWeight: 900, textTransform: 'uppercase' }}>SNA-{(id || '').toString().slice(-6).toUpperCase()}</span>
+                  <span style={{ background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', padding: '6px 14px', borderRadius: '30px', fontSize: '0.65rem', fontWeight: 900, textTransform: 'uppercase' }}>{t(`types.${(property?.type || 'apartment').toLowerCase()}`)}</span>
+                  {isVerified && <span style={{ background: 'rgba(16,217,140,0.1)', color: '#10d98c', border: '1px solid rgba(16,217,140,0.3)', padding: '6px 14px', borderRadius: '30px', fontSize: '0.65rem', fontWeight: 900, textTransform: 'uppercase' }}>సర్టిఫైడ్ (VERIFIED)</span>}
+                  {isElite && (
+                    <span style={{ background: 'linear-gradient(45deg, #0f172a, #1e293b)', color: '#e8b84b', border: '1px solid #e8b84b', boxShadow: '0 0 15px rgba(232,184,75,0.3)', padding: '6px 14px', borderRadius: '30px', fontSize: '0.65rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      <Award size={12} style={{ verticalAlign: 'middle', marginRight: '4px' }} /> ELITE ASSET
+                    </span>
+                  )}
+                  {isTrustVerified && (
+                    <span style={{ background: 'rgba(232,184,75,0.1)', color: 'var(--gold)', border: '1px solid rgba(232,184,75,0.3)', padding: '6px 14px', borderRadius: '30px', fontSize: '0.65rem', fontWeight: 900, textTransform: 'uppercase' }}>
+                      <CheckCircle2 size={12} style={{ verticalAlign: 'middle', marginRight: '4px' }} /> TRUST SEAL
+                    </span>
+                  )}
+                  <span style={{ 
+                      background: property.purpose === 'Rent' ? 'rgba(34,217,224,0.1)' : 'rgba(39,201,125,0.1)',
+                      color: property.purpose === 'Rent' ? '#22d9e0' : '#27c97d',
+                      border: `1px solid ${property.purpose === 'Rent' ? '#22d9e033' : '#27c97d33'}`,
+                      fontSize: '0.65rem', fontWeight: 900, padding: '6px 14px', borderRadius: '30px', textTransform: 'uppercase'
+                  }}>
+                      {t(`purposes.${(property.purpose || 'Sale').toLowerCase()}`)}
+                  </span>
+               </div>
+
+               <h1 style={{ 
+                  fontSize: isMobile ? '1.8rem' : '2.8rem', 
+                  fontWeight: 950, 
+                  lineHeight: 1.15,
+                  marginBottom: '1rem', 
+                  color: 'white', 
+                  letterSpacing: '-0.02em'
+               }}>
+                 {property.title}
+               </h1>
+
+               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '1.5rem' }}>
+                  <MapPin size={22} style={{ color: 'var(--gold)' }}/>
+                  <div>
+                    <div style={{ fontSize: isMobile ? '1rem' : '1.25rem', fontWeight: 800, color: 'white' }}>{property.location} {property.district ? `(${property.district})` : ''}</div>
+                    {(property.address || property.village) && (
+                      <div style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)', fontWeight: 600 }}>
+                        {property.village ? `${property.village}, ` : ''}{property.address || ''} {property.pincode ? `- ${property.pincode}` : ''}
+                      </div>
+                    )}
+                  </div>
+               </div>
+
+               <div style={{ 
+                  background: 'rgba(232,184,75,0.03)', 
+                  border: '1px solid rgba(232,184,75,0.15)', 
+                  padding: '1.5rem', 
+                  borderRadius: '24px', 
+                  marginBottom: '2rem' 
+               }}>
+                  <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '8px' }}>
+                    {property.priceType === 'range' ? 'Expected Price Range' : 'Snapshot Pricing'}
+                  </div>
+                  <div style={{ fontSize: isMobile ? '2rem' : '2.8rem', fontWeight: 950, color: 'var(--gold)', lineHeight: 1 }}>
+                    {property.priceDisplay || formatSnapAddaPriceRange(property)}
+                  </div>
+                  <div style={{ marginTop: '8px', fontSize: '0.85rem', color: '#27c97d', fontWeight: 700 }}>
+                    {property.pricePerUnit ? `≈ ${formatSnapAddaPrice(property.pricePerUnit)} ${pricePerUnitLabel}` : 'Exclusive Valuation'}
+                  </div>
+               </div>
+
+               <div style={{ display: 'flex', gap: '1rem' }}>
+                  <button 
+                    onClick={() => {
+                      const el = document.getElementById('pd-contact-box');
+                      el?.scrollIntoView({ behavior: 'smooth' });
+                    }}
+                    style={{ flex: 1, padding: '16px', borderRadius: '18px', background: 'var(--gold)', color: 'black', border: 'none', fontWeight: 950, fontSize: '0.9rem', cursor: 'pointer', boxShadow: '0 15px 30px rgba(232,184,75,0.3)' }}
+                  >
+                    CONTACT AGENT
+                  </button>
+                  <button 
+                    onClick={handleLike}
+                    style={{ width: '56px', height: '56px', borderRadius: '18px', background: liked ? 'var(--gold)' : 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: liked ? 'black' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.3s' }}
+                  >
+                    <Heart size={24} fill={liked ? 'currentColor' : 'none'}/>
+                  </button>
+                  <button 
+                    onClick={handleShare}
+                    style={{ width: '56px', height: '56px', borderRadius: '18px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                  >
+                    <Share2 size={24}/>
+                  </button>
+               </div>
+            </div>
           </div>
-        )}
+        </div>
       </section>
 
       <AnimatePresence>{toast && <Toast msg={toast}/>}</AnimatePresence>
       <AnimatePresence>
         {lightbox && (
           <EliteLightBox 
-            images={uniquePhotos.map(img => getOptimizedImg(img, 1200))} 
+            images={validPhotos.map(img => getOptimizedImg(img, 1200))} 
             videos={uniqueVideos} 
             startIdx={imgIdx} 
             title={property.title}
@@ -544,406 +797,224 @@ export default function PropertyDetails() {
         )}
       </AnimatePresence>
 
-      {/* --- ELITE HEADER SECTION (CENTERED) --- */}
-      {/* --- ELITE HEADER SECTION (CENTERED ON DESKTOP, LEFT ON MOBILE) --- */}
-      <section className="pd-title-section" style={{ padding: isMobile ? '2.5rem 1.5rem' : '4rem 0 3rem', textAlign: isMobile ? 'left' : 'center' }}>
-        <div className="container elite-section">
-          <div className="pd-title-badges" style={{ 
-            justifyContent: isMobile ? 'flex-start' : 'center', 
-            marginBottom: '1.25rem', 
-            display: 'flex', 
-            gap: '8px', 
-            flexWrap: 'wrap' 
-          }}>
-            {property.isOwnerListing && (
-              <span style={{ background: 'rgba(34,217,224,0.1)', color: 'var(--cyan)', border: '1px solid rgba(34,217,224,0.3)', padding: '6px 14px', borderRadius: '30px', fontSize: '0.7rem', fontWeight: 900, textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <User size={12} /> Direct Owner
-              </span>
-            )}
-            {property.isVerified && <span className="pd-badge-green" style={{ background: 'rgba(16,217,140,0.1)', color: '#10d98c', border: '1px solid rgba(16,217,140,0.3)', padding: '6px 14px', borderRadius: '30px', fontSize: '0.7rem', fontWeight: 900, textTransform: 'uppercase' }}>సర్టిఫైడ్</span>}
-            <span className="pd-badge-type" style={{ background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', padding: '6px 14px', borderRadius: '30px', fontSize: '0.7rem', fontWeight: 900, textTransform: 'uppercase' }}>{tr(property.type)}</span>
-            <span className="pd-badge-purpose" style={{ 
-                background: property.purpose === 'Rent' ? 'rgba(34,217,224,0.1)' : 'rgba(39,201,125,0.1)',
-                color: property.purpose === 'Rent' ? '#22d9e0' : '#27c97d',
-                border: `1px solid ${property.purpose === 'Rent' ? '#22d9e033' : '#27c97d33'}`,
-                fontSize: '0.7rem', fontWeight: 900, padding: '6px 14px', borderRadius: '30px', textTransform: 'uppercase'
-            }}>
-                {tr(property.purpose === 'Rent' ? 'For Rent' : 'For Sale')}
-            </span>
-          </div>
-          
-          <h1 className="pd-h1" style={{ 
-            fontSize: isMobile ? '1.85rem' : '3.5rem', 
-            fontWeight: 950, 
-            lineHeight: 1.15,
-            marginBottom: '1.5rem', 
-            color: 'white', 
-            letterSpacing: '-0.02em', 
-            maxWidth: isMobile ? '100%' : '1000px', 
-            margin: isMobile ? '0' : '0 auto' 
-          }}>
-            {property.title}
-          </h1>
-          
-          <div style={{ 
-            color: 'var(--gold)', 
-            fontSize: isMobile ? '2.25rem' : '4.5rem', 
-            fontWeight: 950, 
-            lineHeight: 1,
-            marginBottom: '0.75rem', 
-            letterSpacing: '-0.02em' 
-          }}>
-            {property.priceDisplay || formatSnapAddaPrice(displayPrice)}
-          </div>
-          
-          <div style={{ 
-            color: 'rgba(255,255,255,0.4)', 
-            fontSize: '0.7rem', 
-            fontWeight: 800, 
-            textTransform: 'uppercase', 
-            letterSpacing: '0.2em', 
-            marginBottom: '3rem' 
-          }}>
-            SNAPADDA EXCLUSIVE ASSET
-          </div>
-
-          <div style={{ 
-            display: 'flex', 
-            flexDirection: 'column', 
-            gap: '20px', 
-            alignItems: isMobile ? 'flex-start' : 'center', 
-            marginBottom: '2rem' 
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', justifyContent: isMobile ? 'flex-start' : 'center' }}>
-              <MapPin size={isMobile ? 22 : 28} style={{ color: 'var(--gold)' }}/>
-              <span style={{ fontSize: isMobile ? '1.15rem' : '1.75rem', fontWeight: 800, color: 'white', opacity: 0.95 }}>
-                {property.location} {property.district ? `(${property.district})` : ''}
-              </span>
-            </div>
-            
-            <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-               <span style={{ 
-                 background: 'rgba(232,184,75,0.1)', 
-                 border: '1px solid rgba(232,184,75,0.25)', 
-                 color: '#e8b84b', 
-                 padding: '10px 18px', 
-                 borderRadius: '16px', 
-                 fontSize: '0.75rem', 
-                 fontWeight: 900, 
-                 letterSpacing: '0.15em' 
-               }}>
-                SNA-{(id || '').toString().slice(-6).toUpperCase()}
-              </span>
-              <button 
-                onClick={() => setShareModal(true)}
-                style={{ 
-                  background: 'rgba(255,255,255,0.06)', 
-                  border: '1px solid rgba(255,255,255,0.12)', 
-                  color: 'white', 
-                  padding: '10px 18px', 
-                  borderRadius: '16px', 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: '10px', 
-                  fontWeight: 900, 
-                  fontSize: '0.75rem',
-                  letterSpacing: '0.05em',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s'
-                }}
-              >
-                <Share2 size={16} /> SHARE
-              </button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-
-                <div style={{ marginTop: '1.5rem', width: '100%', maxWidth: '600px', margin: '1.5rem auto 0' }}>
-                  <div style={{ fontSize: '0.8rem', fontWeight: 900, color: 'var(--gold)', letterSpacing: '0.15em', marginBottom: '16px', textTransform: 'uppercase', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
-                    <div style={{ width: '14px', height: '14px', borderRadius: '4px', background: 'linear-gradient(45deg, #4285F4, #EA4335, #FBBC05, #34A853)' }} />
-                    ప్రాంతం యొక్క మ్యాప్ (Location Map)
-                  </div>
-                  <a 
-                    id="btn-pd-map-directions"
-                    href={hasMapLink ? finalGoogleMapsLink : '#'} 
-                    target={hasMapLink ? "_blank" : "_self"}
-                    rel="noopener noreferrer" 
-                    onClick={(e) => !hasMapLink && e.preventDefault()}
-                    style={{ 
-                      width: '100%',
-                      padding: '1.4rem', 
-                      fontSize: '1.1rem', 
-                      fontWeight: 900, 
-                      borderRadius: '30px',
-                      textDecoration: 'none',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '12px',
-                      color: 'white',
-                      position: 'relative',
-                      background: hasMapLink ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255,255,255,0.02)',
-                      backdropFilter: 'blur(20px)',
-                      backgroundImage: hasMapLink 
-                        ? 'linear-gradient(rgba(10, 10, 20, 0.85), rgba(10, 10, 20, 0.85)), linear-gradient(135deg, #4285F4 0%, #EA4335 33%, #FBBC05 66%, #34A853 100%)'
-                        : 'none',
-                      backgroundOrigin: 'border-box',
-                      backgroundClip: 'padding-box, border-box',
-                      backgroundColor: !hasMapLink ? 'rgba(255,255,255,0.05)' : 'transparent',
-                      border: !hasMapLink ? '1px solid rgba(255,255,255,0.1)' : '3px solid transparent',
-                      boxShadow: hasMapLink ? '0 15px 40px rgba(0,0,0,0.5), inset 0 1px 1px rgba(255,255,255,0.1)' : 'none',
-                      transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-                      cursor: hasMapLink ? 'pointer' : 'not-allowed',
-                    }}
-                    onMouseEnter={e => {
-                      if (hasMapLink) {
-                        e.currentTarget.style.transform = 'translateY(-5px) scale(1.02)';
-                        e.currentTarget.style.boxShadow = '0 15px 40px rgba(66, 133, 244, 0.3)';
-                      }
-                    }}
-                    onMouseLeave={e => {
-                      if (hasMapLink) {
-                        e.currentTarget.style.transform = 'translateY(0) scale(1)';
-                        e.currentTarget.style.boxShadow = '0 10px 30px rgba(0,0,0,0.4), inset 0 1px 1px rgba(255,255,255,0.1)';
-                      }
-                    }}
-                  >
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ filter: hasMapLink ? 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' : 'none' }}>
-                      <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="#4285F4"/>
-                      <path d="M12 11.5c1.38 0 2.5-1.12 2.5-2.5S13.38 6.5 12 6.5 9.5 7.62 9.5 9s1.12 2.5 2.5 2.5z" fill="white"/>
-                      <circle cx="12" cy="9" r="1.5" fill="#EA4335" />
-                    </svg>
-                    {hasMapLink ? 'మ్యాప్‌లో దిశలను చూడండి (Get Directions)' : 'Location Link Pending'}
-                  </a>
-                </div>
-
-            <div className="pd-price-block">
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', background: 'rgba(39, 201, 125, 0.1)', border: '1px solid rgba(39, 201, 125, 0.3)', padding: '6px 12px', borderRadius: '12px' }}>
-                   <ShieldCheck size={14} color="#27c97d"/> <span style={{ color: '#27c97d', fontSize: '0.7rem', fontWeight: 900 }}>100% VERIFIED ASSET</span>
-                </div>
-                <div className="pd-price-main" style={{ fontSize: '2.5rem', fontWeight: 950, color: 'var(--gold)' }}>{formatSnapAddaPrice(displayPrice)}</div>
-                <div className="pd-price-sub" style={{ color: 'var(--txt-muted)', fontWeight: 600, fontSize: '0.85rem' }}>SnapAdda Exclusive Valuation</div>
-                <div className="pd-price-actions" style={{ marginTop: '1.5rem', display: 'flex', gap: '1rem' }}>
-                  <div style={{ 
-                    display: 'flex', 
-                    gap: '12px', 
-                    background: 'rgba(255, 255, 255, 0.03)', 
-                    padding: '8px', 
-                    borderRadius: '20px', 
-                    border: '1px solid rgba(255,255,255,0.08)',
-                    backdropFilter: 'blur(20px)',
-                    boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
-                    flex: 1
-                  }}>
-                    <button 
-                      id="btn-pd-like"
-                      className={`pd-action-btn ${liked ? 'liked' : ''}`} 
-                      onClick={handleLike} 
-                      style={{ 
-                        flex: 1, padding: '12px', borderRadius: '14px', border: 'none', 
-                        background: liked ? 'var(--gold)' : 'rgba(255,255,255,0.05)', 
-                        color: liked ? 'black' : 'white', fontWeight: 800, 
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                        transition: 'all 0.3s ease'
-                      }}
-                    >
-                      <Heart size={18} fill={liked ? 'currentColor' : 'none'}/> {liked ? 'Liked' : 'Like'}
-                    </button>
-                    <button 
-                      id="btn-pd-share"
-                      className="pd-action-btn" 
-                      onClick={handleShare} 
-                      style={{ 
-                        width: '48px', height: '48px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.2)', 
-                        background: 'rgba(0,0,0,0.5)', color: 'white', 
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        backdropFilter: 'blur(10px)',
-                        transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-                        cursor: 'pointer'
-                      }}
-                      onMouseEnter={e => { e.currentTarget.style.background = 'var(--gold)'; e.currentTarget.style.color = 'black'; e.currentTarget.style.transform = 'scale(1.1)'; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = 'rgba(0,0,0,0.5)'; e.currentTarget.style.color = 'white'; e.currentTarget.style.transform = 'scale(1)'; }}
-                    >
-                      <Share2 size={18}/>
-                    </button>
-                  </div>
-              </div>
-            </div>
-
-      <div className="pd-tab-sticky">
-        <div className="container">
-          <nav className="pd-tab-nav">
-            {TABS.map(tab => (
-              <a key={tab.id} href={`#pd-${tab.id}`}
-                className={`pd-tab-link ${activeTab === tab.id ? 'active' : ''}`}
-                onClick={() => setActiveTab(tab.id)}>
-                {tab.label}
-              </a>
-            ))}
-          </nav>
-        </div>
-      </div>
-
       <div className="container" style={{ marginTop: isMobile ? '1.5rem' : '3rem' }}>
         <div className="pd-body-grid" style={{ 
           display: 'grid', 
-          gridTemplateColumns: isMobile ? '1fr' : 'minmax(0, 1.25fr) 360px', 
-          gap: isMobile ? '2.5rem' : '4rem', 
+          gridTemplateColumns: '1fr', 
+          gap: isMobile ? '2rem' : '3rem', 
           alignItems: 'start',
-          paddingBottom: '6rem'
+          paddingBottom: '8rem',
+          maxWidth: '1200px',
+          margin: '0 auto'
         }}>
           <main className="pd-main-col" style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '2.5rem' : '4rem' }}>
             <section id="pd-overview" className="pd-section" style={{ background: 'rgba(255,255,255,0.02)', padding: isMobile ? '1.5rem' : '2.5rem', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.05)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                <h2 className="pd-section-h" style={{ margin: 0 }}>ప్రాంతం యొక్క అవలోకనం (Property DNA)</h2>
+                {property.isVerified && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(16,217,140,0.1)', padding: '6px 12px', borderRadius: '12px', border: '1px solid rgba(16,217,140,0.2)' }}>
+                    <ShieldCheck size={14} color="#10d98c" />
+                    <span style={{ fontSize: '0.65rem', fontWeight: 900, color: '#10d98c', textTransform: 'uppercase' }}>100% Verified Asset</span>
+                  </div>
+                )}
+              </div>
 
-              <h2 className="pd-section-h">ప్రాంతం యొక్క అవలోకనం (Overview)</h2>
-              <div className="pd-overview-grid">
+              <div className="pd-overview-grid" style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem' }}>
                 {isAgri && (
                   <>
-                    <div className="pd-ov-card" style={{ '--ov-accent': '#27c97d' }}>
+                    <div className="pd-ov-card" style={{ '--ov-accent': '#27c97d', padding: '1.25rem', background: 'rgba(255,255,255,0.03)', borderRadius: '20px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                       <Leaf size={24} style={{ color: '#27c97d' }}/>
-                      <div className="pd-ov-val">{formatLandSize(property.totalAcres, false)}</div>
-                      <div className="pd-ov-lbl">మొత్తం విస్తీర్ణం</div>
+                      <div style={{ fontSize: '1.1rem', fontWeight: 950, color: 'white' }}>{formatLandSize(property.areaSize, false)}</div>
+                      <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 800, textTransform: 'uppercase' }}>మొత్తం విస్తీర్ణం</div>
                     </div>
-                    <div className="pd-ov-card" style={{ '--ov-accent': 'var(--gold)' }}>
+                    <div className="pd-ov-card" style={{ '--ov-accent': 'var(--gold)', padding: '1.25rem', background: 'rgba(255,255,255,0.03)', borderRadius: '20px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                       <TrendingUp size={24} style={{ color: 'var(--gold)' }}/>
-                      <div className="pd-ov-val">{formatSnapAddaPrice(property.pricePerAcre)}</div>
-                      <div className="pd-ov-lbl">ఎకరా ధర</div>
+                      <div style={{ fontSize: '1.1rem', fontWeight: 950, color: 'white' }}>{formatSnapAddaPrice(effectivePricePerAcre)}</div>
+                      <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 800, textTransform: 'uppercase' }}>ఎకరా ధర (Per Acre)</div>
                     </div>
                   </>
                 )}
                 {isPlot && (
-                  <div className="pd-ov-card" style={{ '--ov-accent': '#22d9e0' }}>
-                    <Square size={24} style={{ color: '#22d9e0' }} />
-                    <div className="pd-ov-val">{property.areaSize} {tr(property.measurementUnit || 'Sq.Yards')}</div>
-                    <div className="pd-ov-lbl">మొత్తం విస్తీర్ణం</div>
-                  </div>
+                  <>
+                    <div className="pd-ov-card" style={{ '--ov-accent': '#22d9e0', padding: '1.25rem', background: 'rgba(255,255,255,0.03)', borderRadius: '20px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <Square size={24} style={{ color: '#22d9e0' }} />
+                      <div style={{ fontSize: '1.1rem', fontWeight: 950, color: 'white' }}>{property.areaSize} {t(`units.${(property.measurementUnit || 'Sq.Yards').toLowerCase()}`)}</div>
+                      <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 800, textTransform: 'uppercase' }}>మొత్తం విస్తీర్ణం</div>
+                    </div>
+                    {property.approvalAuthority && (
+                      <div className="pd-ov-card" style={{ '--ov-accent': 'var(--gold)', padding: '1.25rem', background: 'rgba(255,255,255,0.03)', borderRadius: '20px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <Award size={24} style={{ color: 'var(--gold)' }}/>
+                        <div style={{ fontSize: '1.1rem', fontWeight: 950, color: 'white' }}>{property.approvalAuthority}</div>
+                        <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 800, textTransform: 'uppercase' }}>అప్రూవల్ (Authority)</div>
+                      </div>
+                    )}
+                  </>
                 )}
                 {isResidential && (
-                  <div className="pd-ov-card">
-                    <BedDouble size={24} style={{ color: 'var(--gold)' }}/>
-                    <div className="pd-ov-val">{property.bhk || property.beds} BHK</div>
-                    <div className="pd-ov-lbl">కాన్ఫిగరేషన్</div>
-                  </div>
+                  <>
+                    <div className="pd-ov-card" style={{ padding: '1.25rem', background: 'rgba(255,255,255,0.05)', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <BedDouble size={24} style={{ color: 'var(--gold)' }}/>
+                      <div style={{ fontSize: '1.1rem', fontWeight: 950, color: 'white' }}>{property.bhk || property.beds} BHK</div>
+                      <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.5)', fontWeight: 800, textTransform: 'uppercase' }}>కాన్ఫిగరేషన్</div>
+                    </div>
+                    {property.areaSize > 0 && (
+                      <div className="pd-ov-card" style={{ padding: '1.25rem', background: 'rgba(255,255,255,0.05)', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <Square size={24} style={{ color: 'var(--cyan)' }}/>
+                        <div style={{ fontSize: '1.1rem', fontWeight: 950, color: 'white' }}>{property.areaSize} {t(`units.${(property.measurementUnit || 'Sq.Ft').toLowerCase()}`)}</div>
+                        <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.5)', fontWeight: 800, textTransform: 'uppercase' }}>విస్తీర్ణం (SFT)</div>
+                      </div>
+                    )}
+                  </>
                 )}
-                <div className="pd-ov-card" style={{ gap: '12px' }}>
-                  <VisualCompass facing={property.facing} size={48} />
-                  <div style={{ textAlign: 'center' }}>
-                    <div className="pd-ov-val" style={{ textTransform: 'uppercase' }}>{tr(property.facing || 'Any')}</div>
-                    <div className="pd-ov-lbl">దిశ (Facing)</div>
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            <section className="pd-section glass-premium shadow-hover" style={{ border: '1px solid rgba(212,175,55,0.2)', padding: '2.5rem', borderRadius: '28px', position: 'relative', overflow: 'hidden' }}>
-              <div style={{ position: 'absolute', top: '-20px', right: '-20px', opacity: 0.08, pointerEvents: 'none' }}>
-                <ShieldCheck size={160} color="var(--gold)" />
-              </div>
-              
-              <div style={{ marginBottom: '2.5rem' }}>
-                <div style={{ fontSize: '0.75rem', fontWeight: 900, color: 'var(--gold)', letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: '8px' }}>SNAPADDA QUALITY</div>
-                <h3 style={{ fontSize: '1.6rem', fontWeight: 900, color: 'white', margin: 0 }}>నమ్మకమైన సమాచారం (Trust Scorecard)</h3>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '2rem' }}>
-                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                  <Shield size={20} color="var(--gold)" />
+                
+                <div className="pd-ov-card" style={{ padding: '1.25rem', background: 'rgba(255,255,255,0.05)', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <VisualCompass facing={property.facing} size={40} />
                   <div>
-                    <div style={{ fontSize: '0.9rem', fontWeight: 800, color: 'white' }}>{property.approvalAuthority || 'సర్టిఫైడ్'}</div>
-                    <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 700 }}>ప్రభుత్వ అప్రూవల్</div>
-                  </div>
-                </div>
-                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                  <TrendingUp size={20} color="var(--gold)" />
-                  <div>
-                    <div style={{ fontSize: '0.9rem', fontWeight: 800, color: 'white' }}>అధిక పెరుగుదల</div>
-                    <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 700 }}>ప్రభుత్వ అనుమతి</div>
-                  </div>
-                </div>
-                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                  <MapPin size={20} color="var(--gold)" />
-                  <div>
-                    <div style={{ fontSize: '0.9rem', fontWeight: 800, color: 'white' }}>{property.cornerProperty ? 'కార్నర్ ప్లాట్' : 'ప్రధాన ప్రాంతం'}</div>
-                    <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 700 }}>రవాణా సౌకర్యం</div>
+                    <div style={{ fontSize: '1.1rem', fontWeight: 950, color: 'white', textTransform: 'uppercase' }}>{t(`facing.${(property.facing || 'any').toLowerCase()}`)}</div>
+                    <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.5)', fontWeight: 800, textTransform: 'uppercase' }}>దిశ (Facing)</div>
                   </div>
                 </div>
               </div>
 
-              <div style={{ marginTop: '2rem', padding: '1.5rem', background: 'rgba(255,255,255,0.03)', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.07)' }}>
-                <h4 style={{ color: 'white', fontSize: '0.9rem', fontWeight: 800, marginBottom: '1.2rem' }}>
-                   <IndianRupee size={16} color="var(--gold)" style={{ verticalAlign: 'middle', marginRight: '8px' }}/> ధర విశ్లేషణ (Price Analysis)
-                </h4>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '1rem' }}>
-                   {isAgri && (
-                     <>
-                        <div style={{ padding: '0.75rem', background: 'rgba(0,0,0,0.2)', borderRadius: '12px' }}>
-                           <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.65rem', fontWeight: 700 }}>ఎకరా ధర (Acre Price)</div>
-                           <div style={{ color: 'var(--gold)', fontSize: '1.1rem', fontWeight: 900 }}>{formatSnapAddaPrice(effectivePricePerAcre)}</div>
-                        </div>
-                        <div style={{ padding: '0.75rem', background: 'rgba(0,0,0,0.2)', borderRadius: '12px' }}>
-                           <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.65rem', fontWeight: 700 }}>సెంట్ ధర (Cent Price)</div>
-                           <div style={{ color: 'var(--gold)', fontSize: '1.1rem', fontWeight: 900 }}>{formatSnapAddaPrice(pricePerCent)}</div>
-                        </div>
-                     </>
-                   )}
-                   {isPlot && property.areaSize > 0 && (
-                     <div style={{ padding: '0.75rem', background: 'rgba(0,0,0,0.2)', borderRadius: '12px' }}>
-                        <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.65rem', fontWeight: 700 }}>గజం ధర (Sq.Yard)</div>
-                        <div style={{ color: 'var(--gold)', fontSize: '1.1rem', fontWeight: 900 }}>₹{Math.round(property.price / property.areaSize).toLocaleString()}</div>
-                     </div>
-                   )}
-                   <div style={{ padding: '0.75rem', background: 'rgba(232,184,75,0.1)', borderRadius: '12px', border: '1px solid rgba(232,184,75,0.2)' }}>
-                      <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.65rem', fontWeight: 700 }}>మొత్తం విలువ</div>
-                      <div style={{ color: 'var(--gold)', fontSize: '1.1rem', fontWeight: 900 }}>{formatSnapAddaPrice(displayPrice)}</div>
-                   </div>
-                </div>
+              {/* ── NEW: ELITE ANIMATED MAP ACCESS BAR ── */}
+              <div style={{ marginTop: '2rem' }}>
+                <motion.button
+                  whileHover={{ scale: 1.01, background: 'rgba(232,184,75,0.12)' }}
+                  whileTap={{ scale: 0.99 }}
+                  onClick={() => {
+                    const link = property.googleMapsLink?.trim();
+                    if (link) {
+                      window.open(link.startsWith('http') ? link : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(link)}`, '_blank');
+                    } else {
+                      window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${property.location} ${property.district} Andhra Pradesh`)}`, '_blank');
+                    }
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '1.5rem',
+                    background: 'rgba(232,184,75,0.06)',
+                    border: '1.5px solid rgba(232,184,75,0.3)',
+                    borderRadius: '24px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    cursor: 'pointer',
+                    position: 'relative',
+                    overflow: 'hidden'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                    <div style={{ position: 'relative', width: '50px', height: '50px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <motion.div 
+                        animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.6, 0.3] }}
+                        transition={{ repeat: Infinity, duration: 2 }}
+                        style={{ position: 'absolute', width: '100%', height: '100%', background: 'var(--gold)', borderRadius: '50%', filter: 'blur(10px)' }}
+                      />
+                      {/* Colorful Google Maps Logo Pin (Custom SVG) */}
+                      <svg width="34" height="34" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ zIndex: 2 }}>
+                        <path d="M12 2C8.13 2 5 5.13 5 9C5 14.25 12 22 12 22C12 22 19 14.25 19 9C19 5.13 15.87 2 12 2Z" fill="#EA4335" />
+                        <circle cx="12" cy="9" r="3" fill="#FBBC05" />
+                        <path d="M12 2C8.13 2 5 5.13 5 9C5 10.53 5.46 12.01 6.22 13.31L12 22L17.78 13.31C18.54 12.01 19 10.53 19 9C19 5.13 15.87 2 12 2Z" fill="url(#mapGradient)" opacity="0.3" />
+                        <defs>
+                          <linearGradient id="mapGradient" x1="5" y1="2" x2="19" y2="22" gradientUnits="userSpaceOnUse">
+                            <stop stopColor="#4285F4" />
+                            <stop offset="1" stopColor="#34A853" />
+                          </linearGradient>
+                        </defs>
+                      </svg>
+                    </div>
+                    <div style={{ textAlign: 'left' }}>
+                      <div style={{ color: 'white', fontWeight: 950, fontSize: '1.2rem', letterSpacing: '-0.02em' }}>GOOGLE MAPS LOCATION</div>
+                      <div style={{ color: 'var(--gold)', fontWeight: 800, fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>View Site Direction & Proximity</div>
+                    </div>
+                  </div>
+                  <div style={{ background: 'rgba(255,255,255,0.1)', padding: '8px 16px', borderRadius: '12px', color: 'white', fontWeight: 900, fontSize: '0.75rem' }}>
+                    OPEN MAP →
+                  </div>
+                </motion.button>
               </div>
             </section>
 
             <section id="pd-specs" className="pd-section">
-              <h2 className="pd-section-h">మరిన్ని వివరాలు (Specifications)</h2>
-
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
-                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(232,184,75,0.12)', border: '1px solid rgba(232,184,75,0.4)', padding: '8px 16px', borderRadius: '14px' }}>
-                  <FileText size={14} style={{ color: 'var(--gold)' }}/>
-                  <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.7rem', fontWeight: 700 }}>Property Code:</span>
-                  <span style={{ color: 'var(--gold)', fontSize: '0.85rem', fontWeight: 900, letterSpacing: '0.1em', fontFamily: 'monospace' }}>
-                    {property.propertyCode || `SNA-${id.slice(-5).toUpperCase()}`}
-                  </span>
-                </div>
-                <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.7rem' }}>ఈ కోడ్‌ను మా ఏజెంట్‌కు తెలియజేయండి (Share this code with our agent)</span>
+              <div style={{ marginBottom: '2.5rem' }}>
+                <h2 className="pd-section-h" style={{ marginBottom: '0.5rem' }}>మరిన్ని వివరాలు (Specifications)</h2>
+                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Detailed breakdown of property attributes, legal status, and amenities.</div>
               </div>
 
-              <p className="pd-desc-text" style={{ marginBottom: '2rem' }}>{generateDesc(property)}</p>
-              
-              <div className="pd-specs-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px' }}>
-                <SpecCard label="యాజమాన్యం" value={tr(property.ownershipType)} accent="white"/>
-                <SpecCard label="లావాదేవీ రకం" value={tr(property.transactionType)} accent="white"/>
-                {!isLand && (
-                  <>
-                    <SpecCard label="ఫర్నిషింగ్" value={tr(property.furnishing)} accent="var(--gold)"/>
-                    <SpecCard label="పార్కింగ్" value={tr(property.parking)} accent="white"/>
-                    <SpecCard label="మెత్తం అంతస్తులు" value={property.totalFloors} accent="white"/>
-                  </>
-                )}
-                <SpecCard label="RERA ID" value={property.reraId} accent="var(--gold)"/>
-                {isAgri && <SpecCard label="సర్వే నంబర్" value={property.surveyNo} accent="#9b59f5"/>}
-                {(isAgri || isPlot) && <SpecCard label="రోడ్డు రకం" value={property.roadType} accent="white"/>}
-                <SpecCard label="రోడ్డు వెడల్పు" value={property.roadWidth ? `${property.roadWidth} Ft` : null} accent="white"/>
-                {isCommercial && <SpecCard label="Power (KVA)" value={property.powerKVA} accent="var(--cyan)"/>}
-              </div>
-            </section>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
+                 {/* AI Description with Dual Language Support */}
+                 <div style={{ background: 'rgba(255,255,255,0.02)', padding: '2rem', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '1.5rem' }}>
+                      <FileText size={20} style={{ color: 'var(--gold)' }}/>
+                      <h3 style={{ fontSize: '1.1rem', fontWeight: 900, color: 'white', margin: 0 }}>వివరణ (Description)</h3>
+                    </div>
+                    <p className="pd-desc-text" style={{ fontSize: '1rem', lineHeight: 1.8, color: 'rgba(255,255,255,0.7)', whiteSpace: 'pre-wrap' }}>
+                      {property.description || generateDesc(property)}
+                    </p>
+                 </div>
 
-            <section id="pd-amenities" className="pd-section">
-              <h2 className="pd-section-h">సదుపాయాలు (Amenities)</h2>
-              <div className="pd-amenities-grid">
-                {(property?.amenities?.length > 0 ? property.amenities : ['Clear Title', 'Water Supply', 'Power Terminal', 'Security Wall', 'Vastu Optimized']).map((a, i) => (
-                  <div key={i} className="pd-amenity-item">
-                    <CheckCircle2 size={16} style={{ color: '#27c97d' }}/> {a}
-                  </div>
-                ))}
+                 {/* Full Address Card */}
+                 <div style={{ background: 'rgba(232,184,75,0.05)', padding: '2rem', borderRadius: '24px', border: '1px solid rgba(232,184,75,0.2)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '1.5rem' }}>
+                      <MapPin size={20} style={{ color: 'var(--gold)' }}/>
+                      <h3 style={{ fontSize: '1.1rem', fontWeight: 900, color: 'white', margin: 0 }}>పూర్తి చిరునామా (Full Address & Location)</h3>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1.5fr 1fr', gap: '2rem' }}>
+                       <div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '8px', fontWeight: 800 }}>STREET ADDRESS</div>
+                          <div style={{ fontSize: '1.1rem', color: 'white', fontWeight: 800, lineHeight: 1.6 }}>
+                            {property.address || 'Contact agent for exact street details'}
+                          </div>
+                       </div>
+                       <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                          <div>
+                             <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 800 }}>VILLAGE / MANDAL</div>
+                             <div style={{ color: 'white', fontWeight: 800 }}>{property.village || property.mandal || property.location}</div>
+                          </div>
+                          <div>
+                             <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 800 }}>DISTRICT & PINCODE</div>
+                             <div style={{ color: 'white', fontWeight: 800 }}>{property.district} {property.pincode ? `- ${property.pincode}` : ''}</div>
+                          </div>
+                       </div>
+                    </div>
+                 </div>
+
+                 {/* Structured Spec Groups */}
+                 <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '2rem' }}>
+                   {specGroups.map((group, idx) => (
+                     <div key={idx} style={{ background: 'rgba(255,255,255,0.04)', padding: '1.75rem', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '12px' }}>
+                           <div style={{ color: 'var(--gold)' }}>{group.icon}</div>
+                           <h4 style={{ fontSize: '0.9rem', fontWeight: 900, color: 'white', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{group.title}</h4>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                           {group.items.map((item, i) => (
+                             <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1.5rem' }}>
+                                <span style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)', fontWeight: 700 }}>{item.label}</span>
+                                <span style={{ fontSize: '0.85rem', color: 'white', fontWeight: 900, textAlign: 'right' }}>{item.value}</span>
+                             </div>
+                           ))}
+                        </div>
+                     </div>
+                   ))}
+                 </div>
+
+                 {/* Property Features Tags */}
+                 {property.amenities?.length > 0 && (
+                    <div id="pd-amenities" style={{ background: 'rgba(232,184,75,0.03)', padding: '2rem', borderRadius: '24px', border: '1px solid rgba(232,184,75,0.1)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '1.5rem' }}>
+                        <Award size={20} style={{ color: 'var(--gold)' }}/>
+                        <h3 style={{ fontSize: '1.1rem', fontWeight: 900, color: 'white', margin: 0 }}>సదుపాయాలు (Amenities & Features)</h3>
+                      </div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                        {property.amenities.map((item, idx) => (
+                          <span key={idx} style={{ background: 'rgba(255,255,255,0.05)', color: 'white', border: '1px solid rgba(255,255,255,0.1)', padding: '8px 16px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 700 }}>
+                            {item}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                 )}
               </div>
             </section>
 
@@ -986,7 +1057,25 @@ export default function PropertyDetails() {
               </div>
 
               {/* Interactive Location Map */}
-              <div style={{ marginTop: '2rem', height: '400px', width: '100%', borderRadius: '24px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)' }}>
+              {hasMapLink && (
+                <a
+                  href={finalGoogleMapsLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: '10px',
+                    marginTop: '1.5rem', marginBottom: '1rem',
+                    background: 'rgba(66,133,244,0.1)', border: '1px solid rgba(66,133,244,0.3)',
+                    color: '#4285f4', padding: '12px 20px', borderRadius: '14px',
+                    fontWeight: 800, fontSize: '0.85rem', textDecoration: 'none',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  <MapPin size={18} />
+                  Google Maps లో చూడండి (Open in Google Maps)
+                </a>
+              )}
+              <div style={{ marginTop: '1rem', height: '400px', width: '100%', borderRadius: '24px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)' }}>
                 <PropertyMap 
                   properties={[property]} 
                   selectedProperty={property}
@@ -1118,8 +1207,8 @@ export default function PropertyDetails() {
               <div className="pd-quick-specs">
                 <div style={{ fontSize: '0.7rem', fontWeight: 900, marginBottom: '1.5rem', color: 'var(--gold)', textAlign: 'center' }}>{isVerified && isFeatured ? '💎 Institutional Grade Asset' : 'ముఖ్యమైన వివరాలు'}</div>
                 <div className="pd-quick-row"><span className="pd-quick-lbl">మొత్తం ధర</span><span className="pd-quick-val" style={{ color: 'var(--gold)' }}>{formatSnapAddaPrice(displayPrice)}</span></div>
-                <div className="pd-quick-row"><span className="pd-quick-lbl">విస్తీర్ణం</span><span className="pd-quick-val">{property.areaSize} {tr(property.measurementUnit)}</span></div>
-                <div className="pd-quick-row"><span className="pd-quick-lbl">దిశ</span><span className="pd-quick-val">{tr(property.facing)}</span></div>
+                <div className="pd-quick-row"><span className="pd-quick-lbl">విస్తీర్ణం</span><span className="pd-quick-val">{property.areaSize} {t(`units.${(property.measurementUnit || 'Sq.Yards').toLowerCase()}`)}</span></div>
+                <div className="pd-quick-row"><span className="pd-quick-lbl">దిశ</span><span className="pd-quick-val">{t(`facing.${(property.facing || 'any').toLowerCase()}`)}</span></div>
                 <div className="pd-quick-row"><span className="pd-quick-lbl">అనుమతి</span><span className="pd-quick-val" style={{ color: '#27c97d' }}>{property.approvalAuthority || 'అందుబాటులో లేదు'}</span></div>
               </div>
             </div>
@@ -1179,7 +1268,7 @@ export default function PropertyDetails() {
         <div style={{ display: 'flex', gap: '8px' }}>
           <button 
             onClick={() => {
-              const phone = (property.displayContactType === 'Lister' && property.realtor?.phone) ? property.realtor.phone : supportPhone;
+              const phone = (property.displayContactType === 'Lister' && property.realtor?.phone) ? property.realtor.phone : (supportInfo?.phone || '9346793364');
               window.location.href = `tel:${phone}`;
             }}
             style={{ width: '50px', height: '50px', borderRadius: '18px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
@@ -1199,10 +1288,9 @@ export default function PropertyDetails() {
           </button>
         </div>
       </div>
+    </div>
 
-      </div>
-
-      <SharePortal 
+      <ShareControlCenter 
         isOpen={shareModal} 
         onClose={() => setShareModal(false)} 
         property={property} 

@@ -17,37 +17,65 @@ const formatPrice = (price) => {
 };
 
 /**
- * Generates high-fidelity message content
+ * Generates high-fidelity message content tailored to property types
  */
 export const generateShareTemplates = (property, lang = 'en') => {
   const { 
     title, price, location, district, propertyCode, 
-    id, _id, type, beds, sqft, areaSize, measurementUnit 
+    id, _id, type, beds, sqft, areaSize, measurementUnit,
+    facing, approvalAuthority, roadWidth, constructionStatus,
+    pricePerAcre, totalAcres, isElite, isTrustVerified, isVerified,
+    realtor, displayContactType, supportPhone: defaultPhone = '+919346793364'
   } = property;
   
   const propId = id || _id;
   const url = `${DOMAIN}/property/${propId}`;
   const displayPrice = formatPrice(price);
   const pCode = propertyCode || `SNA-${propId.toString().slice(-5).toUpperCase()}`;
-  const specs = beds ? `${beds} BHK` : (sqft || areaSize ? `${sqft || areaSize} ${measurementUnit || 'Sq.Yds'}` : type);
 
+  const phone = (displayContactType === 'Lister' && realtor?.phone) ? realtor.phone : defaultPhone;
+
+  // --- Advanced Specification Block Construction ---
+  let specBlock = '';
+  const lowType = (type || '').toLowerCase();
+  const isAgri = lowType.includes('agri') || lowType.includes('farm');
+  const isPlot = lowType.includes('plot') || lowType.includes('crda') || lowType.includes('layout');
+  const isRes = lowType.includes('apartment') || lowType.includes('villa') || lowType.includes('house');
+
+  if (isAgri) {
+    const acres = areaSize || totalAcres;
+    specBlock = `🌾 Land Size: *${acres} Acres*\n💰 Per Acre: *${formatPrice(pricePerAcre || 0)}*\n📍 Proximity: *${location}*`;
+  } else if (isPlot) {
+    specBlock = `📐 Area: *${areaSize} ${measurementUnit || 'Sq.Yds'}*\n🧭 Facing: *${facing || 'East'}*\n🛡️ Approval: *${approvalAuthority || 'Verified'}*\n🛣️ Road: *${roadWidth || '33ft'} Wide*`;
+  } else if (isRes) {
+    specBlock = `🏠 Config: *${beds ? beds + ' BHK' : type}*\n🏗️ Status: *${constructionStatus || 'Ready'}*\n🧭 Facing: *${facing || 'East'}*\n🏢 Floor: *Verified*`;
+  } else {
+    specBlock = `✨ Type: *${type}*\n📐 Size: *${areaSize || sqft} ${measurementUnit || 'Sq.Ft'}*`;
+  }
+
+  // --- Trust Badges Block ---
+  let trustBlock = '';
+  if (isElite) trustBlock += '💎 *ELITE ASSET* | ';
+  if (isVerified) trustBlock += '✅ *VERIFIED* | ';
+  if (isTrustVerified) trustBlock += '🛡️ *TRUST SEAL*';
+  
   if (lang === 'te') {
     return {
-      whatsapp: `🏠 *${title}*\n📍 ${location}, ${district}\n✨ రకం: *${type}* | ${specs}\n🏷️ కోడ్: *${pCode}*\n💰 ధర: *${displayPrice}*\n\n🔗 *పూర్తి వివరాలు ఇక్కడ చూడండి:*\n${url}\n\n_SnapAdda ద్వారా షేర్ చేయబడింది – ఆంధ్రా రియల్ ఎస్టేట్ స్టాండర్డ్_`,
+      whatsapp: `🌟 *SnapAdda ప్రీమియం ప్రాపర్టీ*\n\n🏘️ *${title.toUpperCase()}*\n📍 ${location}, ${district}\n\n📊 *సాంకేతిక వివరాలు:*\n${specBlock}\n\n🏷️ అసెట్ కోడ్: *${pCode}*\n💰 ధర: *${displayPrice}*\n\n${trustBlock}\n\n🔗 *పూర్తి వివరాలు & గ్యాలరీ ఇక్కడ చూడండి:*\n${url}\n\n📞 సంప్రదించండి: ${phone}\n\n_SnapAdda ద్వారా షేర్ చేయబడింది – ఆంధ్రా రియల్ ఎస్టేట్ స్టాండర్డ్_`,
       sms: `SnapAdda: ${title} in ${location}. ధర: ${displayPrice}. వివరాలు: ${url}`,
       email: {
         subject: `ప్రీమియం ప్రాపర్టీ అవకాశం: ${title}`,
-        body: `నమస్కారం,\n\nSnapAddaలో ఈ అద్భుతమైన ప్రాపర్టీని చూడండి.\n\nప్రాపర్టీ: ${title}\nప్రాంతం: ${location}\nధర: ${displayPrice}\n\nమరిన్ని వివరాల కోసం ఈ లింక్ క్లిక్ చేయండి:\n${url}\n\nధన్యవాదాలు,\nSnapAdda టీమ్`
+        body: `నమస్కారం,\n\nSnapAddaలో ఈ అద్భుతమైన ప్రాపర్టీని చూడండి.\n\nప్రాపర్టీ: ${title}\nప్రాంతం: ${location}\nధర: ${displayPrice}\n\nసాంకేతిక వివరాలు:\n${specBlock.replace(/\*/g, '')}\n\nమరిన్ని వివరాల కోసం ఈ లింక్ క్లిక్ చేయండి:\n${url}\n\nధన్యవాదాలు,\nSnapAdda టీమ్`
       }
     };
   }
 
   return {
-    whatsapp: `🏠 *${title.toUpperCase()}*\n📍 ${location}, ${district}\n✨ Type: *${type}* | ${specs}\n🏷️ Code: *${pCode}*\n💰 Price: *${displayPrice}*\n\n🔗 *View Verified Asset Details:* \n${url}\n\n_Shared via SnapAdda – Andhra's Standard for Real Estate_`,
+    whatsapp: `🌟 *SNAPADDA EXCLUSIVE LISTING*\n\n🏠 *${title.toUpperCase()}*\n📍 ${location}, ${district}\n\n📊 *TECHNICAL SPECIFICATIONS:*\n${specBlock}\n\n🏷️ Asset Code: *${pCode}*\n💰 Total Price: *${displayPrice}*\n\n${trustBlock}\n\n🔗 *View High-Res Images & Docs:* \n${url}\n\n📞 Contact Agent: ${phone}\n\n_Shared via SnapAdda – Andhra's Standard for Real Estate_`,
     sms: `Check out this property on SnapAdda: ${title} in ${location}. Price: ${displayPrice}. View: ${url}`,
     email: {
       subject: `Premium Property Opportunity: ${title} in ${location}`,
-      body: `Hello,\n\nI thought you might be interested in this premium property on SnapAdda.\n\nAsset: ${title}\nLocation: ${location}, ${district}\nPrice: ${displayPrice}\n\nYou can view the full verified details, images, and videos here:\n${url}\n\n---\nSnapAdda — Verified Asset Discovery`
+      body: `Hello,\n\nI thought you might be interested in this premium property listing on SnapAdda.\n\nAsset: ${title}\nLocation: ${location}, ${district}\nPrice: ${displayPrice}\n\nTechnical Specifications:\n${specBlock.replace(/\*/g, '')}\n\nYou can view the full verified details, high-res images, and legal documents here:\n${url}\n\n---\nSnapAdda — Institutional Grade Asset Discovery`
     }
   };
 };
@@ -76,8 +104,7 @@ export const triggerNativeShare = async (property) => {
 };
 
 /**
- * Generates a visual snapshot of the property using HTML5 Canvas
- * Returns a Data URL of the generated image
+ * Generates an advanced visual snapshot with branding and trust badges
  */
 export const generatePropertySnapshot = (property) => {
   return new Promise((resolve, reject) => {
@@ -86,29 +113,33 @@ export const generatePropertySnapshot = (property) => {
     canvas.height = 630;
     const ctx = canvas.getContext('2d');
 
-    // Background
+    // Background Base
     ctx.fillStyle = '#050a14';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Load Image
+    // Load Main Image
     const img = new Image();
     img.crossOrigin = 'anonymous';
     const mainImg = (property.images?.[0] || property.image);
     
-    // Fallback if no image
     if (!mainImg) {
       drawText();
       return;
     }
 
     img.onload = () => {
-      // Draw Image with overlay
+      // Draw Image with Elite Overlay
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
       const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-      gradient.addColorStop(0, 'rgba(5, 10, 20, 0.4)');
-      gradient.addColorStop(1, 'rgba(5, 10, 20, 0.95)');
+      gradient.addColorStop(0, 'rgba(5, 10, 20, 0.3)');
+      gradient.addColorStop(0.6, 'rgba(5, 10, 20, 0.6)');
+      gradient.addColorStop(1, 'rgba(5, 10, 20, 1)');
       ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Add Side Accent
+      ctx.fillStyle = 'rgba(232, 184, 75, 0.05)';
+      ctx.fillRect(0, 0, 10, canvas.height);
 
       drawText();
     };
@@ -117,44 +148,74 @@ export const generatePropertySnapshot = (property) => {
     img.src = mainImg;
 
     function drawText() {
-      // Brand Logo / Text
+      // Logo & Branding
       ctx.fillStyle = '#e8b84b';
-      ctx.font = 'bold 32px Inter, sans-serif';
-      ctx.fillText('SNAPADDA', 50, 60);
+      ctx.font = '900 38px "Outfit", sans-serif';
+      ctx.fillText('SNAPADDA', 60, 70);
+      
+      ctx.fillStyle = 'rgba(255,255,255,0.4)';
+      ctx.font = '800 12px "Outfit", sans-serif';
+      ctx.fillText('INSTITUTIONAL REAL ESTATE', 60, 90);
 
-      // Verified Badge
+      // Status Badges
+      let badgeX = 60;
       if (property.isVerified) {
-        ctx.fillStyle = 'rgba(16, 217, 140, 0.2)';
-        ctx.roundRect ? ctx.roundRect(50, 85, 150, 35, 10) : ctx.fillRect(50, 85, 150, 35);
+        ctx.fillStyle = 'rgba(16, 217, 140, 0.15)';
+        ctx.beginPath();
+        ctx.roundRect(badgeX, 110, 160, 35, 8);
         ctx.fill();
         ctx.fillStyle = '#10d98c';
-        ctx.font = 'bold 16px Inter, sans-serif';
-        ctx.fillText('✓ VERIFIED ASSET', 65, 108);
+        ctx.font = '900 14px "Outfit", sans-serif';
+        ctx.fillText('✓ VERIFIED ASSET', badgeX + 15, 132);
+        badgeX += 175;
       }
+      
+      if (property.isElite) {
+        ctx.fillStyle = 'rgba(232, 184, 75, 0.15)';
+        ctx.beginPath();
+        ctx.roundRect(badgeX, 110, 150, 35, 8);
+        ctx.fill();
+        ctx.fillStyle = '#e8b84b';
+        ctx.font = '900 14px "Outfit", sans-serif';
+        ctx.fillText('💎 ELITE GRADE', badgeX + 15, 132);
+      }
+
+      // Main Property Details (Bottom-Up)
+      const pCode = property.propertyCode || `SNA-${(property.id || property._id || '').toString().slice(-5).toUpperCase()}`;
+      
+      // Property Code Tag
+      ctx.fillStyle = 'rgba(255,255,255,0.1)';
+      ctx.beginPath();
+      ctx.roundRect(60, canvas.height - 240, 140, 30, 6);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.6)';
+      ctx.font = '900 12px "Outfit", sans-serif';
+      ctx.fillText(pCode, 75, canvas.height - 220);
 
       // Title
       ctx.fillStyle = 'white';
-      ctx.font = 'bold 64px Inter, sans-serif';
+      ctx.font = '900 68px "Outfit", sans-serif';
       const title = property.title.toUpperCase();
-      ctx.fillText(title.length > 30 ? title.substring(0, 27) + '...' : title, 50, canvas.height - 180);
+      ctx.fillText(title.length > 30 ? title.substring(0, 27) + '...' : title, 60, canvas.height - 150);
 
       // Price
       ctx.fillStyle = '#e8b84b';
-      ctx.font = '900 72px Inter, sans-serif';
-      ctx.fillText(formatPrice(property.price), 50, canvas.height - 80);
+      ctx.font = '900 84px "Outfit", sans-serif';
+      ctx.fillText(formatPrice(property.price), 60, canvas.height - 60);
 
-      // Location
-      ctx.fillStyle = 'rgba(255,255,255,0.7)';
-      ctx.font = '600 32px Inter, sans-serif';
-      ctx.fillText(`📍 ${property.location}, ${property.district || ''}`, 50, canvas.height - 40);
+      // Location Info
+      ctx.fillStyle = 'rgba(255,255,255,0.8)';
+      ctx.font = '800 32px "Outfit", sans-serif';
+      ctx.fillText(`📍 ${property.location}, ${property.district || ''}`, 60, canvas.height - 20);
 
-      // QR Code Placeholder (could use a library, but for now just a design element)
-      ctx.strokeStyle = '#e8b84b';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(canvas.width - 150, canvas.height - 150, 100, 100);
+      // QR / Scan CTA
+      ctx.strokeStyle = 'rgba(232, 184, 75, 0.3)';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(canvas.width - 160, canvas.height - 160, 110, 110);
+      
       ctx.fillStyle = '#e8b84b';
-      ctx.font = 'bold 12px Inter, sans-serif';
-      ctx.fillText('SCAN TO VIEW', canvas.width - 145, canvas.height - 35);
+      ctx.font = '900 12px "Outfit", sans-serif';
+      ctx.fillText('SCAN FOR GALLERY', canvas.width - 160, canvas.height - 30);
 
       resolve(canvas.toDataURL('image/png'));
     }
