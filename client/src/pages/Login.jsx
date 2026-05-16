@@ -81,8 +81,9 @@ export default function Login() {
 
   return (
     <div style={{
-      minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-      background: '#040408', padding: 'max(1.5rem, 4vw)', position: 'relative', overflow: 'hidden'
+      minHeight: '100vh', width: '100vw', display: 'flex', alignItems: 'center', justifyContent: 'center',
+      background: 'var(--bg-deep)', 
+      padding: 'max(1.5rem, 4vw)', position: 'relative', overflow: 'hidden'
     }}>
       {/* Ambient glows */}
       <div style={{ position: 'absolute', top: '-10%', left: '-10%', width: '600px', height: '600px', background: 'radial-gradient(circle, rgba(212,175,55,0.08) 0%, transparent 70%)', filter: 'blur(80px)', borderRadius: '50%', pointerEvents: 'none' }} />
@@ -92,20 +93,17 @@ export default function Login() {
         initial={{ opacity: 0, y: 32, scale: 0.97 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+        className="glass-3d-heavy"
         style={{
           width: '100%', maxWidth: '440px', borderRadius: '32px',
           padding: 'clamp(2rem, 5vw, 2.75rem)',
-          background: 'rgba(10,12,20,0.5)',
-          backdropFilter: 'blur(40px) saturate(180%)',
-          border: '1px solid rgba(255,255,255,0.1)',
-          boxShadow: '0 32px 80px rgba(0,0,0,0.6)',
           position: 'relative', zIndex: 10, textAlign: 'center'
         }}
       >
         {/* Logo */}
         <div style={{ marginBottom: '2rem' }}>
           <Logo size={64} showText={false} />
-          <h1 style={{ fontSize: '2rem', fontWeight: 900, marginTop: '1.25rem', color: '#fff', letterSpacing: '-0.04em' }}>
+          <h1 className="text-liquid-gold" style={{ fontSize: '2.5rem', fontWeight: 950, marginTop: '1.25rem', color: '#fff', letterSpacing: '-0.04em' }}>
             {step === 'contact' ? 'Access Properties' : 'Verify Identity'}
           </h1>
           <p style={{ color: 'rgba(255,255,255,0.45)', marginTop: '0.6rem', fontSize: '0.95rem', lineHeight: 1.6 }}>

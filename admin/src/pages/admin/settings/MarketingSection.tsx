@@ -98,7 +98,7 @@ export const MarketingSection: React.FC<MarketingSectionProps> = ({
           <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-muted)' }}>Connect Google Analytics and Facebook Pixels.</p>
         </div>
       </div>
-      <div className="responsive-form-grid" style={{ padding: '1.5rem', display: 'grid', gap: '1.5rem' }}>
+      <div className="content-grid-tight" style={{ padding: '1.5rem', gap: '1.5rem' }}>
         <div>
           <label style={lbl}>Google Analytics G-ID</label>
           {inputWrap(<Search size={15}/>, <input type="text" value={gaId} onChange={e => setGaId(e.target.value)} style={inp} placeholder="G-XXXXXXXXXX" />)}
@@ -122,7 +122,7 @@ export const MarketingSection: React.FC<MarketingSectionProps> = ({
         </div>
       </div>
       <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-        <div className="responsive-form-grid" style={{ display: 'grid', gap: '1.5rem' }}>
+        <div className="content-grid-tight" style={{ gap: '1.5rem' }}>
           <div>
             <label htmlFor="st-waNumber" style={lbl}>WhatsApp Number</label>
             {inputWrap(<Phone size={15}/>, <input id="st-waNumber" type="text" value={waNumber} onChange={e => setWaNumber(e.target.value)} style={inp} placeholder="919876543210" />)}
@@ -148,3 +148,5 @@ export const MarketingSection: React.FC<MarketingSectionProps> = ({
     </button>
   </div>
 );
+
+export default MarketingSection;

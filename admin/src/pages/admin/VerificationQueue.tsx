@@ -110,7 +110,6 @@ const VerificationQueue = () => {
                 updateProperty={manager.updateProperty}
                 createProperty={manager.createProperty}
                 loadProperties={manager.loadProperties}
-                setIsAdding={manager.setIsAdding}
             />
             )}
         </AnimatePresence>

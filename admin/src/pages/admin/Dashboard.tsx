@@ -49,35 +49,40 @@ const AnimatedNumber = ({ target }: { target: number }) => {
 /* ─── Elite Metric Card ─── */
 const MetricCard = ({ title, value, icon: Icon, color, sub, trend, link, index }: any) => (
   <motion.div
-    initial={{ opacity: 0, y: 20 }}
+    initial={{ opacity: 0, y: 15 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ delay: index * 0.05 }}
-    className={`glass-card hover-lift metric-card`}
-    style={{ borderTop: `3px solid ${color}`, padding: '1.25rem' }}
+    className="glass-3d hover-glow"
+    style={{ 
+      padding: '1.75rem', 
+      border: `1px solid ${color}33`,
+      background: `linear-gradient(135deg, rgba(255,255,255,0.02) 0%, ${color}05 100%)`
+    }}
   >
     <Link to={link || '#'} style={{ textDecoration: 'none', display: 'block' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.25rem' }}>
         <div style={{
-          width: '40px', height: '40px', borderRadius: '12px',
-          background: `${color}12`,
+          width: '44px', height: '44px', borderRadius: '14px',
+          background: `${color}15`,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           color: color,
+          filter: `drop-shadow(0 0 10px ${color}44)`
         }}>
-          <Icon size={20} />
+          <Icon size={22} />
         </div>
         {trend && (
-          <span className={`metric-trend ${trend > 0 ? 'up' : 'down'}`}>
+          <span className={`metric-trend ${trend > 0 ? 'up' : 'down'}`} style={{ fontSize: '0.75rem', fontWeight: 800, padding: '4px 10px', borderRadius: '10px', background: trend > 0 ? 'rgba(16,217,140,0.1)' : 'rgba(245,57,123,0.1)', color: trend > 0 ? '#10d98c' : '#f5397b' }}>
             {trend > 0 ? '↑' : '↓'} {Math.abs(trend)}%
           </span>
         )}
       </div>
-      <div className="metric-value" style={{ fontSize: '1.75rem', fontWeight: 900, color: 'white', letterSpacing: '-0.02em' }}>
+      <div className="metric-value" style={{ fontSize: '2.25rem', fontWeight: 950, color: 'white', letterSpacing: '-0.03em', lineHeight: 1, marginBottom: '0.5rem', fontFamily: 'var(--font-mono)' }}>
         <AnimatedNumber target={value} />
       </div>
-      <div className="metric-label" style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: '4px' }}>
+      <div className="metric-label" style={{ fontSize: '0.75rem', fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.12em', opacity: 0.7 }}>
         {title}
       </div>
-      {sub && <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)', marginTop: '4px', fontWeight: 500 }}>{sub}</div>}
+      {sub && <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.3)', marginTop: '8px', fontWeight: 600 }}>{sub}</div>}
     </Link>
   </motion.div>
 );
@@ -136,15 +141,15 @@ const ActivityRow = ({ icon: Icon, color, title, sub, time, badge }: any) => (
 const QuickAction = ({ icon: Icon, label, color, to }: any) => (
   <Link to={to} style={{ textDecoration: 'none' }}>
     <motion.div 
-      whileHover={{ scale: 1.03, translateY: -3 }}
+      whileHover={{ scale: 1.03 }}
       whileTap={{ scale: 0.97 }}
-      className="glass-card"
+      className="glass-3d"
       style={{
         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.6rem',
-        padding: '1rem',
+        padding: '1.25rem',
         background: 'rgba(255,255,255,0.02)',
-        border: `1px solid rgba(255,255,255,0.06)`,
-        borderRadius: '20px',
+        border: `1px solid rgba(255,255,255,0.08)`,
+        borderRadius: '24px',
         cursor: 'pointer',
         textAlign: 'center',
         transition: 'all 0.3s',
@@ -157,7 +162,7 @@ const QuickAction = ({ icon: Icon, label, color, to }: any) => (
       }}>
         <Icon size={20} />
       </div>
-      <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.02em', textTransform: 'uppercase' }}>{label}</span>
+      <span style={{ fontSize: '0.7rem', fontWeight: 900, color: 'white', letterSpacing: '0.05em', textTransform: 'uppercase' }}>{label}</span>
     </motion.div>
   </Link>
 );
@@ -310,15 +315,15 @@ if (loading) return (
           </motion.h1>
           <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', maxWidth: '450px', lineHeight: 1.5, display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span style={{ display: 'inline-flex', width: '8px', height: '8px', borderRadius: '50%', background: health.allOk ? 'var(--emerald)' : '#f5c842', boxShadow: health.allOk ? '0 0 12px var(--emerald)' : '0 0 12px #f5c842', animation: 'pulse 2s infinite' }} />
-            System is <strong style={{ color: health.allOk ? 'var(--emerald)' : '#f5c842' }}>{health.allOk ? 'Live' : 'Degraded'}</strong>. Pipeline activity is stable.
+            System is <strong style={{ color: health.allOk ? 'var(--emerald)' : '#f4d03f' }}>{health.allOk ? 'Live' : 'Degraded'}</strong>. Pipeline activity is stable.
           </p>
         </div>
         <Link to="/admin/properties">
           <motion.button 
-            whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-            className="btn btn-violet" style={{ gap: '10px', padding: '0.75rem 1.5rem', borderRadius: '16px', boxShadow: '0 10px 30px rgba(155,89,245,0.2)' }}
+            whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+            className="btn btn-violet" style={{ gap: '10px', padding: '0.85rem 2rem', borderRadius: '16px', boxShadow: '0 15px 40px rgba(155,89,245,0.25)', fontWeight: 900, fontSize: '0.9rem' }}
           >
-            <Plus size={18} strokeWidth={3} /> Post Property
+            <Plus size={20} strokeWidth={3} /> Post Property
           </motion.button>
         </Link>
       </div>
@@ -332,31 +337,31 @@ if (loading) return (
         {/* Engagement Analytics */}
         <motion.div 
           initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
-          className="glass-card" style={{ padding: '1.5rem' }}
+          className="glass-3d-heavy" style={{ padding: '2rem' }}
         >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
             <div>
-              <h3 style={{ fontSize: '1rem', fontWeight: 800, color: 'white', marginBottom: '0.15rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Traffic Pulse</h3>
-              <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>Daily unique platform interactions</p>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 950, color: 'white', marginBottom: '0.25rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Traffic Pulse</h3>
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>Daily unique platform interactions</p>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--violet)' }} />
-              <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)', fontWeight: 700 }}>VIEWS</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--violet)', boxShadow: '0 0 10px var(--violet)' }} />
+              <span style={{ fontSize: '0.7rem', color: 'white', fontWeight: 800, letterSpacing: '0.05em' }}>VIEWS</span>
             </div>
           </div>
-          <div style={{ height: '250px', width: '100%' }}>
+          <div style={{ height: '280px', width: '100%' }}>
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={chartData}>
                 <defs>
                   <linearGradient id="colorViews" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="var(--violet)" stopOpacity={0.3}/>
+                    <stop offset="5%" stopColor="var(--violet)" stopOpacity={0.4}/>
                     <stop offset="95%" stopColor="var(--violet)" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" vertical={false} />
-                <XAxis dataKey="name" stroke="rgba(255,255,255,0.2)" fontSize={9} tickLine={false} axisLine={false} dy={10} />
-                <Tooltip contentStyle={{ background: 'rgba(8,8,18,0.95)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', fontSize: '11px', backdropFilter: 'blur(10px)' }} />
-                <Area type="monotone" dataKey="views" stroke="var(--violet)" strokeWidth={3} fillOpacity={1} fill="url(#colorViews)" />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                <XAxis dataKey="name" stroke="rgba(255,255,255,0.3)" fontSize={10} tickLine={false} axisLine={false} dy={10} fontWeight={700} />
+                <Tooltip contentStyle={{ background: 'rgba(8,8,18,0.9)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', fontSize: '12px', backdropFilter: 'blur(20px)' }} />
+                <Area type="monotone" dataKey="views" stroke="var(--violet)" strokeWidth={4} fillOpacity={1} fill="url(#colorViews)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -365,22 +370,22 @@ if (loading) return (
         {/* Rapid Operations */}
         <motion.div 
           initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
-          className="glass-card" style={{ padding: '1.5rem' }}
+          className="glass-3d-heavy" style={{ padding: '2rem' }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
-            <Zap size={18} style={{ color: 'var(--gold)' }} fill="var(--gold)" />
-            <h3 style={{ fontSize: '1rem', fontWeight: 800, color: 'white', margin: 0, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Rapid Portal</h3>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
+            <Zap size={22} style={{ color: 'var(--gold)', filter: 'drop-shadow(0 0 8px var(--gold-glow))' }} fill="var(--gold)" />
+            <h3 style={{ fontSize: '1.1rem', fontWeight: 950, color: 'white', margin: 0, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Rapid Portal</h3>
           </div>
-          <div className="quick-actions-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }}>
+          <div className="quick-actions-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.25rem' }}>
             <QuickAction icon={Building} label="Listings" color="var(--violet)" to="/admin/properties" />
             <QuickAction icon={MapPin} label="Territory" color="var(--cyan)" to="/admin/cities" />
             <QuickAction icon={Users} label="Prospects" color="var(--emerald)" to="/admin/leads" />
             <QuickAction icon={Contact2} label="Comm Hub" color="var(--rose)" to="/admin/contacts" />
           </div>
-          <div style={{ marginTop: '1.25rem', padding: '1rem', borderRadius: '16px', background: 'rgba(232,184,75,0.03)', border: '1px solid rgba(232,184,75,0.08)', display: 'flex', gap: '10px', alignItems: 'center' }}>
-            <Activity size={18} style={{ color: 'var(--gold)', flexShrink: 0 }} />
-            <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.5)', lineHeight: 1.4 }}>
-              SnapAdda Console is optimized for <strong>Touch Interface</strong>.
+          <div style={{ marginTop: '1.5rem', padding: '1.25rem', borderRadius: '20px', background: 'rgba(244,208,63,0.04)', border: '1px solid rgba(244,208,63,0.1)', display: 'flex', gap: '12px', alignItems: 'center' }}>
+            <Activity size={20} style={{ color: 'var(--gold)', flexShrink: 0 }} />
+            <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.6)', lineHeight: 1.5, fontWeight: 600 }}>
+              SnapAdda Console is optimized for <strong style={{ color: 'white' }}>Professional Management</strong>.
             </span>
           </div>
         </motion.div>
@@ -392,14 +397,14 @@ if (loading) return (
         {/* Listings Pulse */}
         <motion.div 
           initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.6 }}
-          className="glass-card" style={{ padding: '1.5rem' }}
+          className="glass-3d" style={{ padding: '2rem' }}
         >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
               <Building size={18} style={{ color: 'var(--violet)' }} />
-              <h3 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 800, textTransform: 'uppercase' }}>Recent Assets</h3>
+              <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 900, textTransform: 'uppercase', color: 'white' }}>Recent Assets</h3>
             </div>
-            <Link to="/admin/properties" style={{ fontSize: '0.7rem', color: 'var(--violet)', fontWeight: 800 }}>VIEW ALL</Link>
+            <Link to="/admin/properties" style={{ fontSize: '0.75rem', color: 'var(--violet)', fontWeight: 900, textDecoration: 'none' }}>VIEW ALL</Link>
           </div>
           
           <div className="activity-stream">
@@ -412,14 +417,14 @@ if (loading) return (
         {/* Lead Stream */}
         <motion.div 
           initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.7 }}
-          className="glass-card" style={{ padding: '1.5rem' }}
+          className="glass-3d" style={{ padding: '2rem' }}
         >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
               <Target size={18} style={{ color: 'var(--cyan)' }} />
-              <h3 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 800, textTransform: 'uppercase' }}>Lead Registry</h3>
+              <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 900, textTransform: 'uppercase', color: 'white' }}>Lead Registry</h3>
             </div>
-            <Link to="/admin/leads" style={{ fontSize: '0.7rem', color: 'var(--cyan)', fontWeight: 800 }}>CRM HUB</Link>
+            <Link to="/admin/leads" style={{ fontSize: '0.75rem', color: 'var(--cyan)', fontWeight: 900, textDecoration: 'none' }}>CRM HUB</Link>
           </div>
           
           <div className="activity-stream">

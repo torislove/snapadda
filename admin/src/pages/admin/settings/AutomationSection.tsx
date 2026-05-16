@@ -36,37 +36,42 @@ export const AutomationSection: React.FC<AutomationSectionProps> = ({
         </div>
       </div>
       <div style={{ padding: '1.5rem' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+        <div className="content-grid-tight" style={{ gap: '1rem' }}>
           {(siteStats.length > 0 ? siteStats : [
             { label: 'Verified Listings', value: '1,200+' },
             { label: 'Cities Covered', value: '18+' },
             { label: 'Happy Clients', value: '2,400+' },
             { label: 'Approved Properties', value: 'CRDA/RERA' }
           ]).map((stat, i) => (
-            <div key={i} style={{ background: 'rgba(255,255,255,0.03)', padding: '12px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.05)' }}>
+            <div key={i} className="glass-card" style={{ padding: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
               <input 
                 type="text" 
                 value={stat.label} 
                 onChange={e => {
-                  const newStats = [...siteStats];
-                  newStats[i] = { ...newStats[i], label: e.target.value };
-                  setSiteStats(newStats);
+                  const currentStats = siteStats.length > 0 ? [...siteStats] : [
+                    { label: 'Verified Listings', value: '1,200+' },
+                    { label: 'Cities Covered', value: '18+' },
+                    { label: 'Happy Clients', value: '2,400+' },
+                    { label: 'Approved Properties', value: 'CRDA/RERA' }
+                  ];
+                  currentStats[i] = { ...currentStats[i], label: e.target.value };
+                  setSiteStats(currentStats);
                 }}
-                style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 800, width: '100%', marginBottom: '4px', textTransform: 'uppercase' }}
+                style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: '0.65rem', fontWeight: 800, width: '100%', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}
                 placeholder="LABEL"
               />
               <input 
                 type="text" 
                 value={stat.value} 
                 onChange={e => {
-                  const newStats = siteStats.length > 0 ? [...siteStats] : [
+                  const currentStats = siteStats.length > 0 ? [...siteStats] : [
                     { label: 'Verified Listings', value: '1,200+' },
                     { label: 'Cities Covered', value: '18+' },
                     { label: 'Happy Clients', value: '2,400+' },
                     { label: 'Approved Properties', value: 'CRDA/RERA' }
                   ];
-                  newStats[i] = { ...newStats[i], value: e.target.value };
-                  setSiteStats(newStats);
+                  currentStats[i] = { ...currentStats[i], value: e.target.value };
+                  setSiteStats(currentStats);
                 }}
                 style={{ background: 'transparent', border: 'none', color: 'white', fontSize: '1rem', fontWeight: 900, width: '100%' }}
                 placeholder="VALUE"
@@ -151,3 +156,5 @@ export const AutomationSection: React.FC<AutomationSectionProps> = ({
     </button>
   </div>
 );
+
+export default AutomationSection;

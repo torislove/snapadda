@@ -51,11 +51,11 @@ export default function FilterSidebar({ isOpen, onClose, filters, setFilters, on
     boxShadow: active 
       ? '0 10px 25px rgba(232,184,75,0.4), inset 0 1px 2px rgba(255,255,255,0.5), inset 0 -1px 2px rgba(0,0,0,0.3)' 
       : 'inset 0 1px 1px rgba(255,255,255,0.05), 0 5px 15px rgba(0,0,0,0.2)',
-    color: active ? '#000' : 'rgba(255,255,255,0.6)',
-    border: active ? '1px solid rgba(255,255,255,0.4)' : '1px solid rgba(255,255,255,0.1)',
+    color: active ? '#fff' : 'rgba(255,255,255,0.7)',
+    border: active ? '1px solid rgba(255,255,255,0.5)' : '1px solid rgba(255,255,255,0.15)',
     borderRadius: '12px',
     cursor: 'pointer',
-    fontWeight: 900,
+    fontWeight: 950,
     textTransform: 'uppercase',
     letterSpacing: '0.05em',
     transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',

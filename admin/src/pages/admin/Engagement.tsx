@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { 
   Heart, Share2, Users, Search, 
   TrendingUp, Calendar
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useToast } from '../../components/ui/Toast';
 
 interface EngagementLog {
   userId: { _id: string; name: string; email: string };
@@ -25,25 +26,28 @@ const AdminEngagement = () => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState<'all' | 'likes' | 'shares'>('all');
+  const { showToast, ToastComponent } = useToast();
 
-  useEffect(() => {
-    fetchEngagement();
-  }, []);
-
-  const fetchEngagement = async () => {
+  const fetchEngagement = useCallback(async () => {
     try {
       const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
       const response = await fetch(`${API_URL}/properties/engagement`);
       const result = await response.json();
       if (result.status === 'success') {
         setData(result.data);
+      } else {
+        throw new Error(result.message || 'Fetch failed');
       }
     } catch (error) {
-      console.error("Failed to fetch engagement stats", error);
+      showToast('Engagement data stream interrupted', 'error');
     } finally {
       setLoading(false);
     }
-  };
+  }, [showToast]);
+
+  useEffect(() => {
+    fetchEngagement();
+  }, [fetchEngagement]);
 
   const filteredData = data.filter((item: EngagementData) => 
     item.title.toLowerCase().includes(search.toLowerCase())
@@ -57,7 +61,8 @@ const AdminEngagement = () => {
   const totalShares = data.reduce((acc: number, curr: EngagementData) => acc + curr.shareCount, 0);
 
   return (
-    <div className="engagement-page" style={{ padding: '1rem' }}>
+    <div className="engagement-page" style={{ padding: '1rem', position: 'relative' }}>
+      <ToastComponent />
       {/* Header Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
         <div style={{ background: 'var(--bg-glass)', padding: '1.5rem', borderRadius: '20px', border: '1px solid var(--border)' }}>

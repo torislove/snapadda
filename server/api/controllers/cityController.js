@@ -35,7 +35,44 @@ const removeCityFromFirebase = async (id) => {
 // GET all cities
 export const getCities = async (req, res) => {
   try {
-    const cities = await City.find().sort({ name: 1 });
+    const cities = await City.aggregate([
+      {
+        $lookup: {
+          from: 'properties',
+          let: { cityName: '$name', cityId: '$_id' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $or: [
+                    { $eq: ['$cityId', '$$cityId'] },
+                    { 
+                      $and: [
+                        { $ne: ['$$cityName', ''] },
+                        { $regexMatch: { input: { $ifNull: ['$location', ''] }, regex: '$$cityName', options: 'i' } }
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          ],
+          as: 'matchedProperties'
+        }
+      },
+      {
+        $addFields: {
+          propertyCount: { $size: '$matchedProperties' }
+        }
+      },
+      {
+        $project: {
+          matchedProperties: 0
+        }
+      },
+      { $sort: { name: 1 } }
+    ]);
+    
     res.status(200).json({ status: 'success', data: cities });
   } catch (error) {
     res.status(500).json({ message: error.message });

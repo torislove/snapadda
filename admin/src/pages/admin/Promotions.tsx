@@ -7,10 +7,11 @@ import {
   Plus, Loader2,
   Sparkles,
   TrendingUp, MousePointer2, Calendar,
-  Zap, GripVertical, Eye, EyeOff, X, CheckCircle, AlertCircle, Building
+  Zap, GripVertical, Eye, EyeOff, X, AlertCircle, Building
 } from 'lucide-react';
+import { useToast } from '../../components/ui/Toast';
 import { 
-  BarChart, Bar, Tooltip, ResponsiveContainer
+  BarChart, Bar, ResponsiveContainer
 } from 'recharts';
 import { MediaManager } from '../../components/ui/MediaManager';
 
@@ -43,7 +44,8 @@ const isVideoUrl = (url?: string) => {
 const EMPTY_FORM = {
   type: 'ad', title: '', subtitle: '', actionText: '', actionUrl: '',
   size: '1x1', countdownActive: false, cardColor: 'glass-dark',
-  image: '', priority: 0, targetLocation: 'All', startDate: '', endDate: '',
+  image: '', mediaSettings: [] as { url: string; objectFit: 'cover' | 'contain' }[], 
+  priority: 0, targetLocation: 'All', startDate: '', endDate: '',
   displaySegment: 'both', linkedPropertyId: '',
   videoUrl: '', pdfUrl: '', videoSource: 'url', pdfSource: 'url'
 };
@@ -64,7 +66,13 @@ const MiniPreview = ({ form }: { form: typeof EMPTY_FORM }) => (
             style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'cover' }} 
           />
         ) : (
-          <div style={{ position:'absolute', inset:0, backgroundImage:`url(${form.image})`, backgroundSize:'cover', backgroundPosition:'center' }} />
+          <div style={{ 
+            position:'absolute', inset:0, 
+            backgroundImage:`url(${form.image})`, 
+            backgroundSize: form.mediaSettings?.find(s => s.url === form.image)?.objectFit === 'contain' ? 'contain' : 'cover',
+            backgroundRepeat: 'no-repeat',
+            backgroundPosition:'center' 
+          }} />
         )}
         <div style={{ position:'absolute', inset:0, background: getThemeBg(form.cardColor), opacity:0.7, mixBlendMode:'multiply' }} />
         <div style={{ position:'absolute', inset:0, background:'linear-gradient(to top, rgba(0,0,0,0.85), transparent)' }} />
@@ -145,7 +153,13 @@ const PromoCard = ({
                 style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'cover' }} 
               />
             ) : (
-              <div style={{ position:'absolute', inset:0, backgroundImage:`url(${promo.image})`, backgroundSize:'cover', backgroundPosition:'center' }} />
+              <div style={{ 
+                position:'absolute', inset:0, 
+                backgroundImage:`url(${promo.image})`, 
+                backgroundSize: promo.mediaSettings?.find((s: any) => s.url === promo.image)?.objectFit === 'contain' ? 'contain' : 'cover',
+                backgroundRepeat: 'no-repeat',
+                backgroundPosition:'center' 
+              }} />
             )}
             <div style={{ position:'absolute', inset:0, background: getThemeBg(promo.cardColor), opacity:0.65, mixBlendMode:'multiply' }} />
             <div style={{ position:'absolute', inset:0, background:'linear-gradient(to top, rgba(0,0,0,0.7), transparent)' }} />
@@ -389,6 +403,7 @@ const StepContent = ({ activeStep, formData, setFormData, handleMediaChange }: {
             <label style={labelStyle}>Banner Image (Cloudinary Optimized)</label>
             <MediaManager 
               existingUrls={formData.image ? [formData.image] : []}
+              existingSettings={formData.mediaSettings || []}
               maxFiles={1}
               onImagesChange={handleMediaChange}
             />
@@ -534,7 +549,7 @@ const PushBroadcast = ({ showToast }: { showToast: (m: string, t?: 'success' | '
               <label style={{ display:'block', fontSize:'0.68rem', fontWeight:700, letterSpacing:'0.1em', textTransform:'uppercase', color:'var(--text-muted)', marginBottom:'0.45rem' }}>Message Body</label>
               <textarea rows={3} value={pushForm.body} onChange={e => setPushForm({...pushForm, body: e.target.value})} style={{ ...inputCls, resize: 'none' }} placeholder="A new 3BHK Villa is available in Vijayawada..." />
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div className="responsive-form-grid" style={{ display: 'grid', gap: '1rem' }}>
               <div>
                 <label style={{ display:'block', fontSize:'0.68rem', fontWeight:700, letterSpacing:'0.1em', textTransform:'uppercase', color:'var(--text-muted)', marginBottom:'0.45rem' }}>Image URL (Optional)</label>
                 <input value={pushForm.imageUrl} onChange={e => setPushForm({...pushForm, imageUrl: e.target.value})} style={inputCls} placeholder="https://..." />
@@ -582,7 +597,7 @@ export const Promotions = () => {
   const [activeStep, setActiveStep] = useState(0);
   const [dragSrcIdx, setDragSrcIdx] = useState<number | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
+  const { showToast, ToastComponent } = useToast();
   const dragOverIdxRef = useRef<number | null>(null);
 
   const steps = ['Content', 'Design', 'Targeting', 'Schedule'];
@@ -598,10 +613,7 @@ export const Promotions = () => {
   const totalClicks = promotions.reduce((sum, p) => sum + (p.stats?.clicks || 0), 0);
   const avgCTR = calculateCTR(totalViews, totalClicks);
 
-  const showToast = (msg: string, type: 'success' | 'error' = 'success') => {
-    setToast({ msg, type });
-    setTimeout(() => setToast(null), 3000);
-  };
+  /* ── No longer need local showToast implementation as we use useToast hook ── */
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, []);
@@ -616,8 +628,12 @@ export const Promotions = () => {
 
   const [newImageFiles, setNewImageFiles] = useState<File[]>([]);
 
-  const handleMediaChange = (urls: string[], files: File[]) => {
-    setFormData((p: any) => ({ ...p, image: urls.length > 0 ? urls[0] : '' }));
+  const handleMediaChange = (urls: string[], files: File[], settings: any[]) => {
+    setFormData((p: any) => ({ 
+      ...p, 
+      image: urls.length > 0 ? urls[0] : '',
+      mediaSettings: settings 
+    }));
     setNewImageFiles(files);
   };
 
@@ -670,6 +686,7 @@ export const Promotions = () => {
       image: promo.image || '',
       priority: promo.priority || 0,
       targetLocation: promo.targetLocation || 'All',
+      mediaSettings: promo.mediaSettings || [],
       startDate: promo.startDate ? new Date(promo.startDate).toISOString().slice(0, 16) : '',
       endDate: promo.endDate ? new Date(promo.endDate).toISOString().slice(0, 16) : '',
       displaySegment: promo.displaySegment || 'both',
@@ -713,23 +730,7 @@ export const Promotions = () => {
   /* ═══════════════════ RENDER ═══════════════════ */
   return (
     <div style={{ minHeight:'100%', display:'flex', flexDirection:'column', gap:'1.5rem', position:'relative' }}>
-
-      {/* ── Toast ── */}
-      {toast && (
-        <div style={{
-          position:'fixed', bottom:'24px', right:'24px', zIndex:9999,
-          padding:'0.75rem 1.25rem', borderRadius:'12px', display:'flex', alignItems:'center', gap:'8px',
-          background: toast.type === 'success' ? 'rgba(16,217,140,0.12)' : 'rgba(245,57,123,0.12)',
-          border: `1px solid ${toast.type === 'success' ? 'rgba(16,217,140,0.3)' : 'rgba(245,57,123,0.3)'}`,
-          color: toast.type === 'success' ? 'var(--emerald)' : 'var(--rose)',
-          backdropFilter:'blur(12px)', boxShadow:'0 8px 32px rgba(0,0,0,0.4)',
-          animation:'fadeInUp 0.3s ease-out',
-          fontWeight: 600, fontSize:'0.85rem',
-        }}>
-          {toast.type === 'success' ? <CheckCircle size={15} /> : <AlertCircle size={15} />}
-          {toast.msg}
-        </div>
-      )}
+      <ToastComponent />
 
       {/* ── Performance Cockpit ── */}
       {!loading && promotions.length > 0 && (
@@ -780,48 +781,46 @@ export const Promotions = () => {
                 <span>Performance Benchmarks</span>
                 <span style={{ color: 'var(--gold)' }}>Top 6 Campaigns</span>
              </div>
-             <ResponsiveContainer width="100%" height="80%">
-                <BarChart data={statsData}>
-                  <Tooltip 
-                    contentStyle={{ background: '#0f0f1a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', fontSize: '0.75rem' }}
-                    itemStyle={{ color: 'var(--gold)' }}
-                  />
-                  <Bar dataKey="views" fill="rgba(255,255,255,0.1)" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="clicks" fill="var(--gold)" radius={[4, 4, 0, 0]} />
-                </BarChart>
-             </ResponsiveContainer>
+             <div style={{ height: '100px' }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={statsData}>
+                    <Bar dataKey="views" fill="var(--violet)" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+             </div>
           </div>
         </div>
       )}
 
-      {/* ── Header ── */}
-      <div style={{ background: 'rgba(232,184,75,0.05)', padding: '1rem', borderRadius: '14px', border: '1px solid rgba(232,184,75,0.1)', marginBottom: '1rem' }}>
-        <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--gold)', fontWeight: 600 }}>
-          💡 <strong>Help:</strong> On this page, you can create "Ads" or "Banners" that appear on the main website. You can also send "Push Notifications" (messages that pop up on users' phones) from the second tab.
-        </p>
-      </div>
-
-      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', flexWrap:'wrap', gap:'1rem' }}>
-        <div>
-          <div style={{ fontSize:'0.7rem', fontWeight:700, letterSpacing:'0.12em', textTransform:'uppercase', color:'var(--gold)', marginBottom:'0.25rem', fontFamily:'var(--font-mono)' }}>✦ Campaign Manager</div>
-          <h1 style={{ fontSize:'1.8rem', background:'linear-gradient(135deg,#f5c842,#e8820c)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', marginBottom:'0.2rem' }}>
-            {activeTab === 'campaigns' ? 'Active Promotions' : 'Push Notifications'}
-          </h1>
-          <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
-            <button 
-              onClick={() => setActiveTab('campaigns')}
-              style={{ background: 'none', border: 'none', padding: '4px 0', borderBottom: activeTab === 'campaigns' ? '2px solid var(--gold)' : '2px solid transparent', color: activeTab === 'campaigns' ? 'white' : 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer' }}
-            >
-              Dashboard Banners
-            </button>
-            <button 
-              onClick={() => setActiveTab('push')}
-              style={{ background: 'none', border: 'none', padding: '4px 0', borderBottom: activeTab === 'push' ? '2px solid var(--gold)' : '2px solid transparent', color: activeTab === 'push' ? 'white' : 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer' }}
-            >
-              Push Broadcast
-            </button>
-          </div>
+      <div style={{ position: 'relative' }}>
+        <div style={{ background: 'rgba(155,89,245,0.05)', padding: '1rem', borderRadius: '14px', border: '1px solid rgba(155,89,245,0.1)', marginBottom: '2rem' }}>
+          <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--violet)', fontWeight: 600 }}>
+            💡 <strong>Help:</strong> Manage visual banners and marketing offers. Banners appear on the home page and property listings to drive engagement.
+          </p>
         </div>
+
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', flexWrap:'wrap', gap:'1rem' }}>
+          <div>
+            <div style={{ fontSize:'0.7rem', fontWeight:700, letterSpacing:'0.12em', textTransform:'uppercase', color:'var(--gold)', marginBottom:'0.25rem', fontFamily:'var(--font-mono)' }}>✦ Campaign Manager</div>
+            <h1 style={{ fontSize:'1.8rem', background:'linear-gradient(135deg,#f5c842,#e8820c)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', marginBottom:'0.2rem' }}>
+              {activeTab === 'campaigns' ? 'Active Promotions' : 'Push Notifications'}
+            </h1>
+            <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
+              <button 
+                onClick={() => setActiveTab('campaigns')}
+                style={{ background: 'none', border: 'none', padding: '4px 0', borderBottom: activeTab === 'campaigns' ? '2px solid var(--gold)' : '2px solid transparent', color: activeTab === 'campaigns' ? 'white' : 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer' }}
+              >
+                Dashboard Banners
+              </button>
+              <button 
+                onClick={() => setActiveTab('push')}
+                style={{ background: 'none', border: 'none', padding: '4px 0', borderBottom: activeTab === 'push' ? '2px solid var(--gold)' : '2px solid transparent', color: activeTab === 'push' ? 'white' : 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer' }}
+              >
+                Push Broadcast
+              </button>
+            </div>
+          </div>
+
         {activeTab === 'campaigns' && (
           <button
             onClick={() => { setIsModalOpen(true); setEditingId(null); setActiveStep(0); setFormData({ ...EMPTY_FORM }); }}
@@ -998,7 +997,8 @@ export const Promotions = () => {
         </div>
       )}
     </div>
-  );
+  </div>
+);
 };
 
 export default Promotions;

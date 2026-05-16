@@ -248,8 +248,8 @@ export default function MarketHotspot({ properties = [] }) {
                             {formatSnapAddaPrice(p.price)}
                          </div>
                       </div>
-                      <div style={{ padding: '16px', background: 'white' }}>
-                         <div style={{ fontWeight: 900, color: '#0f172a', fontSize: '1rem', marginBottom: '4px' }}>{p.title}</div>
+                      <div style={{ padding: '16px', background: 'rgba(10, 12, 22, 0.95)', backdropFilter: 'blur(10px)', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+                         <div style={{ fontWeight: 900, color: 'white', fontSize: '1rem', marginBottom: '4px' }}>{p.title}</div>
                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#64748b', fontSize: '0.75rem', marginBottom: '12px' }}>
                             <MapPin size={12} /> {p.location}
                          </div>
@@ -336,9 +336,9 @@ export default function MarketHotspot({ properties = [] }) {
            .hotspot-main-layout { flex-direction: column; }
         }
 
-        .elite-map-popup .leaflet-popup-content-wrapper { background: white; border-radius: 16px; padding: 0; overflow: hidden; }
-        .elite-map-popup .leaflet-popup-content { margin: 0; width: 280px !important; }
-        .elite-map-popup .leaflet-popup-tip-container { display: none; }
+        .elite-map-popup .leaflet-popup-content-wrapper { background: rgba(10, 12, 22, 0.95); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 0; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.8); }
+        .elite-map-popup .leaflet-popup-content { margin: 0; width: 280px !important; color: white; }
+        .elite-map-popup .leaflet-popup-tip { background: rgba(10, 12, 22, 0.95); border: 1px solid rgba(255,255,255,0.1); }
       `}</style>
     </div>
   );

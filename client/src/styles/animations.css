@@ -42,8 +42,8 @@
 }
 
 .tilt-3d:hover {
-  box-shadow: var(--shadow-3d);
-  transform: translateZ(25px) rotateX(2deg) rotateY(-2deg);
+  box-shadow: var(--shadow-3d-heavy);
+  transform: translateZ(10px) translateY(-2px);
 }
 
 .card-3d {
@@ -54,8 +54,8 @@
 }
 
 .card-3d:hover {
-  box-shadow: var(--shadow-3d);
-  transform: translateZ(20px) rotateX(2deg) rotateY(-2deg);
+  box-shadow: var(--shadow-3d-heavy);
+  transform: translateY(-4px);
 }
 
 .shimmer-3d {

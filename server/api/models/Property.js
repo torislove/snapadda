@@ -76,6 +76,10 @@ const propertySchema = new mongoose.Schema({
   image: { type: String, default: '' },
   images: [{ type: String }],
   gallery: [{ type: String }],   // extra gallery images
+  mediaSettings: [{
+    url: String,
+    objectFit: { type: String, enum: ['cover', 'contain'], default: 'cover' }
+  }],
   videos: [{ type: String }],
   videoUrl: { type: String }, 
   

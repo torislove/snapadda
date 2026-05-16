@@ -1,4 +1,5 @@
 import Property from '../models/Property.js';
+import City from '../models/City.js';
 import { db } from '../firebase.js';
 import SiteSetting from '../models/SiteSetting.js';
 import { getCitiesNearby } from '../data/apCoordinates.js';
@@ -271,6 +272,18 @@ export const createProperty = async (req, res) => {
       if (coords) propertyData.coordinates = coords;
     }
     
+    // Auto-resolve cityId if missing
+    if (!propertyData.cityId && (propertyData.location || propertyData.mandal)) {
+      const citySearch = propertyData.location || propertyData.mandal;
+      const cityMatch = await City.findOne({ 
+        $or: [
+          { name: new RegExp(`^${citySearch}$`, 'i') },
+          { name: new RegExp(citySearch, 'i') }
+        ]
+      });
+      if (cityMatch) propertyData.cityId = cityMatch._id;
+    }
+    
     const newProperty = new Property(propertyData);
     await newProperty.save();
     
@@ -336,6 +349,18 @@ export const updateProperty = async (req, res) => {
 
     const property = await Property.findById(req.params.id);
     if (!property) return res.status(404).json({ message: 'Property not found' });
+
+    // Auto-resolve cityId if missing
+    if (!updateData.cityId && (updateData.location || updateData.mandal)) {
+      const citySearch = updateData.location || updateData.mandal;
+      const cityMatch = await City.findOne({ 
+        $or: [
+          { name: new RegExp(`^${citySearch}$`, 'i') },
+          { name: new RegExp(citySearch, 'i') }
+        ]
+      });
+      if (cityMatch) updateData.cityId = cityMatch._id;
+    }
 
     Object.assign(property, updateData);
     await property.save();

@@ -146,24 +146,25 @@
   width: 100%;
   min-height: var(--touch-min);
   padding: 0 2.5rem 0 1rem;
-  background: rgba(255,255,255,0.05);
-  border: 1.5px solid rgba(255,255,255,0.1);
+  background: var(--bg-glass);
+  border: 1.5px solid var(--border-glass);
   border-radius: var(--input-radius);
   color: var(--txt-primary);
   font-family: var(--font-body);
   font-size: 0.9rem;
-  font-weight: 500;
+  font-weight: 600;
   appearance: none;
   -webkit-appearance: none;
   cursor: pointer;
-  transition: border-color 0.2s, background 0.2s;
+  transition: all 0.25s var(--ease-butter);
   outline: none;
+  backdrop-filter: blur(16px);
 }
 
 .elite-select:focus {
   border-color: var(--gold);
-  background: rgba(232,184,75,0.06);
-  box-shadow: 0 0 0 3px rgba(232,184,75,0.12);
+  background: rgba(232, 184, 75, 0.05);
+  box-shadow: 0 0 15px var(--gold-glow);
 }
 
 .elite-select option {
@@ -191,8 +192,8 @@
 
 .elite-input:focus {
   border-color: var(--gold);
-  background: rgba(232,184,75,0.05);
-  box-shadow: 0 0 0 3px rgba(232,184,75,0.1);
+  background: rgba(232, 184, 75, 0.06);
+  box-shadow: 0 0 15px var(--gold-glow);
 }
 
 /* Prevent iOS zoom on focus */

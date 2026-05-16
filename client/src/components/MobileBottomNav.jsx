@@ -10,12 +10,10 @@ const HIDE_PATHS = ['/login', '/post-property'];
 export default function MobileBottomNav() {
   const location = useLocation();
   const { user } = useAuth();
-
-  // Hide on property detail pages and specified paths
-  if (location.pathname.startsWith('/property/')) return null;
-  if (HIDE_PATHS.includes(location.pathname)) return null;
-
   const { t } = useTranslation();
+
+  // Hide on specified paths
+  if (HIDE_PATHS.includes(location.pathname)) return null;
   const navItems = [
     { label: t('nav.home', 'Home'),    path: '/',          icon: Home },
     { label: t('nav.search', 'Search'),  path: '/search',    icon: Search },

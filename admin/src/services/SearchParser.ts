@@ -1,12 +1,8 @@
-// Location data — typed via LocationData.d.ts
+import AndhraLocations from '../data/AndhraLocations.json';
 import { ALL_AP_LOCATIONS } from '../utils/LocationData';
 
-// Merge bundled location data with the JSON atlas (if available)
-let _jsonLocations: { name: string; type?: string; district?: string; pincode?: string }[] = [];
-try {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  _jsonLocations = require('../data/AndhraLocations.json') as typeof _jsonLocations;
-} catch { /* JSON atlas not present */ }
+// Merge bundled location data with the JSON atlas
+const _jsonLocations = AndhraLocations as { name: string; type?: string; district?: string; pincode?: string }[];
 
 const _seedLocations = ALL_AP_LOCATIONS.map(name => ({ name, type: 'Mandal / Town', district: '' }));
 const _jsonNames = new Set(_jsonLocations.map(l => l.name.toLowerCase()));

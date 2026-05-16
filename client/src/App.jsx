@@ -29,11 +29,11 @@ const ComparisonRadar = lazy(() => import('./pages/ComparisonRadar'));
 const PostProperty = lazy(() => import('./pages/PostProperty'));
 const LocalAgency = lazy(() => import('./pages/LocalAgency'));
 const PromotionDetail = lazy(() => import('./pages/PromotionDetail'));
+const RegionalDirectory = lazy(() => import('./pages/RegionalDirectory'));
 
 import Logo from './components/Logo';
 import { useGoogleMarketing } from './utils/useGoogleMarketing';
 import ScrollToTop from './components/ScrollToTop';
-import { ToastProvider } from './contexts/ToastContext';
 // SnapAdda Quantum Loader (Imported above)
 
 function ProtectedRoute({ children }) {
@@ -47,10 +47,16 @@ function ProtectedRoute({ children }) {
   const hasAccess = user.role === 'client' || user.role === 'admin';
   if (!hasAccess) return <Navigate to="/" replace />;
   
-  if (!user.onboardingCompleted && location.pathname !== '/onboarding') return <Navigate to="/onboarding" replace />;
+  // Enforce mandatory onboarding for clients to ensure lead quality
+  if (user.role === 'client' && !user.onboardingCompleted && location.pathname !== '/onboarding') {
+    return <Navigate to="/onboarding" replace />;
+  }
+
   return children;
 }
 
+
+import Footer from './components/Footer';
 
 function AppContent() {
 
@@ -64,13 +70,14 @@ function AppContent() {
   }, [location]);
 
   const showHeader = location.pathname !== '/login';
+  const showFooter = location.pathname !== '/login';
 
   return (
     <>
       {showHeader && <Header />}
       <div style={{ 
         width: '100%',
-        paddingBottom: 0,
+        paddingBottom: '20px', 
       }} className="app-main-content">
         <Suspense fallback={<GlobalLoader mode="inline" />}>
           <Routes location={location}>
@@ -88,10 +95,12 @@ function AppContent() {
             <Route path="/request-callback" element={<RequestPage />} />
             <Route path="/terms" element={<Terms />} />
             <Route path="/privacy" element={<Privacy />} />
+            <Route path="/regional-directory" element={<RegionalDirectory />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Suspense>
       </div>
+      {showFooter && <Footer />}
       <ComparisonHud />
       <FloatingOffers />
       <MobileBottomNav />
@@ -104,6 +113,8 @@ function AppContent() {
   );
 }
 
+
+import { Toaster } from 'react-hot-toast';
 
 export default function App() {
   const [isAppLoading, setIsAppLoading] = useState(true);
@@ -139,9 +150,36 @@ export default function App() {
         {isAppLoading && <GlobalLoader key="loader" />}
       </AnimatePresence>
       <LazyMotion features={domAnimation}>
-        <ToastProvider>
-          <AppContent />
-        </ToastProvider>
+        <AppContent />
+        <Toaster 
+          position="bottom-center"
+          toastOptions={{
+            duration: 4000,
+            style: {
+              background: 'var(--bg-glass-heavy)',
+              color: 'var(--txt-primary)',
+              backdropFilter: 'blur(20px)',
+              border: '1px solid var(--border-glass)',
+              borderRadius: '20px',
+              padding: '16px 24px',
+              fontSize: '0.9rem',
+              fontWeight: '600',
+              boxShadow: 'var(--shadow-elite)',
+            },
+            success: {
+              iconTheme: {
+                primary: 'var(--emerald)',
+                secondary: 'white',
+              },
+            },
+            error: {
+              iconTheme: {
+                primary: 'var(--rose)',
+                secondary: 'white',
+              },
+            },
+          }}
+        />
       </LazyMotion>
     </BrowserRouter>
   );

@@ -21,6 +21,7 @@ console.log('CLOUDINARY_KEY_PROVIDED:', !!process.env.CLOUDINARY_API_KEY);
 console.log('DB_FIREBASE_URL_PROVIDED:', !!process.env.DB_FIREBASE_URL);
 console.log('----------------------------------');
 
+// ─── MEGA SEO ENGINE V1.2 (Active Indexing) ───
 const app = express();
 
 
@@ -200,7 +201,7 @@ import testimonialRoutes from './routes/testimonialRoutes.js';
 import questionRoutes from './routes/questionRoutes.js';
 import automationRoutes from './routes/automationRoutes.js';
 import activityRoutes from './routes/activityRoutes.js';
-import { getSitemap } from './controllers/sitemapController.js';
+import { getSitemap } from './controllers/seoController.js';
 
 import { automationService } from './modules/automationService.js';
 

@@ -33,7 +33,7 @@ export const cleanPropertyData = (rawData, isPublicSubmission = false) => {
 
   // 3. Boolean Parsing
   const boolFields = [
-    'isVerified', 'isFeatured', 'vastuCompliant', 'isGated', 
+    'isVerified', 'isFeatured', 'isElite', 'isTrustVerified', 'vastuCompliant', 'isGated', 
     'cornerProperty', 'boundaryWall', 'fireSafety'
   ];
   boolFields.forEach(f => {
@@ -43,7 +43,7 @@ export const cleanPropertyData = (rawData, isPublicSubmission = false) => {
   });
 
   // 4. JSON Parsing for complex fields (handling both strings and objects)
-  const jsonFields = ['customFeatures', 'amenities', 'realtor'];
+  const jsonFields = ['customFeatures', 'amenities', 'realtor', 'mediaSettings', 'videos'];
   jsonFields.forEach(f => {
     if (typeof propertyData[f] === 'string' && propertyData[f].trim() !== '') {
       try { propertyData[f] = JSON.parse(propertyData[f]); } catch { propertyData[f] = (f === 'realtor' ? {} : []); }
@@ -75,11 +75,14 @@ export const cleanPropertyData = (rawData, isPublicSubmission = false) => {
     propertyData.verificationStatus = 'Draft';
     propertyData.isVerified = false;
     propertyData.isFeatured = false;
+    propertyData.isElite = false;
+    propertyData.isTrustVerified = false;
     propertyData.submissionMetadata = {
       submittedAt: new Date(),
       source: 'Public Portal',
       posterName: propertyData.posterName || 'Unknown',
-      posterPhone: propertyData.posterPhone || 'Unknown'
+      posterPhone: propertyData.posterPhone || 'Unknown',
+      ip: propertyData._ip || '0.0.0.0'
     };
   } else {
     // Admin submissions

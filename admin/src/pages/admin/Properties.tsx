@@ -2,11 +2,12 @@ import { usePropertyManager } from './properties/usePropertyManager';
 import { PropertiesList } from './properties/PropertiesList';
 import { PropertyForm } from './properties/PropertyForm';
 import { AnimatePresence } from 'framer-motion';
-import { Plus, Share2 } from 'lucide-react';
+import { Plus, Share2, Building, TreePine } from 'lucide-react';
 import { formatSnapAddaPrice } from '../../utils/priceUtils';
 import { ConnectivityBanner } from '../../components/ui/ConnectivityBanner';
 import { fetchRealtors } from '../../services/api';
 import { useState, useEffect } from 'react';
+import { toast } from 'react-hot-toast';
 
 const AdminProperties = () => {
   const manager = usePropertyManager();
@@ -18,68 +19,42 @@ const AdminProperties = () => {
       .catch(() => setRealtors([]));
   }, []);
 
+  const handleShare = () => {
+    const url = 'https://snapadda.com/post-property';
+    navigator.clipboard.writeText(`List your property for FREE on SnapAdda. Fast, secure, and easy!\n${url}`);
+    toast.success('Link copied! Ready to share. 🔗');
+  };
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
-      {/* Connectivity status — shown only when degraded */}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', paddingBottom: '4rem' }}>
       <ConnectivityBanner />
       
-      {/* Header Section */}
-      <div style={{ background: 'rgba(155,89,245,0.05)', padding: '1rem', borderRadius: '14px', border: '1px solid rgba(155,89,245,0.1)', marginBottom: '2rem' }}>
+      <div style={{ background: 'rgba(155,89,245,0.05)', padding: '1rem', borderRadius: '16px', border: '1px solid rgba(155,89,245,0.1)', marginBottom: '1rem' }}>
         <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--violet)', fontWeight: 600 }}>
-          💡 <strong>Help:</strong> On this page, you can manage all your real estate listings. You can add new properties, edit existing ones, or change their status (like marking them as "Sold").
+          💡 <strong>Tip:</strong> Managed assets are synchronized across the spatial grid. New listings appear instantly to verified clients.
         </p>
       </div>
 
-      <div className="flex-row-mobile-stack" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1.5rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1.5rem' }}>
         <div>
-          <div style={{ fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.18em', color: 'var(--gold)', marginBottom: '0.6rem', fontFamily: 'var(--font-mono)' }}>✦ PROPERTY REGISTRY</div>
-          <h1 style={{ 
-            lineHeight: 1.2, 
-            fontWeight: 800, 
-            color: 'white',
-            background: 'linear-gradient(135deg, #ffffff 0%, #9b59f5 100%)', 
-            WebkitBackgroundClip: 'text', 
-            WebkitTextFillColor: 'transparent', 
-            fontFamily: 'var(--font-heading)', 
-            letterSpacing: '-0.02em' 
-          }}>
-            All Assets
-          </h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', maxWidth: '600px' }}>Unified view of all property assets across the SnapAdda network.</p>
+          <div style={{ fontSize: '0.7rem', fontWeight: 800, letterSpacing: '0.2rem', textTransform: 'uppercase', color: 'var(--gold)', marginBottom: '0.5rem' }}>✦ ASSET REGISTRY</div>
+          <h1 style={{ fontWeight: 900, color: 'white', margin: 0 }}>Inventory Hub</h1>
         </div>
+        
         {!manager.isAdding && (
-          <div className="flex-row-mobile-stack" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-            <button 
-              onClick={() => { manager.setLiveData({ type: 'Apartment' }); manager.setIsAdding(true); }}
-              className="btn btn-ghost" 
-              style={{ padding: '0.6rem 1.2rem', borderRadius: '12px', fontSize: '0.8rem', border: '1px solid var(--violet)', color: 'var(--violet)' }}
-            >
-              + NEW FLAT
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <button onClick={handleShare} style={{ padding: '10px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.03)', color: 'white', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Share2 size={14} /> SHARE LINK
             </button>
-            <button 
-              onClick={() => {
-                const url = 'https://snapadda.com/post-property';
-                navigator.clipboard.writeText(`List your property for FREE on SnapAdda. Fast, secure, and easy!\n${url}`);
-                alert('Copied Shareable Link to clipboard!');
-              }}
-              className="btn btn-ghost" 
-              style={{ padding: '0.6rem 1.2rem', borderRadius: '12px', fontSize: '0.8rem', border: '1px solid var(--gold)', color: 'var(--gold)', display: 'flex', gap: '6px', alignItems: 'center' }}
-            >
-              <Share2 size={14} /> SHARE POST LINK
+            <div style={{ width: '1px', background: 'rgba(255,255,255,0.1)', margin: '0 8px' }} />
+            <button onClick={() => { manager.setLiveData({ type: 'Apartment' }); manager.setIsAdding(true); }} style={{ padding: '10px 16px', borderRadius: '12px', background: 'rgba(155,89,245,0.1)', color: 'var(--violet)', border: '1px solid rgba(155,89,245,0.2)', fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Building size={14} /> + FLAT
             </button>
-            <button 
-              onClick={() => { manager.setLiveData({ type: 'Agricultural Land' }); manager.setIsAdding(true); }}
-              className="btn btn-ghost" 
-              style={{ padding: '0.6rem 1.2rem', borderRadius: '12px', fontSize: '0.8rem', border: '1px solid var(--emerald)', color: 'var(--emerald)' }}
-            >
-              + NEW LAND
+            <button onClick={() => { manager.setLiveData({ type: 'Agricultural Land' }); manager.setIsAdding(true); }} style={{ padding: '10px 16px', borderRadius: '12px', background: 'rgba(16,217,140,0.1)', color: 'var(--emerald)', border: '1px solid rgba(16,217,140,0.2)', fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <TreePine size={14} /> + LAND
             </button>
-            <button 
-              onClick={() => manager.setIsAdding(true)}
-              className="btn btn-violet btn-3d-liquid" 
-              style={{ padding: '0.85rem 2.5rem', borderRadius: '14px', fontSize: '1rem', fontWeight: 900, boxShadow: '0 15px 35px rgba(155,89,245,0.3)', background: 'var(--violet)' }}
-            >
-              <Plus size={22} /> ADD NEW
+            <button onClick={() => manager.setIsAdding(true)} style={{ padding: '10px 24px', borderRadius: '12px', background: 'var(--gold)', color: 'black', border: 'none', fontSize: '0.85rem', fontWeight: 900, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 10px 20px rgba(232,184,75,0.2)' }}>
+              <Plus size={18} /> ADD NEW
             </button>
           </div>
         )}
@@ -103,7 +78,6 @@ const AdminProperties = () => {
             updateProperty={manager.updateProperty}
             createProperty={manager.createProperty}
             loadProperties={manager.loadProperties}
-            setIsAdding={manager.setIsAdding}
           />
         )}
       </AnimatePresence>

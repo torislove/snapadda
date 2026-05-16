@@ -2,10 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Phone, User, Zap, ShieldCheck, MapPin } from 'lucide-react';
 import axios from 'axios';
-import { useToast } from '../contexts/ToastContext';
+import { toast } from 'react-hot-toast';
 
 const LeadCaptureModal = ({ isOpen, onClose, preferredLocation }) => {
-  const { toast } = useToast();
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [district, setDistrict] = useState(preferredLocation || '');
@@ -41,7 +40,7 @@ const LeadCaptureModal = ({ isOpen, onClose, preferredLocation }) => {
       }, 3000);
     } catch (error) {
       console.error('Lead capture failed', error);
-      toast('Verification system busy. Please try again.', 'error');
+      toast.error('Verification system busy. Please try again.');
     } finally {
       setSubmitting(false);
     }

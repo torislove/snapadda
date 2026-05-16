@@ -13,49 +13,64 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianG
 
 // Dashboard home tab
 function DashboardHome({ user, stats, recent, setModalOpen }) {
+  const isMobile = window.innerWidth < 768;
   const { t } = useTranslation();
   const navigate = useNavigate();
   return (
-    <div style={{ padding: '2rem 0' }}>
+    <div style={{ padding: isMobile ? '1rem 0' : '2rem 0' }}>
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'flex-start', 
+          marginBottom: '2rem', 
+          flexDirection: isMobile ? 'column' : 'row',
+          gap: '1rem' 
+        }}>
           <div>
-            <h2 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: '0.5rem', fontFamily: 'var(--font-heading)' }}>
+            <h2 style={{ fontSize: isMobile ? '1.5rem' : '2rem', fontWeight: 800, marginBottom: '0.5rem', fontFamily: 'var(--font-heading)' }}>
               {t('dashboard.welcome')}, {(user?.name || 'Elite').split(' ')[0]}! ✦
             </h2>
-            <p style={{ color: 'var(--txt-muted)', fontSize: '0.95rem' }}>Your digital real estate registry is up-to-date.</p>
+            <p style={{ color: 'var(--txt-muted)', fontSize: '0.85rem' }}>Your digital real estate registry is up-to-date.</p>
           </div>
-          <div className="glass-panel" style={{ padding: '8px 16px', borderRadius: '12px', border: '1px solid rgba(212,175,55,0.2)', display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--midnight)', backdropFilter: 'none' }}>
-            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--gold)', boxShadow: '0 0 10px var(--gold)' }} />
-            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--gold)' }}>PREMIUM ACCOUNT</span>
+          <div className="glass-3d" style={{ 
+            padding: '10px 20px', 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '10px', 
+            border: '1px solid var(--gold-border)',
+            alignSelf: isMobile ? 'flex-start' : 'center'
+          }}>
+            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--gold)', boxShadow: 'var(--shadow-gold)' }} />
+            <span style={{ fontSize: '0.8rem', fontWeight: 900, color: 'var(--gold)', letterSpacing: '0.05em' }}>PREMIUM ACCOUNT</span>
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(240px,1fr))', gap: '1.25rem', marginBottom: '2.5rem' }}>
+        <div className="dashboard-grid-3" style={{ marginBottom: '2.5rem' }}>
           {[
             { label: 'Saved Assets', val: stats.favoritesCount, icon: <Heart size={20} />, color: 'var(--gold)' },
             { label: 'Market Interest', val: stats.engagementCount || 0, icon: <Star size={20} />, color: '#10d98c' },
             { label: 'Active Inquiries', val: stats.inquiriesCount, icon: <MessageSquare size={20} />, color: '#9b59f5' },
           ].map((s, i) => (
-            <div key={i} className="glass-panel" style={{ padding: '1.75rem', borderRadius: '24px', border: `1px solid ${s.color}22`, background: `linear-gradient(135deg, rgba(255,255,255,0.02) 0%, ${s.color}08 100%)` }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                <div style={{ color: s.color }}>{s.icon}</div>
-                <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--txt-muted)', letterSpacing: '0.1em' }}>KPI {i+1}</div>
+            <div key={i} className="glass-3d" style={{ padding: '2rem 1.5rem', border: `1px solid ${s.color}33`, background: `linear-gradient(135deg, rgba(255,255,255,0.02) 0%, ${s.color}05 100%)` }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+                <div style={{ color: s.color, filter: `drop-shadow(0 0 8px ${s.color}66)` }}>{s.icon}</div>
+                <div style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--txt-muted)', letterSpacing: '0.15em', opacity: 0.6 }}>METRIC {i+1}</div>
               </div>
-              <div style={{ fontSize: '2.2rem', fontWeight: 800, marginBottom: '0.2rem', fontFamily: 'var(--font-mono)' }}>{s.val}</div>
-              <div style={{ fontSize: '0.85rem', color: 'var(--txt-muted)', fontWeight: 600 }}>{s.label}</div>
+              <div style={{ fontSize: '2.5rem', fontWeight: 950, marginBottom: '0.25rem', fontFamily: 'var(--font-mono)', color: '#fff' }}>{s.val}</div>
+              <div style={{ fontSize: '0.9rem', color: 'var(--txt-secondary)', fontWeight: 700, letterSpacing: '0.02em' }}>{s.label}</div>
             </div>
           ))}
         </div>
         
         <div className="bento-grid" style={{ marginTop: '2.5rem' }}>
           {/* Main Stat Card (Large Bento) */}
-          <div className="bento-item glass-panel" style={{ gridColumn: 'span 2', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          <div className="bento-item glass-3d-heavy" style={{ gridColumn: isMobile ? 'span 1' : 'span 2', display: 'flex', flexDirection: 'column', gap: '2rem', padding: '2rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: 950 }}>Engagement Yield</h3>
-              <Sparkles size={18} style={{ color: 'var(--gold)' }} />
+              <h3 style={{ fontSize: isMobile ? '1.2rem' : '1.5rem', fontWeight: 950, color: '#fff' }}>Engagement Yield</h3>
+              <Sparkles size={20} style={{ color: 'var(--gold)', filter: 'drop-shadow(0 0 8px var(--gold-glow))' }} />
             </div>
-            <div style={{ height: '220px', width: '100%' }}>
+            <div style={{ height: isMobile ? '200px' : '260px', width: '100%' }}>
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={[
                   { name: 'Mon', views: 4 }, { name: 'Tue', views: 12 }, { name: 'Wed', views: 8 },
@@ -67,40 +82,40 @@ function DashboardHome({ user, stats, recent, setModalOpen }) {
                       <stop offset="95%" stopColor="var(--gold)" stopOpacity={0}/>
                     </linearGradient>
                   </defs>
-                  <Tooltip contentStyle={{ background: 'var(--midnight)', borderColor: 'var(--gold-royal-dim)', borderRadius: '12px' }} />
-                  <Area type="monotone" dataKey="views" stroke="var(--gold)" strokeWidth={3} fill="url(#yieldGrad)" />
+                  <Tooltip contentStyle={{ background: 'var(--midnight)', borderColor: 'var(--gold-border)', borderRadius: '16px', backdropFilter: 'blur(10px)' }} />
+                  <Area type="monotone" dataKey="views" stroke="var(--gold)" strokeWidth={4} fill="url(#yieldGrad)" />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
           </div>
 
           {/* Quick Metrics */}
-          <div className="bento-item glass-panel" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-            <div style={{ fontSize: '2.5rem', fontWeight: 950, color: 'var(--gold)' }}>{stats.favoritesCount}</div>
-            <div style={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', opacity: 0.6 }}>Saved Assets</div>
+          <div className="bento-item glass-3d" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '2rem' }}>
+            <div style={{ fontSize: '3rem', fontWeight: 950, color: 'var(--gold)', letterSpacing: '-0.05em' }}>{stats.favoritesCount}</div>
+            <div style={{ fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase', opacity: 0.6, letterSpacing: '0.1em' }}>Saved Assets</div>
           </div>
 
-          <div className="bento-item glass-panel" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-            <div style={{ fontSize: '2.5rem', fontWeight: 950, color: 'var(--gold)' }}>{stats.inquiriesCount}</div>
-            <div style={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', opacity: 0.6 }}>Active Inquiries</div>
+          <div className="bento-item glass-3d" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '2rem' }}>
+            <div style={{ fontSize: '3rem', fontWeight: 950, color: 'var(--gold)', letterSpacing: '-0.05em' }}>{stats.inquiriesCount}</div>
+            <div style={{ fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase', opacity: 0.6, letterSpacing: '0.1em' }}>Active Inquiries</div>
           </div>
 
           {/* Recently Viewed (Secondary Large Bento) */}
-          <div className="bento-item glass-panel" style={{ gridColumn: 'span 2' }}>
-            <h3 style={{ fontSize: '1.1rem', fontWeight: 900, marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <RefreshCw size={18} style={{ color: 'var(--gold)' }} /> Performance History
+          <div className="bento-item glass-3d" style={{ gridColumn: isMobile ? 'span 1' : 'span 2', padding: '2rem' }}>
+            <h3 style={{ fontSize: isMobile ? '1.1rem' : '1.25rem', fontWeight: 950, marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '12px', color: '#fff' }}>
+              <RefreshCw size={20} style={{ color: 'var(--gold)' }} /> Performance History
             </h3>
             {recent && recent.length > 0 ? (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.25rem' }}>
                 {recent.slice(0, 4).map((p, i) => (
-                  <Link key={i} to={`/property/${p._id || p.id}`} style={{ textDecoration: 'none', padding: '1rem', borderRadius: '16px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}>
-                    <div style={{ fontSize: '0.8rem', fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.title}</div>
-                    <div style={{ fontSize: '0.7rem', color: 'var(--gold)', marginTop: '4px' }}>Analyze Asset →</div>
+                  <Link key={i} to={`/property/${p._id || p.id}`} style={{ textDecoration: 'none', padding: '1.25rem', borderRadius: '18px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', transition: 'all 0.3s' }}>
+                    <div style={{ fontSize: '0.9rem', fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: '#fff', marginBottom: '8px' }}>{p.title}</div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--gold)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}>Analyze Asset <ArrowRight size={12} /></div>
                   </Link>
                 ))}
               </div>
             ) : (
-              <p style={{ opacity: 0.5, fontSize: '0.85rem' }}>No recent asset movements detected.</p>
+              <p style={{ opacity: 0.5, fontSize: '0.9rem', color: 'var(--txt-muted)' }}>No recent asset movements detected.</p>
             )}
           </div>
 
@@ -204,6 +219,7 @@ function MyListings({ properties, loading }) {
 
 // Profile tab — Full Premium Profile Page
 function Profile({ user, logout, stats }) {
+  const isMobile = window.innerWidth < 768;
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
@@ -230,28 +246,34 @@ function Profile({ user, logout, stats }) {
   ];
 
   return (
-    <div style={{ padding: '2rem 0', maxWidth: '860px' }}>
+    <div style={{ padding: isMobile ? '1rem 0' : '2rem 0', maxWidth: '860px' }}>
       {/* ── Hero Profile Card ─────────────────────────────────────────── */}
       <motion.div
         initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
         style={{
           background: 'linear-gradient(135deg, rgba(232,184,75,0.08) 0%, rgba(155,89,245,0.06) 50%, rgba(255,255,255,0.02) 100%)',
           border: '1px solid rgba(232,184,75,0.2)',
-          borderRadius: '28px', padding: '2.5rem',
+          borderRadius: '28px', padding: isMobile ? '1.5rem' : '2.5rem',
           marginBottom: '1.5rem', position: 'relative', overflow: 'hidden',
         }}
       >
         {/* Background glow */}
         <div style={{ position: 'absolute', top: '-60px', right: '-60px', width: '200px', height: '200px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(232,184,75,0.12) 0%, transparent 70%)', pointerEvents: 'none' }} />
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '2rem', flexWrap: 'wrap' }}>
+        <div style={{ 
+          display: 'flex', 
+          alignItems: isMobile ? 'center' : 'center', 
+          gap: isMobile ? '1.25rem' : '2rem', 
+          flexDirection: isMobile ? 'column' : 'row',
+          textAlign: isMobile ? 'center' : 'left'
+        }}>
           {/* Avatar */}
           <div style={{ position: 'relative', flexShrink: 0 }}>
             <img
               src={avatarUrl}
               alt={user?.name || 'Profile'}
               style={{
-                width: '100px', height: '100px', borderRadius: '50%', objectFit: 'cover',
+                width: isMobile ? '90px' : '100px', height: isMobile ? '90px' : '100px', borderRadius: '50%', objectFit: 'cover',
                 border: '3px solid rgba(232,184,75,0.6)',
                 boxShadow: '0 0 30px rgba(232,184,75,0.25), 0 10px 40px rgba(0,0,0,0.4)',
               }}
@@ -259,7 +281,7 @@ function Profile({ user, logout, stats }) {
             />
             {/* Verified badge */}
             <div style={{
-              position: 'absolute', bottom: 0, right: 0,
+              position: 'absolute', bottom: 0, right: isMobile ? '5px' : 0,
               width: '28px', height: '28px', borderRadius: '50%',
               background: '#10d98c', border: '2px solid rgba(10,10,22,1)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -269,16 +291,16 @@ function Profile({ user, logout, stats }) {
           </div>
 
           {/* Name & info */}
-          <div style={{ flex: 1, minWidth: '200px' }}>
+          <div style={{ flex: 1, minWidth: isMobile ? '100%' : '200px' }}>
             <div style={{ fontSize: '0.65rem', fontWeight: 900, letterSpacing: '0.15em', color: 'var(--gold)', marginBottom: '4px' }}>✦ SNAPADDA MEMBER</div>
-            <h2 style={{ fontSize: '1.8rem', fontWeight: 900, color: '#fff', marginBottom: '4px', fontFamily: 'var(--font-heading)', lineHeight: 1.2 }}>
+            <h2 style={{ fontSize: isMobile ? '1.5rem' : '1.8rem', fontWeight: 900, color: '#fff', marginBottom: '4px', fontFamily: 'var(--font-heading)', lineHeight: 1.2 }}>
               {user?.name || 'Elite Client'}
             </h2>
             <div style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)', marginBottom: '1rem' }}>{user?.email}</div>
 
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: isMobile ? 'center' : 'flex-start' }}>
               <span style={{ padding: '4px 14px', borderRadius: '20px', background: 'rgba(232,184,75,0.12)', border: '1px solid rgba(232,184,75,0.3)', color: '#e8b84b', fontSize: '0.7rem', fontWeight: 800, letterSpacing: '0.05em' }}>
-                PREMIUM ACCOUNT
+                PREMIUM
               </span>
               {user?.isVerified && (
                 <span style={{ padding: '4px 14px', borderRadius: '20px', background: 'rgba(16,217,140,0.1)', border: '1px solid rgba(16,217,140,0.25)', color: '#10d98c', fontSize: '0.7rem', fontWeight: 800 }}>
@@ -296,7 +318,7 @@ function Profile({ user, logout, stats }) {
       {/* ── Activity Row ───────────────────────────────────────────────── */}
       <motion.div
         initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }}
-        style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '1.5rem' }}
+        style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: '1rem', marginBottom: '1.5rem' }}
       >
         {activityCards.map((card, i) => (
           <div key={i} style={{
@@ -417,6 +439,7 @@ function Profile({ user, logout, stats }) {
 }
 
 export default function Dashboard({ defaultTab = 'home' }) {
+  const isMobile = window.innerWidth < 768;
   const { t } = useTranslation();
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -496,12 +519,21 @@ export default function Dashboard({ defaultTab = 'home' }) {
   if (!user) return null;
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg-deep)', paddingTop: 'var(--nav-h)', paddingBottom: '4rem' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg-deep)', paddingTop: isMobile ? 'calc(var(--nav-h) + 10px)' : 'var(--nav-h)', paddingBottom: '6rem' }}>
 
-      <div className="dashboard-container" style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 1rem' }}>
+      <div className="dashboard-container" style={{ maxWidth: '1200px', margin: '0 auto', padding: isMobile ? '0 0.75rem' : '0 1.5rem' }}>
         {/* Tab Nav */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.5rem 0', borderBottom: '1px solid rgba(255,255,255,0.05)', marginBottom: '0', flexWrap: 'wrap', gap: '1rem' }}>
-          <div style={{ 
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center', 
+          padding: '1.5rem 0', 
+          borderBottom: '1px solid rgba(255,255,255,0.05)', 
+          marginBottom: '0', 
+          flexDirection: isMobile ? 'column' : 'row',
+          gap: '1rem' 
+        }}>
+          <div className="dashboard-tabs-scroll" style={{ 
             display: 'flex', 
             gap: '0.4rem', 
             background: 'rgba(255,255,255,0.02)', 
@@ -510,8 +542,10 @@ export default function Dashboard({ defaultTab = 'home' }) {
             border: '1px solid rgba(255,255,255,0.05)',
             overflowX: 'auto',
             scrollbarWidth: 'none',
+            msOverflowStyle: 'none',
             WebkitOverflowScrolling: 'touch',
-            maxWidth: '100%'
+            maxWidth: '100%',
+            justifyContent: 'flex-start'
           }}>
             {TABS.map(t => (
               <button key={t.key} onClick={() => setActiveTab(t.key)}

@@ -3,7 +3,7 @@ import { Outlet, Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Building, Users, 
   Settings, Menu, Megaphone, X, LogOut, BookOpen, Activity, Search,
-  MessageSquare, Plus, ShieldCheck, UserCheck
+  MessageSquare, Plus, ShieldCheck, UserCheck, Globe, Star
 } from 'lucide-react';
 import { Logo } from '../../components/ui/Logo';
 import { useAdminAuth } from '../../contexts/AdminAuthContext';
@@ -83,13 +83,16 @@ const LanguageSwitcher = () => {
 const NAV_ITEMS = [
   { to: '/admin',              label: 'nav.dashboard',      icon: LayoutDashboard, exact: true,  activeClass: 'active-dashboard',  color: 'var(--gold)'    },
   { to: '/admin/properties',   label: 'nav.properties',     icon: Building,        exact: false, activeClass: 'active-properties', color: 'var(--violet)'  },
+  { to: '/admin/cities',       label: 'Cities',             icon: Globe,           exact: false, activeClass: 'active-properties', color: 'var(--cyan)'    },
   { to: '/admin/verification', label: 'Verification',       icon: ShieldCheck,     exact: false, activeClass: 'active-leads',      color: 'var(--gold)'    },
   { to: '/admin/leads',        label: 'nav.leads',          icon: Users,           exact: false, activeClass: 'active-leads',      color: 'var(--emerald)' },
   { to: '/admin/clients',      label: 'Clients',            icon: UserCheck,       exact: false, activeClass: 'active-clients',    color: 'var(--rose)'    },
   { to: '/admin/promotions',   label: 'nav.engagement',     icon: Megaphone,       exact: false, activeClass: 'active-promotions', color: 'var(--gold)'    },
-  { to: '/admin/engagement',   label: 'nav.analytics',      icon: Activity,        exact: false, activeClass: 'active-engagement', color: 'var(--rose)'    },
-  { to: '/admin/comms',        label: 'nav.messages',       icon: MessageSquare,   exact: false, activeClass: 'active-settings',   color: 'var(--cyan)'    },
+  { to: '/admin/marquee',      label: 'Marquee',            icon: Activity,        exact: false, activeClass: 'active-promotions', color: 'var(--gold)'    },
+  { to: '/admin/testimonials', label: 'Testimonials',       icon: Star,            exact: false, activeClass: 'active-engagement', color: 'var(--orange)'  },
+  { to: '/admin/questions',    label: 'Inquiries',          icon: MessageSquare,   exact: false, activeClass: 'active-settings',   color: 'var(--gold)'    },
   { to: '/admin/settings',     label: 'nav.settings',       icon: Settings,        exact: false, activeClass: 'active-settings',   color: 'var(--violet)'  },
+  { to: '/admin/broadcast',    label: 'Broadcast',          icon: Megaphone,       exact: false, activeClass: 'active-promotions', color: 'var(--emerald)' },
   { to: '/admin/guide',        label: 'nav.help',           icon: BookOpen,        exact: false, activeClass: 'active-settings',   color: 'var(--emerald)' },
 ];
 
@@ -166,9 +169,17 @@ const AdminLayout = () => {
 
       {/* ── Sidebar ── */}
       <aside className={`admin-sidebar ${isSidebarOpen ? 'open' : ''}`} style={{
-        background: 'linear-gradient(180deg, #0a0c14 0%, #05050a 100%)',
-        boxShadow: '10px 0 40px rgba(0,0,0,0.5)',
-        borderRight: '1px solid rgba(255,255,255,0.03)'
+        background: 'rgba(10, 12, 20, 0.7)',
+        backdropFilter: 'blur(40px) saturate(200%)',
+        WebkitBackdropFilter: 'blur(40px) saturate(200%)',
+        boxShadow: '20px 0 60px rgba(0,0,0,0.6)',
+        borderRight: '1px solid var(--glass-border)',
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        height: '100vh',
+        zIndex: 1000,
+        transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)'
       }}>
         <div className="sidebar-header">
           <a 
@@ -282,31 +293,40 @@ const AdminLayout = () => {
       {/* ── Main Content ── */}
       <main className="admin-content">
         {/* Top Bar */}
-        <header className="admin-topbar">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+        <header className="admin-topbar glass-3d-heavy" style={{ 
+          position: 'sticky', 
+          top: 0, 
+          zIndex: 900,
+          background: 'rgba(5, 5, 10, 0.6)',
+          backdropFilter: 'blur(30px) saturate(180%)',
+          borderBottom: '1px solid var(--glass-border)',
+          borderRadius: 0
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
             <button
               id="btn-admin-sidebar-toggle"
               className="admin-mobile-toggle"
               onClick={() => setIsSidebarOpen(s => !s)}
               aria-label="Toggle sidebar"
+              style={{ background: 'rgba(255,255,255,0.05)', borderRadius: '12px' }}
             >
               {isSidebarOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
-            <div className="topbar-left-group" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              <span className="topbar-title">{getPageTitle()}</span>
+            <div className="topbar-left-group" style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+              <span className="topbar-title" style={{ fontWeight: 950, letterSpacing: '-0.02em', fontSize: '1.1rem' }}>{getPageTitle()}</span>
               {/* Command Search Shortcut UI */}
               <div 
                 id="search-admin-global-trigger"
                 className="command-search-bar desktop-only" style={{
-                display: 'flex', alignItems: 'center', gap: '8px',
-                padding: '0.4rem 0.8rem', borderRadius: '10px',
+                display: 'flex', alignItems: 'center', gap: '10px',
+                padding: '0.5rem 1rem', borderRadius: '14px',
                 background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
-                color: 'var(--text-muted)', fontSize: '0.75rem', cursor: 'text',
-                width: '180px', transition: 'all 0.2s'
+                color: 'var(--text-muted)', fontSize: '0.8rem', cursor: 'text',
+                width: '220px', transition: 'all 0.2s'
               }}>
-                <Search size={14} />
-                <span>Search...</span>
-                <span style={{ marginLeft: 'auto', background: 'rgba(255,255,255,0.05)', padding: '1px 5px', borderRadius: '4px', fontSize: '0.65rem', border: '1px solid rgba(255,255,255,0.1)' }}>⌘ K</span>
+                <Search size={15} />
+                <span style={{ fontWeight: 600 }}>Search System...</span>
+                <span style={{ marginLeft: 'auto', background: 'rgba(255,255,255,0.08)', padding: '2px 6px', borderRadius: '6px', fontSize: '0.65rem', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}>⌘ K</span>
               </div>
             </div>
           </div>
@@ -314,8 +334,8 @@ const AdminLayout = () => {
           <div className="topbar-right">
             <LanguageSwitcher />
             {/* Live connectivity pill */}
-            <ConnectivityBanner compact />
-            <span className="topbar-time">
+            <div className="desktop-only"><ConnectivityBanner compact /></div>
+            <span className="topbar-time" style={{ fontWeight: 900, fontFamily: 'var(--font-mono)', fontSize: '0.85rem' }}>
               {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </span>
             <div className="topbar-divider" />
@@ -323,6 +343,7 @@ const AdminLayout = () => {
               src={adminUser?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(adminUser?.name || 'Admin')}&background=9b59f5&color=fff&bold=true`}
               alt={adminUser?.name ? `${adminUser.name} Avatar` : 'Admin Avatar'}
               className="topbar-avatar"
+              style={{ border: '2px solid var(--violet)', padding: '2px' }}
             />
           </div>
         </header>

@@ -1,64 +1,61 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { fetchQuestions, answerQuestion } from '../../services/api';
-import { MessageSquare, X, Send } from 'lucide-react';
+import { MessageSquare, X, Send, Activity } from 'lucide-react';
+import { useToast } from '../../components/ui/Toast';
 
 export default function AdminQuestions() {
   const [questions, setQuestions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('All');
-  
   const [replyModal, setReplyModal] = useState<any>(null);
   const [replyText, setReplyText] = useState('');
   const [isSyncing, setIsSyncing] = useState(false);
+  const { showToast, ToastComponent } = useToast();
 
-  useEffect(() => {
-    loadQuestions();
-    
-    // Real-time Sync: Poll every 30s
-    const pollInterval = setInterval(() => {
-      syncQuestions();
-    }, 30000);
-
-    return () => clearInterval(pollInterval);
-  }, []);
-
-  const loadQuestions = async () => {
+  const loadQuestions = useCallback(async () => {
     try {
       setLoading(true);
       const res = await fetchQuestions();
-      setQuestions(res.data);
-    } catch (err) {
-      console.error(err);
+      setQuestions(res.data || []);
+    } catch {
+      showToast('Connection to query grid failed', 'error');
     } finally {
       setLoading(false);
     }
-  };
+  }, [showToast]);
 
-  const syncQuestions = async () => {
+  const syncQuestions = useCallback(async () => {
     try {
       setIsSyncing(true);
       const res = await fetchQuestions();
-      setQuestions(res.data);
+      setQuestions(res.data || []);
       setTimeout(() => setIsSyncing(false), 2000);
-    } catch (err) {
-      console.error('Real-time sync failed:', err);
+    } catch {
       setIsSyncing(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadQuestions();
+    const pollInterval = setInterval(() => {
+      syncQuestions();
+    }, 45000); // Slightly longer poll for stability
+    return () => clearInterval(pollInterval);
+  }, [loadQuestions, syncQuestions]);
 
   const handleReplySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!replyText.trim() || !replyModal) return;
     try {
       await answerQuestion(replyModal._id, replyText, 'Answered');
+      showToast('Response published to client panel! ✨');
       setReplyModal(null);
       setReplyText('');
       loadQuestions();
-    } catch (err) {
-      console.error('Failed to answer question', err);
+    } catch {
+      showToast('Failed to sync response', 'error');
     }
   };
-
 
   const filteredQuestions = questions.filter(q => {
     if (filter === 'All') return true;
@@ -66,48 +63,37 @@ export default function AdminQuestions() {
   });
 
   return (
-    <div className="admin-page-content">
+    <div style={{ position: 'relative' }}>
+      <ToastComponent />
+      
       <div style={{ background: 'rgba(232,184,75,0.05)', padding: '1rem', borderRadius: '14px', border: '1px solid rgba(232,184,75,0.1)', marginBottom: '2rem' }}>
         <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--gold)', fontWeight: 600 }}>
-          💡 <strong>Help:</strong> This is where you see questions from users about specific properties. When you answer them, the answers will show up on the website for everyone to see.
+          💡 <strong>Help:</strong> Respond to client inquiries about specific properties. Published answers appear directly on the property details page.
         </p>
       </div>
       
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
-          <h1 style={{ fontSize: '1.75rem', fontFamily: 'var(--font-heading)', color: 'var(--text-primary)', marginBottom: '0.25rem' }}>Client Questions (Q&A)</h1>
-          <p style={{ color: 'var(--text-muted)' }}>Answer client questions to build property FAQs automatically.</p>
+          <h1 style={{ fontSize: '1.8rem', margin: 0 }}>Client Inquiries</h1>
+          <p style={{ color: 'var(--text-muted)', margin: '4px 0 0', fontSize: '0.9rem' }}>Real-time Q&A grid for property leads.</p>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(255,255,255,0.03)', padding: '0.5rem 1rem', borderRadius: '99px', border: '1px solid rgba(255,255,255,0.05)' }}>
-          <div style={{ 
-            width: '8px', height: '8px', borderRadius: '50%', 
-            background: isSyncing ? 'var(--gold)' : 'var(--emerald)',
-            boxShadow: isSyncing ? '0 0 10px var(--gold)' : '0 0 10px var(--emerald)',
-            animation: isSyncing ? 'none' : 'pulse 2s infinite'
-          }} />
-          <span style={{ fontSize: '0.7rem', fontWeight: 800, letterSpacing: '0.05em', color: isSyncing ? 'var(--gold)' : 'var(--text-muted)', textTransform: 'uppercase' }}>
-            {isSyncing ? 'Syncing...' : 'Live Sync Active'}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,0.03)', padding: '0.6rem 1.2rem', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.08)' }}>
+          <Activity size={14} style={{ color: isSyncing ? 'var(--gold)' : 'var(--emerald)', animation: isSyncing ? 'pulse 1s infinite' : 'none' }} />
+          <span style={{ fontSize: '0.7rem', fontWeight: 900, letterSpacing: '0.05em', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+            {isSyncing ? 'SYNCING DATA' : 'GRID CONNECTED'}
           </span>
         </div>
       </div>
 
-      <div className="scroll-x-mobile" style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', background: 'rgba(255,255,255,0.03)', padding: '0.5rem', borderRadius: '12px', width: 'max-content' }}>
+      <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '2rem', overflowX: 'auto', paddingBottom: '4px' }}>
         {['All', 'Pending', 'Answered', 'Rejected'].map(f => (
           <button
             key={f}
             onClick={() => setFilter(f)}
             style={{
-              padding: '0.6rem 1.25rem',
-              borderRadius: '8px',
-              border: 'none',
-              cursor: 'pointer',
-              fontWeight: 600,
-              fontSize: '0.85rem',
-              background: filter === f ? 'var(--gold)' : 'transparent',
-              color: filter === f ? '#000' : 'var(--text-muted)',
-              transition: 'all 0.2s',
-              whiteSpace: 'nowrap',
-              minHeight: '44px'
+              padding: '0.6rem 1.25rem', borderRadius: '10px', border: 'none', cursor: 'pointer', fontWeight: 800, fontSize: '0.75rem',
+              background: filter === f ? 'var(--gold)' : 'rgba(255,255,255,0.03)',
+              color: filter === f ? '#000' : 'var(--text-muted)', transition: 'all 0.2s', textTransform: 'uppercase'
             }}
           >
             {f}
@@ -116,67 +102,60 @@ export default function AdminQuestions() {
       </div>
 
       {loading ? (
-        <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>Loading...</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          {[1,2,3].map(i => <div key={i} className="glass-card" style={{ height: '120px', animation: 'pulse 1.5s infinite' }} />)}
+        </div>
       ) : filteredQuestions.length === 0 ? (
-        <div style={{ padding: '4rem', textAlign: 'center', background: 'rgba(255,255,255,0.02)', borderRadius: '16px', border: '1px dashed var(--border-subtle)' }}>
-          <MessageSquare size={48} style={{ opacity: 0.2, marginBottom: '1rem' }} />
-          <h3 style={{ color: 'var(--text-secondary)' }}>No Client Questions Found</h3>
+        <div style={{ padding: '5rem', textAlign: 'center', background: 'rgba(255,255,255,0.02)', borderRadius: '24px', border: '1.5px dashed rgba(255,255,255,0.1)' }}>
+          <MessageSquare size={40} style={{ opacity: 0.2, marginBottom: '1rem', color: 'var(--text-muted)' }} />
+          <h3 style={{ color: 'white', margin: 0 }}>Silence in the inquiries grid</h3>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>No client questions match your current filter.</p>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {filteredQuestions.map(q => (
-            <div key={q._id} style={{ 
-              background: 'rgba(10,10,18,0.6)', 
-              border: '1px solid var(--border-subtle)',
-              borderLeft: `4px solid ${q.status === 'Pending' ? 'var(--orange)' : q.status === 'Answered' ? 'var(--emerald)' : 'var(--rose)'}`,
-              borderRadius: '12px',
-              padding: '1.5rem'
+            <div key={q._id} className="glass-card" style={{ 
+              padding: '1.5rem',
+              borderLeft: `4px solid ${q.status === 'Pending' ? 'var(--orange)' : q.status === 'Answered' ? 'var(--emerald)' : 'var(--rose)'}`
             }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
-                <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+                <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
-                    <span style={{ 
-                      fontSize: '0.65rem', padding: '2px 8px', borderRadius: '4px', background: 'rgba(34, 217, 224, 0.1)', color: 'var(--cyan)', fontWeight: 800, border: '1px solid rgba(34, 217, 224, 0.2)'
-                    }}>LEAD</span>
-                    <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{q.clientName}</span>
-                    {q.authType && (
-                      <span style={{ fontSize: '0.7rem', color: 'var(--gold)', fontWeight: 600 }}>via {q.authType}</span>
-                    )}
-                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Phone: {q.clientContact}</span>
-                    <span style={{ 
-                      fontSize: '0.7rem', padding: '2px 8px', borderRadius: '99px', textTransform: 'uppercase', fontWeight: 700,
+                    <span style={{ fontWeight: 800, color: 'white' }}>{q.clientName}</span>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>{q.clientContact}</span>
+                    <div style={{ 
+                      fontSize: '0.65rem', padding: '3px 10px', borderRadius: '6px', textTransform: 'uppercase', fontWeight: 900,
                       background: q.status === 'Pending' ? 'rgba(255, 165, 0, 0.1)' : q.status === 'Answered' ? 'rgba(16, 217, 140, 0.1)' : 'rgba(244, 63, 94, 0.1)',
-                      color: q.status === 'Pending' ? 'var(--orange)' : q.status === 'Answered' ? 'var(--emerald)' : 'var(--rose)'
+                      color: q.status === 'Pending' ? 'var(--orange)' : q.status === 'Answered' ? 'var(--emerald)' : 'var(--rose)',
+                      border: '1px solid currentColor'
                     }}>
                       {q.status}
-                    </span>
+                    </div>
                   </div>
-                  <div style={{ fontSize: '0.85rem', color: 'var(--cyan)' }}>
-                    Property: {q.propertyId ? `${q.propertyId.title} (${q.propertyId.location})` : 'Unknown Property'}
+                  <div style={{ fontSize: '0.8rem', color: 'var(--gold)', fontWeight: 700 }}>
+                    🎯 Property: {q.propertyId?.title || 'Unknown Property'}
                   </div>
                 </div>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  {q.status !== 'Answered' && (
-                    <button 
-                      onClick={() => setReplyModal(q)}
-                      style={{ background: 'var(--gold)', color: '#000', border: 'none', padding: '0.5rem 1rem', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}
-                    >
-                      <Send size={14} /> Answer
-                    </button>
-                  )}
-                </div>
+                {q.status !== 'Answered' && (
+                  <button 
+                    onClick={() => setReplyModal(q)}
+                    style={{ background: 'var(--gold)', color: '#000', border: 'none', padding: '0.6rem 1.2rem', borderRadius: '10px', cursor: 'pointer', fontWeight: 900, fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '8px' }}
+                  >
+                    <Send size={14} /> RESOLVE
+                  </button>
+                )}
               </div>
               
-              <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '8px', marginBottom: q.answer ? '1rem' : 0 }}>
-                <p style={{ margin: 0, color: 'var(--text-primary)', fontSize: '0.95rem' }}>
-                  <strong style={{ color: 'var(--text-muted)', marginRight: '8px' }}>Q:</strong> {q.question}
+              <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                <p style={{ margin: 0, color: 'rgba(255,255,255,0.9)', fontSize: '0.9rem', lineHeight: 1.5 }}>
+                  <strong style={{ color: 'var(--gold)', marginRight: '8px' }}>CLIENT:</strong> {q.question}
                 </p>
               </div>
 
               {q.answer && (
-                <div style={{ background: 'rgba(16, 217, 140, 0.05)', padding: '1rem', borderRadius: '8px', border: '1px solid rgba(16, 217, 140, 0.1)' }}>
-                  <p style={{ margin: 0, color: 'var(--emerald)', fontSize: '0.95rem' }}>
-                    <strong style={{ opacity: 0.7, marginRight: '8px' }}>A:</strong> {q.answer}
+                <div style={{ marginTop: '0.75rem', background: 'rgba(16, 217, 140, 0.05)', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(16, 217, 140, 0.1)' }}>
+                  <p style={{ margin: 0, color: 'var(--emerald)', fontSize: '0.9rem', lineHeight: 1.5 }}>
+                    <strong style={{ opacity: 0.8, marginRight: '8px' }}>HOLOGRAPHIC RESPONSE:</strong> {q.answer}
                   </p>
                 </div>
               )}
@@ -187,29 +166,27 @@ export default function AdminQuestions() {
 
       {/* Reply Modal */}
       {replyModal && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(4px)', zIndex: 1000, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-          <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-subtle)', borderRadius: '16px', width: '500px', maxWidth: '90%', padding: '2rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-              <h2 style={{ fontSize: '1.25rem', margin: 0 }}>Answer Question</h2>
-              <button onClick={() => setReplyModal(null)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><X size={20} /></button>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(20px)', zIndex: 9000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+          <div style={{ width: '100%', maxWidth: '500px', background: '#0a0a0f', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.1)', overflow: 'hidden' }}>
+            <div style={{ padding: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h2 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800 }}>Resolve Inquiry</h2>
+              <button onClick={() => setReplyModal(null)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><X size={20}/></button>
             </div>
-            
-            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem' }}>
-              <p style={{ margin: 0, color: 'var(--text-primary)', fontSize: '0.9rem' }}>{replyModal.question}</p>
-            </div>
-
-            <form onSubmit={handleReplySubmit}>
+            <form onSubmit={handleReplySubmit} style={{ padding: '1.5rem' }}>
+              <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1rem', borderRadius: '12px', marginBottom: '1.5rem', fontSize: '0.85rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                "{replyModal.question}"
+              </div>
               <textarea
                 value={replyText}
                 onChange={e => setReplyText(e.target.value)}
-                placeholder="Write your public answer here... (This will appear on the property page)"
+                placeholder="Type your authoritative response..."
                 rows={5}
-                style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--border-subtle)', borderRadius: '8px', color: '#fff', padding: '1rem', fontSize: '0.9rem', marginBottom: '1.5rem' }}
                 required
+                style={{ width: '100%', padding: '12px', borderRadius: '12px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', outline: 'none', fontSize: '0.9rem', marginBottom: '1.5rem', resize: 'none' }}
               />
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
-                <button type="button" onClick={() => setReplyModal(null)} style={{ padding: '0.75rem 1.5rem', borderRadius: '8px', border: '1px solid var(--border-subtle)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }}>Cancel</button>
-                <button type="submit" style={{ padding: '0.75rem 1.5rem', borderRadius: '8px', border: 'none', background: 'var(--gold)', color: '#000', fontWeight: 600, cursor: 'pointer' }}>Publish Answer</button>
+              <div style={{ display: 'flex', gap: '1rem' }}>
+                <button type="button" onClick={() => setReplyModal(null)} style={{ flex: 1, padding: '0.8rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', background: 'transparent', color: 'white', cursor: 'pointer', fontWeight: 700 }}>Cancel</button>
+                <button type="submit" style={{ flex: 1, padding: '0.8rem', borderRadius: '12px', border: 'none', background: 'var(--gold)', color: 'black', fontWeight: 900, cursor: 'pointer' }}>Publish Answer</button>
               </div>
             </form>
           </div>

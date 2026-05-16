@@ -10,9 +10,10 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { submitProperty, uploadMedia, fetchSetting } from '../services/api';
-import { useToast } from '../contexts/ToastContext';
+import { toast } from 'react-hot-toast';
 import LocationAutocomplete from '../components/LocationAutocomplete';
 import { MessageSquare } from 'lucide-react';
+import SEO from '../components/SEO';
 
 // --- Sub-components for Form Steps (Memoized for Snappiness) ---
 
@@ -25,7 +26,7 @@ const StepBasics = memo(({ formData, handleChange, formErrors, t, PROPERTY_TYPES
       <input id="pp-title" name="title" value={formData.title} onChange={handleChange} placeholder="e.g. 3BHK Ultra Luxury Villa" className="elite-input" />
     </div>
     
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
+    <div className="responsive-form-grid" style={{ gap: '2rem' }}>
       <div className="field-group">
         <label htmlFor="pp-type" className="elite-lbl">{t('post.assetType')}</label>
         <div style={{ position: 'relative' }}>
@@ -76,7 +77,7 @@ const StepTechnicals = memo(({ formData, handleChange, setFormData, t }) => {
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
       
       {/* AREA & UNIT - Dynamic Labeling */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
+      <div className="responsive-form-grid" style={{ gap: '2rem' }}>
         <div className="field-group">
           <label htmlFor="pp-areaSize" className="elite-lbl">
             {isAgri ? 'Total Acres (ఎకరాలు)' : (isPlot ? 'Plot Area' : t('post.size'))}
@@ -177,7 +178,7 @@ const StepTechnicals = memo(({ formData, handleChange, setFormData, t }) => {
            ))}
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
+        <div className="responsive-form-grid" style={{ gap: '2rem' }}>
           <div className="field-group">
             <label className="elite-lbl">Price Per {formData.measurementUnit?.slice(0, -1) || 'Unit'}</label>
             <input 
@@ -579,7 +580,6 @@ export default function PostProperty() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { toast } = useToast();
   const [step, setStep] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -706,7 +706,7 @@ export default function PostProperty() {
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files);
     if (formData.images.length + files.length > 10) {
-      toast('Maximum 10 images allowed', 'error'); return;
+      toast.error('Maximum 10 images allowed'); return;
     }
     const newImgs = files.map(f => URL.createObjectURL(f));
     setFormData(prev => ({ 
@@ -736,7 +736,7 @@ export default function PostProperty() {
     
     if (missing.length > 0) {
       setFormErrors(missing);
-      toast(`Required: ${missing.map(m => m.charAt(0).toUpperCase() + m.slice(1)).join(', ')}`, 'error');
+      toast.error(`Required: ${missing.map(m => m.charAt(0).toUpperCase() + m.slice(1)).join(', ')}`);
       return;
     }
     
@@ -761,13 +761,13 @@ export default function PostProperty() {
 
   const handleSubmit = async () => {
     if (!formData.posterPhone) {
-      toast('Required: Contact Number', 'error'); return;
+      toast.error('Required: Contact Number'); return;
     }
     if (formData.priceType === 'fixed' && !formData.price) {
-      toast('Required: Price', 'error'); return;
+      toast.error('Required: Price'); return;
     }
     if (formData.priceType === 'range' && (!formData.minPrice || !formData.maxPrice)) {
-      toast('Required: Min & Max Price', 'error'); return;
+      toast.error('Required: Min & Max Price'); return;
     }
     setLoading(true);
     try {
@@ -778,9 +778,24 @@ export default function PostProperty() {
         else throw new Error('Upload failed');
       }
 
+      // Sort uploaded URLs into images and videos based on original files
+      const images = [];
+      const videos = [];
+      uploadedUrls.forEach((url, idx) => {
+        const file = formData.imageFiles[idx];
+        if (file?.type.startsWith('video/')) videos.push(url);
+        else images.push(url);
+      });
+
       const payload = {
-        ...formData, images: uploadedUrls, image: uploadedUrls[0] || '',
-        submittedBy: user?._id || user?.id, status: 'Pending', isVerified: false,
+        ...formData, 
+        images: images, 
+        videos: videos,
+        videoUrl: videos[0] || '',
+        image: images[0] || '',
+        submittedBy: user?._id || user?.id, 
+        status: 'Pending', 
+        isVerified: false,
       };
       delete payload.imageFiles;
 
@@ -788,11 +803,11 @@ export default function PostProperty() {
       if (res.status === 'success') {
          setSuccess(true);
          const pCode = res.data?.propertyCode || 'SNA-PENDING';
-         toast(`Listing sent for audit. Ref: ${pCode}`, 'success');
+         toast.success(`Listing sent for audit. Ref: ${pCode}`);
       } else throw new Error(res.message);
     } catch (err) {
       setError(err.message || 'Submission failed.');
-      toast(err.message || 'Submission failed.', 'error');
+      toast.error(err.message || 'Submission failed.');
     } finally { setLoading(false); }
   };
 
@@ -812,6 +827,11 @@ export default function PostProperty() {
 
   return (
     <div style={{ position: 'relative', minHeight: '100vh', background: 'var(--midnight)', overflow: 'hidden' }}>
+      <SEO 
+        title="Post Property for Sale/Rent in Andhra Pradesh | SnapAdda Elite"
+        description="List your plot, apartment, or villa on SnapAdda. The most advanced real estate portal in AP. Reach verified buyers in Vijayawada, Amaravati, Vizag and Guntur."
+        keywords={['Post Property AP', 'Sell Plots Amaravati', 'Rent Apartment Vijayawada', 'Free Property Listing Andhra Pradesh', 'Sell Agriculture Land Guntur']}
+      />
       {/* Background Ambience */}
       <div style={{ position: 'absolute', top: '-10%', right: '-5%', width: '60%', height: '50%', background: 'radial-gradient(ellipse at center, rgba(155,89,245,0.06) 0%, transparent 70%)', filter: 'blur(60px)', pointerEvents: 'none' }} />
       <div style={{ position: 'absolute', bottom: '0', left: '-10%', width: '50%', height: '50%', background: 'radial-gradient(ellipse at center, rgba(232,184,75,0.04) 0%, transparent 70%)', filter: 'blur(60px)', pointerEvents: 'none' }} />
@@ -832,21 +852,30 @@ export default function PostProperty() {
           </div>
 
         {/* Progress Bar - Glass Steps */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4rem', position: 'relative', padding: '0 20px' }}>
-          <div style={{ position: 'absolute', top: '50%', left: '40px', right: '40px', height: '2px', background: 'rgba(255,255,255,0.05)', transform: 'translateY(-50%)' }} />
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          marginBottom: '4rem', 
+          position: 'relative', 
+          padding: '0 20px',
+          overflowX: 'auto',
+          paddingBottom: '20px',
+          scrollbarWidth: 'none'
+        }} className="hide-scrollbar">
+          <div style={{ position: 'absolute', top: '22px', left: '40px', right: '40px', height: '2px', background: 'rgba(255,255,255,0.05)' }} />
           {STEPS.map((s, i) => (
-            <div key={s.id} onClick={() => i < step && setStep(i)} style={{ position: 'relative', zIndex: 1, cursor: i < step ? 'pointer' : 'default' }}>
+            <div key={s.id} onClick={() => i < step && setStep(i)} style={{ position: 'relative', zIndex: 1, cursor: i < step ? 'pointer' : 'default', minWidth: '80px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
               <motion.div 
                 animate={{ 
                   background: i <= step ? 'linear-gradient(135deg, var(--gold), #ffdf91)' : 'rgba(5,5,10,0.8)', 
-                  scale: i === step ? 1.2 : 1,
+                  scale: i === step ? 1.1 : 1,
                   boxShadow: i <= step ? '0 0 20px rgba(232,184,75,0.4), inset 0 2px 0 rgba(255,255,255,0.4)' : 'inset 0 1px 0 rgba(255,255,255,0.1)',
                   borderColor: i <= step ? 'transparent' : 'rgba(255,255,255,0.1)'
                 }}
                 style={{ width: '44px', height: '44px', borderRadius: '50%', border: '1px solid', display: 'flex', alignItems: 'center', justifyContent: 'center', color: i <= step ? 'black' : 'rgba(255,255,255,0.3)', backdropFilter: 'blur(10px)' }}>
                 {i < step ? <CheckCircle2 size={20} /> : s.icon}
               </motion.div>
-              <div style={{ position: 'absolute', top: '56px', left: '50%', transform: 'translateX(-50%)', whiteSpace: 'nowrap', fontSize: '0.65rem', fontWeight: 800, color: i <= step ? 'var(--gold)' : 'rgba(255,255,255,0.3)', letterSpacing: '0.05em' }}>
+              <div style={{ marginTop: '12px', whiteSpace: 'nowrap', fontSize: '0.65rem', fontWeight: 800, color: i <= step ? 'var(--gold)' : 'rgba(255,255,255,0.3)', letterSpacing: '0.05em', textAlign: 'center' }}>
                 {s.label}
               </div>
             </div>

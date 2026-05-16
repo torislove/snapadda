@@ -55,7 +55,7 @@ export const updateSetting = async (req, res) => {
     const rtdbSyncKeys = [
       'whatsapp_settings', 'hero_content', 'onboarding_questions', 
       'site_stats', 'site_appearance', 'seo', 'support_info', 'automation_settings',
-      'marquee_strips', 'marketing_settings', 'appearance'
+      'marquee_strips', 'marketing_settings', 'appearance', 'admin_profile'
     ];
 
     if (rtdb && rtdbSyncKeys.includes(normalizedKey)) {

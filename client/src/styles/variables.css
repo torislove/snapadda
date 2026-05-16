@@ -1,38 +1,37 @@
 @import "https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap";
 
 :root {
-  /* ── Core Background ── */
+  /* ── Core Background (Midnight Space) ── */
   --midnight: #05050a;
   --midnight-deep: #020205;
-  --bg-deep: #05050a;
-  --bg-card: rgba(10, 12, 20, 0.7);
-  --bg-panel: rgba(15, 18, 25, 0.6);
-  --bg-glass-thin: rgba(5, 5, 10, 0.4);
-  --bg-glass-mid: rgba(5, 5, 10, 0.6);
-  --bg-glass-heavy: rgba(5, 5, 10, 0.85);
+  --bg-deep: radial-gradient(circle at 50% 50%, #080810 0%, #020205 100%);
+  --bg-card: rgba(15, 18, 30, 0.45);
+  --bg-panel: rgba(20, 24, 40, 0.55);
+  
+  /* ── Liquid Glass System ── */
+  --glass-blur: 40px;
+  --glass-blur-heavy: 64px;
+  --glass-saturate: 180%;
+  --glass-border: rgba(255, 255, 255, 0.12);
+  --glass-glow: rgba(232, 184, 75, 0.15);
+  --glass-iridescent: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0) 40%, rgba(232,184,75,0.05) 100%);
 
   /* ── Accent Palette ── */
-  --gold: #e8b84b;
+  /* ── Accent Palette (Vibrant) ── */
+  --gold: #f4d03f;
   --gold-light: #fcd58e;
-  --royal-gold: #e8b84b;
-  --royal-gold-lt: #fcd58e;
-  --gold-glow: rgba(232, 184, 75, 0.4);
-  --glass-border: rgba(255, 255, 255, 0.12);
-  --glass-bg: rgba(255, 255, 255, 0.03);
+  --gold-royal: #e8b84b;
+  --gold-glow: rgba(244, 208, 63, 0.35);
+  --gold-border: rgba(244, 208, 63, 0.3);
   
-  /* Layout Constants */
-  --max-content-width: 1200px;
-  --section-padding: clamp(3rem, 8vw, 6rem);
-  --centered-gap: clamp(1.5rem, 5vw, 3rem);
-  --gold-border: rgba(212, 175, 55, 0.3);
-  --teal: #0fa3b1;
-  --teal-light: #2ec4d2;
-  --teal-dim: rgba(15, 163, 177, 0.15);
-  --rose: #f05d5e;
-  --emerald: #27c97d;
-  --violet: #7c5cbf;
+  --violet: #9b59f5;
+  --violet-glow: rgba(155, 89, 245, 0.3);
   --cyan: #22d9e0;
-
+  --cyan-glow: rgba(34, 217, 224, 0.3);
+  --rose: #f5397b;
+  --emerald: #10d98c;
+  --emerald-glow: rgba(16, 217, 140, 0.3);
+  
   /* ── Text ── */
   --txt-primary: #fcfaf7;
   --txt-secondary: #e5e1dc;
@@ -45,47 +44,41 @@
   --border-gold: rgba(212, 175, 55, 0.25);
 
   /* ── Shadows ── */
-  --shadow-3d: 0 8px 24px rgba(0, 0, 0, 0.6), 0 0 0 1px var(--border-light);
-  --shadow-elite: 0 30px 60px -12px rgba(0, 0, 0, 0.5), 0 18px 36px -18px rgba(0, 0, 0, 0.6);
-  --shadow-glow: 0 0 30px var(--gold-glow);
-  --shadow-holographic: 0 0 40px rgba(66, 133, 244, 0.2), 0 0 80px rgba(66, 133, 244, 0.1);
-  --shadow-gold: 0 0 16px rgba(212, 175, 55, 0.18);
-  --neon-glow: 0 0 12px rgba(34, 217, 224, 0.18);
+  /* ── Shadows (3D Floating) ── */
+  --shadow-3d: 0 20px 50px -12px rgba(0, 0, 0, 0.6), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+  --shadow-3d-heavy: 0 40px 100px -20px rgba(0, 0, 0, 0.8), inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  --shadow-gold: 0 10px 40px -10px var(--gold-glow);
+  --shadow-violet: 0 10px 40px -10px var(--violet-glow);
+  --shadow-cyan: 0 10px 40px -10px var(--cyan-glow);
 
   /* ── Typography ── */
   --font-serif: "Outfit", sans-serif;
   --font-body: "Inter", system-ui, sans-serif;
   --font-mono: "Space Grotesk", monospace;
 
-  /* ── Spacing (tightened) ── */
-  --sp-1: 0.2rem;     /* 3.2px */
-  --sp-2: 0.4rem;     /* 6.4px */
-  --sp-3: 0.6rem;     /* 9.6px */
-  --sp-4: 0.8rem;     /* 12.8px */
-  --sp-6: 1.1rem;     /* 17.6px */
-  --sp-8: 1.5rem;     /* 24px */
-  --section-gap-mobile: 1rem;
-  --section-gap-desktop: 1.5rem;
-
-  /* ── Radius ── */
-  --r-sm: 8px;
-  --r-md: 12px;
-  --r-lg: 18px;
-  --r-xl: 24px;
-  --r-full: 9999px;
-  --card-radius: 20px;
-  --input-radius: 14px;
-  --btn-radius: 14px;
-
-  /* ── Touch ── */
-  --touch-min: 48px;
-
-  /* ── Layout ── */
-  --nav-h: 64px;
-  --nav-h-mobile: 56px;
-  --bottom-nav-h: 64px;
-  --container-max: 1200px;
+  /* Layout Constants */
+  --max-content-width: 1400px;
+  --section-padding: clamp(1.5rem, 5vw, 4rem);
+  --centered-gap: clamp(1rem, 3vw, 2rem);
   --sp-precision: clamp(0.75rem, 3vw, 1.5rem);
+
+  /* ── Spacing (Fluid) ── */
+  --sp-1: clamp(0.15rem, 0.4vw, 0.25rem);
+  --sp-2: clamp(0.3rem, 0.8vw, 0.5rem);
+  --sp-3: clamp(0.5rem, 1.2vw, 0.75rem);
+  --sp-4: clamp(0.75rem, 2vw, 1rem);
+  --sp-6: clamp(1rem, 3vw, 1.5rem);
+  --sp-8: clamp(1.5rem, 5vw, 2.5rem);
+
+  /* ── Radii ── */
+  --r-sm: 10px;
+  --r-md: 14px;
+  --r-lg: 20px;
+  --r-xl: 30px;
+  --r-full: 9999px;
+  --card-radius: 24px;
+  --input-radius: 16px;
+  --btn-radius: 16px;
 
   /* ── Animations ── */
   --ease-3d: cubic-bezier(0.23, 1, 0.32, 1);
@@ -97,4 +90,13 @@
   --holo-glass: rgba(255, 255, 255, 0.03);
   --holo-border: rgba(255, 255, 255, 0.1);
   --holo-iridescent: linear-gradient(135deg, #ff00c1 0%, #9600ff 25%, #4900ff 50%, #00b8ff 75%, #00ff88 100%);
+
+  /* ── Touch ── */
+  --touch-min: 48px;
+
+  /* ── Layout ── */
+  --nav-h: 64px;
+  --nav-h-mobile: 56px;
+  --bottom-nav-h: 64px;
+  --container-max: 1400px;
 }

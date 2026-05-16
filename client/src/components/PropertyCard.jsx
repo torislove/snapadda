@@ -161,6 +161,7 @@ const PropertyCard = memo((props) => {
     priceDisplay, // Prioritize pre-formatted price
     isOwnerListing, 
     designTokens, 
+    mediaSettings = [],
     priority = false 
   } = p;
 
@@ -357,7 +358,14 @@ const PropertyCard = memo((props) => {
     if (!url || !url.includes('cloudinary.com')) return url;
     const parts = url.split('/upload/');
     if (parts.length !== 2) return url;
-    return `${parts[0]}/upload/f_auto,q_auto:good,w_${width},h_${height},c_fill/${parts[1]}`;
+    
+    // Check if this specific URL is set to 'contain' (FIT)
+    const isContain = mediaSettings?.find(s => s.url === url)?.objectFit === 'contain';
+    const transform = isContain 
+      ? `f_auto,q_auto:good,w_${width},c_limit` // c_limit prevents cropping for vertical images
+      : `f_auto,q_auto:good,w_${width},h_${height},c_fill`;
+      
+    return `${parts[0]}/upload/${transform}/${parts[1]}`;
   };
     
   const displayImages = finalImages;
@@ -398,30 +406,16 @@ const PropertyCard = memo((props) => {
           style={{ 
             height: '100%', 
             borderRadius: isMobile ? '20px' : (designTokens?.borderRadius || '24px'),
-            background: '#050a14',
+            background: 'var(--bg-card)',
             border: isMobile ? '1px solid rgba(255,255,255,0.08)' : '1px solid var(--border-light)',
             boxShadow: isMobile ? '0 12px 30px rgba(0,0,0,0.4)' : '0 10px 30px rgba(0,0,0,0.2)',
             overflow: 'hidden',
             position: 'relative',
             display: 'flex',
             flexDirection: 'column',
-            transition: 'transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease',
+            transition: 'box-shadow 0.4s var(--ease-3d), border-color 0.4s var(--ease-3d)',
           }}
-          onMouseEnter={(e) => {
-            handleHoverPrefetch();
-            if (!isMobile) {
-              e.currentTarget.style.transform = 'translateY(-8px)';
-              e.currentTarget.style.boxShadow = '0 25px 50px -12px rgba(0,0,0,0.7), 0 0 25px rgba(232,184,75,0.2)';
-              e.currentTarget.style.borderColor = 'rgba(232,184,75,0.4)';
-            }
-          }}
-          onMouseLeave={(e) => {
-            if (!isMobile) {
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = isMobile ? '0 12px 30px rgba(0,0,0,0.4)' : '0 10px 30px rgba(0,0,0,0.2)';
-              e.currentTarget.style.borderColor = isMobile ? 'rgba(255,255,255,0.08)' : 'var(--border-light)';
-            }
-          }}
+          onMouseEnter={() => handleHoverPrefetch()}
         >
           <div 
             onClick={(e) => {
@@ -494,12 +488,14 @@ const PropertyCard = memo((props) => {
                 <img 
                   key={activeImgIdx}
                   src={getOptimizedImg(displayImages[activeImgIdx % displayImages.length])} 
-                  alt={title}
+                  alt={`${title} | ${type || 'Property'} in ${location || city || 'Andhra Pradesh'}`}
+                  title={`${title} - SnapAdda Verified Property`}
                   loading={priority ? "eager" : "lazy"}
                   decoding={priority ? "sync" : "async"}
                   style={{ 
                     position: 'absolute', inset: 0, width: '100%', height: '100%', 
-                    objectFit: 'cover', cursor: 'grab', 
+                    objectFit: mediaSettings?.find(s => s.url === displayImages[activeImgIdx % displayImages.length])?.objectFit || 'cover', 
+                    cursor: 'grab', 
                     filter: 'brightness(0.9)',
                     transition: 'transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1)'
                   }}

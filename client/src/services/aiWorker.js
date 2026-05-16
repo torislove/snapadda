@@ -27,7 +27,7 @@ const AI_FALLBACKS = {
     insight: [
         "The current market trajectory in Andhra Pradesh suggests strong urban expansion. Asset acquisition in these verified sectors remains a high-confidence move.",
         "Andhra real estate metrics are showing a consistent 8-12% annual growth in major hubs like Amaravati and Visakhapatnam.",
-        "Focusing on CRDA/RERA verified plots is currently the most secure path for high-yield property investment in the region."
+        "Focusing on verified plots is currently the most secure path for high-yield property investment in the region."
     ]
 };
 

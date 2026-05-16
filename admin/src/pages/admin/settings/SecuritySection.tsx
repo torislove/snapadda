@@ -18,13 +18,12 @@ interface SecuritySectionProps {
   lbl: any;
   inp: any;
   inputWrap: any;
-  StatusAlert: any;
 }
 
 export const SecuritySection: React.FC<SecuritySectionProps> = ({
   currentPw, setCurrentPw, newPw, setNewPw, confirmPw, setConfirmPw,
   showCurrent, setShowCurrent, showNew, setShowNew,
-  pwStatus, pwError, handlePasswordChange, lbl, inp, inputWrap, StatusAlert
+  pwStatus, pwError, handlePasswordChange, lbl, inp, inputWrap
 }) => (
   <div className="glass-card" style={{ overflow: 'hidden', borderRadius: '24px' }}>
     <div style={{ padding: '1.5rem', background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -67,7 +66,6 @@ export const SecuritySection: React.FC<SecuritySectionProps> = ({
       </div>
 
       {pwError && <div style={{ color: '#f5397b', fontSize: '0.75rem', fontWeight: 800 }}>⚠️ {pwError}</div>}
-      <StatusAlert status={pwStatus} successMsg="Security protocols updated." errorMsg="Authentication error." />
 
       <button type="submit" disabled={pwStatus === 'saving'} className="btn-rose btn-3d-liquid" style={{ alignSelf: 'flex-start', padding: '0.8rem 2rem', borderRadius: '14px', fontSize: '0.9rem', fontWeight: 900, background: '#f5397b', color: 'white', border: 'none' }}>
         {pwStatus === 'saving' ? 'ENCRYPTING...' : 'UPDATE SHIELD'}
@@ -75,3 +73,5 @@ export const SecuritySection: React.FC<SecuritySectionProps> = ({
     </form>
   </div>
 );
+
+export default SecuritySection;

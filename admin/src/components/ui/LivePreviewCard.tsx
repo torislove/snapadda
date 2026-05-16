@@ -55,6 +55,7 @@ interface LivePreviewCardProps {
   priceType?: string;
   minPrice?: number | string;
   maxPrice?: number | string;
+  mediaSettings?: { url: string; objectFit: 'cover' | 'contain' }[];
 }
 
 export const LivePreviewCard: React.FC<LivePreviewCardProps> = (props) => {
@@ -64,7 +65,8 @@ export const LivePreviewCard: React.FC<LivePreviewCardProps> = (props) => {
     areaSize,
     approval, approvalAuthority,
     isVerified, isFeatured, vastuCompliant, listerType, isGated, constructionStatus,
-    priceType, minPrice, maxPrice
+    priceType, minPrice, maxPrice,
+    mediaSettings = []
   } = props;
 
   const [imgIdx, setImgIdx] = useState(0);
@@ -100,7 +102,14 @@ export const LivePreviewCard: React.FC<LivePreviewCardProps> = (props) => {
         
         {/* IMAGE ZONE */}
         <div className="pc-img-wrap">
-          <img src={mainImage} alt={title} className="pc-img" />
+          <img 
+            src={mainImage} 
+            alt={title} 
+            className="pc-img" 
+            style={{ 
+              objectFit: mediaSettings?.find(s => s.url === mainImage)?.objectFit || 'cover' 
+            }} 
+          />
           <div className="pc-img-gradient" />
 
           {/* Price badge */}

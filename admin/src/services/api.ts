@@ -96,10 +96,10 @@ export const uploadMedia = async (files: File[]) => {
   const processedFiles = await Promise.all(files.map(async (file) => {
     if (file.type.startsWith('image/')) {
       const options = {
-        maxSizeMB: 0.5,         // Max size 500KB
-        maxWidthOrHeight: 1280, // Max resolution 720p-ish (High enough for real estate)
+        maxSizeMB: 0.03,         // Max size 30KB as requested
+        maxWidthOrHeight: 1280, 
         useWebWorker: true,
-        initialQuality: 0.7
+        initialQuality: 0.6
       };
       try {
         console.log(`Compressing ${file.name}...`);
@@ -242,7 +242,8 @@ export const changeAdminPassword = async (currentPassword: string, newPassword: 
 export const fetchSetting = async (key: string) => {
   const res = await fetch(`${API_URL}/settings/${key}`, { headers: getAuthHeaders() });
   if (!res.ok) throw new Error(`Failed to fetch setting: ${key}`);
-  return res.json();
+  const json = await res.json();
+  return json.data;
 };
 
 export const saveSetting = async (key: string, value: any) => {
@@ -252,7 +253,8 @@ export const saveSetting = async (key: string, value: any) => {
     body: JSON.stringify({ value }),
   });
   if (!res.ok) throw new Error(`Failed to save setting: ${key}`);
-  return res.json();
+  const json = await res.json();
+  return json.data;
 };
 
 export const fetchWhatsappSettings = () => fetchSetting('whatsapp_settings');

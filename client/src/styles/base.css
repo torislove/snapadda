@@ -22,18 +22,16 @@ html {
 
 body {
   font-family: var(--font-body);
-  background-color: var(--midnight);
+  background: var(--midnight) !important;
   color: var(--txt-primary);
   background-image:
-    radial-gradient(circle at 0% 0%, rgba(6, 78, 59, 0.4) 0%, transparent 50%),
-    radial-gradient(circle at 100% 100%, rgba(212, 175, 55, 0.12) 0%, transparent 60%);
-  background-size: 200% 200%;
-  animation: bgDrift 20s ease-in-out infinite alternate;
+    radial-gradient(circle at 50% 0%, rgba(6, 78, 59, 0.25) 0%, transparent 50%),
+    radial-gradient(circle at 100% 100%, rgba(155, 89, 245, 0.08) 0%, transparent 60%) !important;
+  background-attachment: fixed;
   min-height: 100vh;
   min-height: 100dvh;
   line-height: 1.5;
   overflow-x: hidden;
-  box-shadow: inset 0 0 200px rgba(0, 0, 0, 0.9);
   width: 100%;
   text-rendering: optimizeSpeed;
   -webkit-font-smoothing: antialiased;
@@ -47,11 +45,10 @@ body {
 .container {
   width: 100%;
   max-width: var(--max-content-width);
-  padding: 0 1rem;
+  padding: 0 var(--sp-precision);
   margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-  align-items: center; /* Force centering of all main content children */
+  /* Centering logic: Only force horizontal centering, don't restrict layout of children */
+  display: flow-root; 
 }
 
 .elite-section {
@@ -74,8 +71,69 @@ body {
 .app-main-content {
   display: flex;
   flex-direction: column;
-  align-items: center;
   width: 100%;
+  min-height: calc(100vh - var(--nav-h));
+}
+
+/* ── Liquid Glass 3D System (V2) ── */
+.glass-3d {
+  background: rgba(15, 18, 30, 0.4);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-3d);
+  border-radius: var(--r-lg);
+  position: relative;
+  overflow: hidden;
+}
+
+.glass-3d::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--glass-iridescent);
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.5;
+}
+
+.glass-3d-heavy {
+  background: rgba(8, 10, 20, 0.75);
+  backdrop-filter: blur(var(--glass-blur-heavy)) saturate(200%);
+  -webkit-backdrop-filter: blur(var(--glass-blur-heavy)) saturate(200%);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: var(--shadow-3d-heavy);
+}
+
+.glow-gold {
+  box-shadow: 0 0 30px var(--gold-glow);
+}
+
+.glow-violet {
+  box-shadow: 0 0 30px var(--violet-glow);
+}
+
+/* Form grid */
+.form-grid, .responsive-form-grid { 
+  display: grid !important; 
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)) !important;
+  gap: 1.5rem !important; 
+  width: 100%;
+}
+
+@media (max-width: 640px) {
+  .form-grid, .responsive-form-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+  }
+}
+
+.text-liquid-gold {
+  background: linear-gradient(135deg, #fff 0%, var(--gold) 50%, var(--gold-royal) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: 900;
 }
 
 /* ── Typography ── */
@@ -155,4 +213,39 @@ button:not([class*="icon-only"]) {
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
+}
+/* ── Global Form Elements (Liquid Glass 3D) ── */
+input, select, textarea {
+  background: rgba(255, 255, 255, 0.03) !important;
+  backdrop-filter: blur(12px) saturate(150%);
+  -webkit-backdrop-filter: blur(12px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: var(--input-radius, 12px);
+  color: var(--txt-primary) !important;
+  padding: 0.75rem 1rem;
+  font-family: inherit;
+  font-size: 0.9rem;
+  outline: none;
+  transition: all var(--anim-fast);
+}
+
+input:focus, select:focus, textarea:focus {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: var(--gold) !important;
+  box-shadow: 0 0 15px var(--gold-glow);
+}
+
+input::placeholder, textarea::placeholder {
+  color: rgba(255, 255, 255, 0.3) !important;
+}
+
+select option {
+  background: #0a0a14 !important;
+  color: white !important;
+}
+
+/* Specific overrides for common classes */
+.dropdown-3d-glass, .elite-input-minimal {
+  background: rgba(255, 255, 255, 0.03) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
 }

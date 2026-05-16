@@ -18,6 +18,7 @@ import EliteLightBox from '../components/EliteLightBox';
 import { useBehaviorTracker } from '../hooks/useBehaviorTracker';
 import { prefetchRoute } from '../utils/PerformanceUtilities';
 import { useRealtimeProperties } from '../hooks/useRealtimeProperties';
+import SEO from '../components/SEO';
 import { Helmet } from 'react-helmet-async';
 import PropertyMap from '../components/PropertyMap';
 import ShareControlCenter from '../components/ShareControlCenter';
@@ -90,11 +91,15 @@ export default function PropertyDetails() {
   const [supportInfo, setSupportInfo] = useState(null);
 
   useEffect(() => {
-    fetchSetting('marketing_settings').then(data => {
-      if (data) setSupportInfo({
-        phone: data.supportPhone,
-        whatsapp: data.waNumber,
-        email: data.supportEmail
+    Promise.all([
+      fetchSetting('marketing_settings'),
+      fetchSetting('admin_profile')
+    ]).then(([mkt, prof]) => {
+      if (mkt) setSupportInfo({
+        phone: mkt.supportPhone,
+        whatsapp: mkt.waNumber,
+        email: mkt.supportEmail,
+        adminProfile: prof
       });
     });
   }, []);
@@ -460,86 +465,6 @@ export default function PropertyDetails() {
     </div>
   );
 
-  // --- PREMIUM AUTH GATE ---
-  // Show a blurred preview with a sign-in overlay for guests
-  if (!loading && !user && property) {
-    return (
-      <div style={{ minHeight: '100vh', background: '#05050a', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
-        {/* Blurred background preview */}
-        <div style={{ position: 'absolute', inset: 0, filter: 'blur(12px)', opacity: 0.3, backgroundImage: `url(${property.images?.[0] || property.image || ''})`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
-        <div style={{ position: 'absolute', inset: 0, background: 'rgba(5,5,10,0.85)' }} />
-        
-        {/* Auth Card */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9, y: 30 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-          style={{
-            position: 'relative', zIndex: 10,
-            width: '90%', maxWidth: '480px',
-            background: 'rgba(10,12,20,0.95)',
-            border: '1px solid rgba(232,184,75,0.3)',
-            borderRadius: '32px', padding: '2.5rem',
-            boxShadow: '0 40px 100px rgba(0,0,0,0.8), 0 0 60px rgba(232,184,75,0.05)',
-            backdropFilter: 'blur(40px)',
-            textAlign: 'center'
-          }}
-        >
-          {/* Property Preview Info */}
-          <div style={{ marginBottom: '2rem' }}>
-            <div style={{ fontSize: '0.6rem', fontWeight: 900, letterSpacing: '0.2em', color: 'var(--gold)', marginBottom: '0.75rem', textTransform: 'uppercase' }}>SnapAdda Premium Listing</div>
-            <h2 style={{ color: 'white', fontSize: '1.3rem', fontWeight: 900, marginBottom: '0.5rem', lineHeight: 1.3 }}>{property.title}</h2>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', color: 'rgba(255,255,255,0.5)', fontSize: '0.85rem', marginBottom: '1rem' }}>
-              <MapPin size={14} style={{ color: 'var(--gold)' }} />
-              {property.location}{property.district ? `, ${property.district}` : ''}
-            </div>
-            <div style={{ fontSize: '1.6rem', fontWeight: 950, color: 'var(--gold)', letterSpacing: '-0.02em' }}>
-              {property.priceDisplay || formatSnapAddaPriceRange(property)}
-            </div>
-          </div>
-
-          {/* Divider */}
-          <div style={{ height: '1px', background: 'rgba(255,255,255,0.06)', margin: '1.5rem 0' }} />
-
-          {/* Sign-in CTA */}
-          <div style={{ marginBottom: '1.5rem' }}>
-            <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)', marginBottom: '1.25rem', lineHeight: 1.6 }}>
-              🔒 Sign in to view full property details, contact the agent, and save this listing
-            </div>
-            <motion.button
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
-              onClick={() => {
-                sessionStorage.setItem('snapadda_redirect', `/property/${id}`);
-                navigate('/login');
-              }}
-              style={{
-                width: '100%', padding: '16px', borderRadius: '18px',
-                background: 'linear-gradient(135deg, var(--gold), #f5c842)',
-                color: 'black', border: 'none', fontWeight: 950,
-                fontSize: '1rem', cursor: 'pointer', letterSpacing: '0.05em',
-                boxShadow: '0 15px 35px rgba(232,184,75,0.3)'
-              }}
-            >
-              Sign In to View Details →
-            </motion.button>
-            <div style={{ marginTop: '0.75rem', fontSize: '0.7rem', color: 'rgba(255,255,255,0.25)', fontWeight: 700 }}>
-              Free · 10 seconds · No spam
-            </div>
-          </div>
-
-          {/* Back link */}
-          <button
-            onClick={() => navigate('/')}
-            style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', fontSize: '0.8rem', cursor: 'pointer', fontWeight: 700 }}
-          >
-            ← Back to Listings
-          </button>
-        </motion.div>
-      </div>
-    );
-  }
-
   if (!property) return (
     <div className="pd-page" style={{ 
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', 
@@ -587,34 +512,71 @@ export default function PropertyDetails() {
   return (
     <>
       <div className="pd-page" style={{ 
-          width: isMobile ? '100%' : '50%', 
+          width: '100%', 
+          maxWidth: '1440px',
           margin: '0 auto', 
-          background: '#05050a', 
+          background: 'transparent', 
           minHeight: '100vh',
-          borderLeft: isMobile ? 'none' : '1px solid rgba(255,255,255,0.05)',
-          borderRight: isMobile ? 'none' : '1px solid rgba(255,255,255,0.05)'
+          paddingBottom: isMobile ? 'calc(var(--bottom-nav-h) + 2rem)' : '4rem',
+          position: 'relative'
       }}>
-      <Helmet>
-        <title>{property?.title ? `${property.title} | SnapAdda` : 'Property Details | SnapAdda'}</title>
-        <meta name="description" content={generateDesc(property || {})} />
-        
-        {/* Open Graph / Facebook / WhatsApp */}
-        <meta property="og:type" content="website" />
-        <meta property="og:url" content={window.location.href} />
-        <meta property="og:title" content={property?.title || 'Premium Property on SnapAdda'} />
-        <meta property="og:description" content={generateDesc(property || {})} />
-        <meta property="og:image" content={property?.images?.[0] || property?.image || '/og-image.jpg'} />
-        <meta property="og:site_name" content="SnapAdda" />
-
-        {/* Twitter */}
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:url" content={window.location.href} />
-        <meta name="twitter:title" content={property?.title || 'Premium Property on SnapAdda'} />
-        <meta name="twitter:description" content={generateDesc(property || {})} />
-        <meta name="twitter:image" content={property?.images?.[0] || property?.image || '/og-image.jpg'} />
-
-        <link rel="canonical" href={window.location.href} />
-      </Helmet>
+      <SEO 
+        title={property.title}
+        description={generateDesc(property)}
+        keywords={[property.type, property.location, property.city, 'SnapAdda Property', 'Verified Real Estate']}
+        ogImage={property.images?.[0] || property.image}
+        schemaData={[
+          {
+            "@context": "https://schema.org",
+            "@type": "RealEstateListing",
+            "name": property.title,
+            "description": generateDesc(property),
+            "image": property.images?.[0] || property.image,
+            "url": window.location.href,
+            "address": {
+              "@type": "PostalAddress",
+              "addressLocality": property.location || property.city,
+              "addressRegion": "AP",
+              "addressCountry": "IN"
+            },
+            "offers": {
+              "@type": "Offer",
+              "price": String(property.price).replace(/[^0-9]/g, ''),
+              "priceCurrency": "INR"
+            }
+          },
+          {
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+              {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "Home",
+                "item": window.location.origin
+              },
+              {
+                "@type": "ListItem",
+                "position": 2,
+                "name": property.city || "Andhra Pradesh",
+                "item": `${window.location.origin}/search?city=${encodeURIComponent(property.city || "Andhra Pradesh")}`
+              },
+              {
+                "@type": "ListItem",
+                "position": 3,
+                "name": property.type || "Property",
+                "item": `${window.location.origin}/search?type=${encodeURIComponent(property.type || "Property")}`
+              },
+              {
+                "@type": "ListItem",
+                "position": 4,
+                "name": property.title,
+                "item": window.location.href
+              }
+            ]
+          }
+        ]}
+      />
 
       <ShareControlCenter 
         isOpen={shareModal} 
@@ -627,8 +589,8 @@ export default function PropertyDetails() {
         <div className="container" style={{ maxWidth: '1440px' }}>
           <div style={{ 
             display: 'grid', 
-            gridTemplateColumns: isMobile ? '1fr' : '1fr', 
-            gap: isMobile ? '0' : '3rem',
+            gridTemplateColumns: isMobile ? '1fr' : 'minmax(500px, 1.2fr) 1fr', 
+            gap: isMobile ? '0' : '4rem',
             alignItems: 'start'
           }}>
             
@@ -808,7 +770,7 @@ export default function PropertyDetails() {
           margin: '0 auto'
         }}>
           <main className="pd-main-col" style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '2.5rem' : '4rem' }}>
-            <section id="pd-overview" className="pd-section" style={{ background: 'rgba(255,255,255,0.02)', padding: isMobile ? '1.5rem' : '2.5rem', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.05)' }}>
+            <section id="pd-overview" className="pd-section glass-3d" style={{ padding: isMobile ? '1.5rem' : '3rem', borderRadius: '32px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <h2 className="pd-section-h" style={{ margin: 0 }}>ప్రాంతం యొక్క అవలోకనం (Property DNA)</h2>
                 {property.isVerified && (
@@ -1169,6 +1131,20 @@ export default function PropertyDetails() {
                 <div style={{ color: 'rgba(0,0,0,0.6)', fontSize: '0.7rem', fontWeight: 900, textTransform: 'uppercase', marginBottom: '1rem' }}>
                   {property.isOwnerListing ? 'సంప్రదించండి (Contact Owner)' : 'వివరాల కోసం సంప్రదించండి'}
                 </div>
+
+                {property.displayContactType === 'Admin' && supportInfo?.adminProfile && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '1.25rem', padding: '10px', background: 'rgba(0,0,0,0.05)', borderRadius: '14px' }}>
+                    <img 
+                      src={supportInfo.adminProfile.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(supportInfo.adminProfile.name || 'Admin')}&background=e8b84b&color=000`} 
+                      alt="Admin" 
+                      style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover', border: '2px solid white' }} 
+                    />
+                    <div>
+                      <div style={{ fontSize: '0.85rem', fontWeight: 900, color: '#333' }}>{supportInfo.adminProfile.name || 'SnapAdda Executive'}</div>
+                      <div style={{ fontSize: '0.65rem', color: 'rgba(0,0,0,0.4)', fontWeight: 700 }}>SnapAdda Verified Agent</div>
+                    </div>
+                  </div>
+                )}
                 
                 <button 
                   onClick={() => window.location.href = `tel:${property.displayContactType === 'Lister' && property.realtor?.phone ? property.realtor.phone : supportPhone}`} 
@@ -1255,7 +1231,7 @@ export default function PropertyDetails() {
       {/* Mobile Sticky Navigation (Refined) */}
 
       <div className="pd-mobile-ribbon" style={{ 
-        position: 'fixed', bottom: '25px', left: '15px', right: '15px', 
+        position: 'fixed', bottom: '85px', left: '15px', right: '15px', 
         zIndex: 100002, display: isMobile ? 'flex' : 'none', gap: '12px', alignItems: 'center',
         background: 'rgba(12,15,25,0.92)', backdropFilter: 'blur(30px)',
         padding: '10px 14px', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.12)',

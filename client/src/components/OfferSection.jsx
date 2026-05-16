@@ -52,12 +52,19 @@ const OfferCard = ({ promo, isMobile }) => {
   const getOptimizedImg = (url, width = 600) => {
     if (!url || !url.includes('cloudinary.com')) return url;
     const parts = url.split('/upload/');
-    return `${parts[0]}/upload/f_auto,q_auto:good,w_${width},c_fill/${parts[1]}`;
+    if (parts.length !== 2) return url;
+
+    const isContain = promo.mediaSettings?.find((s) => s.url === url)?.objectFit === 'contain';
+    const transform = isContain 
+      ? `f_auto,q_auto:good,w_${width},c_limit` 
+      : `f_auto,q_auto:good,w_${width},c_fill,h_800`;
+
+    return `${parts[0]}/upload/${transform}/${parts[1]}`;
   };
 
-  // Advanced Scaled Dimensions (Mini-Hero v6 Scale)
-  const cardWidth = isMobile ? '9rem' : '12rem';
-  const cardHeight = isMobile ? '14rem' : '18rem';
+  // Advanced Scaled Dimensions (Elite v7 Scale)
+  const cardWidth = isMobile ? '12rem' : '18rem';
+  const cardHeight = isMobile ? '18rem' : '26rem';
 
   return (
     <motion.div
@@ -112,7 +119,11 @@ const OfferCard = ({ promo, isMobile }) => {
             animate={{ scale: rotateX !== 0 ? 1.2 : 1.1 }}
             src={getOptimizedImg(promo.image, 600)} 
             alt={promo.title}
-            style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.8 }}
+            style={{ 
+              width: '100%', height: '100%', 
+              objectFit: promo.mediaSettings?.find((s) => s.url === promo.image)?.objectFit || 'cover', 
+              opacity: 0.8 
+            }}
           />
           <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, #04040a 0%, rgba(4,4,10,0.4) 100%)' }} />
         </div>

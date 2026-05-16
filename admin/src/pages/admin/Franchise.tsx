@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Shield, MapPin, Plus, Power, X, Check, Eye, EyeOff } from 'lucide-react';
+import { Shield, MapPin, Plus, Power, X, Check, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
+import { useToast } from '../../components/ui/Toast';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -25,6 +26,8 @@ const AdminFranchise = () => {
   const [form, setForm] = useState({
     name: '', email: '', password: '', phone: '', regions: '' as string, permissions: ['properties', 'contacts']
   });
+  const [submitting, setSubmitting] = useState(false);
+  const { showToast, ToastComponent } = useToast();
 
   useEffect(() => { fetchAdmins(); }, []);
 
@@ -38,22 +41,37 @@ const AdminFranchise = () => {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    const payload = { ...form, regions: form.regions.split(',').map(r => r.trim()).filter(Boolean) };
-    await fetch(`${API_URL}/franchise/admins`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-    setShowModal(false);
-    setForm({ name: '', email: '', password: '', phone: '', regions: '', permissions: ['properties', 'contacts'] });
-    fetchAdmins();
+    setSubmitting(true);
+    try {
+      const payload = { ...form, regions: form.regions.split(',').map(r => r.trim()).filter(Boolean) };
+      const res = await fetch(`${API_URL}/franchise/admins`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error('Uplink failed');
+      showToast('Franchise partner synchronized! 🛡️');
+      setShowModal(false);
+      setForm({ name: '', email: '', password: '', phone: '', regions: '', permissions: ['properties', 'contacts'] });
+      fetchAdmins();
+    } catch {
+      showToast('Neural link failed', 'error');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleToggleActive = async (admin: FAdmin) => {
-    await fetch(`${API_URL}/franchise/admins/${admin._id}`, {
-      method: 'PUT', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ isActive: !admin.isActive })
-    });
-    fetchAdmins();
+    try {
+      const res = await fetch(`${API_URL}/franchise/admins/${admin._id}`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive: !admin.isActive })
+      });
+      if (!res.ok) throw new Error('Update failed');
+      showToast(`Franchise ${!admin.isActive ? 'activated' : 'deactivated'}!`);
+      fetchAdmins();
+    } catch {
+      showToast('Modification rejected', 'error');
+    }
   };
 
 
@@ -67,7 +85,8 @@ const AdminFranchise = () => {
   };
 
   return (
-    <div>
+    <div style={{ position: 'relative' }}>
+      <ToastComponent />
       <div className="flex-row-mobile-stack" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--spacing-xl)', gap: '1rem' }}>
         <div>
           <h1>Franchise Partners</h1>
@@ -214,8 +233,9 @@ const AdminFranchise = () => {
                 </div>
               </div>
 
-              <Button type="submit" style={{ width: '100%' }}>
-                <Shield size={16} /> Create Franchise
+              <Button type="submit" disabled={submitting} style={{ width: '100%', gap: '10px' }}>
+                {submitting ? <Loader2 size={16} className="spin" /> : <Shield size={16} />} 
+                {submitting ? 'Synchronizing...' : 'Create Franchise'}
               </Button>
             </form>
           </motion.div>

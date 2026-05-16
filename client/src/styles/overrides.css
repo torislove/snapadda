@@ -380,3 +380,24 @@ h1, h2, h3, h4, h5, h6, .section-title {
     font-size: 0.75rem !important;
   }
 }
+
+/* ── Global Contrast & Readability Overrides ── */
+select option {
+  background: #05050a !important;
+  color: #ffffff !important;
+}
+
+input::placeholder, textarea::placeholder {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+
+/* Force High Contrast for Metadata */
+.stat-l, .pd-spec-lbl, .city-count {
+  color: rgba(255, 255, 255, 0.7) !important;
+  font-weight: 700 !important;
+}
+
+.stat-v, .hero-keyword {
+  color: #ffffff !important;
+  font-weight: 900 !important;
+}

@@ -25,18 +25,18 @@ export const googleAuth = async (req, res) => {
       user = new User({
         googleId, email, name, avatar: picture,
         role: 'client',
-        // If phone was passed at login time, mark onboarding complete immediately
+        // Phone and whatsapp are now optional
         phone: phone || '',
         whatsapp: whatsapp || '',
-        onboardingCompleted: !!(phone),
+        onboardingCompleted: true, // Mark complete by default to allow access
       });
     } else {
-      // Update contact if provided
+      // Update contact only if provided and not already set (or if specifically provided)
       if (phone) {
         user.phone = phone;
         user.whatsapp = whatsapp || phone;
-        user.onboardingCompleted = true;
       }
+      user.onboardingCompleted = true;
     }
 
     user.lastActive = new Date();

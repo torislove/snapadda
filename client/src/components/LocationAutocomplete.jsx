@@ -107,7 +107,7 @@ const LocationAutocomplete = ({ value, onChange, placeholder = "City, Mandal, or
                   </div>
                   <div>
                     <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'white' }}>{loc.name} {loc.pincode && <span style={{ color: 'var(--gold)', fontSize: '0.8rem', marginLeft: '4px' }}>- {loc.pincode}</span>}</div>
-                    <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.65)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>
                       {loc.type} {loc.district ? `• ${loc.district}` : ''} {loc.mandal ? `• ${loc.mandal}` : ''}
                     </div>
                   </div>

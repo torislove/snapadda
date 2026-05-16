@@ -96,7 +96,13 @@ export const AdminPropertyCard: React.FC<Props> = ({
     if (!url || !url.includes('cloudinary.com')) return url;
     const parts = url.split('/upload/');
     if (parts.length !== 2) return url;
-    return `${parts[0]}/upload/f_auto,q_auto:good,w_${width},c_fill/${parts[1]}`;
+    
+    const isContain = prop.mediaSettings?.find((s: any) => s.url === url)?.objectFit === 'contain';
+    const transform = isContain 
+      ? `f_auto,q_auto:good,w_${width},c_limit` 
+      : `f_auto,q_auto:good,w_${width},c_fill,h_300`; // Standard fill for list view
+
+    return `${parts[0]}/upload/${transform}/${parts[1]}`;
   };
 
   const daysAgo = prop.createdAt
@@ -278,7 +284,11 @@ export const AdminPropertyCard: React.FC<Props> = ({
                   initial={{ opacity: 0.8 }} animate={{ opacity: 1 }}
                   exit={{ opacity: 0.8 }} transition={{ duration: 0.25 }}
                   onClick={() => setLightbox(true)}
-                  style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', cursor: 'pointer' }}
+                  style={{ 
+                    position: 'absolute', inset: 0, width: '100%', height: '100%', 
+                    objectFit: (prop.mediaSettings?.find((s: any) => s.url === imgs[imgIdx % imgs.length])?.objectFit || 'cover') as any, 
+                    cursor: 'pointer' 
+                  }}
                   alt={prop.title}
                   onError={(e: any) => { e.currentTarget.style.display = 'none'; }} />
               ) : (
@@ -326,8 +336,18 @@ export const AdminPropertyCard: React.FC<Props> = ({
                 {sc.label}
               </div>
               {prop.isVerified && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(212,175,55,0.15)', color: 'var(--gold)', border: '1px solid rgba(212,175,55,0.3)', backdropFilter: 'blur(10px)', fontWeight: 700, padding: '3px 8px', borderRadius: '6px', fontSize: '0.6rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(16,217,140,0.15)', color: 'var(--emerald)', border: '1px solid rgba(16,217,140,0.3)', backdropFilter: 'blur(10px)', fontWeight: 700, padding: '3px 8px', borderRadius: '6px', fontSize: '0.6rem' }}>
                   <ShieldCheck size={10} /> Verified
+                </div>
+              )}
+              {prop.isElite && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(155,89,245,0.15)', color: 'var(--violet)', border: '1px solid rgba(155,89,245,0.3)', backdropFilter: 'blur(10px)', fontWeight: 700, padding: '3px 8px', borderRadius: '6px', fontSize: '0.6rem' }}>
+                  <Zap size={10} fill="var(--violet)" /> Elite
+                </div>
+              )}
+              {prop.isTrustVerified && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(34,217,224,0.15)', color: 'var(--cyan)', border: '1px solid rgba(34,217,224,0.3)', backdropFilter: 'blur(10px)', fontWeight: 700, padding: '3px 8px', borderRadius: '6px', fontSize: '0.6rem' }}>
+                  <ShieldCheck size={10} /> Trust+
                 </div>
               )}
             </div>

@@ -1,7 +1,8 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, LayoutGrid, List, Plus, RefreshCw } from 'lucide-react';
+import { Search, List, RefreshCw, LayoutGrid } from 'lucide-react';
 import { AdminPropertyCard } from '../../../components/ui/AdminPropertyCard';
+import { useToast } from '../../../components/ui/Toast';
 
 interface PropertiesListProps {
   filteredProperties: any[];
@@ -13,13 +14,13 @@ interface PropertiesListProps {
   updateProperty: (id: string, payload: any) => Promise<any>;
   createProperty: (payload: any) => Promise<any>;
   loadProperties: () => void;
-  setIsAdding?: (v: boolean) => void;
 }
 
 export const PropertiesList: React.FC<PropertiesListProps> = ({
   filteredProperties, search, setSearch, viewMode, setViewMode,
-  handleEdit, updateProperty, createProperty, loadProperties, setIsAdding
+  handleEdit, updateProperty, createProperty, loadProperties
 }) => {
+  const { showToast } = useToast();
   const [statusFilter, setStatusFilter] = React.useState('all');
   const [selectedIds, setSelectedIds] = React.useState<string[]>([]);
   const [isBulkUpdating, setIsBulkUpdating] = React.useState(false);
@@ -35,14 +36,13 @@ export const PropertiesList: React.FC<PropertiesListProps> = ({
       await Promise.all(selectedIds.map(id => updateProperty(id, { status })));
       setSelectedIds([]);
       loadProperties();
-    } catch (e) {
-      console.error(e);
-      alert("Bulk update failed partially.");
+      showToast(`Successfully moved ${selectedIds.length} assets to ${status}.`);
+    } catch {
+      showToast('Partial failure in bulk synchronization.', 'error');
     } finally {
       setIsBulkUpdating(false);
     }
   };
-
 
   const finalFiltered = React.useMemo(() => {
     if (statusFilter === 'all') return filteredProperties;
@@ -58,7 +58,6 @@ export const PropertiesList: React.FC<PropertiesListProps> = ({
       exit={{ opacity: 0 }}
       style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}
     >
-      {/* Bulk Action Bar */}
       <AnimatePresence>
         {selectedIds.length > 0 && (
           <motion.div
@@ -67,160 +66,110 @@ export const PropertiesList: React.FC<PropertiesListProps> = ({
             exit={{ height: 0, opacity: 0 }}
             style={{ overflow: 'hidden' }}
           >
-            <div className="glass-card" style={{ padding: '1rem 2rem', background: 'rgba(232,184,75,0.08)', border: '1px solid rgba(232,184,75,0.3)', borderRadius: '18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div className="glass-card" style={{ padding: '1rem', background: 'rgba(232,184,75,0.08)', border: '1px solid rgba(232,184,75,0.2)', borderRadius: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                <div style={{ background: 'var(--gold)', color: 'black', width: '28px', height: '28px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '0.8rem' }}>
+                <div style={{ background: 'var(--gold)', color: 'black', width: '24px', height: '24px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '0.7rem' }}>
                   {selectedIds.length}
                 </div>
-                <div style={{ fontWeight: 800, color: 'white', fontSize: '0.9rem' }}>ASSETS SELECTED</div>
-                <button onClick={() => setSelectedIds([])} style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700 }}>Deselect All</button>
+                <div style={{ fontWeight: 800, color: 'white', fontSize: '0.85rem' }}>SELECTED</div>
+                <button onClick={() => setSelectedIds([])} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700 }}>Cancel</button>
               </div>
 
-              <div style={{ display: 'flex', gap: '10px' }}>
-                <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)', fontWeight: 800, alignSelf: 'center', marginRight: '10px' }}>BULK ACTIONS:</span>
-                <button onClick={() => handleBulkStatus('Active')} disabled={isBulkUpdating} style={{ background: 'rgba(16,217,140,0.1)', border: '1px solid rgba(16,217,140,0.3)', color: '#10d98c', padding: '8px 16px', borderRadius: '10px', fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer' }}>SET LIVE</button>
-                <button onClick={() => handleBulkStatus('Sold')} disabled={isBulkUpdating} style={{ background: 'rgba(232,184,75,0.1)', border: '1px solid rgba(232,184,75,0.3)', color: 'var(--gold)', padding: '8px 16px', borderRadius: '10px', fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer' }}>SET SOLD</button>
-                <button onClick={() => handleBulkStatus('Draft')} disabled={isBulkUpdating} style={{ background: 'rgba(155,89,245,0.1)', border: '1px solid rgba(155,89,245,0.3)', color: '#9b59f5', padding: '8px 16px', borderRadius: '10px', fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer' }}>SET DRAFT</button>
-                <div style={{ width: '1px', background: 'rgba(255,255,255,0.1)', margin: '0 5px' }} />
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button onClick={() => handleBulkStatus('Active')} disabled={isBulkUpdating} style={{ background: 'rgba(16,217,140,0.1)', border: '1px solid rgba(16,217,140,0.2)', color: '#10d98c', padding: '6px 14px', borderRadius: '8px', fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer' }}>SET LIVE</button>
+                <button onClick={() => handleBulkStatus('Sold')} disabled={isBulkUpdating} style={{ background: 'rgba(232,184,75,0.1)', border: '1px solid rgba(232,184,75,0.2)', color: 'var(--gold)', padding: '6px 14px', borderRadius: '8px', fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer' }}>SET SOLD</button>
+                <button onClick={() => handleBulkStatus('Draft')} disabled={isBulkUpdating} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', padding: '6px 14px', borderRadius: '8px', fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer' }}>SET DRAFT</button>
               </div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
-      {/* Toolbar */}
-      <div className="glass-card" style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem', borderRadius: '18px' }}>
-        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', width: '100%' }}>
-          <div className="search-box" style={{ position: 'relative', flex: 1 }}>
-            <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-            <input 
-              type="text" 
-              placeholder="Search assets..." 
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="admin-input" 
-              style={{ width: '100%', paddingLeft: '32px', borderRadius: '10px', minHeight: '38px', fontSize: '0.85rem' }}
-            />
-          </div>
-          <button 
-            onClick={() => loadProperties()}
-            className="btn-elite"
-            style={{ padding: '0.5rem', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.1)', color: 'white', background: 'rgba(255,255,255,0.05)', height: '38px', width: '38px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-          >
-            <RefreshCw size={16} />
-          </button>
-        </div>
 
-        <div style={{ display: 'flex', gap: '0.5rem', width: '100%', overflowX: 'auto', paddingBottom: '4px', WebkitOverflowScrolling: 'touch' }}>
-            {['all', 'Active', 'Sold', 'Pending', 'Draft', 'Pending Review'].map(f => (
-              <button 
-                key={f}
-                onClick={() => setStatusFilter(f)}
-                style={{ 
-                  padding: '8px 14px', 
-                  borderRadius: '10px', 
-                  fontSize: '0.7rem', 
-                  fontWeight: 800,
-                  cursor: 'pointer',
-                  background: statusFilter === f ? 'var(--violet)' : 'rgba(255,255,255,0.04)',
-                  color: statusFilter === f ? 'white' : 'var(--text-muted)',
-                  border: 'none',
-                  whiteSpace: 'nowrap',
-                  flexShrink: 0
-                }}
-              >
-                {f.toUpperCase()}
-              </button>
-            ))}
+      <div className="glass-card" style={{ padding: '1rem', borderRadius: '20px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <div style={{ position: 'relative', flex: 1 }}>
+              <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+              <input 
+                type="text" 
+                placeholder="Search inventory..." 
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                style={{ width: '100%', padding: '10px 10px 10px 38px', borderRadius: '12px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', color: 'white', outline: 'none' }}
+              />
+            </div>
+            <button onClick={() => { loadProperties(); showToast('Inventory synchronized. 🔄'); }} style={{ padding: '10px', borderRadius: '12px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', cursor: 'pointer' }}><RefreshCw size={16} /></button>
+          </div>
+
+          <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '4px' }}>
+              {['all', 'Active', 'Sold', 'Pending', 'Draft'].map(f => (
+                <button 
+                  key={f}
+                  onClick={() => setStatusFilter(f)}
+                  style={{ 
+                    padding: '8px 16px', borderRadius: '10px', fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer',
+                    background: statusFilter === f ? 'var(--violet)' : 'transparent',
+                    color: statusFilter === f ? 'white' : 'var(--text-muted)',
+                    border: 'none', whiteSpace: 'nowrap'
+                  }}
+                >
+                  {f.toUpperCase()}
+                </button>
+              ))}
+          </div>
         </div>
       </div>
 
-        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-          <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.35)', fontWeight: 600 }}>
-            {finalFiltered.length} matching
-          </div>
-
-          <div style={{ display: 'flex', gap: '4px', background: 'rgba(255,255,255,0.03)', padding: '4px', borderRadius: '10px' }}>
-            {[
-              { id: 'cards', icon: LayoutGrid },
-              { id: 'grid', icon: List }
-            ].map(mode => (
-              <button
-                key={mode.id}
-                onClick={() => setViewMode(mode.id as any)}
-                style={{
-                  background: viewMode === mode.id ? 'rgba(255,255,255,0.12)' : 'transparent',
-                  border: 'none', padding: '6px 8px', borderRadius: '8px',
-                  color: viewMode === mode.id ? 'white' : 'rgba(255,255,255,0.3)',
-                  cursor: 'pointer'
-                }}
-              >
-                <mode.icon size={16} />
-              </button>
-            ))}
-          </div>
-
-          {setIsAdding && (
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>{finalFiltered.length} Assets Found</div>
+        <div style={{ display: 'flex', gap: '4px', background: 'rgba(255,255,255,0.03)', padding: '4px', borderRadius: '10px' }}>
+          {[
+            { id: 'cards', icon: LayoutGrid },
+            { id: 'grid', icon: List }
+          ].map(mode => (
             <button
-              onClick={() => setIsAdding(true)}
-              className="desktop-only-btn"
-              style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', background: 'var(--gold, #e8b84b)', color: '#07070f', border: 'none', borderRadius: '10px', fontWeight: 800, fontSize: '0.75rem', cursor: 'pointer', boxShadow: '0 4px 15px rgba(232,184,75,0.2)' }}
-            >
-              <Plus size={14} /> NEW ASSET
-            </button>
-          )}
-
-          {/* Mobile-only FAB (Floating Action Button) - Moved higher to clear bottom nav */}
-          {setIsAdding && selectedIds.length === 0 && (
-            <motion.button
-              className="mobile-only-btn"
-              initial={{ scale: 0, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              whileTap={{ scale: 0.9 }}
-              onClick={() => setIsAdding(true)}
+              key={mode.id}
+              onClick={() => setViewMode(mode.id as any)}
               style={{
-                position: 'fixed', bottom: '110px', right: '15px',
-                width: '64px', height: '64px', borderRadius: '32px',
-                background: 'linear-gradient(135deg, #e8b84b, #b9933a)',
-                color: 'black', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                boxShadow: '0 10px 25px rgba(0,0,0,0.5)', zIndex: 100, border: 'none', cursor: 'pointer'
+                background: viewMode === mode.id ? 'rgba(255,255,255,0.1)' : 'transparent',
+                border: 'none', padding: '6px 10px', borderRadius: '8px',
+                color: viewMode === mode.id ? 'white' : 'rgba(255,255,255,0.3)',
+                cursor: 'pointer'
               }}
             >
-              <Plus size={32} strokeWidth={2.5} />
-            </motion.button>
-          )}
+              <mode.icon size={16} />
+            </button>
+          ))}
         </div>
+      </div>
 
-
-      {/* Property Grid */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: viewMode === 'grid'
-          ? '1fr'
-          : 'repeat(auto-fill, minmax(230px, 1fr))',
-        gap: '0.75rem'
+        gridTemplateColumns: viewMode === 'grid' ? '1fr' : 'repeat(auto-fill, minmax(280px, 1fr))',
+        gap: '1rem'
       }}>
         <AnimatePresence>
-          {finalFiltered.length === 0 ? (
-            <div key="empty" style={{ gridColumn: '1 / -1', padding: '5rem', textAlign: 'center', opacity: 0.15 }}>
-              <LayoutGrid size={56} style={{ marginBottom: '1rem' }} />
-              <p>No properties match your filter.</p>
-            </div>
-          ) : (
-            finalFiltered.map((prop) => (
-              <AdminPropertyCard
-                key={(prop._id || prop.id)?.toString()}
-                prop={prop}
-                handleEdit={handleEdit}
-                updateProperty={updateProperty}
-                createProperty={createProperty}
-                loadProperties={loadProperties}
-                selected={selectedIds.includes(prop._id || prop.id)}
-                onSelect={toggleSelect}
-              />
-            ))
-          )}
+          {finalFiltered.map((prop) => (
+            <AdminPropertyCard
+              key={(prop._id || prop.id)?.toString()}
+              prop={prop}
+              handleEdit={handleEdit}
+              updateProperty={updateProperty}
+              createProperty={createProperty}
+              loadProperties={loadProperties}
+              selected={selectedIds.includes(prop._id || prop.id)}
+              onSelect={toggleSelect}
+            />
+          ))}
         </AnimatePresence>
       </div>
+
+      {finalFiltered.length === 0 && (
+        <div style={{ padding: '6rem', textAlign: 'center', opacity: 0.2 }}>
+          <LayoutGrid size={48} style={{ marginBottom: '1rem' }} />
+          <div style={{ fontSize: '0.9rem', fontWeight: 800 }}>No assets match your search.</div>
+        </div>
+      )}
     </motion.div>
   );
 };

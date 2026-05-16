@@ -18,8 +18,4 @@ body {
   padding-bottom: env(safe-area-inset-bottom, 0); /* Global safe area bottom */
 }
 
-@media (min-width: 768px) {
-  body {
-    zoom: 0.8;
-  }
-}
+

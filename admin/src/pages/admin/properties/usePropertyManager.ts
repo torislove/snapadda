@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { fetchProperties, createProperty, updateProperty, deleteProperty, uploadMedia } from '../../../services/api';
+import { fetchProperties, createProperty, updateProperty, uploadMedia, fetchRealtors } from '../../../services/api';
 import { adminAIService } from '../../../services/aiService';
-import { toast } from 'react-hot-toast';
 
 export const usePropertyManager = () => {
   const [properties, setProperties] = useState<any[]>([]);
@@ -17,6 +16,7 @@ export const usePropertyManager = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [liveData, setLiveData] = useState<any>({});
   const [currentImageUrls, setCurrentImageUrls] = useState<string[]>([]);
+  const [mediaSettings, setMediaSettings] = useState<{ url: string; objectFit: 'cover' | 'contain' }[]>([]);
   const [newImageFiles, setNewImageFiles] = useState<File[]>([]);
   const [priceUnit, setPriceUnit] = useState<'Total' | 'Lakhs' | 'Cr'>('Total');
   const [search, setSearch] = useState('');
@@ -27,26 +27,24 @@ export const usePropertyManager = () => {
 
   useEffect(() => {
     loadProperties();
-    loadRealtors();
+    loadRealtorsList();
   }, []);
 
-  const loadProperties = () => {
-    fetchProperties({ status: 'all' }).then((data: any) => {
-      const p = data?.data || (Array.isArray(data) ? data : []);
-      setProperties(p);
-    }).catch((err: any) => {
-      console.error("Database connection failed:", err);
+  const loadProperties = async () => {
+    try {
+      const data = await fetchProperties({ status: 'all' });
+      setProperties(data?.data || (Array.isArray(data) ? data : []));
+    } catch {
       setProperties([]);
-    });
+    }
   };
 
-  const loadRealtors = async () => {
+  const loadRealtorsList = async () => {
     try {
-      const { fetchRealtors } = await import('../../../services/api');
       const data = await fetchRealtors();
-      setRealtors(data);
-    } catch (err) {
-      console.error("Failed to load realtors:", err);
+      setRealtors(data || []);
+    } catch {
+      setRealtors([]);
     }
   };
 
@@ -61,6 +59,7 @@ export const usePropertyManager = () => {
     setIsTrustVerified(false);
     setNewImageFiles([]);
     setCurrentImageUrls([]);
+    setMediaSettings([]);
     setLiveData({});
     setPriceUnit('Total');
     setRealtorData({});
@@ -74,8 +73,8 @@ export const usePropertyManager = () => {
     setIsFeatured(prop.isFeatured || false);
     setIsElite(prop.isElite || false);
     setIsTrustVerified(prop.isTrustVerified || false);
-    const existing = prop.images || (prop.image ? [prop.image] : []);
-    setCurrentImageUrls(existing);
+    setCurrentImageUrls(prop.images || (prop.image ? [prop.image] : []));
+    setMediaSettings(prop.mediaSettings || []);
     setRealtorData(prop.realtor || {});
     
     let pUnit: 'Total' | 'Lakhs' | 'Cr' = 'Total';
@@ -84,14 +83,7 @@ export const usePropertyManager = () => {
     else if (prop.price >= 100000) { pUnit = 'Lakhs'; pRaw = prop.price / 100000; }
     setPriceUnit(pUnit);
 
-    setLiveData({
-      ...prop,
-      price_raw: pRaw,
-      minPrice: prop.minPrice || '',
-      maxPrice: prop.maxPrice || '',
-      priceType: prop.priceType || 'fixed'
-    });
-
+    setLiveData({ ...prop, price_raw: pRaw, priceType: prop.priceType || 'fixed' });
     setIsEditing(true);
     setIsAdding(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -105,42 +97,16 @@ export const usePropertyManager = () => {
   };
 
   const handleGenerateAIDescription = async () => {
-    if (!liveData.title || !liveData.location) {
-      alert("Please enter a Title and Location first to help the AI.");
-      return;
-    }
-    
+    if (!liveData.title || !liveData.location) throw new Error("Title and Location required for AI context.");
     setIsGeneratingAI(true);
     try {
-      const details = {
-        title: liveData.title,
-        location: liveData.location,
-        type: liveData.type,
-        price: liveData.price,
-        features: customFeatures.map(f => f.label + ': ' + f.value).join(', ')
-      };
-
       const description = await adminAIService.generate(
-        `Generate an ultra-high-end, expansive real estate description for "${liveData.title}" in ${liveData.location}. 
-         
-         Requirements:
-         1. Length: Extensive and detailed (approx 500-800 words).
-         2. Language: Bilingual. A sophisticated English section followed by a poetic, professional Telugu section.
-         3. Structure: Use elegant subheadings like 'The Architectural Vision', 'Strategic Positioning', 'Technical Specifications', and 'Investment Potential'.
-         4. Content: Incorporate specific details: Type: ${liveData.type}, Price: ${liveData.price || 'Contact for Price'}, Size: ${liveData.areaSize} ${liveData.measurementUnit}, Features: ${details.features}.
-         5. Tone: Institutional, elite, and persuasive. Focus on high growth and Vastu compliance where applicable.
-         6. Formatting: Use bullet points and strategic bolding for readability.`,
+        `Generate a professional bilingual real estate description for "${liveData.title}" in ${liveData.location}. 
+         Include English and Telugu sections. Focus on investment potential and quality.`,
         'description',
-        details
+        { title: liveData.title, location: liveData.location, type: liveData.type }
       );
-      
-      if (description) {
-        setLiveData((prev: any) => ({ ...prev, description }));
-      }
-    } catch (err) {
-      console.error("AI Generation failed:", err);
-      const fallback = `${liveData.title} located in ${liveData.location}. This premium ${liveData.type} offers exceptional value and strategic positioning in the Andhra market. Contact for details.`;
-      setLiveData((prev: any) => ({ ...prev, description: fallback }));
+      if (description) setLiveData((prev: any) => ({ ...prev, description }));
     } finally {
       setIsGeneratingAI(false);
     }
@@ -149,94 +115,62 @@ export const usePropertyManager = () => {
   const handleAddSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsUploading(true);
-    const formData = new FormData(e.target as HTMLFormElement);
-    const propData: any = Object.fromEntries(formData.entries());
-    
-    propData.customFeatures = customFeatures;
-    propData.isVerified = isVerified;
-    propData.isFeatured = isFeatured;
-    propData.isElite = isElite;
-    propData.isTrustVerified = isTrustVerified;
-
-    // Realtor-CRM validation removed for frictionless posting
-
-
-
-    // Duplicate Detection (Simple Title + Location match)
-    const isDuplicate = properties.some(p => 
-      (p._id || p.id) !== (editingProperty?._id || editingProperty?.id) && 
-      p.title?.toLowerCase().trim() === propData.title?.toLowerCase().trim() &&
-      p.location?.toLowerCase().trim() === propData.location?.toLowerCase().trim()
-    );
-
-    if (isDuplicate && !window.confirm("A property with this exact title and location already exists. Do you want to save anyway?")) {
-      setIsUploading(false);
-      return;
-    }
-
     try {
-      // Filter out temporary blob previews — ONLY keep permanent Cloudinary/External URLs
-      let uploadedUrls: string[] = currentImageUrls.filter(u => u.startsWith('http') && !u.startsWith('blob:'));
+      const formData = new FormData(e.currentTarget as HTMLFormElement);
+      const propData: any = Object.fromEntries(formData.entries());
       
+      let uploadedUrls: string[] = currentImageUrls.filter(u => u.startsWith('http') && !u.startsWith('blob:'));
+      let finalMediaSettings = mediaSettings.filter(s => s.url.startsWith('http') && !s.url.startsWith('blob:'));
+
       if (newImageFiles.length > 0) {
         const uploadResult = await uploadMedia(newImageFiles);
         if (uploadResult.status === 'success') {
-          uploadedUrls = [...uploadedUrls, ...uploadResult.data];
-          toast.success(`${newImageFiles.length} media files uploaded!`);
-        } else {
-          throw new Error(uploadResult.message || 'Media server rejected the files');
+          const newUrls = uploadResult.data;
+          uploadedUrls = [...uploadedUrls, ...newUrls];
+          
+          // Map blob URLs back to actual uploaded URLs in settings
+          const blobToRealMap: Record<string, string> = {};
+          const blobUrls = currentImageUrls.filter(u => u.startsWith('blob:'));
+          blobUrls.forEach((blob, idx) => {
+            if (newUrls[idx]) blobToRealMap[blob] = newUrls[idx];
+          });
+
+          const newSettings = mediaSettings.map(s => ({
+            ...s,
+            url: blobToRealMap[s.url] || s.url
+          })).filter(s => s.url.startsWith('http'));
+          
+          finalMediaSettings = newSettings;
         }
       }
 
-      if (liveData.priceType === 'range') {
-        propData.minPrice = convertToValue(liveData.minPrice, priceUnit);
-        propData.maxPrice = convertToValue(liveData.maxPrice, priceUnit);
-        propData.priceType = 'range';
-      } else {
-        propData.price = convertToValue(propData.price, priceUnit);
-        propData.priceType = 'fixed';
-      }
-      propData.areaSize = Number(propData.areaSize) || 0;
-
-      const isVideoUrl = (url: string) => /\.(mp4|mov|webm|ogg)$/i.test(url) || url.includes('/video/');
-      const imagesList = uploadedUrls.filter(url => !isVideoUrl(url) && url.startsWith('http'));
-      const videosList = uploadedUrls.filter(url => isVideoUrl(url));
-
-      propData.images = imagesList;
-      propData.videos = videosList;
-      propData.image = imagesList.length > 0 ? imagesList[0] : '';
-      propData.videoUrl = videosList.length > 0 ? videosList[0] : '';
+      const pVal = convertToValue(propData.price || liveData.price_raw, priceUnit);
       
       const payload = {
         ...propData,
+        price: pVal,
         customFeatures,
         isVerified,
         isFeatured,
         isElite,
         isTrustVerified,
-        images: imagesList,
-        image: imagesList.length > 0 ? imagesList[0] : '',
-        realtor: realtorData,  // include realtor info
+        images: uploadedUrls,
+        image: uploadedUrls[0] || '',
+        mediaSettings: finalMediaSettings,
+        realtor: realtorData,
         displayContactType: liveData.displayContactType || 'Admin',
-        verificationLog: liveData.verificationLog || [],
-        // Always set Active for new listings
         status: isEditing ? (propData.status || 'Active') : 'Active',
-
       };
 
       if (isEditing && editingProperty) {
         await updateProperty(editingProperty._id || editingProperty.id, payload);
-        toast.success("Listing updated!");
       } else {
         await createProperty(payload);
-        toast.success("Listing published live!");
       }
       
       loadProperties();
       handleCloseForm();
-    } catch (err: any) {
-      console.error("Save failed:", err);
-      toast.error(`Error: ${err.message}`);
+      return true;
     } finally {
       setIsUploading(false);
     }
@@ -245,66 +179,32 @@ export const usePropertyManager = () => {
   const handleFormChange = (e: React.FormEvent<HTMLFormElement>) => {
     const formData = new FormData(e.currentTarget);
     const updatedData: any = Object.fromEntries(formData.entries());
-    
     if (formTimeoutRef.current) clearTimeout(formTimeoutRef.current);
-    
     formTimeoutRef.current = setTimeout(() => {
-      setLiveData((prev: any) => {
-        const p_raw = updatedData.price !== undefined ? updatedData.price : prev.price_raw;
-        const p = convertToValue(p_raw, priceUnit);
-        
-        return { 
-          ...prev, 
-          ...updatedData, 
-          price_raw: p_raw, 
-          price: p,
-          pricePerUnit: updatedData.pricePerUnit || prev.pricePerUnit,
-          areaSize: updatedData.areaSize || prev.areaSize,
-          measurementUnit: updatedData.measurementUnit || prev.measurementUnit
-        };
-      });
+      setLiveData((prev: any) => ({ ...prev, ...updatedData }));
     }, 150);
-  };
-
-
-  const handleMediaChange = (urls: string[], files: File[]) => {
-    setCurrentImageUrls(urls);
-    setNewImageFiles(files);
   };
 
   const filteredProperties = useMemo(() => {
     if (!search) return properties;
-    return properties.filter(p => {
-      const keyword = search.toLowerCase();
-      return (
-        p.title?.toLowerCase().includes(keyword) || 
-        p.location?.toLowerCase().includes(keyword) ||
-        p.type?.toLowerCase().includes(keyword)
-      );
-    });
+    const k = search.toLowerCase();
+    return properties.filter(p => p.title?.toLowerCase().includes(k) || p.location?.toLowerCase().includes(k));
   }, [properties, search]);
 
   return {
-    properties, filteredProperties,
-    isAdding, setIsAdding,
-    isEditing, setIsEditing,
-    editingProperty, setEditingProperty,
-    customFeatures, setCustomFeatures,
-    isVerified, setIsVerified,
-    isFeatured, setIsFeatured,
-    isElite, setIsElite,
-    isTrustVerified, setIsTrustVerified,
-    isGeneratingAI, isUploading,
-    liveData, setLiveData,
-    currentImageUrls, setCurrentImageUrls,
-    newImageFiles, setNewImageFiles,
-    priceUnit, setPriceUnit,
-    search, setSearch,
-    viewMode, setViewMode,
-    loadProperties, handleCloseForm, handleEdit,
-    handleGenerateAIDescription, handleAddSubmit, handleFormChange, handleMediaChange,
-    convertToValue, 
-    createProperty, updateProperty, deleteProperty,
+    properties, filteredProperties, isAdding, setIsAdding, isEditing, editingProperty,
+    customFeatures, isVerified, setIsVerified, isFeatured, setIsFeatured, isElite, setIsElite,
+    isTrustVerified, setIsTrustVerified, isGeneratingAI, isUploading, liveData, setLiveData,
+    currentImageUrls, newImageFiles, priceUnit, setPriceUnit, search, setSearch, viewMode, setViewMode,
+    loadProperties, handleCloseForm, handleEdit, handleGenerateAIDescription, handleAddSubmit,
+    handleFormChange, 
+    handleMediaChange: (urls: string[], files: File[], settings: any[]) => { 
+      setCurrentImageUrls(urls); 
+      setNewImageFiles(files);
+      setMediaSettings(settings);
+    },
+    mediaSettings,
+    realtorData, setRealtorData, realtors, loadRealtors: loadRealtorsList,
     addCustomFeature: () => setCustomFeatures([...customFeatures, { label: '', value: '' }]),
     removeCustomFeature: (index: number) => setCustomFeatures(customFeatures.filter((_, i) => i !== index)),
     updateCustomFeature: (index: number, key: 'label' | 'value', val: string) => {
@@ -312,7 +212,7 @@ export const usePropertyManager = () => {
       updated[index][key] = val;
       setCustomFeatures(updated);
     },
-    realtorData, setRealtorData,
-    realtors, loadRealtors
+    createProperty,
+    updateProperty
   };
 };

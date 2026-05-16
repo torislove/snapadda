@@ -2,10 +2,12 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 import { submitLead } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function ContactModal({ isOpen, onClose, type }) {
-  const [phone, setPhone] = useState('');
-  const [name, setName] = useState('');
+  const { user } = useAuth();
+  const [phone, setPhone] = useState(user?.phone || user?.whatsapp || '');
+  const [name, setName] = useState(user?.name || '');
   const [success, setSuccess] = useState(false);
 
   const handleSubmit = async (e) => {

@@ -247,7 +247,7 @@ const SETTING_DEFAULTS = {
     { label: 'Verified Listings', value: '1,200+' },
     { label: 'Cities Covered', value: '18+' },
     { label: 'Happy Clients', value: '2,400+' },
-    { label: 'Approved Properties', value: 'CRDA/RERA' }
+    { label: 'Approved Projects', value: 'CRDA/Verified' }
   ],
   marquee_strips: {
     speed1: 30, speed2: 35,

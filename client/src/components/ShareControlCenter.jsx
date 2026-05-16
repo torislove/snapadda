@@ -16,9 +16,9 @@ const ShareControlCenter = ({ isOpen, onClose, property }) => {
   const [copied, setCopied] = useState(false);
   const [lang, setLang] = useState('en');
 
-  if (!property) return null;
-
   const templates = useMemo(() => generateShareTemplates(property, lang), [property, lang]);
+
+  if (!property) return null;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(templates.whatsapp);

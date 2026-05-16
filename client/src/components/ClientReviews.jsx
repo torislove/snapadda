@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Star, Quote, MapPin, X } from 'lucide-react';
 import { fetchSetting } from '../services/api';
+import { db } from '../firebase';
+import { ref, onValue } from 'firebase/database';
 
 export default function ClientReviews({ testimonials = [] }) {
   const [reviews, setReviews] = useState([]);
@@ -34,8 +36,28 @@ export default function ClientReviews({ testimonials = [] }) {
       return;
     }
 
-    // Otherwise fetch or use fallbacks
-    const loadTestimonials = async () => {
+    // Attempt Firebase Sync first
+    if (db) {
+      const testimonialsRef = ref(db, 'testimonials');
+      const unsubscribe = onValue(testimonialsRef, (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+          const list = Object.values(data).sort((a, b) => 
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
+          setReviews(list);
+          setLoading(false);
+        } else {
+          // If no firebase data, fallback to API
+          loadFromApi();
+        }
+      });
+      return () => unsubscribe();
+    } else {
+      loadFromApi();
+    }
+
+    async function loadFromApi() {
       try {
         const res = await fetch('/api/testimonials');
         if (!res.ok) throw new Error('API down');
@@ -48,9 +70,7 @@ export default function ClientReviews({ testimonials = [] }) {
       } finally {
         setLoading(false);
       }
-    };
-
-    loadTestimonials();
+    }
   }, [testimonials]);
 
   useEffect(() => {

@@ -1,19 +1,22 @@
 import React from 'react';
 import { Palette } from 'lucide-react';
 
-interface AppearanceSectionProps {
+export interface AppearanceSectionProps {
   primaryColor: string;
   setPrimaryColor: (v: string) => void;
   glassOpacity: number;
   setGlassOpacity: (v: number) => void;
   borderRadius: number;
   setBorderRadius: (v: number) => void;
+  ultraGlass: boolean;
+  setUltraGlass: (v: boolean) => void;
   handleAppearanceSave: (e: React.FormEvent) => void;
   lbl: any;
 }
 
 export const AppearanceSection: React.FC<AppearanceSectionProps> = ({
   primaryColor, setPrimaryColor, glassOpacity, setGlassOpacity, borderRadius, setBorderRadius,
+  ultraGlass, setUltraGlass,
   handleAppearanceSave, lbl
 }) => (
   <div className="glass-card" style={{ overflow: 'hidden', borderRadius: '24px' }}>
@@ -47,13 +50,16 @@ export const AppearanceSection: React.FC<AppearanceSectionProps> = ({
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: '1rem', background: 'rgba(255,255,255,0.03)', padding: '1.25rem', borderRadius: '18px', border: '1px solid rgba(255,255,255,0.06)' }}>
+      <div 
+        onClick={() => setUltraGlass(!ultraGlass)}
+        style={{ display: 'flex', gap: '1rem', background: ultraGlass ? 'rgba(232,184,75,0.08)' : 'rgba(255,255,255,0.03)', padding: '1.25rem', borderRadius: '18px', border: ultraGlass ? '1px solid rgba(232,184,75,0.3)' : '1px solid rgba(255,255,255,0.06)', cursor: 'pointer' }}
+      >
          <div style={{ flex: 1 }}>
-            <div style={{ fontWeight: 800, fontSize: '0.9rem' }}>Ultra-Glass Rendering</div>
+            <div style={{ fontWeight: 800, fontSize: '0.9rem', color: ultraGlass ? 'var(--gold)' : 'white' }}>Ultra-Glass Rendering</div>
             <p style={{ margin: '4px 0 0', fontSize: '0.7rem', color: 'var(--text-muted)' }}>Enables advanced backdrop-blur and noise textures for premium feel.</p>
          </div>
-         <div style={{ width: '48px', height: '24px', background: 'var(--gold)', borderRadius: '12px', padding: '4px', position: 'relative' }}>
-            <div style={{ width: '16px', height: '16px', background: 'white', borderRadius: '50%', position: 'absolute', right: '4px' }} />
+         <div style={{ width: '48px', height: '24px', background: ultraGlass ? 'var(--gold)' : 'rgba(255,255,255,0.1)', borderRadius: '12px', padding: '4px', position: 'relative', transition: 'all 0.3s' }}>
+            <div style={{ width: '16px', height: '16px', background: 'white', borderRadius: '50%', position: 'absolute', right: ultraGlass ? '4px' : '28px', transition: 'all 0.3s' }} />
          </div>
       </div>
 
@@ -63,3 +69,5 @@ export const AppearanceSection: React.FC<AppearanceSectionProps> = ({
     </form>
   </div>
 );
+
+export default AppearanceSection;

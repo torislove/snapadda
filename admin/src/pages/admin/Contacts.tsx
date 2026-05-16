@@ -5,6 +5,7 @@ import { Button } from '../../components/ui/Button';
 import { ConnectivityBanner } from '../../components/ui/ConnectivityBanner';
 import { fetchContactStats, updateContact, addContactNote } from '../../services/api';
 import { locationService } from '../../services/locationService';
+import { toast } from 'react-hot-toast';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -114,7 +115,7 @@ const ContactCard = ({ contact, onStar, onBroadcast, onEdit, onPromoteToLead }: 
       <Button size="sm" variant="outline" onClick={() => {
         const text = `👤 *${contact.name}*\n📞 ${contact.phone}\n📧 ${contact.email || 'N/A'}\n🏢 ${contact.company || 'N/A'}\n📍 ${contact.location || 'N/A'}\n\n_Shared via SnapAdda CRM_`;
         navigator.clipboard.writeText(text);
-        alert('Contact details copied to clipboard!');
+        toast.success('Contact details copied to clipboard!');
       }} style={{ fontSize: '0.78rem' }}>
         <Share2 size={13} />
       </Button>
@@ -257,10 +258,10 @@ const AdminContacts = () => {
       });
       const data = await res.json();
       if (data.status === 'success') {
-        alert('✅ Successfully promoted to Lead pipeline');
+        toast.success('Successfully promoted to Lead pipeline');
       }
     } catch (err) {
-      alert('❌ Promotion failed');
+      toast.error('Promotion failed');
     }
   };
 

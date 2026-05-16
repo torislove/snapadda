@@ -85,7 +85,7 @@ const AdminLogin = () => {
       <div className="admin-login-orb orb-2" />
       
       <motion.div 
-        className="admin-login-box glass-heavy"
+        className="admin-login-box glass-3d-heavy"
         initial={{ opacity: 0, y: 30, scale: 0.98 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}

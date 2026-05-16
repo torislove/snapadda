@@ -7,10 +7,10 @@ import { fetchPromotions, trackPromotionView, trackPromotionClick } from '../ser
  * Cloudinary Transformation Utility
  * Ensures promotional banners are optimized for speed and device width.
  */
-const optimizeImage = (url, width = 800) => {
+const optimizeImage = (url, width = 800, isContain = false) => {
   if (!url || !url.includes('cloudinary')) return url;
-  // Insert transformation parameters: q_auto (quality), f_auto (format), w_800 (width)
-  return url.replace('/upload/', `/upload/q_auto,f_auto,w_${width}/`);
+  const transform = isContain ? `q_auto,f_auto,w_${width},c_limit` : `q_auto,f_auto,w_${width},c_fill,h_400`;
+  return url.replace('/upload/', `/upload/${transform}/`);
 };
 
 const isVideoUrl = (url) => {
@@ -72,7 +72,14 @@ const Slide = memo(({ slide, index, accent, bg, theme, countdown, onNext, onPrev
           <motion.div 
             animate={{ scale: [1, 1.1, 1] }}
             transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
-            style={{ position: 'absolute', inset: 0, zIndex: 0, backgroundImage: `url(${optimizeImage(slide.image, 1200)})`, backgroundSize: 'cover', backgroundPosition: 'center', filter: 'brightness(0.7)' }} 
+            style={{ 
+              position: 'absolute', inset: 0, zIndex: 0, 
+              backgroundImage: `url(${optimizeImage(slide.image, 1200, slide.mediaSettings?.find((s) => s.url === slide.image)?.objectFit === 'contain')})`, 
+              backgroundSize: slide.mediaSettings?.find((s) => s.url === slide.image)?.objectFit === 'contain' ? 'contain' : 'cover',
+              backgroundRepeat: 'no-repeat',
+              backgroundPosition: 'center', 
+              filter: 'brightness(0.7)' 
+            }} 
           />
         )}
       </>

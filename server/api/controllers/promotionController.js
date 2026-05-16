@@ -21,6 +21,7 @@ const syncPromotionToFirebase = async (promotion) => {
       expiryDate: promotion.endDate || promotion.expiryDate || null,
       isActive: promotion.isActive !== false,
       displayOrder: promotion.displayOrder || 0,
+      mediaSettings: promotion.mediaSettings || [],
       updatedAt: new Date().toISOString()
     };
 
@@ -54,6 +55,7 @@ const syncAllPromotionsToFirebase = async () => {
          expiryDate: p.endDate || p.expiryDate || null,
          isActive: true,
          displayOrder: index,
+         mediaSettings: p.mediaSettings || [],
          updatedAt: new Date().toISOString()
        };
     });

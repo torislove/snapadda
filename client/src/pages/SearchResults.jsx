@@ -12,6 +12,7 @@ import PropertyCard from '../components/PropertyCard';
 import { SkeletonPropertyCard } from '../components/SkeletonLoaders';
 import { parseSmartSearch, getFuzzySuggestions, loadAndhraData } from '../services/SearchParser';
 import { triggerMicroLead } from '../utils/tracker';
+import SEO from '../components/SEO';
 import { Helmet } from 'react-helmet-async';
 import PropertyMap from '../components/PropertyMap';
 
@@ -405,13 +406,12 @@ export default function SearchResults() {
   );
 
   return (
-    <div style={{ minHeight: '100vh', paddingTop: 'var(--nav-h)', background: 'var(--bg-deep)' }}>
-      <Helmet>
-        <title>{keyword ? `Search results for "${keyword}" | SnapAdda` : 'Browse Properties | SnapAdda'}</title>
-        <meta name="description" content={`Find the best ${type || 'properties'} in ${city || 'Andhra Pradesh'}. Browse through ${meta.total} exclusive listings on SnapAdda.`} />
-        <meta property="og:title" content="Search Properties | SnapAdda" />
-        <meta property="og:description" content={`Discover premium ${type || 'real estate'} opportunities.`} />
-      </Helmet>
+    <div style={{ minHeight: '100vh', width: '100%', paddingTop: 'var(--nav-h)', background: 'var(--midnight)' }}>
+      <SEO 
+        title={keyword ? `Search results for "${keyword}"` : type ? `${type} for Sale/Rent` : city ? `Properties in ${city}` : 'Browse Properties'}
+        description={`Find the best ${type || 'properties'} in ${city || keyword || 'Andhra Pradesh'}. Browse through ${meta.total} exclusive, verified listings on SnapAdda.`}
+        keywords={[type, city, keyword, 'Real Estate Search', 'AP Properties'].filter(Boolean)}
+      />
       {/* Sticky Action Bar */}
       <div style={{ borderBottom: '1px solid rgba(255,255,255,0.07)', padding: '0.75rem 0', background: 'rgba(7,7,15,0.98)', backdropFilter: 'blur(30px)', position: 'sticky', top: 'var(--nav-h)', zIndex: 100 }}>
         <div className="container">
@@ -480,9 +480,10 @@ export default function SearchResults() {
 
 
       {/* Body */}
-      <div className="container sr-results-grid" style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '260px 1fr', gap: isMobile ? '1rem' : '1.5rem', paddingTop: '1.5rem', paddingBottom: '4rem', alignItems: 'start' }}>
+      <div className="container" style={{ paddingTop: '1.5rem', paddingBottom: '4rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'minmax(280px, 320px) 1fr', gap: isMobile ? '1.5rem' : '2.5rem', alignItems: 'start' }}>
         {/* LEFT: Filter Panel */}
-        <aside className="sr-filter-panel glass-panel" style={{ position: 'sticky', top: 'calc(var(--nav-h) + 80px)', padding: '1.5rem', maxHeight: 'calc(100vh - 160px)', overflowY: 'auto' }}>
+        <aside className="sr-filter-panel glass-3d" style={{ position: 'sticky', top: 'calc(var(--nav-h) + 100px)', padding: '2rem', maxHeight: 'calc(100vh - 160px)', overflowY: 'auto' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.82rem', fontWeight: 800, color: 'white' }}>
               <SlidersHorizontal size={15} style={{ color: 'var(--gold)' }}/> Filters
@@ -558,6 +559,7 @@ export default function SearchResults() {
             </div>
           )}
         </main>
+      </div>
       </div>
 
       {/* Mobile Filter Fullscreen Modal */}

@@ -34,9 +34,11 @@ import { getCachedProperties, setCachedProperties } from '../hooks/usePropertyCa
 import { useRealtimeProperties } from '../hooks/useRealtimeProperties';
 import { prefetchRoute } from '../utils/PerformanceUtilities';
 import { triggerMicroLead } from '../utils/tracker';
+import SEO from '../components/SEO';
 import { Helmet } from 'react-helmet-async';
 import MarketHotspot from '../components/MarketHotspot';
 import FreeListingCTA from '../components/FreeListingCTA';
+import BroadcastBanner from '../components/BroadcastBanner';
 
 // Lazy Loaded Regional Sitemap for SEO
 const RegionalSitemap = lazy(() => import('../components/RegionalSitemap'));
@@ -396,8 +398,24 @@ export default function Home() {
       // Categorize for specialized sections if needed
       setAgriProperties(liveList.filter(p => (p.type || '').toLowerCase().includes('agri') || (p.type || '').toLowerCase().includes('farm')).slice(0, 8));
       setPlotProperties(liveList.filter(p => (p.type || '').toLowerCase().includes('plot') || (p.type || '').toLowerCase().includes('crda')).slice(0, 8));
+
+      // ── Sync City Property Counts with Live Data ──
+      if (cities.length > 0) {
+        const counts = liveList.reduce((acc, p) => {
+          const loc = (p.location || p.city || '').toLowerCase().trim();
+          if (loc) acc[loc] = (acc[loc] || 0) + 1;
+          return acc;
+        }, {});
+
+        setCities(prev => prev.map(c => {
+          const nameLower = c.name.toLowerCase().trim();
+          // Support fuzzy matches for common cities if they differ slightly from DB location strings
+          const count = counts[nameLower] || 0;
+          return { ...c, propertyCount: count };
+        }));
+      }
     }
-  }, [liveList]);
+  }, [liveList, cities.length]);
 
   useEffect(() => {
     let n = 0;
@@ -576,14 +594,40 @@ export default function Home() {
 
   return (
     <>
-      <Helmet>
-        <title>SnapAdda | Best Real Estate Website in Andhra Pradesh | Amaravathi Plots</title>
-        <meta name="description" content="SnapAdda is the #1 real estate platform in Andhra Pradesh. Buy or Rent verified apartments, villas, and plots in Vijayawada, Guntur, and Vizag. Trusted by thousands." />
-        <meta property="og:title" content="SnapAdda | Best Real Estate in Andhra Pradesh" />
-        <meta property="og:description" content="Discover verified properties and institutional grade listings across all AP districts." />
-        <meta property="og:image" content="https://snapadda.com/og-image.jpg" />
-        <link rel="canonical" href="https://snapadda.com/" />
-      </Helmet>
+      <SEO 
+        title="Best Real Estate Website in Andhra Pradesh | Amaravati Plots & Villas"
+        description="SnapAdda is the #1 real estate platform in Andhra Pradesh. Buy or Rent verified apartments, villas, and plots in Vijayawada, Guntur, and Vizag. Trusted by thousands for institutional-grade listings."
+        keywords={['Real Estate AP', 'Amaravati Plots', 'Vijayawada Villas', 'Guntur Apartments', 'Vizag Real Estate', 'CRDA Plots', 'RERA Approved Properties']}
+        schemaData={[
+          {
+            "@context": "https://schema.org",
+            "@type": "WebSite",
+            "name": "SnapAdda",
+            "url": window.location.origin,
+            "potentialAction": {
+              "@type": "SearchAction",
+              "target": `${window.location.origin}/search?keyword={search_term_string}`,
+              "query-input": "required name=search_term_string"
+            }
+          },
+          {
+            "@context": "https://schema.org",
+            "@type": "RealEstateAgent",
+            "name": "SnapAdda",
+            "image": `${window.location.origin}/logo.png`,
+            "@id": `${window.location.origin}/#agent`,
+            "url": window.location.origin,
+            "telephone": supportPhone,
+            "address": {
+              "@type": "PostalAddress",
+              "addressLocality": "Vijayawada",
+              "addressRegion": "AP",
+              "postalCode": "520001",
+              "addressCountry": "IN"
+            }
+          }
+        ]}
+      />
       <MobileOnboarding onLocationDetected={(city) => { setKeyword(city); setDebouncedKeyword(city); }} />
       <div 
         className="app-container"
@@ -591,12 +635,17 @@ export default function Home() {
       >
 
       {optimizedBg
-        ? <div className="site-bg-overlay floating-bg" style={{ backgroundImage: `url(${optimizedBg})`, opacity: 0.22, position: 'fixed', inset: 0, backgroundSize: 'cover', zIndex: 0 }} />
-        : <div className="animated-bg floating-bg" style={{ position: 'fixed', inset: 0, zIndex: 0, background: 'radial-gradient(ellipse at 20% 50%, rgba(10,80,40,0.08) 0%, transparent 60%), radial-gradient(ellipse at 80% 20%, rgba(130,60,0,0.08) 0%, transparent 60%), var(--bg-deep)' }} />
+        ? <div className="site-bg-overlay" style={{ backgroundImage: `url(${optimizedBg})`, opacity: 0.15, position: 'fixed', inset: 0, backgroundSize: 'cover', zIndex: 0 }} />
+        : <div className="animated-bg" style={{ position: 'fixed', inset: 0, zIndex: 0, background: 'var(--bg-deep)' }} />
       }
+      
+      {/* Ambient Glows */}
+      <div style={{ position: 'fixed', top: '10%', left: '-10%', width: '40vw', height: '40vw', background: 'radial-gradient(circle, rgba(155,89,245,0.08) 0%, transparent 70%)', pointerEvents: 'none', zIndex: 1 }} />
+      <div style={{ position: 'fixed', bottom: '10%', right: '-10%', width: '35vw', height: '35vw', background: 'radial-gradient(circle, rgba(244,208,63,0.06) 0%, transparent 70%)', pointerEvents: 'none', zIndex: 1 }} />
 
       <main style={{ flex: 1, paddingTop: 'var(--nav-h)' }}>
         <Marquee />
+        <BroadcastBanner />
 
         <section className="promo-section-top" style={{ padding: isMobile ? '1.5rem 0 1rem' : '3rem 0 2rem' }}>
           <div className="container" style={{ alignItems: 'stretch' }}>
@@ -642,14 +691,11 @@ export default function Home() {
               </motion.div>
               <motion.h1 
                 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-                className="hero-title" style={{ fontSize: isMobile ? '2.2rem' : '4.5rem', lineHeight: 1.05, marginBottom: '1.25rem', fontWeight: 950 }}
+                className="hero-title text-liquid-gold" style={{ fontSize: isMobile ? '2.5rem' : '5rem', lineHeight: 1.05, marginBottom: '1.25rem', fontWeight: 950, letterSpacing: '-0.02em' }}
               >
                 {heroMode === 'selection' ? t('hero.title1') : "Find Your Perfect Asset"}
-                <span className="gold-line text-royal-gold" style={{ display: 'block', fontSize: isMobile ? '1.8rem' : '3.5rem', opacity: 0.9 }}>
-                  {heroMode === 'selection' ? t('hero.title2') : `Verified ${intent} Listings`}
-                </span>
               </motion.h1>
-              <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: isMobile ? '0.95rem' : '1.15rem', maxWidth: '700px', margin: '0 auto', lineHeight: 1.7, fontWeight: 500 }}>
+              <p style={{ color: 'var(--txt-secondary)', fontSize: isMobile ? '1rem' : '1.35rem', maxWidth: '750px', margin: '0 auto', lineHeight: 1.7, fontWeight: 500, opacity: 0.8 }}>
                 {heroMode === 'selection' ? t('hero.subtitle') : "Use our advanced spatial filters to locate verified properties near you."}
               </p>
             </div>
@@ -672,32 +718,32 @@ export default function Home() {
                   }}>
                     {/* BUY CTA */}
                     <motion.div 
-                      whileHover={{ y: -10, boxShadow: '0 20px 40px rgba(16,217,140,0.15)' }}
-                      whileTap={{ scale: 0.97 }}
+                      whileHover={{ y: -5, background: 'rgba(16,217,140,0.06)' }}
+                      whileTap={{ scale: 0.98 }}
                       onClick={() => { setIntent('Buy'); setHeroMode('search');  }}
-                      className="glass-premium"
-                      style={{ padding: isMobile ? '2rem 1.5rem' : '3.5rem 2rem', borderRadius: '32px', border: '1px solid rgba(16,217,140,0.2)', background: 'rgba(16,217,140,0.03)', cursor: 'pointer', textAlign: 'center' }}
+                      className="glass-3d"
+                      style={{ padding: isMobile ? '2.5rem 1.5rem' : '4rem 2.5rem', cursor: 'pointer', textAlign: 'center', border: '1px solid rgba(16,217,140,0.2)' }}
                     >
-                      <div style={{ width: '64px', height: '64px', borderRadius: '22px', background: 'rgba(16,217,140,0.1)', color: '#10d98c', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem', boxShadow: '0 10px 20px rgba(16,217,140,0.1)' }}>
-                        <HomeIcon size={32} />
+                      <div style={{ width: '70px', height: '70px', borderRadius: '24px', background: 'rgba(16,217,140,0.1)', color: '#10d98c', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem', boxShadow: '0 0 30px rgba(16,217,140,0.2)' }}>
+                        <HomeIcon size={36} />
                       </div>
-                      <h3 style={{ fontSize: '1.6rem', fontWeight: 950, marginBottom: '0.5rem', color: '#fff', letterSpacing: '0.05em' }}>BUY</h3>
-                      <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)', fontWeight: 700 }}>VERIFIED ASSETS</p>
+                      <h3 style={{ fontSize: '1.8rem', fontWeight: 950, marginBottom: '0.5rem', color: '#fff', letterSpacing: '0.05em' }}>BUY</h3>
+                      <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.4)', fontWeight: 800 }}>VERIFIED ASSETS</p>
                     </motion.div>
 
                     {/* RENT CTA */}
                     <motion.div 
-                      whileHover={{ y: -10, boxShadow: '0 20px 40px rgba(155,89,245,0.15)' }}
-                      whileTap={{ scale: 0.97 }}
+                      whileHover={{ y: -5, background: 'rgba(155,89,245,0.06)' }}
+                      whileTap={{ scale: 0.98 }}
                       onClick={() => { setIntent('Rent'); setHeroMode('search');  }}
-                      className="glass-premium"
-                      style={{ padding: isMobile ? '2rem 1.5rem' : '3.5rem 2rem', borderRadius: '32px', border: '1px solid rgba(155,89,245,0.2)', background: 'rgba(155,89,245,0.03)', cursor: 'pointer', textAlign: 'center' }}
+                      className="glass-3d"
+                      style={{ padding: isMobile ? '2.5rem 1.5rem' : '4rem 2.5rem', cursor: 'pointer', textAlign: 'center', border: '1px solid rgba(155,89,245,0.2)' }}
                     >
-                      <div style={{ width: '64px', height: '64px', borderRadius: '22px', background: 'rgba(155,89,245,0.1)', color: '#9b59f5', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem', boxShadow: '0 10px 20px rgba(155,89,245,0.1)' }}>
-                        <Building size={32} />
+                      <div style={{ width: '70px', height: '70px', borderRadius: '24px', background: 'rgba(155,89,245,0.1)', color: '#9b59f5', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem', boxShadow: '0 0 30px rgba(155,89,245,0.2)' }}>
+                        <Building size={36} />
                       </div>
-                      <h3 style={{ fontSize: '1.6rem', fontWeight: 950, marginBottom: '0.5rem', color: '#fff', letterSpacing: '0.05em' }}>RENT</h3>
-                      <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)', fontWeight: 700 }}>LUXURY SPACES</p>
+                      <h3 style={{ fontSize: '1.8rem', fontWeight: 950, marginBottom: '0.5rem', color: '#fff', letterSpacing: '0.05em' }}>RENT</h3>
+                      <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.4)', fontWeight: 800 }}>LUXURY SPACES</p>
                     </motion.div>
                   </div>
 
@@ -727,7 +773,7 @@ export default function Home() {
                   exit={{ opacity: 0, y: -30 }}
                   transition={{ duration: 0.4, ease: "easeOut" }}
                 >
-                  <div className="glass-premium" style={{ maxWidth: '900px', margin: '0 auto', padding: '1.5rem', borderRadius: '32px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(5,5,15,0.85)', boxShadow: '0 40px 80px rgba(0,0,0,0.6)' }}>
+                  <div className="glass-3d-heavy" style={{ maxWidth: '900px', margin: '0 auto', padding: '2.5rem', borderRadius: '32px', border: '1px solid var(--glass-border)', boxShadow: 'var(--shadow-3d-heavy)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '1.5rem', paddingLeft: '8px' }}>
                       <button 
                         onClick={() => setHeroMode('selection')}
@@ -799,8 +845,8 @@ export default function Home() {
               ].map((s, i) => (
                 <div key={i} className="hero-stat-chip" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}>
                   <div style={{ color: 'var(--gold)' }}>{s.icon}</div>
-                  <div className="stat-v" style={{ fontSize: '0.8rem' }}>{s.val}</div>
-                  <div className="stat-l" style={{ fontSize: '0.6rem' }}>{s.label}</div>
+                  <div className="stat-v" style={{ fontSize: '0.8rem', color: 'white', fontWeight: 900 }}>{s.val}</div>
+                  <div className="stat-l" style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.7)', fontWeight: 800 }}>{s.label}</div>
                 </div>
               ))}
             </motion.div>
@@ -878,7 +924,7 @@ export default function Home() {
                   }}
                   className="glass-elite bento-item" 
                   style={{ 
-                    gridColumn: 'span 2', 
+                    gridColumn: 'span 2',
                     background: 'linear-gradient(135deg, rgba(16,217,140,0.15) 0%, rgba(5,10,20,0.8) 100%)',
                     border: '1px solid rgba(16,217,140,0.2)',
                     display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '1.5rem',
@@ -1039,7 +1085,7 @@ export default function Home() {
             {loading && !properties.length ? (
               <div style={{ height: '550px', width: '100%', borderRadius: '32px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1.5rem', background: 'rgba(10,15,30,0.8)', border: '1px solid rgba(255,255,255,0.05)' }}>
                 <div className="pulse-primary" style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--gold)' }} />
-                <p style={{ color: 'var(--gold)', fontSize: '0.8rem', fontWeight: 800, letterSpacing: '0.1em' }}>INITIALIZING SPATIAL GRID...</p>
+                <p style={{ color: 'white', fontSize: '0.8rem', fontWeight: 900, letterSpacing: '0.15em' }}>INITIALIZING SPATIAL GRID...</p>
               </div>
             ) : (
               <div style={{ height: isMobile ? '500px' : '650px', width: '100%' }}>
@@ -1050,32 +1096,11 @@ export default function Home() {
         </section>
 
 
-        {/* Free Listing CTA */}
-        <div className="container">
-          <FreeListingCTA supportWA={supportWA} supportPhone={supportPhone} />
-        </div>
-
         {/* Regional Sitemap - High Density Keyword Hub for Google Search */}
         <Suspense fallback={<div className="container" style={{ padding: '2rem', textAlign: 'center' }}>Loading regions...</div>}>
           <RegionalSitemap />
         </Suspense>
 
-        <footer className="app-footer">
-          <div className="container">
-            <div className="footer-grid">
-              <div className="footer-col"><Logo size={28} showText /><p style={{ marginTop: '1rem', fontSize: '0.85rem', color: 'var(--txt-muted)' }}>{t('footer.aboutText')}</p></div>
-              <div className="footer-col"><h4>{t('footer.quick')}</h4><a href="#properties">Properties</a><a href="#cities">Locations</a><a href="#contact">Contact</a></div>
-              <div className="footer-col"><h4>{t('footer.support')}</h4><a href={`mailto:${supportInfo?.email || 'info@snapadda.com'}`}>{supportInfo?.email || 'info@snapadda.com'}</a><a href={`tel:${supportPhone}`}>{supportInfo?.phone || '+91 93467 93364'}</a></div>
-            </div>
-            <div className="footer-legal-links">
-              <Link to="/terms">Terms of Service</Link>
-              <Link to="/privacy">Privacy Policy</Link>
-              <Link to="/#contact">Contact Us</Link>
-              <Link to="/#about">About SnapAdda</Link>
-            </div>
-            <div className="footer-bottom"><span>© 2026 SnapAdda. {t('footer.rights')}</span></div>
-          </div>
-        </footer>
       </main>
 
       <FilterSidebar isOpen={filterOpen} onClose={() => setFilterOpen(false)} filters={advFilters} setFilters={setAdvFilters} onApply={() => {

@@ -262,7 +262,8 @@ export default function Header() {
             transition={{ duration: 0.2, ease: 'easeOut' }}
             style={{
               position: 'fixed',
-              top: '26px', left: 0, right: 0,
+              top: scrolled ? 'var(--nav-h)' : 'calc(var(--nav-h) + 1.5rem)', 
+              left: 0, right: 0,
               background: 'rgba(4, 4, 10, 0.97)',
               backdropFilter: 'blur(28px)',
               WebkitBackdropFilter: 'blur(28px)',
