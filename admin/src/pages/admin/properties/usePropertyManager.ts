@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { fetchProperties, createProperty, updateProperty, uploadMedia, fetchRealtors } from '../../../services/api';
 import { adminAIService } from '../../../services/aiService';
 
@@ -23,30 +23,38 @@ export const usePropertyManager = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'cards'>('cards');
   const [realtorData, setRealtorData] = useState<any>({});
   const [realtors, setRealtors] = useState<any[]>([]);
+  const [filters, setFilters] = useState({
+    type: '',
+    minPrice: '',
+    maxPrice: '',
+    bhk: '',
+    status: 'all',
+    purpose: ''
+  });
   const formTimeoutRef = useRef<any>(null);
 
-  useEffect(() => {
-    loadProperties();
-    loadRealtorsList();
-  }, []);
-
-  const loadProperties = async () => {
+  const loadProperties = useCallback(async () => {
     try {
-      const data = await fetchProperties({ status: 'all' });
+      const data = await fetchProperties({ ...filters, search });
       setProperties(data?.data || (Array.isArray(data) ? data : []));
     } catch {
       setProperties([]);
     }
-  };
+  }, [filters, search]);
 
-  const loadRealtorsList = async () => {
+  const loadRealtorsList = useCallback(async () => {
     try {
       const data = await fetchRealtors();
       setRealtors(data || []);
     } catch {
       setRealtors([]);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadProperties();
+    loadRealtorsList();
+  }, [loadProperties, loadRealtorsList]);
 
   const handleCloseForm = () => {
     setIsAdding(false);
@@ -186,16 +194,16 @@ export const usePropertyManager = () => {
   };
 
   const filteredProperties = useMemo(() => {
-    if (!search) return properties;
-    const k = search.toLowerCase();
-    return properties.filter(p => p.title?.toLowerCase().includes(k) || p.location?.toLowerCase().includes(k));
-  }, [properties, search]);
+    // With server-side filtering enabled, properties already match filters + search
+    return properties;
+  }, [properties]);
 
   return {
     properties, filteredProperties, isAdding, setIsAdding, isEditing, editingProperty,
     customFeatures, isVerified, setIsVerified, isFeatured, setIsFeatured, isElite, setIsElite,
     isTrustVerified, setIsTrustVerified, isGeneratingAI, isUploading, liveData, setLiveData,
     currentImageUrls, newImageFiles, priceUnit, setPriceUnit, search, setSearch, viewMode, setViewMode,
+    filters, setFilters, updateFilter: (key: string, val: any) => setFilters(prev => ({ ...prev, [key]: val })),
     loadProperties, handleCloseForm, handleEdit, handleGenerateAIDescription, handleAddSubmit,
     handleFormChange, 
     handleMediaChange: (urls: string[], files: File[], settings: any[]) => { 

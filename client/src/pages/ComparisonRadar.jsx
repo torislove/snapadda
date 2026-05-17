@@ -7,7 +7,7 @@ import {
   Trash2, ArrowRight
 } from 'lucide-react';
 import { fetchProperties } from '../services/api';
-import { formatSnapAddaPrice } from '../utils/priceUtils';
+import { formatSnapAddaPrice, getPropertyTypeKey } from '../utils/priceUtils';
 import { useTranslation } from 'react-i18next';
 
 const ComparisonRadar = () => {
@@ -46,7 +46,7 @@ const ComparisonRadar = () => {
 
   const attributes = [
     { label: 'Price', key: 'price', format: (v) => formatSnapAddaPrice(v), icon: <IndianRupee size={16} /> },
-    { label: 'Type', key: 'type', format: (v) => t(`types.${(v || '').toLowerCase()}`, v), icon: <Building size={16} /> },
+    { label: 'Type', key: 'type', format: (v) => t(`types.${getPropertyTypeKey(v)}`, v), icon: <Building size={16} /> },
     { label: 'Location', key: 'location', format: (v) => v, icon: <MapPin size={16} /> },
     { label: 'Size', key: 'areaSize', format: (v, p) => `${v} ${p.measurementUnit || 'Sq.Ft'}`, icon: <Square size={16} /> },
     { label: 'Facing', key: 'facing', format: (v) => t(`card.facing_${(v || '').toLowerCase()}`, v), icon: <Compass size={16} /> },

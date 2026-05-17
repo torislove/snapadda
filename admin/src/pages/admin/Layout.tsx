@@ -168,19 +168,7 @@ const AdminLayout = () => {
       )}
 
       {/* ── Sidebar ── */}
-      <aside className={`admin-sidebar ${isSidebarOpen ? 'open' : ''}`} style={{
-        background: 'rgba(10, 12, 20, 0.7)',
-        backdropFilter: 'blur(40px) saturate(200%)',
-        WebkitBackdropFilter: 'blur(40px) saturate(200%)',
-        boxShadow: '20px 0 60px rgba(0,0,0,0.6)',
-        borderRight: '1px solid var(--glass-border)',
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        height: '100vh',
-        zIndex: 1000,
-        transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)'
-      }}>
+      <aside className={`admin-sidebar ${isSidebarOpen ? 'open' : ''}`}>
         <div className="sidebar-header">
           <a 
             id="lnk-admin-logo"

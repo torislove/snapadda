@@ -21,12 +21,12 @@ const safeFetch = async (url, options = {}, retries = 2, backoff = 300) => {
   }
 };
 
-export const authGoogle = async (payload) => {
+export const authGoogle = async (data) => {
   try {
     const res = await fetch(`${API_BASE}/users/auth`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ payload }),
+      body: JSON.stringify(data),
     });
     if (!res.ok) throw new Error('Google authentication failed');
     return await res.json();

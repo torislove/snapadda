@@ -1,256 +1,172 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  Shield, Loader2, LogIn, Sparkles, AlertCircle, CheckCircle2
+} from 'lucide-react';
 import { GoogleLogin } from '@react-oauth/google';
-import { jwtDecode } from 'jwt-decode';
-import { Phone, MessageSquare, ArrowRight, ShieldCheck, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { authGoogle } from '../services/api';
-import Logo from '../components/Logo';
+import { triggerGoldBurst } from '../utils/CelebrationEngine';
 
 export default function Login() {
-  const { loginGoogle, user } = useAuth();
+  const { login, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const from = location.state?.from?.pathname || location.state?.from || '/';
+  const from = location.state?.from || '/';
 
-  // Prevent logged in users from seeing the login page
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const containerRef = useRef(null);
+
   useEffect(() => {
-    if (user) {
-      navigate(from, { replace: true });
-    }
+    if (user) navigate(from, { replace: true });
   }, [user, navigate, from]);
 
-  const [step, setStep] = useState('contact');   // 'contact' | 'google'
-  const [phone, setPhone] = useState('');
-  const [whatsapp, setWhatsapp] = useState('');
-  const [sameAsPhone, setSameAsPhone] = useState(false);
-  const [contactError, setContactError] = useState('');
-  const [loginError, setLoginError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [serverReady, setServerReady] = useState(false);
-
-  // Pre-warm the API connection on page load to eliminate cold-start delay on login
   useEffect(() => {
-    const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-    fetch(`${apiBase.replace(/\/+$/, '')}/warmup`, { method: 'GET', cache: 'no-store' })
-      .then(() => setServerReady(true))
-      .catch(() => setServerReady(true)); // Don't block on warmup failure
-  }, []);
+    const handleMouseMove = (e) => {
+      if (containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        const x = ((e.clientX - rect.left) / rect.width) * 100;
+        const y = ((e.clientY - rect.top) / rect.height) * 100;
+        containerRef.current.style.setProperty('--mouse-x', `${x}%`);
+        containerRef.current.style.setProperty('--mouse-y', `${y}%`);
+      }
+    };
 
-  const handleContactNext = (e) => {
-    e.preventDefault();
-    if (!phone.trim() || phone.replace(/\D/g, '').length < 10) {
-      setContactError('Please enter a valid 10-digit mobile number.');
-      return;
-    }
-    setContactError('');
-    setStep('google');
-  };
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, []);
 
   const handleGoogleSuccess = async (credentialResponse) => {
     setLoading(true);
-    setLoginError('');
+    setError('');
     try {
-      const decoded = jwtDecode(credentialResponse.credential);
-      const res = await authGoogle({
-        ...decoded,
-        phone: `+91${phone}`,
-        whatsapp: `+91${sameAsPhone ? phone : whatsapp}`,
+      const res = await authGoogle({ 
+        token: credentialResponse.credential
       });
-      if (res.status === 'success') {
-        loginGoogle({ user: res.user, token: credentialResponse.credential });
-        
-        // Elite Redirect: Check if they came from a gated property click
-        const savedRedirect = sessionStorage.getItem('snapadda_redirect');
-        if (savedRedirect) {
-          sessionStorage.removeItem('snapadda_redirect');
-          navigate(savedRedirect, { replace: true });
-        } else {
-          navigate(from, { replace: true });
-        }
-      }
-    } catch {
-      setLoginError('Google login failed. Please try again.');
+      triggerGoldBurst();
+      login(res.user);
+      navigate(from, { replace: true });
+    } catch (err) {
+      setError('Google synchronization failed. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  const wa = sameAsPhone ? phone : whatsapp;
-
   return (
     <div style={{
       minHeight: '100vh', width: '100vw', display: 'flex', alignItems: 'center', justifyContent: 'center',
-      background: 'var(--bg-deep)', 
-      padding: 'max(1.5rem, 4vw)', position: 'relative', overflow: 'hidden'
+      background: '#020205', position: 'relative', overflow: 'hidden', fontFamily: 'var(--font-body)'
     }}>
-      {/* Ambient glows */}
-      <div style={{ position: 'absolute', top: '-10%', left: '-10%', width: '600px', height: '600px', background: 'radial-gradient(circle, rgba(212,175,55,0.08) 0%, transparent 70%)', filter: 'blur(80px)', borderRadius: '50%', pointerEvents: 'none' }} />
-      <div style={{ position: 'absolute', bottom: '-10%', right: '-10%', width: '500px', height: '500px', background: 'radial-gradient(circle, rgba(155,89,245,0.06) 0%, transparent 70%)', filter: 'blur(80px)', borderRadius: '50%', pointerEvents: 'none' }} />
+      {/* Dynamic Background Elements */}
+      <div style={{ position: 'absolute', top: '-10%', left: '-10%', width: '60vw', height: '60vw', background: 'radial-gradient(circle, rgba(232,184,75,0.08) 0%, transparent 70%)', filter: 'blur(100px)', borderRadius: '50%' }} />
+      <div style={{ position: 'absolute', bottom: '-10%', right: '-10%', width: '50vw', height: '50vw', background: 'radial-gradient(circle, rgba(155,89,245,0.05) 0%, transparent 70%)', filter: 'blur(100px)', borderRadius: '50%' }} />
 
       <motion.div
-        initial={{ opacity: 0, y: 32, scale: 0.97 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-        className="glass-3d-heavy"
+        ref={containerRef}
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="glass-3d-liquid"
         style={{
-          width: '100%', maxWidth: '440px', borderRadius: '32px',
-          padding: 'clamp(2rem, 5vw, 2.75rem)',
-          position: 'relative', zIndex: 10, textAlign: 'center'
+          width: '100%', maxWidth: '420px', margin: '1rem', zIndex: 10,
+          display: 'flex', flexDirection: 'column'
         }}
       >
-        {/* Logo */}
-        <div style={{ marginBottom: '2rem' }}>
-          <Logo size={64} showText={false} />
-          <h1 className="text-liquid-gold" style={{ fontSize: '2.5rem', fontWeight: 950, marginTop: '1.25rem', color: '#fff', letterSpacing: '-0.04em' }}>
-            {step === 'contact' ? 'Access Properties' : 'Verify Identity'}
-          </h1>
-          <p style={{ color: 'rgba(255,255,255,0.45)', marginTop: '0.6rem', fontSize: '0.95rem', lineHeight: 1.6 }}>
-            {step === 'contact'
-              ? 'Enter your contact so our agent can reach you.'
-              : `Great! Now sign in with Google to continue.`}
-          </p>
+        <div className="liquid-glow" />
+        
+        {/* Progress Tracker (Static for single-view) */}
+        <div style={{ height: '3px', width: '100%', background: 'rgba(255,255,255,0.05)', position: 'relative', zIndex: 2 }}>
+          <motion.div 
+            initial={{ width: '0%' }}
+            animate={{ width: '100%' }}
+            style={{ height: '100%', background: 'var(--gold)', boxShadow: '0 0 15px var(--gold-glow)' }}
+          />
         </div>
 
-        {/* Step Indicators */}
-        <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', marginBottom: '2rem' }}>
-          {['contact', 'google'].map((s, i) => (
-            <div key={s} style={{ height: '4px', flex: 1, maxWidth: '60px', borderRadius: '4px', background: step === s || (s === 'contact' && step === 'google') ? 'var(--gold)' : 'rgba(255,255,255,0.12)', transition: 'background 0.3s ease' }} />
-          ))}
+        <div style={{ padding: '3.5rem 2.5rem', position: 'relative', zIndex: 1 }}>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '2.5rem' }}>
+            <div style={{ padding: '1rem', background: 'rgba(232,184,75,0.05)', borderRadius: '24px', border: '1px solid var(--border-gold)' }}>
+              <Shield size={48} className="text-gold" strokeWidth={1.5} />
+            </div>
+          </div>
+
+          <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+            <h1 style={{ fontSize: '2.25rem', fontWeight: 900, color: 'white', marginBottom: '0.75rem', letterSpacing: '-0.03em' }}>Institutional Access</h1>
+            <p style={{ color: 'var(--txt-muted)', fontSize: '0.95rem', fontWeight: 500, lineHeight: 1.6 }}>
+              Secure identity verification via Google Institutional Authentication.
+            </p>
+          </div>
+
+          {/* Primary Interaction: Google Institutional */}
+          <div style={{ position: 'relative', minHeight: '60px' }}>
+            {loading && (
+              <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10, background: 'rgba(2,2,5,0.5)', borderRadius: '20px', backdropFilter: 'blur(4px)' }}>
+                <Loader2 className="animate-spin text-gold" size={24} />
+              </div>
+            )}
+            
+            <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
+              <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={() => setError('Google Authentication Failed')}
+                theme="dark"
+                shape="pill"
+                size="large"
+                width="100%"
+                text="continue_with"
+                useOneTap
+              />
+            </div>
+          </div>
+
+          <div style={{ marginTop: '2.5rem', textAlign: 'center' }}>
+            <p style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.2)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+              By continuing, you agree to SnapAdda's <br />
+              <span style={{ color: 'var(--gold)' }}>Terms of Service</span> & <span style={{ color: 'var(--gold)' }}>Privacy Policy</span>
+            </p>
+          </div>
         </div>
 
-        <AnimatePresence mode="wait">
+        {/* Liquid Status Footer */}
+        <div style={{ background: 'rgba(255,255,255,0.01)', padding: '1.5rem', borderTop: '1px solid rgba(255,255,255,0.03)', textAlign: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10d98c', boxShadow: '0 0 10px rgba(16,217,140,0.4)' }} />
+            <span style={{ fontSize: '0.7rem', fontWeight: 900, color: 'rgba(255,255,255,0.2)', textTransform: 'uppercase', letterSpacing: '0.15em' }}>
+              Secure Gateway Enabled
+            </span>
+          </div>
+        </div>
 
-          {/* STEP 1: Phone + WhatsApp */}
-          {step === 'contact' && (
-            <motion.form
-              key="contact"
-              initial={{ opacity: 0, x: 24 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -24 }}
-              transition={{ duration: 0.3 }}
-              onSubmit={handleContactNext}
-              style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', textAlign: 'left' }}
+        {/* Instant Feedback Overlay */}
+        <AnimatePresence>
+          {error && (
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+              style={{
+                position: 'absolute', bottom: '2rem', left: '2rem', right: '2rem',
+                padding: '1rem 1.5rem', borderRadius: '16px', background: 'rgba(245,57,123,0.1)',
+                border: '1px solid rgba(245,57,123,0.2)',
+                color: 'var(--rose)', fontSize: '0.85rem', fontWeight: 700,
+                display: 'flex', alignItems: 'center', gap: '12px', zIndex: 100, backdropFilter: 'blur(20px)'
+              }}
             >
-              {/* Mobile */}
-              <div>
-                <label htmlFor="phone" style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '0.72rem', fontWeight: 700, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px' }}>
-                  <Phone size={13} color="var(--gold)" /> Mobile Number
-                </label>
-                <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '14px', overflow: 'hidden' }}>
-                  <span style={{ padding: '0 14px', color: 'rgba(255,255,255,0.4)', fontSize: '0.9rem', fontWeight: 700, borderRight: '1px solid rgba(255,255,255,0.08)', height: '52px', display: 'flex', alignItems: 'center' }}>+91</span>
-                  <input
-                    id="phone" name="phone" type="tel" inputMode="numeric" maxLength={10} placeholder="98XXXXXXXX" value={phone}
-                    onChange={e => setPhone(e.target.value.replace(/\D/g, ''))}
-                    onFocus={e => e.target.parentElement.style.borderColor = 'rgba(212,175,55,0.6)'}
-                    onBlur={e => e.target.parentElement.style.borderColor = 'rgba(255,255,255,0.12)'}
-                    style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: 'white', fontSize: '1rem', fontWeight: 600, padding: '0 16px', height: '52px', letterSpacing: '0.06em' }}
-                  />
-                </div>
-              </div>
-
-              {/* WhatsApp */}
-              <div>
-                <label htmlFor="whatsapp" style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '0.72rem', fontWeight: 700, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px' }}>
-                  <MessageSquare size={13} color="#25D366" /> WhatsApp Number
-                </label>
-                <div style={{ display: 'flex', alignItems: 'center', background: sameAsPhone ? 'rgba(37,211,102,0.04)' : 'rgba(255,255,255,0.04)', border: `1px solid ${sameAsPhone ? 'rgba(37,211,102,0.3)' : 'rgba(255,255,255,0.12)'}`, borderRadius: '14px', overflow: 'hidden', transition: 'all 0.2s' }}>
-                  <span style={{ padding: '0 14px', color: 'rgba(255,255,255,0.4)', fontSize: '0.9rem', fontWeight: 700, borderRight: '1px solid rgba(255,255,255,0.08)', height: '52px', display: 'flex', alignItems: 'center' }}>+91</span>
-                  <input
-                    id="whatsapp" name="whatsapp" type="tel" inputMode="numeric" maxLength={10} placeholder="WhatsApp number"
-                    value={sameAsPhone ? phone : whatsapp}
-                    onChange={e => { setSameAsPhone(false); setWhatsapp(e.target.value.replace(/\D/g, '')); }}
-                    disabled={sameAsPhone}
-                    style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: 'white', fontSize: '1rem', fontWeight: 600, padding: '0 16px', height: '52px', letterSpacing: '0.06em', opacity: sameAsPhone ? 0.5 : 1 }}
-                  />
-                </div>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px', cursor: 'pointer' }}
-                  onClick={() => setSameAsPhone(v => !v)}>
-                  <div style={{ width: '17px', height: '17px', borderRadius: '4px', border: `1px solid ${sameAsPhone ? '#25D366' : 'rgba(255,255,255,0.2)'}`, background: sameAsPhone ? '#25D366' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all 0.2s' }}>
-                    {sameAsPhone && <CheckCircle2 size={11} color="#fff" />}
-                  </div>
-                  <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)', userSelect: 'none' }}>Same as mobile number</span>
-                </label>
-              </div>
-
-              {contactError && (
-                <div style={{ background: 'rgba(240,93,94,0.1)', border: '1px solid rgba(240,93,94,0.3)', borderRadius: '12px', padding: '0.75rem 1rem', fontSize: '0.85rem', color: '#f87171' }}>
-                  {contactError}
-                </div>
-              )}
-
-              <motion.button type="submit" whileTap={{ scale: 0.97 }}
-                style={{ width: '100%', padding: '1rem', borderRadius: '16px', background: 'linear-gradient(135deg, var(--gold) 0%, #d4a017 100%)', border: 'none', color: '#0a0c14', fontWeight: 900, fontSize: '0.95rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', boxShadow: '0 8px 24px rgba(212,175,55,0.3)', marginTop: '0.25rem' }}>
-                Continue <ArrowRight size={18} />
-              </motion.button>
-
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-                <ShieldCheck size={13} color="var(--emerald)" />
-                <span style={{ fontSize: '0.73rem', color: 'rgba(255,255,255,0.3)' }}>Your number is private &amp; never shared</span>
-              </div>
-            </motion.form>
-          )}
-
-          {/* STEP 2: Google Sign-In */}
-          {step === 'google' && (
-            <motion.div
-              key="google"
-              initial={{ opacity: 0, x: 24 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -24 }}
-              transition={{ duration: 0.3 }}
-              style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', textAlign: 'center' }}
-            >
-              {/* Contact summary */}
-              <div style={{ background: 'rgba(37,211,102,0.06)', border: '1px solid rgba(37,211,102,0.2)', borderRadius: '14px', padding: '1rem 1.25rem', display: 'flex', alignItems: 'center', gap: '12px', textAlign: 'left' }}>
-                <CheckCircle2 size={18} color="#25D366" />
-                <div>
-                  <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Contact Saved</div>
-                  <div style={{ fontSize: '0.9rem', color: 'white', fontWeight: 700, marginTop: '2px' }}>+91 {phone} · WhatsApp +91 {wa || phone}</div>
-                </div>
-              </div>
-
-              <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '100px', padding: '6px', display: 'flex', justifyContent: 'center' }}>
-                {loading ? (
-                  <div style={{ height: '48px', display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--gold)' }}>
-                    <div style={{ width: '18px', height: '18px', border: '2px solid transparent', borderTopColor: 'currentColor', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
-                    <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>Connecting...</span>
-                  </div>
-                ) : (
-                  <GoogleLogin
-                    onSuccess={handleGoogleSuccess}
-                    onError={() => setLoginError('Google Login Failed')}
-                    theme="filled_black"
-                    shape="circle"
-                    size="large"
-                    useOneTap={false}
-                    use_fedcm_for_prompt={true}
-                  />
-                )}
-              </div>
-
-              {loginError && (
-                <div style={{ background: 'rgba(240,93,94,0.1)', border: '1px solid rgba(240,93,94,0.3)', borderRadius: '12px', padding: '0.75rem 1rem', fontSize: '0.85rem', color: '#f87171' }}>
-                  {loginError}
-                </div>
-              )}
-
-              <button onClick={() => setStep('contact')} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', fontSize: '0.8rem', cursor: 'pointer', textDecoration: 'underline' }}>
-                ← Change my contact
+              <AlertCircle size={18} />
+              {error}
+              <button onClick={() => setError('')} style={{ marginLeft: 'auto', background: 'transparent', border: 'none', color: 'inherit', cursor: 'pointer' }}>
+                <LogIn size={16} />
               </button>
             </motion.div>
           )}
         </AnimatePresence>
-
-        <p style={{ marginTop: '2rem', fontSize: '0.75rem', color: 'rgba(255,255,255,0.28)', lineHeight: 1.7 }}>
-          By continuing you agree to our{' '}
-          <a href="/terms" style={{ color: 'var(--gold)', textDecoration: 'none' }}>Terms</a> &amp;{' '}
-          <a href="/privacy" style={{ color: 'var(--gold)', textDecoration: 'none' }}>Privacy Policy</a>.
-        </p>
       </motion.div>
 
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <style>{`
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .animate-spin { animation: spin 1s linear infinite; }
+        .text-gold { color: var(--gold); }
+      `}</style>
     </div>
   );
 }

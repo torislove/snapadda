@@ -116,16 +116,20 @@ export const getProperties = async (req, res) => {
 
     if (type && type !== 'all') {
       const typeLower = type.toLowerCase();
-      if (typeLower.includes('plot') || typeLower === 'gajalu') {
+      if (typeLower === 'plot' || typeLower === 'gajalu' || typeLower === 'plots') {
         filter.type = { $in: ['Plot', 'Residential Plot', 'Commercial Plot', 'Gated Community Plot', 'CRDA Approved Plot', 'Open Plot', 'Layout Plot', 'Industrial Plot'] };
-      } else if (typeLower.includes('agri') || typeLower.includes('farm')) {
+      } else if (typeLower === 'agriculture' || typeLower === 'agri' || typeLower === 'agricultural') {
         filter.type = { $in: ['Agricultural Land', 'Farmhouse', 'Farm Villa', 'Acreage', 'Plantation'] };
-      } else if (typeLower.includes('villa') || typeLower.includes('house') || typeLower.includes('duplex')) {
-        filter.type = { $in: ['Villa', 'Independent House', 'Duplex', 'Penthouse', 'Bungalow'] };
-      } else if (typeLower.includes('apartment') || typeLower.includes('flat')) {
+      } else if (typeLower === 'residential') {
+        filter.type = { $in: ['Apartment', 'Flat', 'Apartment / Flat', 'Studio Apartment', 'Villa', 'Independent House', 'Duplex', 'Penthouse', 'Bungalow', 'Gated Community Plot', 'Residential Plot'] };
+      } else if (typeLower === 'commercial') {
+        filter.type = { $in: ['Commercial Plot', 'Commercial Space', 'Office Space', 'Showroom', 'Showroom / Retail'] };
+      } else if (typeLower === 'apartment' || typeLower === 'flat') {
         filter.type = { $in: ['Apartment', 'Flat', 'Apartment / Flat', 'Studio Apartment'] };
+      } else if (typeLower === 'villa') {
+        filter.type = { $in: ['Villa', 'Villa / Duplex', 'Duplex', 'Penthouse', 'Bungalow'] };
       } else {
-        filter.type = { $regex: type, $options: 'i' };
+        filter.type = { $regex: `^${type}$`, $options: 'i' };
       }
     }
 

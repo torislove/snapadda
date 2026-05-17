@@ -8,11 +8,8 @@ const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/snapad
 async function run() {
   await mongoose.connect(MONGODB_URI);
   console.log('Connected to MongoDB!');
-  const allPromos = await Promotion.find({});
-  console.log(`Found ${allPromos.length} promotions in database:`);
-  allPromos.forEach((p, i) => {
-    console.log(`[${i + 1}] Title: "${p.title}", Type: "${p.type}", PromotionType: "${p.promotionType}", isActive: ${p.isActive}, DisplaySegment: "${p.displaySegment}"`);
-  });
+  const result = await Promotion.updateMany({}, { isActive: true });
+  console.log(`Updated ${result.modifiedCount} promotions to isActive: true.`);
   await mongoose.disconnect();
 }
 

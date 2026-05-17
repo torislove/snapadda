@@ -10,7 +10,7 @@ const navItems = [
   { id: 'dashboard',   icon: LayoutDashboard, label: 'Home',      path: '/admin' },
   { id: 'properties',  icon: Building,        label: 'Assets',    path: '/admin/properties' },
   { id: 'leads',       icon: Users,           label: 'Leads',     path: '/admin/leads' },
-  { id: 'contacts',    icon: MessageSquare,   label: 'Comms',     path: '/admin/comms' },
+  { id: 'contacts',    icon: MessageSquare,   label: 'Comms',     path: '/admin/contacts' },
   { id: 'settings',    icon: Settings,        label: 'Setup',     path: '/admin/settings' },
 ];
 

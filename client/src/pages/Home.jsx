@@ -39,6 +39,8 @@ import { Helmet } from 'react-helmet-async';
 import MarketHotspot from '../components/MarketHotspot';
 import FreeListingCTA from '../components/FreeListingCTA';
 import BroadcastBanner from '../components/BroadcastBanner';
+import PullToRefresh from '../components/PullToRefresh';
+import Interactive3DGlobe from '../components/Interactive3DGlobe';
 
 // Lazy Loaded Regional Sitemap for SEO
 const RegionalSitemap = lazy(() => import('../components/RegionalSitemap'));
@@ -229,6 +231,7 @@ export default function Home() {
   const { t } = useTranslation();
   const scrolled = useScrolled();
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [isTablet, setIsTablet] = useState(window.innerWidth < 1024);
   const typedWord = useTypewriter(['Apartments', 'Villas', 'Farmland', 'Premium Plots', 'CRDA Homes']);
   const searchRef = useRef(null);
   const { getTopPreferences } = useBehaviorTracker();
@@ -297,30 +300,30 @@ export default function Home() {
   }, [keyword]);
 
   // Critical Data Fetch (Hero & Initial Properties)
+  const loadCritical = useCallback(async () => {
+    try {
+      const [propData, agriData, plotData, promoData, control] = await Promise.all([
+        fetchProperties({ limit: 12 }),
+        fetchProperties({ type: 'Agricultural Land', limit: 8 }),
+        fetchProperties({ type: 'Residential Plot', limit: 8 }),
+        fetchPromotions('segment=hero'),
+        fetchSetting('site_control')
+      ]);
+
+      setProperties(propData?.data || (Array.isArray(propData) ? propData : []));
+      setAgriProperties(agriData?.data || (Array.isArray(agriData) ? agriData : []));
+      setPlotProperties(plotData?.data || (Array.isArray(plotData) ? plotData : []));
+      setPromotions(promoData?.data || (Array.isArray(promoData) ? promoData : []));
+      setHeroPromotion(Array.isArray(promoData?.data) ? promoData?.data[0] : null);
+      setSiteControl(prev => ({ ...prev, ...(control || {}) }));
+      setLoading(false);
+    } catch (err) {
+      console.error("Critical load failed:", err);
+      setLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
-    const loadCritical = async () => {
-      try {
-        const [propData, agriData, plotData, promoData, control] = await Promise.all([
-          fetchProperties({ limit: 12 }),
-          fetchProperties({ type: 'Agricultural Land', limit: 8 }),
-          fetchProperties({ type: 'Residential Plot', limit: 8 }),
-          fetchPromotions('segment=hero'),
-          fetchSetting('site_control')
-        ]);
-
-        setProperties(propData?.data || (Array.isArray(propData) ? propData : []));
-        setAgriProperties(agriData?.data || (Array.isArray(agriData) ? agriData : []));
-        setPlotProperties(plotData?.data || (Array.isArray(plotData) ? plotData : []));
-        setPromotions(promoData?.data || (Array.isArray(promoData) ? promoData : []));
-        setHeroPromotion(Array.isArray(promoData?.data) ? promoData?.data[0] : null);
-        setSiteControl(prev => ({ ...prev, ...(control || {}) }));
-        setLoading(false);
-      } catch (err) {
-        console.error("Critical load failed:", err);
-        setLoading(false);
-      }
-    };
-
     loadCritical();
 
     // Deferred Data Fetch (Background / Idle)
@@ -351,11 +354,15 @@ export default function Home() {
     } else {
       setTimeout(loadDeferred, 1500);
     }
-  }, []);
+  }, [loadCritical]);
 
   // 120Hz Smooth Geolocation & Data Sync
   useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+      setIsTablet(window.innerWidth < 1024);
+    };
+    window.addEventListener('resize', handleResize, { passive: true });
     const handleScroll = () => {
       // Logic for scroll effects can be added here if needed
     };
@@ -373,7 +380,10 @@ export default function Home() {
       );
     }
 
-    return () => window.removeEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('scroll', handleScroll);
+    };
   }, []);
 
 
@@ -644,8 +654,9 @@ export default function Home() {
       <div style={{ position: 'fixed', bottom: '10%', right: '-10%', width: '35vw', height: '35vw', background: 'radial-gradient(circle, rgba(244,208,63,0.06) 0%, transparent 70%)', pointerEvents: 'none', zIndex: 1 }} />
 
       <main style={{ flex: 1, paddingTop: 'var(--nav-h)' }}>
-        <Marquee />
-        <BroadcastBanner />
+        <PullToRefresh onRefresh={loadCritical}>
+          <Marquee />
+          <BroadcastBanner />
 
         <section className="promo-section-top" style={{ padding: isMobile ? '1.5rem 0 1rem' : '3rem 0 2rem' }}>
           <div className="container" style={{ alignItems: 'stretch' }}>
@@ -666,9 +677,7 @@ export default function Home() {
           style={{ 
             padding: isMobile ? '12px 0 6px' : '20px 0 12px', 
             position: 'relative', 
-            overflow: 'hidden',
-            display: 'flex',
-            alignItems: 'center'
+            overflow: 'hidden'
           }}
         >
         {/* Video Background Layer - Deferred Load for Performance */}
@@ -683,21 +692,31 @@ export default function Home() {
           </video>
         )}
           <div className="container" style={{ position: 'relative', zIndex: 10, height: '100%' }}>
-            <RecentlySoldTicker />
             
-            <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
-              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="hero-eyebrow" style={{ margin: '0 auto 1.25rem', background: 'rgba(232,184,75,0.1)', color: 'var(--gold)', border: '1px solid rgba(232,184,75,0.2)' }}>
-                <ShieldCheck size={12} /> ANDHRA'S #1 TRUSTED NETWORK
-              </motion.div>
-              <motion.h1 
-                initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-                className="hero-title text-liquid-gold" style={{ fontSize: isMobile ? '2.5rem' : '5rem', lineHeight: 1.05, marginBottom: '1.25rem', fontWeight: 950, letterSpacing: '-0.02em' }}
-              >
-                {heroMode === 'selection' ? t('hero.title1') : "Find Your Perfect Asset"}
-              </motion.h1>
-              <p style={{ color: 'var(--txt-secondary)', fontSize: isMobile ? '1rem' : '1.35rem', maxWidth: '750px', margin: '0 auto', lineHeight: 1.7, fontWeight: 500, opacity: 0.8 }}>
-                {heroMode === 'selection' ? t('hero.subtitle') : "Use our advanced spatial filters to locate verified properties near you."}
-              </p>
+            <div style={{ display: 'flex', flexDirection: isTablet ? 'column' : 'row', alignItems: 'center', justifyContent: 'space-between', gap: isTablet ? '1.5rem' : '3rem', marginBottom: '2.5rem' }}>
+              <div style={{ flex: 1.2, textAlign: isTablet ? 'center' : 'left', display: 'flex', flexDirection: 'column', alignItems: isTablet ? 'center' : 'flex-start', width: '100%' }}>
+                <RecentlySoldTicker />
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="hero-eyebrow" style={{ margin: isTablet ? '0 auto 1.25rem' : '0 0 1.25rem 0', background: 'rgba(232,184,75,0.1)', color: 'var(--gold)', border: '1px solid rgba(232,184,75,0.2)', width: 'fit-content' }}>
+                  <ShieldCheck size={12} /> ANDHRA'S #1 TRUSTED NETWORK
+                </motion.div>
+                <motion.h1 
+                  initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+                  className="hero-title text-liquid-gold" style={{ fontSize: isMobile ? '2.1rem' : isTablet ? '3.2rem' : '4.5rem', lineHeight: 1.05, marginBottom: '1.25rem', fontWeight: 950, letterSpacing: '-0.02em', wordBreak: 'break-word', width: '100%' }}
+                >
+                  {heroMode === 'selection' ? t('hero.title1') : "Find Your Perfect Asset"}
+                </motion.h1>
+                <p style={{ color: 'var(--txt-secondary)', fontSize: isMobile ? '0.95rem' : '1.25rem', maxWidth: '750px', margin: isTablet ? '0 auto' : '0', lineHeight: 1.7, fontWeight: 500, opacity: 0.8 }}>
+                  {heroMode === 'selection' ? t('hero.subtitle') : "Use our advanced spatial filters to locate verified properties near you."}
+                </p>
+              </div>
+
+              {!isMobile && (
+                <div style={{ flex: 0.8, width: '100%', height: isTablet ? '280px' : '350px', position: 'relative', display: 'flex', justifyContent: 'center', alignItems: 'center', marginTop: isTablet ? '1rem' : '0' }}>
+                  <Suspense fallback={<div style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.85rem', fontWeight: 800 }}>Loading 3D Spatial Nodes...</div>}>
+                    <Interactive3DGlobe />
+                  </Suspense>
+                </div>
+              )}
             </div>
 
             <AnimatePresence mode="wait">
@@ -1101,6 +1120,7 @@ export default function Home() {
           <RegionalSitemap />
         </Suspense>
 
+        </PullToRefresh>
       </main>
 
       <FilterSidebar isOpen={filterOpen} onClose={() => setFilterOpen(false)} filters={advFilters} setFilters={setAdvFilters} onApply={() => {

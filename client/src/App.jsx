@@ -1,6 +1,6 @@
 import { lazy, Suspense, useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { LazyMotion, domAnimation, AnimatePresence } from 'framer-motion';
+import { LazyMotion, domAnimation, AnimatePresence, motion } from 'framer-motion';
 import { useAuth } from './contexts/AuthContext';
 import Header from './components/Header';
 import GlobalLoader from './components/GlobalLoader';
@@ -34,6 +34,7 @@ const RegionalDirectory = lazy(() => import('./pages/RegionalDirectory'));
 import Logo from './components/Logo';
 import { useGoogleMarketing } from './utils/useGoogleMarketing';
 import ScrollToTop from './components/ScrollToTop';
+import PwaInstallBanner from './components/PwaInstallBanner';
 // SnapAdda Quantum Loader (Imported above)
 
 function ProtectedRoute({ children }) {
@@ -41,7 +42,7 @@ function ProtectedRoute({ children }) {
   const location = useLocation();
 
   if (isLoading) return <GlobalLoader mode="inline" />;
-  if (!user) return <Navigate to="/login" replace state={{ from: location }} />;
+  if (!user) return <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />;
   
   // Allow both clients and admins to access client routes to prevent redirect loops
   const hasAccess = user.role === 'client' || user.role === 'admin';
@@ -57,6 +58,20 @@ function ProtectedRoute({ children }) {
 
 
 import Footer from './components/Footer';
+
+function PageTransitionWrapper({ children }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -12 }}
+      transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+      style={{ width: '100%', minHeight: '100%', willChange: 'transform, opacity' }}
+    >
+      {children}
+    </motion.div>
+  );
+}
 
 function AppContent() {
 
@@ -80,30 +95,33 @@ function AppContent() {
         paddingBottom: '20px', 
       }} className="app-main-content">
         <Suspense fallback={<GlobalLoader mode="inline" />}>
-          <Routes location={location}>
-            <Route path="/login" element={<Login />} />
-            <Route path="/" element={<Home />} />
-            <Route path="/search" element={<SearchResults />} />
-            <Route path="/property/:id" element={<PropertyDetails />} />
-            <Route path="/promotion/:id" element={<PromotionDetail />} />
-            <Route path="/local-agency/:city" element={<LocalAgency />} />
-            <Route path="/post-property" element={<PostProperty />} />
-            <Route path="/compare" element={<ComparisonRadar />} />
-            <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
-            <Route path="/dashboard/*" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-            <Route path="/profile" element={<ProtectedRoute><Dashboard defaultTab="profile" /></ProtectedRoute>} />
-            <Route path="/request-callback" element={<RequestPage />} />
-            <Route path="/terms" element={<Terms />} />
-            <Route path="/privacy" element={<Privacy />} />
-            <Route path="/regional-directory" element={<RegionalDirectory />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
+          <AnimatePresence mode="wait">
+            <Routes location={location} key={location.pathname}>
+              <Route path="/login" element={<PageTransitionWrapper><Login /></PageTransitionWrapper>} />
+              <Route path="/" element={<PageTransitionWrapper><Home /></PageTransitionWrapper>} />
+              <Route path="/search" element={<PageTransitionWrapper><SearchResults /></PageTransitionWrapper>} />
+              <Route path="/property/:id" element={<PageTransitionWrapper><PropertyDetails /></PageTransitionWrapper>} />
+              <Route path="/promotion/:id" element={<PageTransitionWrapper><PromotionDetail /></PageTransitionWrapper>} />
+              <Route path="/local-agency/:city" element={<PageTransitionWrapper><LocalAgency /></PageTransitionWrapper>} />
+              <Route path="/post-property" element={<PageTransitionWrapper><PostProperty /></PageTransitionWrapper>} />
+              <Route path="/compare" element={<PageTransitionWrapper><ComparisonRadar /></PageTransitionWrapper>} />
+              <Route path="/onboarding" element={<ProtectedRoute><PageTransitionWrapper><Onboarding /></PageTransitionWrapper></ProtectedRoute>} />
+              <Route path="/dashboard/*" element={<ProtectedRoute><PageTransitionWrapper><Dashboard /></PageTransitionWrapper></ProtectedRoute>} />
+              <Route path="/profile" element={<ProtectedRoute><PageTransitionWrapper><Dashboard defaultTab="profile" /></PageTransitionWrapper></ProtectedRoute>} />
+              <Route path="/request-callback" element={<PageTransitionWrapper><RequestPage /></PageTransitionWrapper>} />
+              <Route path="/terms" element={<PageTransitionWrapper><Terms /></PageTransitionWrapper>} />
+              <Route path="/privacy" element={<PageTransitionWrapper><Privacy /></PageTransitionWrapper>} />
+              <Route path="/regional-directory" element={<PageTransitionWrapper><RegionalDirectory /></PageTransitionWrapper>} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </AnimatePresence>
         </Suspense>
       </div>
       {showFooter && <Footer />}
       <ComparisonHud />
       <FloatingOffers />
       <MobileBottomNav />
+      <PwaInstallBanner />
       <LeadCaptureModal 
         isOpen={showModal} 
         onClose={() => setShowModal(false)} 

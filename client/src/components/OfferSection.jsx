@@ -3,8 +3,16 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, ArrowRight, FileText, Play } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { fetchPromotions, trackPromotionView, trackPromotionClick } from '../services/api';
+import MediaViewerContainer from './MediaViewerContainer';
 
-const OfferCard = ({ promo, isMobile }) => {
+// Import Swiper components & modules
+import { Swiper, SwiperSlide } from 'swiper/react';
+import { EffectCoverflow, Pagination, Autoplay } from 'swiper/modules';
+import 'swiper/css';
+import 'swiper/css/effect-coverflow';
+import 'swiper/css/pagination';
+
+const OfferCard = ({ promo, isMobile, onSelect }) => {
   const navigate = useNavigate();
   const cardRef = useRef(null);
   
@@ -62,9 +70,9 @@ const OfferCard = ({ promo, isMobile }) => {
     return `${parts[0]}/upload/${transform}/${parts[1]}`;
   };
 
-  // Advanced Scaled Dimensions (Elite v7 Scale)
+  // Advanced Scaled Dimensions (Precise Vertical 3:4 Aspect Ratio)
   const cardWidth = isMobile ? '12rem' : '18rem';
-  const cardHeight = isMobile ? '18rem' : '26rem';
+  const cardHeight = isMobile ? '16rem' : '24rem';
 
   return (
     <motion.div
@@ -73,7 +81,10 @@ const OfferCard = ({ promo, isMobile }) => {
       onMouseLeave={handleMouseLeave}
       animate={{ rotateX, rotateY, scale: rotateX !== 0 ? 1.05 : 1 }}
       transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-      onClick={() => navigate(`/promotion/${promo._id}`)}
+      onClick={() => {
+        if (promo._id) trackPromotionClick(promo._id);
+        onSelect(promo);
+      }}
       className="elite-promo-card-v6"
       style={{
         perspective: '1200px',
@@ -103,7 +114,7 @@ const OfferCard = ({ promo, isMobile }) => {
       }} />
 
       {/* Video Background Preview (Auto-play muted) */}
-      {(promo.videoUrl || (promo.image && promo.image.endsWith('.mp4'))) ? (
+      {(promo.promotionType === 'video' || promo.videoUrl || (promo.image && promo.image.endsWith('.mp4'))) ? (
         <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
           <video 
             src={promo.videoUrl || promo.image} 
@@ -131,7 +142,7 @@ const OfferCard = ({ promo, isMobile }) => {
 
       {/* Media Type Badges */}
       <div style={{ position: 'absolute', top: '0.75rem', right: '0.75rem', zIndex: 20, display: 'flex', gap: '5px' }}>
-        {(promo.videoUrl || (promo.image && promo.image.endsWith('.mp4'))) && (
+        {(promo.promotionType === 'video' || promo.videoUrl || (promo.image && promo.image.endsWith('.mp4'))) && (
           <div style={{ padding: '4px', borderRadius: '8px', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)', color: 'white', border: '1px solid rgba(255,255,255,0.2)' }}>
             <Play size={10} fill="white" />
           </div>
@@ -193,31 +204,14 @@ const OfferCard = ({ promo, isMobile }) => {
 export default function OfferSection({ designTokens, promotions: externalPromos }) {
   const [promotions, setPromotions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedPromo, setSelectedPromo] = useState(null);
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' && window.innerWidth < 768);
-  const scrollRef = useRef(null);
-  const [scrollProgress, setScrollProgress] = useState(0);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
     window.addEventListener('resize', handleResize);
-    
-    const handleScroll = () => {
-      if (!scrollRef.current) return;
-      const el = scrollRef.current;
-      const progress = (el.scrollLeft / (el.scrollWidth - el.clientWidth)) * 100;
-      setScrollProgress(progress);
-    };
-
-    const scrollEl = scrollRef.current;
-    if (scrollEl) {
-      scrollEl.addEventListener('scroll', handleScroll, { passive: true });
-    }
-
-    return () => {
-      window.removeEventListener('resize', handleResize);
-      if (scrollEl) scrollEl.removeEventListener('scroll', handleScroll);
-    };
-  }, [loading]);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     if (externalPromos && externalPromos.length > 0) {
@@ -237,50 +231,78 @@ export default function OfferSection({ designTokens, promotions: externalPromos 
   if (!loading && promotions.length === 0) return null;
 
   return (
-    <div className="offer-section-v5-wrap" style={{ padding: isMobile ? '1rem 0' : '2.5rem 0', position: 'relative' }}>
-      <div style={{ position: 'relative' }}>
-          <div 
-          ref={scrollRef}
-          className="hide-scrollbar"
-          style={{ 
-            display: 'flex', 
-            gap: isMobile ? '0.75rem' : '1.25rem', 
-            overflowX: 'auto', 
-            padding: isMobile ? '0.5rem 0 1.5rem' : '1rem 0 2rem',
-            scrollSnapType: 'x mandatory',
-            paddingLeft: isMobile ? '1rem' : 'max(1.5rem, calc((100vw - 1200px) / 2))',
-            paddingRight: '1rem',
-            scrollbarWidth: 'none',
-            msOverflowStyle: 'none',
-          }}
-        >
-          {loading ? (
-            [...Array(3)].map((_, i) => (
-              <div key={i} style={{ minWidth: isMobile ? '9rem' : '12rem', height: isMobile ? '14rem' : '18rem', borderRadius: '1.25rem', background: 'rgba(255,255,255,0.03)', animation: 'pulse 1.5s infinite' }} />
-            ))
-          ) : (
-            promotions.map(p => <OfferCard key={p._id} promo={p} isMobile={isMobile} />)
-          )}
-        </div>
-
-        {!isMobile && promotions.length > 3 && (
-          <div style={{ position: 'absolute', top: '-60px', right: '0', display: 'flex', gap: '10px' }}>
-            <button onClick={() => scrollRef.current?.scrollBy({ left: -400, behavior: 'smooth' })} style={{ width: '42px', height: '42px', borderRadius: '12px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }} onPointerEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'} onPointerLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.04)'}><ChevronLeft size={20} /></button>
-            <button onClick={() => scrollRef.current?.scrollBy({ left: 400, behavior: 'smooth' })} style={{ width: '42px', height: '42px', borderRadius: '12px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }} onPointerEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'} onPointerLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.04)'}><ChevronRight size={20} /></button>
+    <div className="offer-section-v5-wrap" style={{ padding: isMobile ? '0.5rem 0' : '2rem 0', position: 'relative' }}>
+      <div style={{ position: 'relative', width: '100%' }}>
+        {loading ? (
+          <div style={{ display: 'flex', gap: '1rem', overflowX: 'hidden', padding: '1rem 20px' }}>
+            {[...Array(3)].map((_, i) => (
+              <div key={i} style={{ minWidth: isMobile ? '12rem' : '18rem', height: isMobile ? '16rem' : '24rem', borderRadius: '1.25rem', background: 'rgba(255,255,255,0.03)', animation: 'pulse 1.5s infinite' }} />
+            ))}
           </div>
+        ) : (
+          <Swiper
+            effect={isMobile ? 'coverflow' : 'slide'}
+            grabCursor={true}
+            centeredSlides={isMobile}
+            slidesPerView={'auto'}
+            spaceBetween={isMobile ? 12 : 24}
+            coverflowEffect={{
+              rotate: 15,
+              stretch: 0,
+              depth: 80,
+              modifier: 1,
+              slideShadows: false,
+            }}
+            autoplay={{
+              delay: 4000,
+              disableOnInteraction: false,
+            }}
+            pagination={{
+              clickable: true,
+              dynamicBullets: true,
+            }}
+            modules={[EffectCoverflow, Pagination, Autoplay]}
+            style={{ 
+              width: '100%', 
+              padding: '1rem 0 3.5rem',
+              paddingLeft: isMobile ? '0' : 'max(1.5rem, calc((100vw - 1200px) / 2))',
+              paddingRight: isMobile ? '0' : '1.5rem',
+            }}
+          >
+            {promotions.map(p => (
+              <SwiperSlide key={p._id} style={{ width: 'auto', display: 'flex', justifyContent: 'center' }}>
+                <OfferCard promo={p} isMobile={isMobile} onSelect={setSelectedPromo} />
+              </SwiperSlide>
+            ))}
+          </Swiper>
         )}
       </div>
 
-      {/* Sophisticated Liquid Progress */}
-      <div style={{ display: 'flex', justifyContent: 'center', marginTop: '-15px' }}>
-        <div style={{ width: '100px', height: '3px', background: 'rgba(255,255,255,0.1)', borderRadius: '10px', overflow: 'hidden', position: 'relative' }}>
-          <motion.div 
-            initial={{ width: '20%' }}
-            animate={{ width: `${Math.max(20, scrollProgress)}%` }}
-            style={{ height: '100%', background: 'var(--gold)', borderRadius: '10px', boxShadow: '0 0 10px rgba(232,184,75,0.5)' }} 
-          />
-        </div>
-      </div>
+      <style>{`
+        .swiper-pagination {
+          bottom: 10px !important;
+        }
+        .swiper-pagination-bullet {
+          background: rgba(255, 255, 255, 0.25) !important;
+          opacity: 1 !important;
+        }
+        .swiper-pagination-bullet-active {
+          background: var(--gold) !important;
+          box-shadow: 0 0 10px rgba(232, 184, 75, 0.6) !important;
+        }
+      `}</style>
+
+      <MediaViewerContainer
+        isOpen={!!selectedPromo}
+        onClose={() => setSelectedPromo(null)}
+        promotionType={selectedPromo?.promotionType || 'photo'}
+        image={selectedPromo?.image || ''}
+        videoUrl={selectedPromo?.videoUrl || ''}
+        pdfUrl={selectedPromo?.pdfUrl || selectedPromo?.documentUrl || ''}
+        title={selectedPromo?.title || ''}
+        description={selectedPromo?.description || ''}
+        mediaSettings={selectedPromo?.mediaSettings || []}
+      />
     </div>
   );
 }

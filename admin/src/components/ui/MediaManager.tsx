@@ -66,14 +66,23 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
           toast.error(`Max ${maxFiles} assets allowed.`);
           break;
         }
-        const compressedBlob = await imageCompression(file, options);
-        const compressedFile = new File([compressedBlob], file.name, { type: file.type });
-        const previewUrl = URL.createObjectURL(compressedFile);
+        
+        let finalFile = file;
+        if (file.type.startsWith('image/')) {
+          try {
+            const compressedBlob = await imageCompression(file, options);
+            finalFile = new File([compressedBlob], file.name, { type: file.type });
+          } catch (err) {
+            console.error('Image compression failed, using original:', err);
+          }
+        }
+        
+        const previewUrl = URL.createObjectURL(finalFile);
         
         newItems.push({
           id: Math.random().toString(36).substr(2, 9),
           url: previewUrl,
-          file: compressedFile,
+          file: finalFile,
           isNew: true,
           objectFit: 'cover'
         });
@@ -83,7 +92,7 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
       setItems(updated);
       syncParent(updated);
     } catch (err) {
-      console.error('Compression error:', err);
+      console.error('Media upload error:', err);
     } finally {
       setIsCompressing(false);
       if (fileInputRef.current) fileInputRef.current.value = '';

@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { fetchPromotionById } from '../services/api';
 import Logo from '../components/Logo';
+import MediaViewerContainer from '../components/MediaViewerContainer';
 
 export default function PromotionDetail() {
   const { id } = useParams();
@@ -16,6 +17,7 @@ export default function PromotionDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [videoPlaying, setVideoPlaying] = useState(true);
+  const [viewerOpen, setViewerOpen] = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -48,7 +50,7 @@ export default function PromotionDetail() {
     );
   }
 
-  const isVideo = promo.videoUrl || (promo.image && promo.image.endsWith('.mp4'));
+  const isVideo = promo.promotionType === 'video' || promo.videoUrl || (promo.image && promo.image.endsWith('.mp4'));
   const hasPdf = promo.pdfUrl || promo.documentUrl;
 
   return (
@@ -78,7 +80,10 @@ export default function PromotionDetail() {
       </header>
 
       {/* --- Hero Media Section --- */}
-      <section style={{ width: '100%', height: (!promo.title && !promo.subtitle) ? '85vh' : '60vh', minHeight: '400px', position: 'relative', marginTop: '60px', overflow: 'hidden' }}>
+      <section 
+        onClick={() => setViewerOpen(true)}
+        style={{ width: '100%', height: (!promo.title && !promo.subtitle) ? '85vh' : '60vh', minHeight: '400px', position: 'relative', marginTop: '60px', overflow: 'hidden', cursor: 'pointer' }}
+      >
         {isVideo ? (
           <div style={{ width: '100%', height: '100%', position: 'relative' }}>
             <video 
@@ -170,37 +175,50 @@ export default function PromotionDetail() {
             ))}
           </div>
 
-          {/* --- Document / PDF Section --- */}
+          {/* --- Document / PDF Section (Auto-Embedded Viewer) --- */}
           {hasPdf && (
             <div style={{ 
-              padding: '2rem', borderRadius: '20px', background: 'rgba(232,184,75,0.05)', border: '1px dashed var(--gold)',
-              display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '2rem', justifyContent: 'space-between'
+              marginTop: '3rem', padding: '2rem', borderRadius: '24px', 
+              background: 'rgba(232,184,75,0.02)', border: '1px solid rgba(232,184,75,0.15)',
+              display: 'flex', flexDirection: 'column', gap: '1.5rem'
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
-                <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: 'var(--gold)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#000' }}>
-                  <FileText size={28} />
+              <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '1.5rem', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+                  <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: 'var(--gold)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#000' }}>
+                    <FileText size={28} />
+                  </div>
+                  <div>
+                    <h4 style={{ fontSize: '1.1rem', fontWeight: 900 }}>Venture Brochure & Plans</h4>
+                    <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)' }}>Complete details in institutional PDF format</p>
+                  </div>
                 </div>
-                <div>
-                  <h4 style={{ fontSize: '1.1rem', fontWeight: 900 }}>Venture Brochure & Plans</h4>
-                  <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)' }}>Complete details in institutional PDF format</p>
+                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                  <button 
+                    onClick={() => setViewerOpen(true)}
+                    style={{ padding: '0.75rem 1.25rem', borderRadius: '12px', background: 'white', color: 'black', textDecoration: 'none', fontWeight: 800, fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.5rem', transition: 'all 0.2s', border: 'none', cursor: 'pointer' }}
+                  >
+                    <ExternalLink size={14} /> FULL SCREEN
+                  </button>
+                  <a 
+                    href={promo.pdfUrl || promo.documentUrl} 
+                    download
+                    style={{ padding: '0.75rem 1.25rem', borderRadius: '12px', background: 'rgba(255,255,255,0.06)', color: 'white', textDecoration: 'none', fontWeight: 800, fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.5rem', border: '1px solid rgba(255,255,255,0.1)' }}
+                  >
+                    <Download size={14} /> DOWNLOAD
+                  </a>
                 </div>
               </div>
-              <div style={{ display: 'flex', gap: '1rem' }}>
-                <a 
-                  href={promo.pdfUrl || promo.documentUrl} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  style={{ padding: '0.875rem 1.5rem', borderRadius: '12px', background: 'white', color: 'black', textDecoration: 'none', fontWeight: 800, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
-                >
-                  <ExternalLink size={16} /> VIEW PDF
-                </a>
-                <a 
-                  href={promo.pdfUrl || promo.documentUrl} 
-                  download
-                  style={{ padding: '0.875rem 1.5rem', borderRadius: '12px', background: 'rgba(255,255,255,0.1)', color: 'white', textDecoration: 'none', fontWeight: 800, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.5rem', border: '1px solid rgba(255,255,255,0.2)' }}
-                >
-                  <Download size={16} />
-                </a>
+
+              {/* Automatic PDF Page Embed Reader */}
+              <div style={{ 
+                width: '100%', height: '650px', borderRadius: '16px', overflow: 'hidden', 
+                background: '#ffffff', border: '1px solid rgba(255,255,255,0.1)', position: 'relative'
+              }}>
+                <iframe 
+                  src={`${promo.pdfUrl || promo.documentUrl}#toolbar=0`}
+                  title="Brochure PDF Viewer"
+                  style={{ width: '100%', height: '100%', border: 'none' }}
+                />
               </div>
             </div>
           )}
@@ -222,6 +240,18 @@ export default function PromotionDetail() {
           </button>
         </div>
       </div>
+
+      <MediaViewerContainer
+        isOpen={viewerOpen}
+        onClose={() => setViewerOpen(false)}
+        promotionType={promo.promotionType || 'photo'}
+        image={promo.image || ''}
+        videoUrl={promo.videoUrl || ''}
+        pdfUrl={promo.pdfUrl || promo.documentUrl || ''}
+        title={promo.title || ''}
+        description={promo.description || ''}
+        mediaSettings={promo.mediaSettings || []}
+      />
     </div>
   );
 }

@@ -4,11 +4,11 @@ const promotionSchema = new mongoose.Schema({
   type: {
     type: String,
     enum: ['festival', 'ad', 'update', 'institutional', 'offer'],
-    required: true
+    default: 'offer'
   },
   title: {
     type: String,
-    required: true
+    default: ''
   },
   subtitle: {
     type: String,
@@ -83,6 +83,23 @@ const promotionSchema = new mongoose.Schema({
     url: { type: String },
     objectFit: { type: String, enum: ['cover', 'contain'], default: 'cover' }
   }],
+  promotionType: {
+    type: String,
+    enum: ['video', 'photo', 'property'],
+    default: 'photo'
+  },
+  videoUrl: {
+    type: String,
+    default: ''
+  },
+  pdfUrl: {
+    type: String,
+    default: ''
+  },
+  description: {
+    type: String,
+    default: ''
+  },
   createdAt: {
     type: Date,
     default: Date.now

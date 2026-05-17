@@ -106,6 +106,8 @@ const VerificationQueue = () => {
                 setSearch={manager.setSearch}
                 viewMode={manager.viewMode}
                 setViewMode={manager.setViewMode}
+                filters={manager.filters}
+                updateFilter={manager.updateFilter}
                 handleEdit={manager.handleEdit}
                 updateProperty={manager.updateProperty}
                 createProperty={manager.createProperty}

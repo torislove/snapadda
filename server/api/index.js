@@ -147,8 +147,8 @@ mongoose.connection.on('disconnected', () => {
   connectDB().catch(console.error);
 });
 
-// Immediate connection attempt (non-blocking for cold starts)
-connectDB().catch(console.error);
+// Immediate connection attempt removed to avoid side-effects during Firebase deployment analysis
+// connectDB().catch(console.error);
 
 // Middleware to ensure DB connection before any route
 app.use(async (req, res, next) => {
@@ -213,6 +213,10 @@ apiRouter.use('/cities', cityRoutes);
 apiRouter.use('/settings', settingRoutes);
 apiRouter.use('/seo', seoRoutes);
 apiRouter.use('/users', userRoutes);
+apiRouter.post('/users/otp/send', (req, res, next) => {
+  console.log('DEBUG: Hit /api/users/otp/send directly');
+  next();
+});
 apiRouter.use('/admin', adminRoutes);
 apiRouter.use('/admin', adminStatsRoute);
 apiRouter.use('/inquiries', inquiryRoutes);

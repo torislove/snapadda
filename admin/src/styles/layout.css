@@ -20,6 +20,8 @@
   min-width: 0;
   position: relative;
   overflow: hidden;
+  margin-left: var(--sidebar-w);
+  width: calc(100% - var(--sidebar-w));
 }
 
 /* ── Page Content ── */
@@ -52,19 +54,22 @@
 .admin-sidebar {
   width: var(--sidebar-w);
   flex-shrink: 0;
-  background: rgba(10, 12, 22, 0.6);
-  backdrop-filter: blur(20px);
-  border-right: 1px solid var(--border);
+  background: rgba(10, 12, 20, 0.75);
+  backdrop-filter: blur(40px) saturate(200%);
+  -webkit-backdrop-filter: blur(40px) saturate(200%);
+  border-right: 1px solid var(--glass-border);
+  box-shadow: 20px 0 60px rgba(0,0,0,0.6);
   display: flex;
   flex-direction: column;
-  position: sticky;
+  position: fixed;
   top: 0;
+  left: 0;
   height: 100vh;
   height: 100dvh;
   overflow-y: auto;
   overflow-x: hidden;
-  z-index: 100;
-  transition: left 0.28s var(--ease-butter), box-shadow 0.28s ease;
+  z-index: 1000;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   scrollbar-width: none;
 }
 .admin-sidebar::-webkit-scrollbar { display: none; }
@@ -368,14 +373,21 @@
 /* ── Responsive ── */
 @media (max-width: 900px) {
   .admin-sidebar {
-    position: fixed; left: -260px;
-    height: 100vh; height: 100dvh;
-    box-shadow: none; z-index: 200;
+    position: fixed;
+    left: calc(-1 * var(--sidebar-w));
+    height: 100vh;
+    height: 100dvh;
+    box-shadow: none;
+    z-index: 1200;
     width: var(--sidebar-w);
   }
   .admin-sidebar.open {
     left: 0;
     box-shadow: 10px 0 40px rgba(0,0,0,0.8);
+  }
+  .admin-main, .admin-content {
+    margin-left: 0 !important;
+    width: 100% !important;
   }
   .admin-sidebar-overlay { display: block; }
   .admin-mobile-toggle { display: flex; }
@@ -385,7 +397,7 @@
 
 @media (max-width: 768px) {
   .admin-page-content {
-    padding: 0.875rem 0.875rem calc(var(--bottom-nav-h) + env(safe-area-inset-bottom, 0px) + 4.5rem);
+    padding: 0.875rem 0.875rem calc(var(--bottom-nav-h) + env(safe-area-inset-bottom, 0px) + 2.5rem);
   }
   .admin-topbar { padding: 0 0.75rem; height: 52px; }
   .topbar-time, .topbar-divider { display: none; }
@@ -397,6 +409,63 @@
 @media (min-width: 901px) {
   .mobile-only { display: none !important; }
   .admin-mobile-nav { display: none !important; }
+}
+
+/* ── Mobile Bottom Navigation Bar ── */
+.admin-mobile-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: var(--bottom-nav-h, 56px);
+  z-index: 1100;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  background: rgba(10, 12, 20, 0.85);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 -4px 30px rgba(0, 0, 0, 0.4);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.admin-mobile-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  height: 100%;
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.25s ease;
+  min-height: 48px;
+  gap: 4px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.admin-mobile-nav-item svg {
+  color: var(--text-muted);
+  transition: transform 0.2s, color 0.2s;
+}
+
+.admin-mobile-nav-item:hover svg,
+.admin-mobile-nav-item.active svg {
+  color: var(--gold);
+}
+
+.admin-mobile-nav-item span {
+  color: var(--text-muted);
+  transition: color 0.2s, font-weight 0.2s;
+}
+
+.admin-mobile-nav-item:hover span,
+.admin-mobile-nav-item.active span {
+  color: var(--text-primary);
+  font-weight: 700;
 }
 
 /* ── Page Headers ── */
@@ -413,8 +482,25 @@
   grid-template-columns: repeat(2, 1fr);
   gap: 0.75rem;
   margin-bottom: 1.25rem;
+  --metric-value-size: 1.35rem;
+  --metric-card-padding: 0.85rem;
 }
-@media (min-width: 640px) { .metrics-grid { grid-template-columns: repeat(4, 1fr); gap: 1rem; } }
+@media (min-width: 640px) {
+  .metrics-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    --metric-value-size: 1.8rem;
+    --metric-card-padding: 1.25rem;
+  }
+}
+@media (min-width: 1024px) {
+  .metrics-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    --metric-value-size: 2.25rem;
+    --metric-card-padding: 1.75rem;
+  }
+}
 
 /* ── Content Grids (Smart Auto-Fit) ── */
 .content-grid { 

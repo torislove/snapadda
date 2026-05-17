@@ -92,24 +92,43 @@ import imageCompression from 'browser-image-compression';
 export const uploadMedia = async (files: File[]) => {
   const formData = new FormData();
   
-  // Compress images before uploading
+  // Validate sizes client-side
+  for (const file of files) {
+    if (file.type.startsWith('video/')) {
+      if (file.size > 20 * 1024 * 1024) {
+        throw new Error(`Video "${file.name}" exceeds the 20MB limit. Please compress or crop it first.`);
+      }
+    }
+    if (file.type === 'application/pdf') {
+      if (file.size > 15 * 1024 * 1024) {
+        throw new Error(`PDF Brochure "${file.name}" exceeds the 15MB web-ready limit.`);
+      }
+    }
+  }
+
+  // Process files
   const processedFiles = await Promise.all(files.map(async (file) => {
     if (file.type.startsWith('image/')) {
       const options = {
-        maxSizeMB: 0.03,         // Max size 30KB as requested
-        maxWidthOrHeight: 1280, 
+        maxSizeMB: 1.0,         // Auto-compress to under 1MB for crisp, wow-factor quality
+        maxWidthOrHeight: 1920, // Keep crisp 1080p/2K dimensions
         useWebWorker: true,
-        initialQuality: 0.6
+        initialQuality: 0.90    // High fidelity premium visual retention
       };
       try {
-        console.log(`Compressing ${file.name}...`);
+        console.log(`[Compression] Auto-optimizing image ${file.name} to 1MB limit...`);
         return await imageCompression(file, options);
       } catch (err) {
-        console.error('Compression failed for:', file.name, err);
-        return file; // Fallback to original if compression fails
+        console.error('Image compression failed, using original:', file.name, err);
+        return file;
       }
     }
-    return file; // Videos and others stay as is
+    
+    if (file.type === 'application/pdf') {
+      console.log(`[PDF Brochure] Transferring ${file.name} directly to preserve lossless vector quality.`);
+    }
+    
+    return file; // Videos and PDFs stay lossless
   }));
 
   processedFiles.forEach(file => {

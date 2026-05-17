@@ -5,7 +5,7 @@ import {
   Heart, Share2, Eye, Phone, MessageSquare, ShieldCheck, Flame,
   MapPin, Building, User, Leaf, BedDouble, Bath, Square,
   Compass, IndianRupee, CheckCircle2, Award, TreePine, ArrowRight, Home as HomeIcon,
-  SlidersHorizontal, ChevronLeft, ChevronRight, Image as ImageIcon, Maximize2, X, RefreshCw
+  SlidersHorizontal, ChevronLeft, ChevronRight, Image as ImageIcon, Maximize2, X, RefreshCw, Trees
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { likeProperty, shareProperty, createInquiry } from '../services/api';
@@ -17,7 +17,8 @@ import {
   smartAreaConverter,
   calcPricePerUnit,
   getEffectivePricePerUnit,
-  calcAgriTotalValue
+  calcAgriTotalValue,
+  getPropertyTypeKey
 } from '../utils/priceUtils';
 import { logUserActivity, ACTIONS } from '../services/activityTracker';
 import { prefetchPropertyData, prioritizeImage } from '../utils/PerformanceUtilities';
@@ -25,6 +26,8 @@ import { fetchProperty } from '../services/api';
 import { useRealtimeProperties } from '../hooks/useRealtimeProperties';
 import { triggerMicroLead } from '../utils/tracker';
 import ShareControlCenter from './ShareControlCenter';
+import { LazyLoadImage } from 'react-lazy-load-image-component';
+import 'react-lazy-load-image-component/src/effects/blur.css';
 
 const Toast = memo(({ msg, onDone }) => {
   return (
@@ -217,11 +220,12 @@ const PropertyCard = memo((props) => {
     const low = (t || '').toLowerCase();
     if (low.includes('apartment')) return { icon: <Building size={12}/>, accent: '#9b59f5' };
     if (low.includes('villa')) return { icon: <HomeIcon size={12}/>, accent: '#e8b84b' };
-    if (low.includes('crda')) return { icon: <HomeIcon size={12}/>, accent: '#e8b84b' };
+    if (low.includes('crda')) return { icon: <Award size={12}/>, accent: '#e8b84b' };
+    if (low.includes('farmhouse')) return { icon: <Trees size={12}/>, accent: '#10d98c' };
     if (low.includes('plot') || low.includes('layout')) return { icon: <Square size={12}/>, accent: '#22d9e0' };
-    if (low.includes('agri') || low.includes('farm')) return { icon: <Leaf size={12}/>, accent: '#10d98c' };
+    if (low.includes('agri') || low.includes('land')) return { icon: <Leaf size={12}/>, accent: '#10d98c' };
     if (low.includes('house')) return { icon: <HomeIcon size={12}/>, accent: '#ff8c42' };
-    if (low.includes('commercial') || low.includes('showroom') || low.includes('office')) return { icon: <Building size={12}/>, accent: '#22d9e0' };
+    if (low.includes('commercial') || low.includes('showroom') || low.includes('office') || low.includes('space')) return { icon: <Building size={12}/>, accent: '#22d9e0' };
     if (low.includes('industrial') || low.includes('warehouse') || low.includes('factory')) return { icon: <Maximize2 size={12}/>, accent: '#f5397b' };
     return { icon: <Building size={12}/>, accent: '#fff' };
   };
@@ -394,7 +398,7 @@ const PropertyCard = memo((props) => {
       />
       <motion.article
         ref={cardRef}
-        initial={{ opacity: 0 }}
+        initial={{ opacity: 1 }}
         whileInView={{ opacity: 1 }}
         viewport={{ once: true, margin: "20px" }}
         transition={{ duration: 0.3 }}
@@ -485,15 +489,18 @@ const PropertyCard = memo((props) => {
               style={{ position: 'relative', width: '100%', height: '100%' }}
             >
               {displayImages.length > 0 && displayImages[activeImgIdx % displayImages.length] ? (
-                <img 
+                <LazyLoadImage
                   key={activeImgIdx}
                   src={getOptimizedImg(displayImages[activeImgIdx % displayImages.length])} 
                   alt={`${title} | ${type || 'Property'} in ${location || city || 'Andhra Pradesh'}`}
                   title={`${title} - SnapAdda Verified Property`}
-                  loading={priority ? "eager" : "lazy"}
-                  decoding={priority ? "sync" : "async"}
+                  effect="blur"
+                  placeholderSrc={getOptimizedImg(displayImages[activeImgIdx % displayImages.length], 40, 30)}
+                  wrapperStyle={{
+                    position: 'absolute', inset: 0, width: '100%', height: '100%'
+                  }}
                   style={{ 
-                    position: 'absolute', inset: 0, width: '100%', height: '100%', 
+                    width: '100%', height: '100%', 
                     objectFit: mediaSettings?.find(s => s.url === displayImages[activeImgIdx % displayImages.length])?.objectFit || 'cover', 
                     cursor: 'grab', 
                     filter: 'brightness(0.9)',
@@ -603,24 +610,27 @@ const PropertyCard = memo((props) => {
                 <MapPin size={isMobile ? 10 : 12} style={{ color: 'var(--gold)' }} /> 
                 <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: isMobile ? '120px' : 'none' }}>{location}</span>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(255,255,255,0.08)', backdropFilter: 'blur(10px)', padding: '3px 10px', borderRadius: '8px', fontSize: isMobile ? '0.55rem' : '0.65rem', fontWeight: 800 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(255,255,255,0.08)', backdropFilter: 'blur(10px)', padding: '4px 10px', borderRadius: '8px', fontSize: isMobile ? '0.6rem' : '0.7rem', fontWeight: 800 }}>
                 <span style={{ color: typeStyle.accent }}>{typeStyle.icon}</span> 
-                <span style={{ textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t(`types.${(type || 'apartment').toLowerCase()}`)}</span>
+                <span style={{ textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  {t(`types.${getPropertyTypeKey(type)}`, type)}
+                </span>
               </div>
             </div>
 
             <h3 style={{ 
-              fontSize: isMobile ? '0.85rem' : '1.05rem', 
+              fontSize: isMobile ? '0.95rem' : '1.15rem', 
               fontWeight: 900, 
               color: 'white', 
               margin: '2px 0 10px 0', 
-              lineHeight: 1.25,
-              height: isMobile ? '2.1rem' : '2.6rem',
+              lineHeight: 1.2,
+              height: isMobile ? '2.3rem' : '2.8rem',
               overflow: 'hidden',
               display: '-webkit-box',
               WebkitLineClamp: 2,
               WebkitBoxOrient: 'vertical',
-              letterSpacing: '-0.01em'
+              letterSpacing: '-0.02em',
+              textShadow: '0 2px 10px rgba(0,0,0,0.5)'
             }}>
               {title}
             </h3>

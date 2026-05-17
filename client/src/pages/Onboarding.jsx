@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Phone, MessageSquare, ShieldCheck, ArrowRight, CheckCircle2 } from 'lucide-react';
 import Logo from '../components/Logo';
+import { triggerContinuousConfetti } from '../utils/CelebrationEngine';
 
 /**
  * SnapAdda Onboarding — Phone & WhatsApp only, no questions.
@@ -37,6 +38,7 @@ export default function Onboarding() {
     setError('');
     try {
       await completeOnboarding({ phone: phone.trim(), whatsapp: sameAsPhone ? phone.trim() : whatsapp.trim() });
+      triggerContinuousConfetti(3.5);
       navigate('/', { replace: true });
     } catch {
       setError('Could not save. Please try again.');

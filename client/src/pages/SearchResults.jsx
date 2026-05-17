@@ -15,26 +15,24 @@ import { triggerMicroLead } from '../utils/tracker';
 import SEO from '../components/SEO';
 import { Helmet } from 'react-helmet-async';
 import PropertyMap from '../components/PropertyMap';
+import FilterDrawer from '../components/FilterDrawer';
 
-const PROPERTY_TYPES = [
-  { label: 'All Types', value: '', icon: <Filter size={14}/> },
-  { label: 'Apartment / Flat', value: 'Apartment', icon: <Building size={14}/> },
-  { label: 'Independent House', value: 'Independent House', icon: <HomeIcon size={14}/> },
-  { label: 'Villa / Duplex', value: 'Villa', icon: <HomeIcon size={14}/> },
-  { label: 'Residential Plot', value: 'Residential Plot', icon: <Square size={14}/> },
-  { label: 'Gated Community Plot', value: 'Gated Community Plot', icon: <Square size={14}/> },
-  { label: 'CRDA Approved Plot', value: 'CRDA Approved Plot', icon: <Award size={14}/> },
-  { label: 'Open Plot', value: 'Open Plot', icon: <Square size={14}/> },
-  { label: 'Layout Plot', value: 'Layout Plot', icon: <Square size={14}/> },
-  { label: 'Commercial Plot', value: 'Commercial Plot', icon: <Square size={14}/> },
-  { label: 'Commercial Space', value: 'Commercial Space', icon: <Building size={14}/> },
-  { label: 'Office Space', value: 'Office Space', icon: <Building size={14}/> },
-  { label: 'Showroom / Retail', value: 'Showroom', icon: <Building size={14}/> },
-  { label: 'Agricultural Land', value: 'Agricultural Land', icon: <Leaf size={14}/> },
-  { label: 'Farmhouse / Farm Villa', value: 'Farmhouse', icon: <HomeIcon size={14}/> },
-  { label: 'Industrial Shed', value: 'Industrial Shed', icon: <Maximize2 size={14}/> },
-  { label: 'Warehouse', value: 'Warehouse', icon: <Maximize2 size={14}/> },
-  { label: 'Factory', value: 'Factory', icon: <Maximize2 size={14}/> },
+const getPropertyTypes = (t) => [
+  { label: t('types.all', 'All Types'), value: '', icon: <Filter size={14}/> },
+  { label: t('types.apartment_flat', 'Apartment / Flat'), value: 'Apartment', icon: <Building size={14}/> },
+  { label: t('types.independent_house', 'Independent House'), value: 'Independent House', icon: <HomeIcon size={14}/> },
+  { label: t('types.villa_duplex', 'Villa / Duplex'), value: 'Villa', icon: <HomeIcon size={14}/> },
+  { label: t('types.gated_community_plot', 'Gated Community Plot'), value: 'Gated Community Plot', icon: <Square size={14}/> },
+  { label: t('types.residential_plot', 'Residential Plot'), value: 'Residential Plot', icon: <Square size={14}/> },
+  { label: t('types.crda_approved_plot', 'CRDA Approved Plot'), value: 'CRDA Approved Plot', icon: <Award size={14}/> },
+  { label: t('types.open_plot', 'Open Plot'), value: 'Open Plot', icon: <Square size={14}/> },
+  { label: t('types.layout_plot', 'Layout Plot'), value: 'Layout Plot', icon: <Square size={14}/> },
+  { label: t('types.commercial_plot', 'Commercial Plot'), value: 'Commercial Plot', icon: <Square size={14}/> },
+  { label: t('types.commercial_space', 'Commercial Space'), value: 'Commercial Space', icon: <Building size={14}/> },
+  { label: t('types.office_space', 'Office Space'), value: 'Office Space', icon: <Building size={14}/> },
+  { label: t('types.showroom', 'Showroom / Retail'), value: 'Showroom', icon: <Building size={14}/> },
+  { label: t('types.agricultural_land', 'Agricultural Land'), value: 'Agricultural Land', icon: <Leaf size={14}/> },
+  { label: t('types.farmhouse', 'Farmhouse'), value: 'Farmhouse', icon: <Trees size={14}/> },
 ];
 
 const SORT_OPTIONS = [
@@ -69,6 +67,8 @@ export default function SearchResults() {
   const [showAutocomplete, setShowAutocomplete] = useState(false);
   const [viewMode, setViewMode] = useState('list');
   const [isMobile, setIsMobile] = useState(window.innerWidth < 900);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [showBottomHub, setShowBottomHub] = useState(false);
   const [debouncedKeyword, setDebouncedKeyword] = useState(searchParams.get('keyword') || '');
   const searchRef = useRef(null);
 
@@ -93,6 +93,23 @@ export default function SearchResults() {
   const [verified, setVerified] = useState(getParam('verified') === 'true');
   const [sort, setSort] = useState(getParam('sort', 'newest'));
   const [page, setPage] = useState(parseInt(getParam('page', '1')));
+
+  // Filter setter for Drawer
+  const setDrawerFilter = (key, val) => {
+    if (key === 'type') setType(val);
+    if (key === 'bhk') setBhk(val);
+    if (key === 'minPrice') setMinPrice(val);
+    if (key === 'maxPrice') setMaxPrice(val);
+    if (key === 'keyword') setKeyword(val);
+    if (key === 'facing') setFacing(val);
+    if (key === 'vastu') setVastu(val);
+    if (key === 'verified') setVerified(val);
+    setPage(1);
+  };
+
+  const drawerFilters = {
+    type, bhk, minPrice, maxPrice, keyword, facing, vastu, verified
+  };
 
   // Debounce effect for keyword
   useEffect(() => {
@@ -276,13 +293,22 @@ export default function SearchResults() {
       {/* Property Type */}
       <div>
         <label className="sr-filter-label">{t('filter.category', 'Property Type')}</label>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-          {PROPERTY_TYPES.map(t => (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+          {getPropertyTypes(t).map(tp => (
             <button 
-              id={`btn-filter-type-${t.value.toLowerCase().replace(/\s+/g, '-')}`}
-              key={t.value} onClick={() => { setType(t.value); setPage(1); }}
-              style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 10px', borderRadius: '8px', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer', border: type === t.value ? '1px solid var(--gold)' : '1px solid rgba(255,255,255,0.1)', background: type === t.value ? 'rgba(232,184,75,0.15)' : 'rgba(255,255,255,0.04)', color: type === t.value ? 'var(--gold)' : 'rgba(255,255,255,0.7)', transition: 'all 0.15s' }}>
-              {t.icon} {t.label}
+              id={`btn-filter-type-${tp.value.toLowerCase().replace(/\s+/g, '-')}`}
+              key={tp.value} onClick={() => { setType(tp.value); setPage(1); }}
+              style={{ 
+                display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 12px', 
+                borderRadius: '12px', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', 
+                border: type === tp.value ? '1px solid var(--gold)' : '1px solid rgba(255,255,255,0.06)', 
+                background: type === tp.value ? 'rgba(232,184,75,0.12)' : 'rgba(255,255,255,0.02)', 
+                color: type === tp.value ? 'var(--gold)' : 'rgba(255,255,255,0.6)', 
+                transition: 'all 0.25s var(--ease-butter)',
+                textAlign: 'left'
+              }}>
+              <span style={{ opacity: type === tp.value ? 1 : 0.5 }}>{tp.icon}</span> 
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tp.label}</span>
             </button>
           ))}
         </div>
@@ -399,132 +425,199 @@ export default function SearchResults() {
 
       <button 
         id="btn-filter-clear-all"
-        onClick={resetAll} style={{ width: '100%', padding: '10px', borderRadius: '10px', background: 'rgba(245,57,123,0.08)', border: '1px solid rgba(245,57,123,0.2)', color: '#f5397b', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}>
-        <X size={12} style={{ marginRight: '6px' }}/> {t('filter.clearAll', 'Clear All Filters')}
+        onClick={resetAll} 
+        style={{ 
+          width: '100%', 
+          padding: '12px', 
+          borderRadius: '14px', 
+          background: 'rgba(245,57,123,0.05)', 
+          border: '1px solid rgba(245,57,123,0.15)', 
+          color: '#f5397b', 
+          fontSize: '0.8rem', 
+          fontWeight: 800, 
+          cursor: 'pointer',
+          marginTop: '1rem',
+          transition: 'all 0.3s ease'
+        }}
+        onPointerEnter={e => e.currentTarget.style.background = 'rgba(245,57,123,0.1)'}
+        onPointerLeave={e => e.currentTarget.style.background = 'rgba(245,57,123,0.05)'}
+      >
+        <X size={14} style={{ marginRight: '8px', verticalAlign: 'middle' }}/> {t('filter.clearAll', 'Reset Everything')}
       </button>
     </div>
   );
 
   return (
-    <div style={{ minHeight: '100vh', width: '100%', paddingTop: 'var(--nav-h)', background: 'var(--midnight)' }}>
+    <>
+      <div style={{ minHeight: '100vh', width: '100%', paddingTop: 'var(--nav-h)', background: 'var(--midnight)' }}>
       <SEO 
         title={keyword ? `Search results for "${keyword}"` : type ? `${type} for Sale/Rent` : city ? `Properties in ${city}` : 'Browse Properties'}
         description={`Find the best ${type || 'properties'} in ${city || keyword || 'Andhra Pradesh'}. Browse through ${meta.total} exclusive, verified listings on SnapAdda.`}
         keywords={[type, city, keyword, 'Real Estate Search', 'AP Properties'].filter(Boolean)}
       />
-      {/* Sticky Action Bar */}
-      <div style={{ borderBottom: '1px solid rgba(255,255,255,0.07)', padding: '0.75rem 0', background: 'rgba(7,7,15,0.98)', backdropFilter: 'blur(30px)', position: 'sticky', top: 'var(--nav-h)', zIndex: 100 }}>
-        <div className="container">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', flexWrap: 'wrap' }}>
+      {/* Sticky Action Bar (Unified Header) */}
+      <div style={{ 
+        borderBottom: '1px solid rgba(255,255,255,0.07)', 
+        background: 'rgba(7,7,15,0.95)', 
+        backdropFilter: 'blur(30px)', 
+        position: 'sticky', 
+        top: 'var(--nav-h)', 
+        zIndex: 1000 
+      }}>
+        <div className="search-header-inner" style={{ padding: isMobile ? '0.75rem 0.75rem' : '0.75rem 1.25rem', width: '100%', maxWidth: '1400px', margin: '0 auto' }}>
+          {/* Row 1: Back + Search + Map Toggle */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '8px' : '12px', marginBottom: '12px', width: '100%' }}>
             <button 
-              id="btn-search-back"
-              onClick={() => navigate(-1)} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', width: '38px', height: '38px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '10px', cursor: 'pointer', flexShrink: 0 }}>
-              <ArrowLeft size={16}/>
+              onClick={() => navigate(-1)} 
+              style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '10px', borderRadius: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            >
+              <ArrowLeft size={18}/>
             </button>
             
-            {/* Expanded Search Display */}
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '12px' }}>
-               <div style={{ display: 'flex', flexDirection: 'column' }}>
-                 <h2 style={{ fontSize: '0.95rem', fontWeight: 800, color: 'white', margin: 0 }}>{keyword || 'All Properties'}</h2>
-                 <span style={{ fontSize: '0.65rem', color: 'var(--gold)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    {loading ? 'SCANNING...' : `${meta.total} MATCHES FOUND`}
-                 </span>
-               </div>
-            </div>
-
-            {/* Sort Dropdown (3D Glass) */}
-            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-              <SlidersHorizontal size={12} style={{ position: 'absolute', left: '12px', color: 'var(--gold)', pointerEvents: 'none' }} />
-              <select value={sort} onChange={e => { setSort(e.target.value); setPage(1); }}
-                style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', padding: '8px 12px 8px 32px', borderRadius: '10px', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', outline: 'none', appearance: 'none' }}>
-                {SORT_OPTIONS.map(o => <option key={o.value} value={o.value} style={{ background: '#0a0a0f' }}>{o.label}</option>)}
-              </select>
+            <div style={{ flex: 1, position: 'relative' }}>
+              <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--gold)' }} />
+              <input 
+                value={keyword} 
+                onChange={e => { setKeyword(e.target.value); setPage(1); }} 
+                placeholder="Search localities, projects or property types..." 
+                style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '10px 12px 10px 38px', color: '#fff', fontSize: '0.85rem', fontWeight: 600, outline: 'none' }} 
+              />
             </div>
 
             <button 
-              id="btn-search-mobile-filter"
-              onClick={() => setShowMobileFilter(true)} className="sr-mobile-filter-btn"
-              style={{ padding: '8px 16px', background: 'var(--gold)', color: '#000', border: 'none', borderRadius: '10px', fontSize: '0.75rem', fontWeight: 900, cursor: 'pointer', flexShrink: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
-              FILTERS {activeFilterChips.length > 0 && <span style={{ background: 'black', color: 'white', padding: '1px 6px', borderRadius: '6px', fontSize: '0.6rem' }}>{activeFilterChips.length}</span>}
+              onClick={() => setViewMode(viewMode === 'list' ? 'map' : 'list')}
+              style={{ 
+                background: viewMode === 'map' ? 'var(--gold)' : 'rgba(255,255,255,0.05)', 
+                border: viewMode === 'map' ? '1px solid var(--gold)' : '1px solid rgba(255,255,255,0.1)', 
+                color: viewMode === 'map' ? '#000' : '#fff', 
+                padding: '10px 16px', 
+                borderRadius: '12px', 
+                cursor: 'pointer', 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '8px',
+                fontSize: '0.8rem',
+                fontWeight: 800,
+                transition: 'all 0.3s ease'
+              }}
+            >
+              {viewMode === 'list' ? <MapPin size={16}/> : <Building size={16}/>}
+              <span style={{ display: isMobile ? 'none' : 'block' }}>{viewMode === 'list' ? 'MAP' : 'LIST'}</span>
             </button>
           </div>
 
-          {/* ELITE FILTER RIBBON (Pill-Style Segmented Controls) */}
-          <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', padding: '12px 0 4px', marginTop: '4px', scrollbarWidth: 'none' }} className="hide-scrollbar">
-            {/* Purpose Pills */}
-            {['Sale', 'Rent'].map(p => (
-               <button key={p} onClick={() => { setPurpose(purpose === p ? '' : p); setPage(1); }}
-                 style={{ flexShrink: 0, padding: '6px 14px', borderRadius: '20px', fontSize: '0.72rem', fontWeight: 800, cursor: 'pointer', border: purpose === p ? '1px solid var(--gold)' : '1px solid rgba(255,255,255,0.1)', background: purpose === p ? 'rgba(232,184,75,0.15)' : 'rgba(255,255,255,0.04)', color: purpose === p ? 'var(--gold)' : 'rgba(255,255,255,0.6)', transition: 'all 0.2s' }}>
-                 {p}
-               </button>
-            ))}
-            <div style={{ width: '1px', height: '20px', background: 'rgba(255,255,255,0.1)', alignSelf: 'center', margin: '0 4px' }} />
-            {/* BHK Pills */}
-            {['1', '2', '3', '4+'].map(b => (
-               <button key={b} onClick={() => { setBhk(bhk === b ? '' : b); setPage(1); }}
-                 style={{ flexShrink: 0, padding: '6px 14px', borderRadius: '20px', fontSize: '0.72rem', fontWeight: 800, cursor: 'pointer', border: bhk === b ? '1px solid var(--gold)' : '1px solid rgba(255,255,255,0.1)', background: bhk === b ? 'rgba(232,184,75,0.15)' : 'rgba(255,255,255,0.04)', color: bhk === b ? 'var(--gold)' : 'rgba(255,255,255,0.6)', transition: 'all 0.2s' }}>
-                 {b} BHK
-               </button>
-            ))}
-            <div style={{ width: '1px', height: '20px', background: 'rgba(255,255,255,0.1)', alignSelf: 'center', margin: '0 4px' }} />
-            {/* Facing Pills */}
-            {['East', 'North'].map(f => (
-               <button key={f} onClick={() => { setFacing(facing === f ? '' : f); setPage(1); }}
-                 style={{ flexShrink: 0, padding: '6px 14px', borderRadius: '20px', fontSize: '0.72rem', fontWeight: 800, cursor: 'pointer', border: facing === f ? '1px solid var(--gold)' : '1px solid rgba(255,255,255,0.1)', background: facing === f ? 'rgba(232,184,75,0.15)' : 'rgba(255,255,255,0.04)', color: facing === f ? 'var(--gold)' : 'rgba(255,255,255,0.6)', transition: 'all 0.2s' }}>
-                 {f} Facing
-               </button>
-            ))}
+          {/* Row 2: Filters (Horizontal Scrollable) */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '20px' }}>
+            <div className="hide-scrollbar" style={{ display: 'flex', alignItems: 'center', gap: '8px', overflowX: 'auto', flex: 1, paddingBottom: '4px' }}>
+              {/* Type Filter */}
+              <div style={{ position: 'relative' }}>
+                <select 
+                  value={type} 
+                  onChange={e => { setType(e.target.value); setPage(1); }}
+                  className="filter-pill-select"
+                  style={{ appearance: 'none', background: type ? 'rgba(232,184,75,0.15)' : 'rgba(255,255,255,0.05)', border: type ? '1px solid var(--gold)' : '1px solid rgba(255,255,255,0.1)', color: type ? 'var(--gold)' : 'rgba(255,255,255,0.7)', padding: '8px 16px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', outline: 'none' }}
+                >
+                  <option value="">{t('filter.category', 'Property Type')}</option>
+                  {getPropertyTypes(t).slice(1).map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                </select>
+              </div>
+
+              {/* Budget Filter */}
+              <div style={{ position: 'relative' }}>
+                <select 
+                  value={maxPrice} 
+                  onChange={e => { setMaxPrice(e.target.value); setPage(1); }}
+                  className="filter-pill-select"
+                  style={{ appearance: 'none', background: maxPrice ? 'rgba(232,184,75,0.15)' : 'rgba(255,255,255,0.05)', border: maxPrice ? '1px solid var(--gold)' : '1px solid rgba(255,255,255,0.1)', color: maxPrice ? 'var(--gold)' : 'rgba(255,255,255,0.7)', padding: '8px 16px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', outline: 'none' }}
+                >
+                  <option value="">Budget</option>
+                  {BUDGET_PRESETS.slice(1).map(b => <option key={b.label} value={b.max}>{b.label}</option>)}
+                </select>
+              </div>
+
+              {/* BHK Filter */}
+              <div style={{ position: 'relative' }}>
+                <select 
+                  value={bhk} 
+                  onChange={e => { setBhk(e.target.value); setPage(1); }}
+                  className="filter-pill-select"
+                  style={{ appearance: 'none', background: bhk ? 'rgba(232,184,75,0.15)' : 'rgba(255,255,255,0.05)', border: bhk ? '1px solid var(--gold)' : '1px solid rgba(255,255,255,0.1)', color: bhk ? 'var(--gold)' : 'rgba(255,255,255,0.7)', padding: '8px 16px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', outline: 'none' }}
+                >
+                  <option value="">BHK</option>
+                  {['1', '2', '3', '4'].map(b => <option key={b} value={b}>{b} BHK</option>)}
+                </select>
+              </div>
+
+              {/* Purpose */}
+              <div style={{ position: 'relative' }}>
+                <select 
+                  value={purpose} 
+                  onChange={e => { setPurpose(e.target.value); setPage(1); }}
+                  className="filter-pill-select"
+                  style={{ appearance: 'none', background: purpose ? 'rgba(232,184,75,0.15)' : 'rgba(255,255,255,0.05)', border: purpose ? '1px solid var(--gold)' : '1px solid rgba(255,255,255,0.1)', color: purpose ? 'var(--gold)' : 'rgba(255,255,255,0.7)', padding: '8px 16px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', outline: 'none' }}
+                >
+                  <option value="">I want to...</option>
+                  {['Sale', 'Rent', 'Lease'].map(p => <option key={p} value={p}>{p}</option>)}
+                </select>
+              </div>
+
+              {/* More Filters (Trigger) */}
+              <button 
+                onClick={() => setShowMobileFilter(true)}
+                style={{ 
+                  display: 'flex', alignItems: 'center', gap: '6px', 
+                  padding: '10px 18px', borderRadius: '25px', fontSize: '0.75rem', fontWeight: 800, 
+                  cursor: 'pointer', whiteSpace: 'nowrap', border: '1px solid rgba(255,255,255,0.15)', 
+                  background: 'rgba(255,255,255,0.1)', color: '#fff',
+                  boxShadow: '0 4px 15px rgba(0,0,0,0.2)'
+                }}
+              >
+                <SlidersHorizontal size={14} style={{ color: 'var(--gold)' }}/> {t('filter.title', 'All Filters')}
+              </button>
+            </div>
+
+            {!isMobile && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
+                <span style={{ fontSize: '0.7rem', color: 'var(--gold)', fontWeight: 900, letterSpacing: '0.05em' }}>{meta.total} LISTINGS</span>
+                <div style={{ width: '1px', height: '16px', background: 'rgba(255,255,255,0.1)' }} />
+                <select value={sort} onChange={e => { setSort(e.target.value); setPage(1); }} style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', outline: 'none' }}>
+                  {SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
 
       {/* Body */}
-      <div className="container" style={{ paddingTop: '1.5rem', paddingBottom: '4rem' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'minmax(280px, 320px) 1fr', gap: isMobile ? '1.5rem' : '2.5rem', alignItems: 'start' }}>
-        {/* LEFT: Filter Panel */}
-        <aside className="sr-filter-panel glass-3d" style={{ position: 'sticky', top: 'calc(var(--nav-h) + 100px)', padding: '2rem', maxHeight: 'calc(100vh - 160px)', overflowY: 'auto' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.82rem', fontWeight: 800, color: 'white' }}>
-              <SlidersHorizontal size={15} style={{ color: 'var(--gold)' }}/> Filters
-            </div>
-            {activeFilterChips.length > 0 && (
-              <span style={{ background: 'var(--gold)', color: '#000', fontSize: '0.6rem', fontWeight: 900, borderRadius: '20px', padding: '2px 8px' }}>{activeFilterChips.length} active</span>
-            )}
-          </div>
-          {filterPanel}
-        </aside>
-
-        {/* RIGHT: Results */}
-        <main>
+      <div className="container" style={{ paddingTop: '2rem', paddingBottom: '5rem', width: '100%', maxWidth: '1400px' }}>
+        <main style={{ width: '100%' }}>
           {viewMode === 'list' ? (
             loading ? (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '2rem' }}>
-                {Array(6).fill(0).map((_, i) => <SkeletonPropertyCard key={i}/>)}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '2rem' }}>
+                {Array(8).fill(0).map((_, i) => <SkeletonPropertyCard key={i}/>)}
               </div>
             ) : properties.length > 0 ? (
               <>
-                <motion.div 
+                <div 
                   className="properties-grid" 
-                  style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '2rem' }}
-                  initial="hidden"
-                  animate="visible"
-                  variants={{
-                    hidden: { opacity: 0 },
-                    visible: {
-                      opacity: 1,
-                      transition: { staggerChildren: 0.05 }
-                    }
+                  style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', 
+                    gap: '2rem',
+                    width: '100%',
+                    minHeight: '400px'
                   }}
                 >
                   {properties.map((p) => (
                     <PropertyCard key={p._id || p.id} {...p} />
                   ))}
-                </motion.div>
+                </div>
 
                 {/* Pagination / Infinite Scroll Node */}
                 {meta.totalPages > 1 && (
-                  <div style={{ textAlign: 'center', marginTop: '3rem', padding: '1rem' }}>
+                  <div style={{ textAlign: 'center', marginTop: '4rem', padding: '1rem' }}>
                     {page < meta.totalPages ? (
                       <div ref={loadMoreRef} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', color: 'var(--txt-muted)' }}>
                         <div className="pulse-primary" style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--gold)' }} /> Loading more properties...
@@ -549,133 +642,46 @@ export default function SearchResults() {
               </motion.div>
             )
           ) : (
-            <div style={{ height: 'calc(100vh - 250px)', width: '100%' }}>
-              <PropertyMap 
-                properties={properties} 
-                onMarkerClick={(p) => {
-                  // Optional: highlight in list or navigate
-                }}
-              />
+            <div style={{ height: 'calc(100vh - 280px)', width: '100%', borderRadius: '24px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)' }}>
+              <PropertyMap properties={properties} />
             </div>
           )}
         </main>
       </div>
-      </div>
+    </div>
 
-      {/* Mobile Filter Fullscreen Modal */}
-      <AnimatePresence>
-        {showMobileFilter && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(5,5,15,0.85)', backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '15px' }}
-            onClick={() => setShowMobileFilter(false)}>
-            <motion.div 
-              initial={{ y: "100%", opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: "100%", opacity: 0 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 350 }}
-              onClick={e => e.stopPropagation()}
-              style={{ width: '100%', maxWidth: '480px', background: 'var(--midnight)', borderTop: '1px solid var(--border-glass)', borderRadius: '32px 32px 0 0', padding: '2rem 1.5rem 1.5rem', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 -20px 80px rgba(0,0,0,0.8)', position: 'absolute', bottom: 0 }}>
-              <div style={{ position: 'absolute', top: '12px', left: '50%', transform: 'translateX(-50%)', width: '40px', height: '4px', background: 'rgba(255,255,255,0.2)', borderRadius: '4px' }} />
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '1rem' }}>
-                <div style={{ fontWeight: 800, color: 'white', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <SlidersHorizontal size={18} style={{ color: 'var(--gold)' }}/> Advanced Filters
-                </div>
-                <button onClick={() => setShowMobileFilter(false)} style={{ background: 'rgba(255,255,255,0.08)', border: 'none', color: 'white', width: '34px', height: '34px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><X size={16}/></button>
-              </div>
-              {filterPanel}
-              <div style={{ position: 'sticky', bottom: '-1.5rem', left: 0, right: 0, background: 'linear-gradient(to top, rgba(9,9,18,1) 50%, rgba(9,9,18,0))', padding: '1.5rem 0', marginTop: '1rem', zIndex: 10 }}>
-                <button 
-                  id="btn-search-apply-mobile"
-                  onClick={() => setShowMobileFilter(false)} className="btn-3d-liquid" style={{ width: '100%', padding: '1.25rem', background: 'var(--gold)', color: 'var(--midnight)', border: 'none', borderRadius: '18px', fontWeight: 900, fontSize: '1rem', cursor: 'pointer', boxShadow: '0 12px 30px rgba(232,184,75,0.4)' }}>
-                  {t('filter.apply', 'APPLY FILTERS')} ({meta.total})
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-
-      {/* Floating View Switcher (Airbnb/Zillow Style) */}
-      <div style={{ position: 'fixed', bottom: '100px', left: '50%', transform: 'translateX(-50%)', zIndex: 1000, display: 'flex', alignItems: 'center' }}>
-        <div style={{ 
-          background: '#000', 
-          borderRadius: '30px', 
-          padding: '4px', 
-          display: 'flex', 
-          gap: '2px', 
-          boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
-          border: '1px solid rgba(255,255,255,0.1)'
-        }}>
-          <button 
-            onClick={() => setViewMode('list')}
-            style={{ 
-              padding: '10px 20px', borderRadius: '26px', border: 'none',
-              background: viewMode === 'list' ? 'var(--gold)' : 'transparent',
-              color: viewMode === 'list' ? 'black' : 'white',
-              fontSize: '0.85rem', fontWeight: 800, cursor: 'pointer',
-              display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.3s'
-            }}
-          >
-            <Building size={16} /> List
-          </button>
-          <button 
-            onClick={() => setViewMode('map')}
-            style={{ 
-              padding: '10px 20px', borderRadius: '26px', border: 'none',
-              background: viewMode === 'map' ? 'var(--gold)' : 'transparent',
-              color: viewMode === 'map' ? 'black' : 'white',
-              fontSize: '0.85rem', fontWeight: 800, cursor: 'pointer',
-              display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.3s'
-            }}
-          >
-            <MapPin size={16} /> Map
-          </button>
-        </div>
-      </div>
+      {/* Filter Drawer for "All Filters" */}
+      <FilterDrawer 
+        isOpen={showMobileFilter} 
+        onClose={() => setShowMobileFilter(false)} 
+        filters={drawerFilters}
+        setFilter={setDrawerFilter}
+        totalMatches={meta.total}
+        propertyTypes={getPropertyTypes(t)}
+        budgetPresets={BUDGET_PRESETS}
+        onApply={() => { setShowMobileFilter(false); setPage(1); }}
+      />
 
       <style>{`
-        .sr-filter-label { color: rgba(255,255,255,0.5); font-size: 0.62rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; display: block; margin-bottom: 8px; }
+        .properties-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+          gap: 2rem;
+        }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
-        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        .sr-mobile-filter-btn { display: none; }
+        .filter-pill-select {
+          transition: all 0.2s ease;
+          outline: none;
+        }
+        .filter-pill-select:hover {
+          background: rgba(255,255,255,0.1) !important;
+        }
         
-        /* Desktop filter sidebar styles */
-        .sr-filter-panel {
-          scrollbar-width: thin;
-          scrollbar-color: rgba(232,184,75,0.2) transparent;
-        }
-        .sr-filter-panel::-webkit-scrollbar { width: 4px; }
-        .sr-filter-panel::-webkit-scrollbar-track { background: transparent; }
-        .sr-filter-panel::-webkit-scrollbar-thumb { background: rgba(232,184,75,0.2); border-radius: 4px; }
-
-        /* Tablet breakpoint */
-        @media (max-width: 1100px) {
-          .sr-filter-panel { min-width: 240px !important; }
-        }
-
-        /* Mobile breakpoint — hide sidebar, show filter button */
         @media (max-width: 900px) {
-          .sr-filter-panel { display: none !important; }
-          .sr-mobile-filter-btn { display: flex !important; }
-          .sr-results-grid { grid-template-columns: 1fr !important; gap: 0 !important; }
+          .properties-grid { grid-template-columns: 1fr; gap: 1.5rem; }
+          .container { padding: 0 1rem; }
         }
-
-        /* Small mobile */
-        @media (max-width: 600px) {
-          .sr-topbar-row { flex-wrap: wrap; gap: 8px !important; }
-          .sr-topbar-row > div:first-child { width: 100%; }
-          .sr-topbar-row select { flex: 1; }
-          .container { padding-bottom: 150px !important; }
-          .sr-mobile-filter-btn { width: 100%; justify-content: center; }
-        }
-
-        /* Active filter chip row */
-        .filter-chip-row::-webkit-scrollbar { display: none; }
-        .filter-chip-row { -ms-overflow-style: none; scrollbar-width: none; }
-
-        /* Quick action chips row */
-        .quick-chips-row::-webkit-scrollbar { display: none; }
-        .quick-chips-row { -ms-overflow-style: none; scrollbar-width: none; }
       `}</style>
-    </div>
+    </>
   );
 }

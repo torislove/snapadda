@@ -1,13 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   fetchAllPromotions, createPromotion, updatePromotion,
-  reorderPromotions, uploadMedia, sendPushNotification
+  reorderPromotions, uploadMedia, sendPushNotification, fetchProperties
 } from '../../services/api';
 import {
-  Plus, Loader2,
-  Sparkles,
-  TrendingUp, MousePointer2, Calendar,
-  Zap, GripVertical, Eye, EyeOff, X, AlertCircle, Building
+  Plus, Loader2, Sparkles, TrendingUp, MousePointer2,
+  Zap, GripVertical, Eye, EyeOff, X, AlertCircle, Building, ArrowRight
 } from 'lucide-react';
 import { useToast } from '../../components/ui/Toast';
 import { 
@@ -15,7 +13,7 @@ import {
 } from 'recharts';
 import { MediaManager } from '../../components/ui/MediaManager';
 
-/* ── Color map ── */
+/* ── Color presets ── */
 const COLOR_PRESETS = [
   { id: 'glass-dark',     label: 'Midnight',  bg: 'linear-gradient(135deg,#18181b,#09090b)',   accent: '#71717a' },
   { id: 'red-gradient',   label: 'Ruby',      bg: 'linear-gradient(135deg,#7f1d1d,#450a0a)',   accent: '#f87171' },
@@ -42,71 +40,79 @@ const isVideoUrl = (url?: string) => {
 };
 
 const EMPTY_FORM = {
-  type: 'ad', title: '', subtitle: '', actionText: '', actionUrl: '',
+  type: 'offer', title: '', subtitle: '', actionText: 'Explore Details', actionUrl: '',
   size: '1x1', countdownActive: false, cardColor: 'glass-dark',
   image: '', mediaSettings: [] as { url: string; objectFit: 'cover' | 'contain' }[], 
   priority: 0, targetLocation: 'All', startDate: '', endDate: '',
   displaySegment: 'both', linkedPropertyId: '',
-  videoUrl: '', pdfUrl: '', videoSource: 'url', pdfSource: 'url'
+  videoUrl: '', pdfUrl: '', videoSource: 'url', pdfSource: 'url',
+  promotionType: 'photo', description: ''
 };
 
-/* ── Mini Live Preview ── */
-const MiniPreview = ({ form }: { form: typeof EMPTY_FORM }) => (
-  <div style={{
-    position: 'relative', borderRadius: '14px', overflow: 'hidden',
-    aspectRatio: '16/9', background: getThemeBg(form.cardColor),
-    border: '1px solid rgba(255,255,255,0.08)', flexShrink: 0,
-  }}>
-    {(form.image || form.videoUrl) && (
-      <>
-        {(isVideoUrl(form.image) || isVideoUrl(form.videoUrl)) ? (
-          <video 
-            src={form.videoUrl || form.image} 
-            autoPlay muted loop playsInline 
-            style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'cover' }} 
-          />
-        ) : (
-          <div style={{ 
-            position:'absolute', inset:0, 
-            backgroundImage:`url(${form.image})`, 
-            backgroundSize: form.mediaSettings?.find(s => s.url === form.image)?.objectFit === 'contain' ? 'contain' : 'cover',
-            backgroundRepeat: 'no-repeat',
-            backgroundPosition:'center' 
-          }} />
-        )}
-        <div style={{ position:'absolute', inset:0, background: getThemeBg(form.cardColor), opacity:0.7, mixBlendMode:'multiply' }} />
-        <div style={{ position:'absolute', inset:0, background:'linear-gradient(to top, rgba(0,0,0,0.85), transparent)' }} />
-      </>
-    )}
-    <div style={{ position:'absolute', inset:0, padding:'0.75rem', display:'flex', flexDirection:'column', justifyContent:'space-between' }}>
-      <span style={{
-        fontSize:'0.52rem', fontWeight:700, letterSpacing:'0.1em', textTransform:'uppercase',
-        background:'rgba(0,0,0,0.4)', color:'#fff', padding:'2px 6px', borderRadius:'4px',
-        backdropFilter:'blur(4px)', alignSelf:'flex-start', border:'1px solid rgba(255,255,255,0.1)',
-      }}>{TYPE_CONFIG[form.type]?.badge}</span>
-      <div>
-        {form.title && (
-          <div style={{ fontSize:'0.72rem', fontWeight:700, color:'#fff', lineHeight:1.2, marginBottom:'0.2rem' }}>
-            {form.title}
-          </div>
-        )}
-        {form.subtitle && (
-          <div style={{ fontSize:'0.58rem', color:'rgba(255,255,255,0.6)', lineHeight:1.3 }}>
-            {form.subtitle}
-          </div>
-        )}
-        {form.actionText && (
+/* ── Mini Live Preview (Precise Vertical 3:4 Aspect Ratio) ── */
+const MiniPreview = ({ form }: { form: any }) => {
+  const isVideo = form.promotionType === 'video' || form.videoUrl || isVideoUrl(form.image);
+  return (
+    <div style={{
+      position: 'relative', borderRadius: '16px', overflow: 'hidden',
+      aspectRatio: '3/4', background: '#04040a',
+      border: '1px solid rgba(255,255,255,0.12)', flexShrink: 0,
+      width: '100%', maxWidth: '220px', margin: '0 auto',
+      boxShadow: '0 10px 30px rgba(0,0,0,0.5)'
+    }}>
+      {(form.image || form.videoUrl) && (
+        <>
+          {isVideo ? (
+            <video 
+              src={form.videoUrl || form.image} 
+              autoPlay muted loop playsInline 
+              style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'cover', opacity: 0.8 }} 
+            />
+          ) : (
+            <div style={{ 
+              position:'absolute', inset:0, 
+              backgroundImage:`url(${form.image})`, 
+              backgroundSize: form.mediaSettings?.find((s: any) => s.url === form.image)?.objectFit === 'contain' ? 'contain' : 'cover',
+              backgroundRepeat: 'no-repeat',
+              backgroundPosition:'center',
+              opacity: 0.8
+            }} />
+          )}
+          <div style={{ position:'absolute', inset:0, background: getThemeBg(form.cardColor), opacity:0.3, mixBlendMode:'multiply' }} />
+          <div style={{ position:'absolute', inset:0, background:'linear-gradient(to top, rgba(4,4,10,0.95) 0%, rgba(4,4,10,0.3) 60%, transparent 100%)' }} />
+        </>
+      )}
+      <div style={{ position:'absolute', inset:0, padding:'0.8rem', display:'flex', flexDirection:'column', justifyContent:'flex-end' }}>
+        <span style={{
+          fontSize:'0.5rem', fontWeight:800, letterSpacing:'0.08em', textTransform:'uppercase',
+          background:'rgba(232,184,75,0.2)', color:'var(--gold)', padding:'2px 8px', borderRadius:'4px',
+          backdropFilter:'blur(8px)', alignSelf:'flex-start', border:'1px solid var(--gold)',
+          marginBottom: '6px'
+        }}>{TYPE_CONFIG[form.type]?.badge || 'EXCLUSIVE OFFER'}</span>
+        
+        <div>
+          {form.title && (
+            <div style={{ fontSize:'0.85rem', fontWeight:950, color:'#fff', lineHeight:1.2, marginBottom:'4px' }}>
+              {form.title}
+            </div>
+          )}
+          {form.subtitle && (
+            <div style={{ fontSize:'0.65rem', color:'rgba(255,255,255,0.6)', lineHeight:1.3, marginBottom: '6px' }}>
+              {form.subtitle}
+            </div>
+          )}
           <div style={{
-            marginTop:'0.4rem', fontSize:'0.55rem', fontWeight:700,
-            background:'#f5c842', color:'#000', padding:'2px 8px',
-            borderRadius:'99px', display:'inline-block',
-          }}>{form.actionText}</div>
-        )}
+            display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--gold)', fontWeight: 800, fontSize: '0.65rem',
+            textTransform: 'uppercase', letterSpacing: '0.05em'
+          }}>
+            {form.actionText || 'Explore Details'} <ArrowRight size={10} />
+          </div>
+        </div>
       </div>
+      <div style={{ position:'absolute', top:0, left:0, right:0, height:'1px', background:'linear-gradient(90deg,transparent,rgba(255,255,255,0.25),transparent)' }} />
     </div>
-    <div style={{ position:'absolute', top:0, left:0, right:0, height:'1px', background:'linear-gradient(90deg,transparent,rgba(255,255,255,0.25),transparent)' }} />
-  </div>
-);
+  );
+};
 
 /* ── Analytics Helpers ── */
 const calculateCTR = (views: number = 0, clicks: number = 0) => {
@@ -114,15 +120,17 @@ const calculateCTR = (views: number = 0, clicks: number = 0) => {
   return ((clicks / views) * 100).toFixed(1) + '%';
 };
 
-/* ── Promotion Card in Grid ── */
+/* ── Promotion Card in Grid (Precise Vertical 3:4 Aspect Ratio) ── */
 const PromoCard = ({
   promo, onToggle, onEdit, onDragStart, onDragOver, onDrop, isDragging
 }: any) => {
-  const cfg = TYPE_CONFIG[promo.type] || TYPE_CONFIG.ad;
+  const cfg = TYPE_CONFIG[promo.type] || TYPE_CONFIG.offer;
   const color = COLOR_PRESETS.find(c => c.id === promo.cardColor)?.accent ?? '#71717a';
   
   const stats = promo.stats || { views: 0, clicks: 0 };
   const ctr = calculateCTR(stats.views, stats.clicks);
+
+  const isVideo = promo.promotionType === 'video' || promo.videoUrl || (promo.image && isVideoUrl(promo.image));
 
   return (
     <div
@@ -131,164 +139,138 @@ const PromoCard = ({
       onDragOver={(e) => { e.preventDefault(); onDragOver(); }}
       onDrop={onDrop}
       style={{
-        background: 'rgba(255,255,255,0.02)',
-        border: `1px solid ${isDragging ? color : 'rgba(255,255,255,0.07)'}`,
-        borderRadius: '24px', overflow: 'hidden',
+        background: '#07070f',
+        border: `1px solid ${isDragging ? color : 'rgba(255,255,255,0.08)'}`,
+        borderRadius: '20px', 
+        overflow: 'hidden',
         opacity: isDragging ? 0.5 : 1,
         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-        boxShadow: isDragging ? `0 20px 40px ${color}33` : '0 4px 20px rgba(0,0,0,0.2)',
-        position: 'relative'
+        boxShadow: isDragging ? `0 20px 40px ${color}33` : '0 10px 30px rgba(0,0,0,0.4)',
+        position: 'relative',
+        aspectRatio: '3/4',
+        width: '100%',
+        maxWidth: '300px',
+        cursor: 'grab',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'flex-end',
+        margin: '0 auto'
       }}
     >
-      {/* Image / gradient preview strip */}
-      <div style={{
-        height: '120px', position: 'relative', background: getThemeBg(promo.cardColor), overflow: 'hidden',
-      }}>
-        {promo.image && (
-          <>
-            {isVideoUrl(promo.image) ? (
-              <video 
-                src={promo.image} 
-                autoPlay muted loop playsInline
-                style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'cover' }} 
-              />
-            ) : (
-              <div style={{ 
-                position:'absolute', inset:0, 
-                backgroundImage:`url(${promo.image})`, 
-                backgroundSize: promo.mediaSettings?.find((s: any) => s.url === promo.image)?.objectFit === 'contain' ? 'contain' : 'cover',
-                backgroundRepeat: 'no-repeat',
-                backgroundPosition:'center' 
-              }} />
-            )}
-            <div style={{ position:'absolute', inset:0, background: getThemeBg(promo.cardColor), opacity:0.65, mixBlendMode:'multiply' }} />
-            <div style={{ position:'absolute', inset:0, background:'linear-gradient(to top, rgba(0,0,0,0.7), transparent)' }} />
-          </>
+      {/* Background Media */}
+      <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
+        {isVideo ? (
+          <video 
+            src={promo.videoUrl || promo.image} 
+            autoPlay muted loop playsInline
+            style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.7 }} 
+          />
+        ) : promo.image ? (
+          <div style={{ 
+            width: '100%', height: '100%', 
+            backgroundImage: `url(${promo.image})`, 
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            opacity: 0.7
+          }} />
+        ) : (
+          <div style={{ width: '100%', height: '100%', background: getThemeBg(promo.cardColor) }} />
         )}
-        {/* Drag handle */}
-        <div style={{
-          position:'absolute', top:8, left:8, cursor:'grab',
-          color:'rgba(255,255,255,0.4)', background:'rgba(0,0,0,0.3)',
-          borderRadius:'6px', padding:'4px', backdropFilter:'blur(4px)',
-        }}>
-          <GripVertical size={14} />
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(7,7,12,0.98) 0%, rgba(7,7,12,0.5) 50%, transparent 100%)' }} />
+      </div>
+
+      {/* Drag Grip Handle */}
+      <div style={{
+        position: 'absolute', top: 10, left: '50%', transform: 'translateX(-50%)',
+        cursor: 'grab', color: 'rgba(255,255,255,0.4)', background: 'rgba(0,0,0,0.5)',
+        borderRadius: '4px', padding: '2px 6px', display: 'flex', alignItems: 'center', zIndex: 10
+      }}>
+        <GripVertical size={10} />
+      </div>
+
+      {/* Top Floating Badges */}
+      <div style={{ position: 'absolute', top: 10, left: 10, right: 10, zIndex: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '5px' }}>
+          <div style={{
+            fontSize: '0.55rem', fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase',
+            background: 'rgba(0,0,0,0.6)', color: cfg.badgeColor,
+            padding: '2px 8px', borderRadius: '99px', backdropFilter: 'blur(8px)',
+            border: `1px solid ${cfg.badgeColor}33`,
+          }}>{promo.promotionType?.toUpperCase() || 'PHOTO'}</div>
+          
+          {promo.targetLocation && promo.targetLocation !== 'All' && (
+            <span style={{ fontSize: '0.55rem', color: 'var(--cyan)', background: 'rgba(0,0,0,0.6)', border: '1px solid rgba(34,217,224,0.3)', padding: '2px 8px', borderRadius: '99px', fontWeight: 700, backdropFilter: 'blur(8px)' }}>
+              📍 {promo.targetLocation}
+            </span>
+          )}
         </div>
-        {/* Type badge */}
+
         <div style={{
-          position:'absolute', top:8, right:8,
-          fontSize:'0.58rem', fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase',
-          background:'rgba(0,0,0,0.5)', color: cfg.badgeColor,
-          padding:'2px 8px', borderRadius:'99px', backdropFilter:'blur(6px)',
-          border:`1px solid ${cfg.badgeColor}33`,
-        }}>{cfg.badge}</div>
-        {/* Active indicator */}
-        <div style={{
-          position:'absolute', bottom:8, right:8,
-          width:'8px', height:'8px', borderRadius:'50%',
+          width: '8px', height: '8px', borderRadius: '50%',
           background: promo.isActive ? '#10d98c' : '#4b5563',
           boxShadow: promo.isActive ? '0 0 8px #10d98c' : 'none',
         }} />
       </div>
 
-      {/* Card body */}
-      <div style={{ padding: '0.9rem' }}>
-        <div style={{ fontWeight: 600, color: '#f0eeff', fontSize: '0.88rem', marginBottom: '0.2rem', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
-          {promo.title}
-        </div>
-        <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginBottom: '0.75rem', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
-          {promo.subtitle || 'No subtitle'}
-        </div>
-
-        {/* Chips */}
-        <div style={{ display:'flex', flexWrap:'wrap', gap:'0.35rem', marginBottom:'0.75rem' }}>
-          {promo.targetLocation && promo.targetLocation !== 'All' && (
-            <span style={{ fontSize:'0.62rem', color:'var(--cyan)', background:'var(--cyan-dim)', border:'1px solid rgba(34,217,224,0.15)', padding:'1px 7px', borderRadius:'99px', fontWeight:600 }}>
-              📍{promo.targetLocation}
-            </span>
-          )}
-          {promo.countdownActive && (
-            <span style={{ fontSize:'0.62rem', color:'var(--rose)', background:'var(--rose-dim)', border:'1px solid rgba(245,57,123,0.15)', padding:'1px 7px', borderRadius:'99px', fontWeight:600 }}>
-              ⏱ Limited
-            </span>
-          )}
-          <span style={{ fontSize:'0.62rem', color:'var(--text-muted)', background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.06)', padding:'1px 7px', borderRadius:'99px' }}>
-            Priority {promo.priority ?? 0}
-          </span>
-          <span style={{ fontSize:'0.62rem', fontWeight:600, padding:'1px 7px', borderRadius:'99px', background:`${color}15`, color, border:`1px solid ${color}25` }}>
-            ◉ {COLOR_PRESETS.find(c => c.id === promo.cardColor)?.label || 'Dark'}
-          </span>
+      {/* Bottom Content Area */}
+      <div style={{ position: 'relative', zIndex: 5, padding: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <div>
+          <div style={{ fontWeight: 800, color: '#ffffff', fontSize: '0.9rem', lineHeight: 1.2, marginBottom: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {promo.title}
+          </div>
+          <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.6)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {promo.subtitle || 'No subtitle'}
+          </div>
         </div>
 
-        {/* Analytics Overlay Toggle */}
+        {/* Quick Mini Analytics */}
         <div style={{ 
-          marginBottom: '1rem', 
-          padding: '0.75rem', 
+          padding: '6px 8px', 
           background: 'rgba(255,255,255,0.03)', 
-          borderRadius: '14px',
+          borderRadius: '8px',
           border: '1px solid rgba(255,255,255,0.05)',
           display: 'flex',
           justifyContent: 'space-between',
-          alignItems: 'center'
+          alignItems: 'center',
+          fontSize: '0.65rem'
         }}>
-          <div style={{ display: 'flex', gap: '12px' }}>
-            <div title="Views">
-              <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Views</div>
-              <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#fff' }}>{stats.views.toLocaleString()}</div>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <div>
+              <span style={{ color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>V: </span>
+              <strong style={{ color: '#fff' }}>{stats.views}</strong>
             </div>
-            <div title="Clicks">
-              <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Clicks</div>
-              <div style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--gold)' }}>{stats.clicks.toLocaleString()}</div>
+            <div>
+              <span style={{ color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>C: </span>
+              <strong style={{ color: 'var(--gold)' }}>{stats.clicks}</strong>
             </div>
           </div>
-          <div style={{ textAlign: 'right' }}>
-            <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>CTR</div>
-            <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#10d98c' }}>{ctr}</div>
+          <div>
+            <span style={{ color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>CTR: </span>
+            <strong style={{ color: '#10d98c' }}>{ctr}</strong>
           </div>
         </div>
 
-        {/* Schedule Info */}
-        {(promo.startDate || promo.endDate) && (
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: '6px', 
-            fontSize: '0.65rem', 
-            color: 'rgba(255,255,255,0.4)',
-            marginBottom: '1rem',
-            padding: '4px 8px',
-            background: 'rgba(0,0,0,0.2)',
-            borderRadius: '6px'
-          }}>
-            <Calendar size={10} />
-            <span>
-              {promo.startDate ? new Date(promo.startDate).toLocaleDateString() : 'Now'} 
-              {' → '} 
-              {promo.endDate ? new Date(promo.endDate).toLocaleDateString() : 'Forever'}
-            </span>
-          </div>
-        )}
-
-        {/* Actions */}
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
+        {/* Action Controls */}
+        <div style={{ display: 'flex', gap: '6px' }}>
           <button
             onClick={() => onToggle(promo._id, promo.isActive)}
             style={{
-              flex: 1, padding: '0.45rem 0', fontSize: '0.75rem', fontWeight: 600,
-              borderRadius: '10px', cursor: 'pointer', border: 'none',
-              background: promo.isActive ? 'rgba(16,217,140,0.1)' : 'rgba(255,255,255,0.05)',
-              color: promo.isActive ? '#10d98c' : 'var(--text-muted)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px',
+              flex: 1, padding: '6px 0', fontSize: '0.7rem', fontWeight: 700,
+              borderRadius: '8px', cursor: 'pointer', border: 'none',
+              background: promo.isActive ? 'rgba(16,217,140,0.15)' : 'rgba(255,255,255,0.05)',
+              color: promo.isActive ? '#10d98c' : 'rgba(255,255,255,0.4)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px',
               transition: 'all 0.2s ease',
             }}
           >
-            {promo.isActive ? <><Eye size={12} /> Live</> : <><EyeOff size={12} /> Hidden</>}
+            {promo.isActive ? <><Eye size={10} /> Live</> : <><EyeOff size={10} /> Hidden</>}
           </button>
           <button
             onClick={() => onEdit(promo)}
             style={{
-              padding: '0.45rem 0.65rem', fontSize: '0.75rem', fontWeight: 600,
-              borderRadius: '10px', cursor: 'pointer', border: '1px solid rgba(255,255,255,0.1)',
-              background: 'rgba(255,255,255,0.05)', color: 'var(--text-secondary)',
+              padding: '6px 12px', fontSize: '0.7rem', fontWeight: 700,
+              borderRadius: '8px', cursor: 'pointer', border: '1px solid rgba(255,255,255,0.1)',
+              background: 'rgba(255,255,255,0.05)', color: '#fff',
               transition: 'all 0.2s ease',
             }}
           >
@@ -300,7 +282,6 @@ const PromoCard = ({
   );
 };
 
-
 /* ── Input styles ── */
 const inputCls: React.CSSProperties = {
   width:'100%', background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.09)',
@@ -308,212 +289,12 @@ const inputCls: React.CSSProperties = {
   outline:'none',
 };
 
-/* ── Step Content ── */
-const StepContent = ({ activeStep, formData, setFormData, handleMediaChange }: { 
-  activeStep: number; 
-  formData: any; 
-  setFormData: any; 
-  handleMediaChange: any; 
-}) => {
-  const labelStyle: React.CSSProperties = { display:'block', fontSize:'0.68rem', fontWeight:700, letterSpacing:'0.1em', textTransform:'uppercase', color:'var(--text-muted)', marginBottom:'0.45rem' };
-  const gapStyle: React.CSSProperties = { display:'flex', flexDirection:'column', gap:'1rem' };
-
-  switch (activeStep) {
-    case 0:
-      return (
-        <div style={gapStyle}>
-          <div>
-            <label style={labelStyle}>Card Type</label>
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(80px, 1fr))', gap:'0.5rem' }}>
-              {Object.entries(TYPE_CONFIG).map(([k, v]) => (
-                <button key={k} type="button"
-                  onClick={() => setFormData((p: any) => ({ ...p, type: k }))}
-                  style={{
-                    padding:'0.6rem 0.4rem', borderRadius:'10px', cursor:'pointer', fontSize:'0.76rem', fontWeight:600,
-                    border: formData.type === k ? `1.5px solid ${v.badgeColor}` : '1px solid rgba(255,255,255,0.08)',
-                    background: formData.type === k ? `${v.badgeColor}12` : 'rgba(255,255,255,0.03)',
-                    color: formData.type === k ? v.badgeColor : 'var(--text-muted)',
-                    transition:'all 0.2s ease',
-                  }}
-                >{v.label}</button>
-              ))}
-            </div>
-          </div>
-          <div>
-            <label style={labelStyle}>Headline (Optional)</label>
-            <input type="text" value={formData.title} onChange={e => setFormData((p: any) => ({...p, title: e.target.value}))} style={inputCls} placeholder="e.g. Grand Villa Launch" />
-          </div>
-          <div>
-            <label style={labelStyle}>Subtitle</label>
-            <textarea rows={2} value={formData.subtitle} onChange={e => setFormData((p: any) => ({...p, subtitle: e.target.value}))} style={{ ...inputCls, resize:'none' }} placeholder="Exclusive presale starts now." />
-          </div>
-          <div className="responsive-form-grid" style={{ display:'grid', gap:'0.75rem' }}>
-            <div>
-              <label style={labelStyle}>CTA Text</label>
-              <input type="text" value={formData.actionText} onChange={e => setFormData((p: any) => ({...p, actionText: e.target.value}))} style={inputCls} placeholder="View Details" />
-            </div>
-            <div>
-              <label style={labelStyle}>CTA URL</label>
-              <input type="text" value={formData.actionUrl} onChange={e => setFormData((p: any) => ({...p, actionUrl: e.target.value}))} style={inputCls} placeholder="/properties/..." />
-            </div>
-          </div>
-          <label style={{ display:'flex', alignItems:'center', gap:'10px', cursor:'pointer' }}>
-            <div
-              onClick={() => setFormData((p: any) => ({...p, countdownActive: !p.countdownActive}))}
-              style={{
-                width:'38px', height:'20px', borderRadius:'99px', position:'relative',
-                background: formData.countdownActive ? 'var(--rose)' : 'rgba(255,255,255,0.1)',
-                transition:'background 0.2s', cursor:'pointer', flexShrink:0,
-              }}
-            >
-              <div style={{
-                position:'absolute', top:'2px', width:'16px', height:'16px', borderRadius:'50%', background:'white',
-                left: formData.countdownActive ? '20px' : '2px', transition:'left 0.2s',
-              }} />
-            </div>
-            <span style={{ fontSize:'0.83rem', color:'var(--text-secondary)' }}>Enable <strong style={{ color:'var(--rose)' }}>"Limited Time"</strong> badge</span>
-          </label>
-        </div>
-      );
-
-    case 1:
-      return (
-        <div style={gapStyle}>
-          <div>
-            <label style={labelStyle}>Color Theme</label>
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(60px, 1fr))', gap:'0.5rem' }}>
-              {COLOR_PRESETS.map(c => (
-                <button key={c.id} type="button" title={c.label}
-                  onClick={() => setFormData((p: any) => ({...p, cardColor: c.id}))}
-                  style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'5px', background:'none', border:'none', cursor:'pointer' }}
-                >
-                  <div style={{
-                    width:'100%', aspectRatio:'1', borderRadius:'10px',
-                    background: c.bg,
-                    border: formData.cardColor === c.id ? `2.5px solid ${c.accent}` : '2px solid transparent',
-                    boxShadow: formData.cardColor === c.id ? `0 0 12px ${c.accent}55` : 'none',
-                    transition:'all 0.2s',
-                  }} />
-                  <span style={{ fontSize:'0.6rem', color: formData.cardColor === c.id ? c.accent : 'var(--text-muted)' }}>{c.label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-          <div>
-            <label style={labelStyle}>Banner Image (Cloudinary Optimized)</label>
-            <MediaManager 
-              existingUrls={formData.image ? [formData.image] : []}
-              existingSettings={formData.mediaSettings || []}
-              maxFiles={1}
-              onImagesChange={handleMediaChange}
-            />
-            <p style={{ fontSize:'0.65rem', color:'var(--text-muted)', marginTop:'6px' }}>Recommended: 1200x1600px (3:4 Ratio) or 1920x1080px (16:9). Max 2MB.</p>
-          </div>
-
-          <div style={{ padding: '1rem', background: 'rgba(255,255,255,0.02)', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.06)' }}>
-            <label style={labelStyle}>Background Video</label>
-            <div style={{ display:'flex', gap:'8px', marginBottom:'0.75rem' }}>
-              {['url', 'upload'].map(s => (
-                <button key={s} type="button" onClick={() => setFormData((p: any) => ({ ...p, videoSource: s }))}
-                  style={{ flex:1, padding:'6px', borderRadius:'6px', fontSize:'0.7rem', fontWeight:700, textTransform:'uppercase', border: formData.videoSource === s ? '1px solid var(--gold)' : '1px solid rgba(255,255,255,0.1)', background: formData.videoSource === s ? 'rgba(232,184,75,0.1)' : 'transparent', color: formData.videoSource === s ? 'var(--gold)' : 'var(--text-muted)' }}
-                >{s}</button>
-              ))}
-            </div>
-            {formData.videoSource === 'url' ? (
-              <input type="text" value={formData.videoUrl} onChange={e => setFormData((p: any) => ({...p, videoUrl: e.target.value}))} style={inputCls} placeholder="Direct MP4 URL..." />
-            ) : (
-              <MediaManager 
-                existingUrls={formData.videoUrl ? [formData.videoUrl] : []}
-                maxFiles={1}
-                onImagesChange={(urls) => setFormData((p: any) => ({...p, videoUrl: urls[0] || ''}))}
-              />
-            )}
-            <p style={{ fontSize:'0.65rem', color:'var(--text-muted)', marginTop:'6px' }}>Specs: MP4 format, &lt; 10MB. Vertical for cards, Horizontal for pages.</p>
-          </div>
-
-          <div style={{ padding: '1rem', background: 'rgba(255,255,255,0.02)', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.06)' }}>
-            <label style={labelStyle}>Venture Brochure (PDF)</label>
-            <div style={{ display:'flex', gap:'8px', marginBottom:'0.75rem' }}>
-              {['url', 'upload'].map(s => (
-                <button key={s} type="button" onClick={() => setFormData((p: any) => ({ ...p, pdfSource: s }))}
-                  style={{ flex:1, padding:'6px', borderRadius:'6px', fontSize:'0.7rem', fontWeight:700, textTransform:'uppercase', border: formData.pdfSource === s ? '1px solid var(--gold)' : '1px solid rgba(255,255,255,0.1)', background: formData.pdfSource === s ? 'rgba(232,184,75,0.1)' : 'transparent', color: formData.pdfSource === s ? 'var(--gold)' : 'var(--text-muted)' }}
-                >{s}</button>
-              ))}
-            </div>
-            {formData.pdfSource === 'url' ? (
-              <input type="text" value={formData.pdfUrl} onChange={e => setFormData((p: any) => ({...p, pdfUrl: e.target.value}))} style={inputCls} placeholder="Direct PDF URL..." />
-            ) : (
-              <MediaManager 
-                existingUrls={formData.pdfUrl ? [formData.pdfUrl] : []}
-                maxFiles={1}
-                onImagesChange={(urls) => setFormData((p: any) => ({...p, pdfUrl: urls[0] || ''}))}
-              />
-            )}
-            <p style={{ fontSize:'0.65rem', color:'var(--text-muted)', marginTop:'6px' }}>Specs: Optimized PDF brochures only. &lt; 5MB.</p>
-          </div>
-        </div>
-      );
-
-    case 2:
-      return (
-        <div style={gapStyle}>
-          <div>
-            <label style={labelStyle}>Target Location</label>
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(100px, 1fr))', gap:'0.4rem' }}>
-              {['All', 'Amaravati', 'Vijayawada', 'Guntur', 'Visakhapatnam', 'Mangalagiri'].map(loc => (
-                <button key={loc} type="button" onClick={() => setFormData((p: any) => ({...p, targetLocation: loc}))}
-                  style={{
-                    padding:'0.5rem 0.4rem', borderRadius:'8px', cursor:'pointer', fontSize:'0.75rem', fontWeight:600,
-                    border: formData.targetLocation === loc ? '1.5px solid var(--cyan)' : '1px solid rgba(255,255,255,0.08)',
-                    background: formData.targetLocation === loc ? 'var(--cyan-dim)' : 'rgba(255,255,255,0.02)',
-                    color: formData.targetLocation === loc ? 'var(--cyan)' : 'var(--text-muted)',
-                    transition:'all 0.15s',
-                  }}
-                >{loc === 'All' ? '🌐 All' : loc}</button>
-              ))}
-            </div>
-          </div>
-          <div>
-            <label style={labelStyle}>Display Priority (lower = shown first)</label>
-            <div style={{ display:'flex', alignItems:'center', gap:'1rem' }}>
-              <input type="range" min={0} max={10} value={formData.priority}
-                onChange={e => setFormData((p: any) => ({...p, priority: parseInt(e.target.value)}))}
-                style={{ flex:1, accentColor:'var(--gold)' }} />
-              <span style={{ color:'var(--gold)', fontWeight:700, fontFamily:'var(--font-mono)', minWidth:'20px', textAlign:'center' }}>{formData.priority}</span>
-            </div>
-          </div>
-        </div>
-      );
-
-    case 3:
-      return (
-        <div style={gapStyle}>
-          <div>
-            <label style={labelStyle}>Campaign Start Date</label>
-            <input type="datetime-local" value={formData.startDate} onChange={e => setFormData((p: any) => ({...p, startDate: e.target.value}))} style={inputCls} />
-            <p style={{ fontSize:'0.68rem', color:'var(--text-muted)', marginTop:'4px' }}>Leave blank to go live immediately.</p>
-          </div>
-          <div>
-            <label style={labelStyle}>Campaign Expiry Date</label>
-            <input type="datetime-local" value={formData.endDate} onChange={e => setFormData((p: any) => ({...p, endDate: e.target.value}))} style={inputCls} />
-            <p style={{ fontSize:'0.68rem', color:'var(--text-muted)', marginTop:'4px' }}>Leave blank to run indefinitely.</p>
-          </div>
-          <div style={{
-            background:'rgba(245,200,66,0.05)', border:'1px solid rgba(245,200,66,0.15)',
-            borderRadius:'10px', padding:'0.85rem', display:'flex', gap:'0.5rem',
-          }}>
-            <AlertCircle size={14} style={{ color:'var(--gold)', flexShrink:0, marginTop:'1px' }} />
-            <p style={{ fontSize:'0.75rem', color:'rgba(245,200,66,0.7)', lineHeight:1.5 }}>
-              Campaigns auto-deactivate after the expiry date. The banner stops appearing to clients automatically.
-            </p>
-          </div>
-        </div>
-      );
-
-    default: return null;
-  }
+const labelStyle: React.CSSProperties = { 
+  display:'block', fontSize:'0.68rem', fontWeight:700, letterSpacing:'0.1em', 
+  textTransform:'uppercase', color:'var(--text-muted)', marginBottom:'0.45rem' 
 };
 
+/* ── Push Broadcast Section ── */
 const PushBroadcast = ({ showToast }: { showToast: (m: string, t?: 'success' | 'error') => void }) => {
   const [pushForm, setPushForm] = useState({ title: '', body: '', imageUrl: '', link: '/' });
   const [sending, setSending] = useState(false);
@@ -542,20 +323,20 @@ const PushBroadcast = ({ showToast }: { showToast: (m: string, t?: 'success' | '
           </h3>
           <form onSubmit={handleSend} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
             <div>
-              <label style={{ display:'block', fontSize:'0.68rem', fontWeight:700, letterSpacing:'0.1em', textTransform:'uppercase', color:'var(--text-muted)', marginBottom:'0.45rem' }}>Notification Title</label>
+              <label style={labelStyle}>Notification Title</label>
               <input value={pushForm.title} onChange={e => setPushForm({...pushForm, title: e.target.value})} style={inputCls} placeholder="New Property Alert! 🏡" />
             </div>
             <div>
-              <label style={{ display:'block', fontSize:'0.68rem', fontWeight:700, letterSpacing:'0.1em', textTransform:'uppercase', color:'var(--text-muted)', marginBottom:'0.45rem' }}>Message Body</label>
+              <label style={labelStyle}>Message Body</label>
               <textarea rows={3} value={pushForm.body} onChange={e => setPushForm({...pushForm, body: e.target.value})} style={{ ...inputCls, resize: 'none' }} placeholder="A new 3BHK Villa is available in Vijayawada..." />
             </div>
             <div className="responsive-form-grid" style={{ display: 'grid', gap: '1rem' }}>
               <div>
-                <label style={{ display:'block', fontSize:'0.68rem', fontWeight:700, letterSpacing:'0.1em', textTransform:'uppercase', color:'var(--text-muted)', marginBottom:'0.45rem' }}>Image URL (Optional)</label>
+                <label style={labelStyle}>Image URL (Optional)</label>
                 <input value={pushForm.imageUrl} onChange={e => setPushForm({...pushForm, imageUrl: e.target.value})} style={inputCls} placeholder="https://..." />
               </div>
               <div>
-                <label style={{ display:'block', fontSize:'0.68rem', fontWeight:700, letterSpacing:'0.1em', textTransform:'uppercase', color:'var(--text-muted)', marginBottom:'0.45rem' }}>Redirect Link</label>
+                <label style={labelStyle}>Redirect Link</label>
                 <input value={pushForm.link} onChange={e => setPushForm({...pushForm, link: e.target.value})} style={inputCls} placeholder="/property/..." />
               </div>
             </div>
@@ -586,24 +367,26 @@ const PushBroadcast = ({ showToast }: { showToast: (m: string, t?: 'success' | '
   );
 };
 
-/* ═══════════════════════════════════════════ MAIN COMPONENT ═══════════════════════════════════════════ */
+/* ═══════════════════════════════════════════ MAIN PROMOTIONS COMPONENT ═══════════════════════════════════════════ */
 export const Promotions = () => {
   const [promotions, setPromotions] = useState<any[]>([]);
+  const [properties, setProperties] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState<any>({ ...EMPTY_FORM });
   const [activeTab, setActiveTab] = useState<'campaigns' | 'push'>('campaigns');
-  const [activeStep, setActiveStep] = useState(0);
   const [dragSrcIdx, setDragSrcIdx] = useState<number | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const { showToast, ToastComponent } = useToast();
   const dragOverIdxRef = useRef<number | null>(null);
 
-  const steps = ['Content', 'Design', 'Targeting', 'Schedule'];
+  const [newImageFiles, setNewImageFiles] = useState<File[]>([]);
+  const [newVideoFiles, setNewVideoFiles] = useState<File[]>([]);
+  const [newPdfFiles, setNewPdfFiles] = useState<File[]>([]);
 
   const statsData = promotions.map(p => ({
-    name: p.title.length > 10 ? p.title.substring(0, 8) + '...' : p.title,
+    name: p.title?.length > 10 ? p.title.substring(0, 8) + '...' : (p.title || 'Offer'),
     views: p.stats?.views || 0,
     clicks: p.stats?.clicks || 0,
     ctr: parseFloat(calculateCTR(p.stats?.views, p.stats?.clicks))
@@ -613,10 +396,15 @@ export const Promotions = () => {
   const totalClicks = promotions.reduce((sum, p) => sum + (p.stats?.clicks || 0), 0);
   const avgCTR = calculateCTR(totalViews, totalClicks);
 
-  /* ── No longer need local showToast implementation as we use useToast hook ── */
-
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { load(); }, []);
+  useEffect(() => { 
+    load(); 
+    fetchProperties().then(res => {
+      if (res.status === 'success') {
+        setProperties(res.data || []);
+      }
+    }).catch(err => console.error("Failed to load properties list:", err));
+  }, []);
 
   const load = () => {
     setLoading(true);
@@ -625,8 +413,6 @@ export const Promotions = () => {
       .catch(() => showToast('Failed to load promotions', 'error'))
       .finally(() => setLoading(false));
   };
-
-  const [newImageFiles, setNewImageFiles] = useState<File[]>([]);
 
   const handleMediaChange = (urls: string[], files: File[], settings: any[]) => {
     setFormData((p: any) => ({ 
@@ -639,10 +425,6 @@ export const Promotions = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.image && !formData.videoUrl) {
-      showToast('Either Photo or Video is required', 'error');
-      return;
-    }
     setIsSubmitting(true);
     try {
       let finalImageUrl = formData.image;
@@ -652,8 +434,30 @@ export const Promotions = () => {
           finalImageUrl = res.data[0];
         }
       }
+
+      let finalVideoUrl = formData.videoUrl;
+      if (newVideoFiles.length > 0) {
+        const res = await uploadMedia(newVideoFiles);
+        if (res.status === 'success' && res.data?.length > 0) {
+          finalVideoUrl = res.data[0];
+        }
+      }
+
+      let finalPdfUrl = formData.pdfUrl;
+      if (newPdfFiles.length > 0) {
+        const res = await uploadMedia(newPdfFiles);
+        if (res.status === 'success' && res.data?.length > 0) {
+          finalPdfUrl = res.data[0];
+        }
+      }
       
-      const payload = { ...formData, image: finalImageUrl };
+      const payload = { 
+        ...formData, 
+        image: finalImageUrl,
+        videoUrl: finalVideoUrl,
+        pdfUrl: finalPdfUrl
+      };
+
       if (editingId) {
         await updatePromotion(editingId, payload);
         showToast('Campaign updated! ✨');
@@ -666,19 +470,23 @@ export const Promotions = () => {
       setEditingId(null);
       setFormData({ ...EMPTY_FORM });
       setNewImageFiles([]);
-      setActiveStep(0);
+      setNewVideoFiles([]);
+      setNewPdfFiles([]);
       load();
-    } catch { showToast(editingId ? 'Failed to update' : 'Failed to create', 'error'); }
-    finally { setIsSubmitting(false); }
+    } catch (err: any) { 
+      showToast(editingId ? 'Failed to update campaign' : 'Failed to create campaign', 'error'); 
+    } finally { 
+      setIsSubmitting(false); 
+    }
   };
 
   const handleEdit = (promo: any) => {
     setEditingId(promo._id);
     setFormData({
-      type: promo.type || 'ad',
+      type: promo.type || 'offer',
       title: promo.title || '',
       subtitle: promo.subtitle || '',
-      actionText: promo.actionText || '',
+      actionText: promo.actionText || 'Explore Details',
       actionUrl: promo.actionUrl || '',
       size: promo.size || '1x1',
       countdownActive: !!promo.countdownActive,
@@ -693,9 +501,11 @@ export const Promotions = () => {
       videoUrl: promo.videoUrl || '',
       pdfUrl: promo.pdfUrl || '',
       videoSource: promo.videoUrl?.includes('cloudinary') ? 'upload' : 'url',
-      pdfSource: (promo.pdfUrl || promo.documentUrl)?.includes('cloudinary') ? 'upload' : 'url'
+      pdfSource: (promo.pdfUrl || promo.documentUrl)?.includes('cloudinary') ? 'upload' : 'url',
+      promotionType: promo.promotionType || 'photo',
+      description: promo.description || '',
+      linkedPropertyId: promo.linkedPropertyId || ''
     });
-    setActiveStep(0);
     setIsModalOpen(true);
   };
 
@@ -705,7 +515,6 @@ export const Promotions = () => {
       setPromotions(ps => ps.map(p => p._id === id ? { ...p, isActive: !current } : p));
     } catch { showToast('Update failed', 'error'); }
   };
-
 
   /* ── Drag-and-Drop ── */
   const handleDragStart = (idx: number) => { setDragSrcIdx(idx); };
@@ -727,7 +536,7 @@ export const Promotions = () => {
     } catch { showToast('Reorder failed', 'error'); }
   };
 
-  /* ═══════════════════ RENDER ═══════════════════ */
+  /* ═══════════════════ RENDER MAIN DASHBOARD ═══════════════════ */
   return (
     <div style={{ minHeight:'100%', display:'flex', flexDirection:'column', gap:'1.5rem', position:'relative' }}>
       <ToastComponent />
@@ -741,10 +550,7 @@ export const Promotions = () => {
           marginBottom: '0.5rem'
         }}>
           {/* Global Stats Cards */}
-          <div className="responsive-form-grid" style={{ 
-            display: 'grid', 
-            gap: '1rem' 
-          }}>
+          <div className="responsive-form-grid" style={{ display: 'grid', gap: '1rem' }}>
             {[
               { label: 'Total Views', val: totalViews.toLocaleString(), icon: <Eye size={18}/>, color: '#fff' },
               { label: 'Total Clicks', val: totalClicks.toLocaleString(), icon: <MousePointer2 size={18}/>, color: 'var(--gold)' },
@@ -795,7 +601,7 @@ export const Promotions = () => {
       <div style={{ position: 'relative' }}>
         <div style={{ background: 'rgba(155,89,245,0.05)', padding: '1rem', borderRadius: '14px', border: '1px solid rgba(155,89,245,0.1)', marginBottom: '2rem' }}>
           <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--violet)', fontWeight: 600 }}>
-            💡 <strong>Help:</strong> Manage visual banners and marketing offers. Banners appear on the home page and property listings to drive engagement.
+            💡 <strong>Help:</strong> Drag and drop cards to reorder how they appear in the client portal scroll. Adjust card properties to control targeting and schedule dates.
           </p>
         </div>
 
@@ -803,54 +609,55 @@ export const Promotions = () => {
           <div>
             <div style={{ fontSize:'0.7rem', fontWeight:700, letterSpacing:'0.12em', textTransform:'uppercase', color:'var(--gold)', marginBottom:'0.25rem', fontFamily:'var(--font-mono)' }}>✦ Campaign Manager</div>
             <h1 style={{ fontSize:'1.8rem', background:'linear-gradient(135deg,#f5c842,#e8820c)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', marginBottom:'0.2rem' }}>
-              {activeTab === 'campaigns' ? 'Active Promotions' : 'Push Notifications'}
+              {activeTab === 'campaigns' ? 'Exclusive Offers' : 'Push Broadcasts'}
             </h1>
             <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
               <button 
                 onClick={() => setActiveTab('campaigns')}
                 style={{ background: 'none', border: 'none', padding: '4px 0', borderBottom: activeTab === 'campaigns' ? '2px solid var(--gold)' : '2px solid transparent', color: activeTab === 'campaigns' ? 'white' : 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer' }}
               >
-                Dashboard Banners
+                Dashboard Banners (3:4 Cards)
               </button>
               <button 
                 onClick={() => setActiveTab('push')}
                 style={{ background: 'none', border: 'none', padding: '4px 0', borderBottom: activeTab === 'push' ? '2px solid var(--gold)' : '2px solid transparent', color: activeTab === 'push' ? 'white' : 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer' }}
               >
-                Push Broadcast
+                Push Notifications
               </button>
             </div>
           </div>
 
-        {activeTab === 'campaigns' && (
-          <button
-            onClick={() => { setIsModalOpen(true); setEditingId(null); setActiveStep(0); setFormData({ ...EMPTY_FORM }); }}
-            className="btn btn-gold"
-          >
-            <Plus size={15} /> New Promotion
-          </button>
-        )}
+          {activeTab === 'campaigns' && (
+            <button
+              onClick={() => { setIsModalOpen(true); setEditingId(null); setFormData({ ...EMPTY_FORM }); }}
+              className="btn btn-gold"
+            >
+              <Plus size={15} /> New Offer
+            </button>
+          )}
+        </div>
       </div>
 
       {activeTab === 'push' ? (
         <PushBroadcast showToast={showToast} />
       ) : (
         <>
-          {/* ── Cards Grid ── */}
+          {/* ── 3:4 Cards Grid ── */}
           {loading ? (
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(260px,1fr))', gap:'1rem' }}>
-              {[1,2,3].map(i => <div key={i} style={{ height:'220px', borderRadius:'18px', background:'var(--bg-glass)', border:'1px solid var(--border)', animation:'pulse 1.5s infinite' }} />)}
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(220px,1fr))', gap:'1.5rem' }}>
+              {[1,2,3].map(i => <div key={i} style={{ aspectRatio: '3/4', borderRadius:'20px', background:'rgba(255,255,255,0.02)', border:'1px solid rgba(255,255,255,0.05)', animation:'pulse 1.5s infinite' }} />)}
             </div>
           ) : promotions.length === 0 ? (
             <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'4rem 2rem', borderRadius:'20px', border:'1.5px dashed rgba(255,255,255,0.08)', textAlign:'center' }}>
               <Sparkles size={32} style={{ color:'var(--text-muted)', marginBottom:'1rem' }} />
-              <h3 style={{ color:'var(--text-secondary)', fontFamily:'var(--font-body)', marginBottom:'0.5rem' }}>No campaigns yet</h3>
-              <p style={{ color:'var(--text-muted)', fontSize:'0.83rem', maxWidth:'280px' }}>Create your first campaign to override static defaults on the client dashboard.</p>
+              <h3 style={{ color:'var(--text-secondary)', fontFamily:'var(--font-body)', marginBottom:'0.5rem' }}>No exclusive offers yet</h3>
+              <p style={{ color:'var(--text-muted)', fontSize:'0.83rem', maxWidth:'280px' }}>Launch a video or photo promotion campaign to sync instantly with client dashboards.</p>
               <button onClick={() => setIsModalOpen(true)} className="btn btn-ghost btn-sm" style={{ marginTop:'1.25rem' }}>
                 <Plus size={13} /> Create Campaign
               </button>
             </div>
           ) : (
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(260px,1fr))', gap:'1rem' }}>
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(220px,1fr))', gap:'1.5rem' }}>
               {promotions.map((promo, idx) => (
                 <PromoCard
                   key={promo._id}
@@ -868,15 +675,15 @@ export const Promotions = () => {
         </>
       )}
 
-      {/* ════════════════ CREATION MODAL ════════════════ */}
+      {/* ════════════════ REVAMPED MODAL FORM ════════════════ */}
       {isModalOpen && (
         <div style={{
           position:'fixed', inset:0, zIndex:9000,
           display:'flex', alignItems:'center', justifyContent:'center', padding:'1rem',
-          background:'rgba(0,0,0,0.88)', backdropFilter:'blur(16px)',
+          background:'rgba(0,0,0,0.92)', backdropFilter:'blur(16px)',
         }}>
           <div style={{
-            width:'100%', maxWidth:'900px', maxHeight:'92vh',
+            width:'100%', maxWidth:'950px', maxHeight:'90vh',
             display:'flex', flexDirection:'column',
             background:'#0f0f1a', border:'1px solid rgba(255,255,255,0.09)',
             borderRadius:'24px', overflow:'hidden',
@@ -885,120 +692,303 @@ export const Promotions = () => {
             {/* Modal header */}
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'1.25rem 1.75rem', borderBottom:'1px solid rgba(255,255,255,0.06)' }}>
               <div style={{ display:'flex', alignItems:'center', gap:'0.75rem' }}>
-                <div style={{ width:'34px', height:'34px', borderRadius:'10px', background:'var(--gold-dim)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                <div style={{ width:'34px', height:'34px', borderRadius:'10px', background:'rgba(232,184,75,0.1)', display:'flex', alignItems:'center', justifyContent:'center' }}>
                   <Sparkles size={16} style={{ color:'var(--gold)' }} />
                 </div>
                 <div>
-                  <div style={{ color:'var(--text-primary)', fontWeight:700, fontSize:'1rem', lineHeight:1 }}>{editingId ? 'Edit Campaign' : 'Create Campaign'}</div>
-                  <div style={{ color:'var(--text-muted)', fontSize:'0.72rem', marginTop:'2px' }}>Live preview updates as you type</div>
+                  <div style={{ color:'var(--text-primary)', fontWeight:700, fontSize:'1.1rem', lineHeight:1 }}>{editingId ? 'Edit Exclusive Offer Campaign' : 'Create Exclusive Offer Campaign'}</div>
+                  <div style={{ color:'var(--text-muted)', fontSize:'0.72rem', marginTop:'2px' }}>Fill in details and preview in live 3:4 vertical scale</div>
                 </div>
               </div>
-              <button onClick={() => { setIsModalOpen(false); setEditingId(null); }} style={{ color:'var(--text-muted)', cursor:'pointer', padding:'6px', borderRadius:'8px', display:'flex' }}>
+              <button onClick={() => { setIsModalOpen(false); setEditingId(null); }} style={{ color:'var(--text-muted)', cursor:'pointer', padding:'6px', borderRadius:'8px', display:'flex', background: 'none', border: 'none' }}>
                 <X size={18} />
               </button>
             </div>
 
-            {/* Step tabs */}
-            <div style={{ display:'flex', borderBottom:'1px solid rgba(255,255,255,0.05)', padding:'0 1.75rem' }}>
-              {steps.map((s, i) => (
-                <button key={s} type="button" onClick={() => setActiveStep(i)}
-                  style={{
-                    padding:'0.9rem 1rem', fontSize:'0.8rem', fontWeight:600, cursor:'pointer',
-                    border:'none', background:'none',
-                    color: i === activeStep ? 'var(--gold)' : 'var(--text-muted)',
-                    borderBottom: i === activeStep ? '2px solid var(--gold)' : '2px solid transparent',
-                    transition:'all 0.2s',
-                  }}
-                >
-                  <span style={{ opacity:0.4, marginRight:'4px', fontSize:'0.65rem' }}>{String(i+1).padStart(2,'0')}</span>{s}
-                </button>
-              ))}
-            </div>
-
-            {/* Body */}
+            {/* Form body */}
             <form onSubmit={handleSubmit} style={{ flex:1, overflow:'hidden', display:'flex', flexDirection:'column' }}>
-              <div style={{ flex:1, overflowY:'auto', display:'grid', gridTemplateColumns:'1fr 1fr' }}>
-                {/* Left: Form step */}
-                <div style={{ padding:'1.5rem 1.75rem', borderRight:'1px solid rgba(255,255,255,0.05)' }}>
-                  <div style={{ marginBottom:'1.25rem' }}>
-                    <h3 style={{ fontFamily:'var(--font-body)', fontSize:'0.9rem', fontWeight:600, color:'var(--text-primary)', marginBottom:'2px' }}>{steps[activeStep]}</h3>
-                    <p style={{ fontSize:'0.73rem', color:'var(--text-muted)' }}>
-                      {['Set the text and actions for this banner.','Choose the visual style and upload an image.','Control who sees this and where.','Set a go-live date and auto-expiry.'][activeStep]}
-                    </p>
-                  </div>
-                  <StepContent 
-  activeStep={activeStep} 
-  formData={formData} 
-  setFormData={setFormData}
-  handleMediaChange={handleMediaChange}
-/>
-
-                  <div style={{ marginTop: '1.5rem', padding: '1rem', background: 'rgba(255,255,255,0.03)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.06)' }}>
-                    <label style={{ display:'block', fontSize:'0.68rem', fontWeight:700, letterSpacing:'0.1em', textTransform:'uppercase', color:'var(--gold)', marginBottom:'0.75rem' }}>Campaign Targeting Tier</label>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      {['hero', 'floating', 'both'].map(seg => (
-                        <button key={seg} type="button" onClick={() => setFormData((p: any) => ({ ...p, displaySegment: seg }))}
-                          style={{
-                            flex: 1, padding: '0.6rem', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 600, textTransform: 'capitalize',
-                            border: formData.displaySegment === seg ? '1.5px solid var(--gold)' : '1px solid rgba(255,255,255,0.08)',
-                            background: formData.displaySegment === seg ? 'rgba(232,184,75,0.1)' : 'transparent',
-                            color: formData.displaySegment === seg ? 'var(--gold)' : 'var(--text-muted)',
-                            cursor: 'pointer'
+              <div style={{ flex:1, overflowY:'auto', display:'grid', gridTemplateColumns:'1.2fr 0.8fr' }}>
+                
+                {/* Left Form Inputs */}
+                <div style={{ padding:'1.5rem 1.75rem', borderRight:'1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                  
+                  {/* Three Massive Buttons Toggle */}
+                  <div>
+                    <label style={labelStyle}>Choose Promotion Type</label>
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                      {[
+                        { id: 'video', label: '📹 Video Campaign', desc: 'Promote with a vertical video' },
+                        { id: 'photo', label: '🖼 Photo Banner', desc: 'Promote with an optimized image' },
+                        { id: 'property', label: '🏡 Property Card', desc: 'Link directly to property details' },
+                      ].map(t => (
+                        <button
+                          key={t.id}
+                          type="button"
+                          onClick={() => {
+                            setFormData((p: any) => ({ ...p, promotionType: t.id }));
                           }}
-                        >{seg}</button>
+                          style={{
+                            flex: 1,
+                            padding: '12px 8px',
+                            borderRadius: '12px',
+                            fontWeight: 800,
+                            fontSize: '0.8rem',
+                            cursor: 'pointer',
+                            border: formData.promotionType === t.id ? '2px solid var(--gold)' : '1px solid rgba(255,255,255,0.08)',
+                            background: formData.promotionType === t.id ? 'rgba(232,184,75,0.12)' : 'rgba(255,255,255,0.02)',
+                            color: formData.promotionType === t.id ? 'var(--gold)' : 'rgba(255,255,255,0.6)',
+                            transition: 'all 0.2s',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            gap: '4px'
+                          }}
+                        >
+                          <span style={{ fontSize: '0.9rem' }}>{t.label.split(' ')[0]}</span>
+                          <span style={{ fontWeight: 800 }}>{t.label.split(' ').slice(1).join(' ')}</span>
+                          <span style={{ fontSize: '0.55rem', opacity: 0.5, fontWeight: 500 }}>{t.desc}</span>
+                        </button>
                       ))}
                     </div>
                   </div>
-                </div>
-                {/* Right: Live preview */}
-                <div style={{ padding:'1.5rem 1.75rem', background:'rgba(0,0,0,0.2)' }}>
-                  <div style={{ display:'flex', alignItems:'center', gap:'6px', marginBottom:'1rem' }}>
-                    <Eye size={13} style={{ color:'var(--violet)' }} />
-                    <span style={{ fontSize:'0.68rem', fontWeight:700, letterSpacing:'0.1em', textTransform:'uppercase', color:'var(--text-muted)' }}>Live Preview</span>
+
+                  {/* Property Selector (If property type chosen) */}
+                  {formData.promotionType === 'property' && (
+                    <div style={{ padding: '1rem', background: 'rgba(232,184,75,0.03)', borderRadius: '12px', border: '1px solid rgba(232,184,75,0.15)' }}>
+                      <label style={labelStyle}>Select Venture / Property to Link</label>
+                      <select
+                        value={formData.linkedPropertyId}
+                        onChange={(e) => {
+                          const propId = e.target.value;
+                          const prop = properties.find(p => p._id === propId);
+                          if (prop) {
+                            setFormData((p: any) => ({
+                              ...p,
+                              linkedPropertyId: propId,
+                              title: prop.title || '',
+                              subtitle: `${prop.type?.toUpperCase() || 'RESIDENTIAL'} inside ${prop.location || 'Strategic Location'}`,
+                              image: prop.images?.[0] || '',
+                              videoUrl: prop.videos?.[0] || '',
+                              actionText: 'Explore Details',
+                              actionUrl: `/property/${prop._id}`
+                            }));
+                            showToast('Linked property details pulled successfully! 🏡');
+                          } else {
+                            setFormData((p: any) => ({ ...p, linkedPropertyId: propId }));
+                          }
+                        }}
+                        style={inputCls}
+                      >
+                        <option value="">-- Choose Existing Property --</option>
+                        {properties.map(p => (
+                          <option key={p._id} value={p._id}>{p.title} ({p.location || 'Andhra Pradesh'})</option>
+                        ))}
+                      </select>
+                      <p style={{ fontSize:'0.65rem', color:'rgba(232,184,75,0.6)', marginTop:'6px', marginBottom: 0 }}>
+                        Auto-fills the Title, Subtitle, Media Banner, and CTA links instantly from your database details.
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Standard Form Inputs */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                    <div>
+                      <label style={labelStyle}>Headline (Offer Title)</label>
+                      <input type="text" value={formData.title} onChange={e => setFormData((p: any) => ({...p, title: e.target.value}))} style={inputCls} placeholder="e.g. Premium Plots Presale" />
+                    </div>
+                    <div>
+                      <label style={labelStyle}>Action Text (CTA)</label>
+                      <input type="text" value={formData.actionText} onChange={e => setFormData((p: any) => ({...p, actionText: e.target.value}))} style={inputCls} placeholder="Explore Details" />
+                    </div>
                   </div>
+
+                  <div>
+                    <label style={labelStyle}>Subheading / Short Description</label>
+                    <textarea rows={2} value={formData.subtitle} onChange={e => setFormData((p: any) => ({...p, subtitle: e.target.value}))} style={{ ...inputCls, resize:'none' }} placeholder="e.g. 50% booked. Launching inside AP state highway with amenities." />
+                  </div>
+
+                  <div>
+                    <label style={labelStyle}>Campaign Details / Full Highlighting Copy (Optional)</label>
+                    <textarea rows={3} value={formData.description} onChange={e => setFormData((p: any) => ({...p, description: e.target.value}))} style={{ ...inputCls, resize:'none' }} placeholder="Detailed campaign specifications that will open inside the separate detail page." />
+                  </div>
+
+                  {/* Photo Upload (For photo type and property type fallback) */}
+                  {(formData.promotionType === 'photo' || formData.promotionType === 'property') && (
+                    <div>
+                      <label style={labelStyle}>Photo Banner (Cloudinary Optimized)</label>
+                      <MediaManager 
+                        existingUrls={formData.image ? [formData.image] : []}
+                        existingSettings={formData.mediaSettings || []}
+                        maxFiles={1}
+                        onImagesChange={handleMediaChange}
+                      />
+                      <p style={{ fontSize:'0.65rem', color:'var(--text-muted)', marginTop:'6px' }}>Recommended: Vertical 3:4 aspect ratio. Upload uploads directly to Cloudinary.</p>
+                    </div>
+                  )}
+
+                  {/* Video Upload (For video type) */}
+                  {formData.promotionType === 'video' && (
+                    <div style={{ padding: '1rem', background: 'rgba(255,255,255,0.02)', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.06)' }}>
+                      <label style={labelStyle}>Campaign Background Video</label>
+                      <div style={{ display:'flex', gap:'8px', marginBottom:'0.75rem' }}>
+                        {['url', 'upload'].map(s => (
+                          <button key={s} type="button" onClick={() => setFormData((p: any) => ({ ...p, videoSource: s }))}
+                            style={{ flex:1, padding:'6px', borderRadius:'6px', fontSize:'0.7rem', fontWeight:700, textTransform:'uppercase', border: formData.videoSource === s ? '1px solid var(--gold)' : '1px solid rgba(255,255,255,0.1)', background: formData.videoSource === s ? 'rgba(232,184,75,0.1)' : 'transparent', color: formData.videoSource === s ? 'var(--gold)' : 'var(--text-muted)', cursor: 'pointer' }}
+                          >{s}</button>
+                        ))}
+                      </div>
+                      {formData.videoSource === 'url' ? (
+                        <input type="text" value={formData.videoUrl} onChange={e => setFormData((p: any) => ({...p, videoUrl: e.target.value}))} style={inputCls} placeholder="Direct MP4 / Cloudinary URL..." />
+                      ) : (
+                        <MediaManager 
+                          existingUrls={formData.videoUrl ? [formData.videoUrl] : []}
+                          maxFiles={1}
+                          onImagesChange={(urls, files) => {
+                            setFormData((p: any) => ({...p, videoUrl: urls[0] || ''}));
+                            setNewVideoFiles(files);
+                          }}
+                        />
+                      )}
+                      <p style={{ fontSize:'0.65rem', color:'var(--text-muted)', marginTop:'6px' }}>Recommended: Precise 3:4 vertical MP4 format. &lt; 10MB.</p>
+                    </div>
+                  )}
+
+                  {/* Venture Brochure PDF Upload */}
+                  <div style={{ padding: '1rem', background: 'rgba(255,255,255,0.02)', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.06)' }}>
+                    <label style={labelStyle}>Attached Venture Brochure PDF (Auto-embeds on Detail Page)</label>
+                    <div style={{ display:'flex', gap:'8px', marginBottom:'0.75rem' }}>
+                      {['url', 'upload'].map(s => (
+                        <button key={s} type="button" onClick={() => setFormData((p: any) => ({ ...p, pdfSource: s }))}
+                          style={{ flex:1, padding:'6px', borderRadius:'6px', fontSize:'0.7rem', fontWeight:700, textTransform:'uppercase', border: formData.pdfSource === s ? '1px solid var(--gold)' : '1px solid rgba(255,255,255,0.1)', background: formData.pdfSource === s ? 'rgba(232,184,75,0.1)' : 'transparent', color: formData.pdfSource === s ? 'var(--gold)' : 'var(--text-muted)', cursor: 'pointer' }}
+                        >{s}</button>
+                      ))}
+                    </div>
+                    {formData.pdfSource === 'url' ? (
+                      <input type="text" value={formData.pdfUrl} onChange={e => setFormData((p: any) => ({...p, pdfUrl: e.target.value}))} style={inputCls} placeholder="Direct PDF Link..." />
+                    ) : (
+                      <MediaManager 
+                        existingUrls={formData.pdfUrl ? [formData.pdfUrl] : []}
+                        maxFiles={1}
+                        onImagesChange={(urls, files) => {
+                          setFormData((p: any) => ({...p, pdfUrl: urls[0] || ''}));
+                          setNewPdfFiles(files);
+                        }}
+                      />
+                    )}
+                    <p style={{ fontSize:'0.65rem', color:'var(--text-muted)', marginTop:'6px' }}>Upload brochure to embed and display full pages automatically inside detail page.</p>
+                  </div>
+
+                  {/* Targeting & Ordering Details Grid */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', padding: '1rem', background: 'rgba(255,255,255,0.02)', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.06)' }}>
+                    <div>
+                      <label style={labelStyle}>Target City / Location Filter</label>
+                      <select value={formData.targetLocation} onChange={e => setFormData((p: any) => ({...p, targetLocation: e.target.value}))} style={inputCls}>
+                        {['All', 'Amaravati', 'Vijayawada', 'Guntur', 'Visakhapatnam', 'Mangalagiri'].map(loc => (
+                          <option key={loc} value={loc}>{loc === 'All' ? '🌐 All Locations' : loc}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label style={labelStyle}>Campaign Targeting Tier</label>
+                      <select value={formData.displaySegment} onChange={e => setFormData((p: any) => ({...p, displaySegment: e.target.value}))} style={inputCls}>
+                        <option value="both">Both (Carousel + Offers Grid)</option>
+                        <option value="hero">Carousel Only</option>
+                        <option value="floating">Offers Grid Only</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                    <div>
+                      <label style={labelStyle}>Display Priority (0 = First)</label>
+                      <input type="number" min={0} max={50} value={formData.priority} onChange={e => setFormData((p: any) => ({...p, priority: parseInt(e.target.value) || 0}))} style={inputCls} />
+                    </div>
+                    <div>
+                      <label style={labelStyle}>Theme Preset</label>
+                      <select value={formData.cardColor} onChange={e => setFormData((p: any) => ({...p, cardColor: e.target.value}))} style={inputCls}>
+                        {COLOR_PRESETS.map(c => (
+                          <option key={c.id} value={c.id}>{c.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                    <div>
+                      <label style={labelStyle}>Campaign Start Date (Optional)</label>
+                      <input type="datetime-local" value={formData.startDate} onChange={e => setFormData((p: any) => ({...p, startDate: e.target.value}))} style={inputCls} />
+                    </div>
+                    <div>
+                      <label style={labelStyle}>Campaign Expiry Date (Optional)</label>
+                      <input type="datetime-local" value={formData.endDate} onChange={e => setFormData((p: any) => ({...p, endDate: e.target.value}))} style={inputCls} />
+                    </div>
+                  </div>
+
+                </div>
+
+                {/* Right Visual 3:4 Live Preview */}
+                <div style={{ padding:'1.5rem 1.75rem', background:'rgba(0,0,0,0.25)', display: 'flex', flexDirection: 'column', gap: '1.5rem', justifyContent: 'flex-start', alignItems: 'center' }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:'6px', alignSelf: 'flex-start' }}>
+                    <Eye size={14} style={{ color:'var(--violet)' }} />
+                    <span style={{ fontSize:'0.7rem', fontWeight:800, letterSpacing:'0.1em', textTransform:'uppercase', color:'var(--text-muted)' }}>Real-Time 3:4 preview</span>
+                  </div>
+                  
+                  {/* Live Card Embed Preview */}
                   <MiniPreview form={formData} />
-                  <div style={{ marginTop:'1rem', padding:'0.85rem', background:'rgba(255,255,255,0.02)', border:'1px solid rgba(255,255,255,0.06)', borderRadius:'10px', display:'flex', flexDirection:'column', gap:'0.5rem' }}>
+
+                  {/* Summary Settings Info */}
+                  <div style={{ width: '100%', padding:'1rem', background:'rgba(255,255,255,0.02)', border:'1px solid rgba(255,255,255,0.05)', borderRadius:'12px', display:'flex', flexDirection:'column', gap:'0.6rem' }}>
+                    <div style={{ fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--gold)', letterSpacing: '0.05em', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '6px' }}>Campaign Highlights</div>
                     {[
-                      ['Target', formData.targetLocation === 'All' ? '🌐 All Locations' : `📍 ${formData.targetLocation}`],
-                      ['Priority', String(formData.priority)],
-                      ['Color', COLOR_PRESETS.find(c => c.id === formData.cardColor)?.label || 'Dark'],
+                      ['Link Status', formData.linkedPropertyId ? '🏡 Mapped to Property' : '🔗 Manual Link'],
+                      ['Target City', formData.targetLocation === 'All' ? '🌐 All Cities' : `📍 ${formData.targetLocation}`],
+                      ['Attached PDF', (formData.pdfUrl || formData.pdfSource === 'upload' && newPdfFiles.length > 0) ? '📄 Brochure Embedded' : '❌ No PDF attached'],
+                      ['Priority Order', `Priority Tier ${formData.priority}`],
                     ].map(([k, v]) => (
                       <div key={k} style={{ display:'flex', justifyContent:'space-between', fontSize:'0.75rem' }}>
                         <span style={{ color:'var(--text-muted)' }}>{k}</span>
-                        <span style={{ color:'var(--text-primary)', fontWeight:500 }}>{v}</span>
+                        <span style={{ color:'var(--text-primary)', fontWeight:600 }}>{v}</span>
                       </div>
                     ))}
                   </div>
+
+                  <div style={{
+                    background:'rgba(245,200,66,0.03)', border:'1px solid rgba(245,200,66,0.1)',
+                    borderRadius:'12px', padding:'0.85rem', display:'flex', gap:'0.5rem', width: '100%'
+                  }}>
+                    <AlertCircle size={14} style={{ color:'var(--gold)', flexShrink:0, marginTop:'1px' }} />
+                    <p style={{ fontSize:'0.7rem', color:'rgba(245,200,66,0.6)', lineHeight:1.5, margin: 0 }}>
+                      Videos and photos are pushed to the Cloudinary CDN. PDF brochures automatically open all pages scrollably in a premium user iframe.
+                    </p>
+                  </div>
                 </div>
+
               </div>
 
-              {/* Footer */}
-              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'1rem 1.75rem', borderTop:'1px solid rgba(255,255,255,0.06)' }}>
-                <div style={{ display:'flex', gap:'5px' }}>
-                  {steps.map((_, i) => (
-                    <div key={i} style={{ height:'3px', borderRadius:'99px', background: i === activeStep ? 'var(--gold)' : 'rgba(255,255,255,0.08)', width: i === activeStep ? '20px' : '10px', transition:'all 0.3s' }} />
-                  ))}
-                </div>
-                <div style={{ display:'flex', gap:'0.75rem' }}>
-                  {activeStep > 0 && (
-                    <button type="button" onClick={() => setActiveStep(s => s - 1)} className="btn btn-ghost btn-sm">← Back</button>
-                  )}
-                  {activeStep < steps.length - 1 ? (
-                    <button type="button" onClick={() => setActiveStep(s => s + 1)} className="btn btn-gold btn-sm">Next →</button>
+              {/* Modal Footer Controls */}
+              <div style={{ display:'flex', justifyContent:'flex-end', gap: '0.75rem', alignItems:'center', padding:'1rem 1.75rem', borderTop:'1px solid rgba(255,255,255,0.06)' }}>
+                <button 
+                  type="button" 
+                  onClick={() => { setIsModalOpen(false); setEditingId(null); setFormData({ ...EMPTY_FORM }); }} 
+                  className="btn btn-ghost btn-sm"
+                  disabled={isSubmitting}
+                >
+                  Cancel
+                </button>
+                <button type="submit" className="btn btn-gold" disabled={isSubmitting}>
+                  {isSubmitting ? (
+                    <><Loader2 size={14} style={{ animation:'spin 1s linear infinite', marginRight: '6px' }} /> Launching to Cloudinary...</>
                   ) : (
-                    <button type="submit" className="btn btn-gold" disabled={isSubmitting}>
-                      {isSubmitting ? <><Loader2 size={14} style={{ animation:'spin 1s linear infinite' }} /> Processing...</> : <><Zap size={14} /> {editingId ? 'Save Changes' : 'Launch Campaign'}</>}
-                    </button>
+                    <><Zap size={14} style={{ marginRight: '4px' }} /> {editingId ? 'Save Changes' : 'Launch Campaign'}</>
                   )}
-                </div>
+                </button>
               </div>
             </form>
           </div>
         </div>
       )}
     </div>
-  </div>
-);
+  );
 };
 
 export default Promotions;

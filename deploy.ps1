@@ -16,6 +16,8 @@ $FIREBASE_PROD = @{
     "VITE_FIREBASE_MEASUREMENT_ID"      = "G-EPKYKL1SPN"
     "VITE_RTDB_URL"                     = "https://snapadda-7a6e6-default-rtdb.firebaseio.com"
     "VITE_GOOGLE_CLIENT_ID"             = "227172321059-3ss62q0vtlsh0rh3u2vs2g0f1uf594mc.apps.googleusercontent.com"
+    "VITE_TRUECALLER_PARTNER_KEY"       = "uPiI27daafaa7c92a4245af01f6d0a07f4e00"
+    "VITE_TRUECALLER_PARTNER_NAME"      = "SnapAdda"
 }
 
 # Function to Robustly Set Env Var in .env files
@@ -85,6 +87,8 @@ try {
             Set-EnvVar $path "CLOUDINARY_API_KEY" "744493735563614"
             Set-EnvVar $path "CLOUDINARY_API_SECRET" "HScXz9fgi6f9NOKuXShhyadZ50U"
             Set-EnvVar $path "DB_FIREBASE_URL" $FIREBASE_PROD["VITE_RTDB_URL"]
+            Set-EnvVar $path "TRUECALLER_PARTNER_KEY" "uPiI27daafaa7c92a4245af01f6d0a07f4e00"
+            Set-EnvVar $path "TRUECALLER_PARTNER_NAME" "SnapAdda"
         }
         
     }

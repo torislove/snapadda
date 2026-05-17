@@ -11,7 +11,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { fetchProperty, fetchSetting, askQuestion, fetchPropertyFAQs, likeProperty, shareProperty, fetchSimilarProperties, logActivity } from '../services/api';
 import PropertyCard from '../components/PropertyCard';
-import { formatSnapAddaPrice, formatSnapAddaPriceRange, formatLandSize, calcAgriTotalValue, getAcres, getCents, getEffectivePricePerUnit } from '../utils/priceUtils';
+import { formatSnapAddaPrice, formatSnapAddaPriceRange, formatLandSize, calcAgriTotalValue, getAcres, getCents, getEffectivePricePerUnit, getPropertyTypeKey } from '../utils/priceUtils';
 import { useTranslation } from 'react-i18next';
 import VisualCompass from '../components/VisualCompass';
 import EliteLightBox from '../components/EliteLightBox';
@@ -398,7 +398,7 @@ export default function PropertyDetails() {
 
   const handleWhatsApp = () => {
     const wa = supportInfo?.whatsapp || '919346793364';
-    const waMsg = `నమస్కారం SnapAdda! మీ ప్లాట్‌ఫారమ్‌లోని ఈ ప్రాపర్టీ పై ఆసక్తి ఉంది:\n\n*${property?.title}*\nరకం: ${t(`types.${(property?.type || 'apartment').toLowerCase()}`)}\nప్రాంతం: ${property?.location}\nధర: ${formatSnapAddaPriceRange(property)}\n\nలింక్: ${window.location.href}`;
+    const waMsg = `నమస్కారం SnapAdda! మీ ప్లాట్‌ఫారమ్‌లోని ఈ ప్రాపర్టీ పై ఆసక్తి ఉంది:\n\n*${property?.title}*\nరకం: ${t(`types.${getPropertyTypeKey(property?.type)}`, property?.type)}\nప్రాంతం: ${property?.location}\nధర: ${formatSnapAddaPriceRange(property)}\n\nలింక్: ${window.location.href}`;
     window.open(`https://wa.me/${wa}?text=${encodeURIComponent(waMsg)}`, '_blank');
   };
 
@@ -655,7 +655,7 @@ export default function PropertyDetails() {
             <div style={{ padding: isMobile ? '2rem 1.5rem' : '1rem 0' }}>
                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
                   <span style={{ background: 'rgba(232,184,75,0.1)', color: 'var(--gold)', border: '1px solid rgba(232,184,75,0.25)', padding: '6px 14px', borderRadius: '30px', fontSize: '0.65rem', fontWeight: 900, textTransform: 'uppercase' }}>SNA-{(id || '').toString().slice(-6).toUpperCase()}</span>
-                  <span style={{ background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', padding: '6px 14px', borderRadius: '30px', fontSize: '0.65rem', fontWeight: 900, textTransform: 'uppercase' }}>{t(`types.${(property?.type || 'apartment').toLowerCase()}`)}</span>
+                  <span style={{ background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', padding: '6px 14px', borderRadius: '30px', fontSize: '0.65rem', fontWeight: 900, textTransform: 'uppercase' }}>{t(`types.${getPropertyTypeKey(property?.type)}`, property?.type)}</span>
                   {isVerified && <span style={{ background: 'rgba(16,217,140,0.1)', color: '#10d98c', border: '1px solid rgba(16,217,140,0.3)', padding: '6px 14px', borderRadius: '30px', fontSize: '0.65rem', fontWeight: 900, textTransform: 'uppercase' }}>సర్టిఫైడ్ (VERIFIED)</span>}
                   {isElite && (
                     <span style={{ background: 'linear-gradient(45deg, #0f172a, #1e293b)', color: '#e8b84b', border: '1px solid #e8b84b', boxShadow: '0 0 15px rgba(232,184,75,0.3)', padding: '6px 14px', borderRadius: '30px', fontSize: '0.65rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.05em' }}>

@@ -22,6 +22,10 @@ const syncPromotionToFirebase = async (promotion) => {
       isActive: promotion.isActive !== false,
       displayOrder: promotion.displayOrder || 0,
       mediaSettings: promotion.mediaSettings || [],
+      promotionType: promotion.promotionType || 'photo',
+      videoUrl: promotion.videoUrl || '',
+      pdfUrl: promotion.pdfUrl || '',
+      description: promotion.description || '',
       updatedAt: new Date().toISOString()
     };
 
@@ -56,6 +60,10 @@ const syncAllPromotionsToFirebase = async () => {
          isActive: true,
          displayOrder: index,
          mediaSettings: p.mediaSettings || [],
+         promotionType: p.promotionType || 'photo',
+         videoUrl: p.videoUrl || '',
+         pdfUrl: p.pdfUrl || '',
+         description: p.description || '',
          updatedAt: new Date().toISOString()
        };
     });

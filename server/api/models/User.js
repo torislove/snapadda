@@ -3,17 +3,21 @@ import mongoose from 'mongoose';
 const userSchema = new mongoose.Schema({
   googleId: {
     type: String,
-    required: true,
-    unique: true
+    required: false,
+    unique: true,
+    sparse: true
   },
   email: {
     type: String,
-    required: true,
-    unique: true
+    required: false,
+    unique: true,
+    sparse: true
   },
   phone: {
     type: String,
-    default: ''
+    default: '',
+    unique: true,
+    sparse: true
   },
   whatsapp: {
     type: String,

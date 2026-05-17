@@ -216,3 +216,16 @@ export const getEffectivePricePerUnit = (property: any) => {
   
   return null;
 };
+
+/**
+ * Safely maps any raw property type string into a standardized translation key.
+ * Used to avoid broken or hardcoded strings and render robust headlines.
+ */
+export const getPropertyTypeKey = (type: string | null | undefined): string => {
+  if (!type) return 'apartment';
+  return type.toLowerCase()
+    .replace(/\//g, '_')
+    .replace(/\s+/g, '_')
+    .replace(/-+/g, '_')
+    .trim();
+};

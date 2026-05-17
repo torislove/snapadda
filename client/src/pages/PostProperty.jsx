@@ -14,6 +14,7 @@ import { toast } from 'react-hot-toast';
 import LocationAutocomplete from '../components/LocationAutocomplete';
 import { MessageSquare } from 'lucide-react';
 import SEO from '../components/SEO';
+import { triggerVentureSuccess } from '../utils/CelebrationEngine';
 
 // --- Sub-components for Form Steps (Memoized for Snappiness) ---
 
@@ -230,7 +231,7 @@ const StepTechnicals = memo(({ formData, handleChange, setFormData, t }) => {
           ) : (
             <div className="field-group" style={{ gridColumn: 'span 2' }}>
               <label className="elite-lbl">Expected Price Range</label>
-              <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+              <div className="responsive-form-grid" style={{ gap: '15px', alignItems: 'center' }}>
                 <div style={{ flex: 1 }}>
                   <input 
                     type="number" 
@@ -243,7 +244,7 @@ const StepTechnicals = memo(({ formData, handleChange, setFormData, t }) => {
                   />
                   <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', marginTop: '4px' }}>{formatPriceInWords(formData.minPrice)}</div>
                 </div>
-                <div style={{ color: 'rgba(255,255,255,0.2)' }}>to</div>
+                <div style={{ color: 'rgba(255,255,255,0.2)', textAlign: 'center' }} className="desktop-only">to</div>
                 <div style={{ flex: 1 }}>
                   <input 
                     type="number" 
@@ -269,7 +270,7 @@ const StepTechnicals = memo(({ formData, handleChange, setFormData, t }) => {
 
       {/* AGRI SPECIFIC - Hidden for others */}
       {isAgri && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
+        <div className="responsive-form-grid" style={{ gap: '2rem' }}>
           <div className="field-group">
             <label className="elite-lbl">Survey Number</label>
             <input name="surveyNo" value={formData.surveyNo} onChange={handleChange} placeholder="e.g. 123/A" className="elite-input" />
@@ -288,7 +289,7 @@ const StepTechnicals = memo(({ formData, handleChange, setFormData, t }) => {
 
       {/* RESIDENTIAL SPECIFIC */}
       {isResidential && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem' }}>
+        <div className="form-grid-3" style={{ gap: '1.5rem' }}>
           <div className="field-group">
             <label htmlFor="pp-bhk" className="elite-lbl">{t('post.bhk')}</label>
             <input id="pp-bhk" name="bhk" type="number" value={formData.bhk} onChange={handleChange} placeholder="e.g. 3" className="elite-input" />
@@ -409,7 +410,7 @@ const StepLocation = memo(({ formData, handleChange, setFormData, formErrors, t,
       />
     </div>
     
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+    <div className="responsive-form-grid" style={{ gap: '20px' }}>
       <div className="field-group">
         <label htmlFor="pp-pincode" className="elite-lbl">Pincode <span className="required-asterisk">*</span></label>
         <div style={{ position: 'relative' }}>
@@ -801,6 +802,7 @@ export default function PostProperty() {
 
       const res = await submitProperty(payload);
       if (res.status === 'success') {
+         triggerVentureSuccess();
          setSuccess(true);
          const pCode = res.data?.propertyCode || 'SNA-PENDING';
          toast.success(`Listing sent for audit. Ref: ${pCode}`);
@@ -836,47 +838,35 @@ export default function PostProperty() {
       <div style={{ position: 'absolute', top: '-10%', right: '-5%', width: '60%', height: '50%', background: 'radial-gradient(ellipse at center, rgba(155,89,245,0.06) 0%, transparent 70%)', filter: 'blur(60px)', pointerEvents: 'none' }} />
       <div style={{ position: 'absolute', bottom: '0', left: '-10%', width: '50%', height: '50%', background: 'radial-gradient(ellipse at center, rgba(232,184,75,0.04) 0%, transparent 70%)', filter: 'blur(60px)', pointerEvents: 'none' }} />
       
-      <div className="container" style={{ position: 'relative', zIndex: 1, paddingTop: '120px', paddingBottom: '120px' }}>
-        <div style={{ maxWidth: '900px', margin: '0 auto' }}>
+      <div className="container" style={{ position: 'relative', zIndex: 1, paddingTop: 'clamp(80px, 10vh, 120px)', paddingBottom: 'clamp(80px, 10vh, 120px)' }}>
+        <div style={{ maxWidth: '900px', width: '100%', margin: '0 auto' }}>
           
-          <div style={{ marginBottom: '3rem', textAlign: 'center' }}>
+          <div style={{ marginBottom: 'clamp(2rem, 5vh, 4rem)', textAlign: 'center' }}>
             <motion.h1 
               initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-              style={{ fontSize: 'clamp(2.2rem, 5vw, 3.5rem)', fontWeight: 950, marginBottom: '0.5rem', background: 'linear-gradient(135deg, #ffffff 0%, var(--gold) 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', letterSpacing: '-0.02em', textShadow: '0 0 40px rgba(232,184,75,0.2)' }}
+              style={{ fontSize: 'clamp(1.8rem, 5vw, 3.5rem)', fontWeight: 950, marginBottom: '0.75rem', background: 'linear-gradient(135deg, #ffffff 0%, var(--gold) 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', letterSpacing: '-0.02em', textShadow: '0 0 40px rgba(232,184,75,0.2)' }}
             >
               {t('post.title')}
             </motion.h1>
-            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }} style={{ color: 'rgba(255,255,255,0.5)', fontSize: '1.05rem', maxWidth: '600px', margin: '0 auto' }}>
+            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }} style={{ color: 'rgba(255,255,255,0.5)', fontSize: 'clamp(0.85rem, 2vw, 1.05rem)', maxWidth: '600px', margin: '0 auto' }}>
               Add your property details to list it online.
             </motion.p>
           </div>
 
-        {/* Progress Bar - Glass Steps */}
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          marginBottom: '4rem', 
-          position: 'relative', 
-          padding: '0 20px',
-          overflowX: 'auto',
-          paddingBottom: '20px',
-          scrollbarWidth: 'none'
-        }} className="hide-scrollbar">
-          <div style={{ position: 'absolute', top: '22px', left: '40px', right: '40px', height: '2px', background: 'rgba(255,255,255,0.05)' }} />
+        {/* Progress Bar - Elite Responsive Stepper */}
+        <div className="elite-step-ribbon" style={{ marginBottom: '2.5rem' }}>
           {STEPS.map((s, i) => (
-            <div key={s.id} onClick={() => i < step && setStep(i)} style={{ position: 'relative', zIndex: 1, cursor: i < step ? 'pointer' : 'default', minWidth: '80px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <motion.div 
-                animate={{ 
-                  background: i <= step ? 'linear-gradient(135deg, var(--gold), #ffdf91)' : 'rgba(5,5,10,0.8)', 
-                  scale: i === step ? 1.1 : 1,
-                  boxShadow: i <= step ? '0 0 20px rgba(232,184,75,0.4), inset 0 2px 0 rgba(255,255,255,0.4)' : 'inset 0 1px 0 rgba(255,255,255,0.1)',
-                  borderColor: i <= step ? 'transparent' : 'rgba(255,255,255,0.1)'
-                }}
-                style={{ width: '44px', height: '44px', borderRadius: '50%', border: '1px solid', display: 'flex', alignItems: 'center', justifyContent: 'center', color: i <= step ? 'black' : 'rgba(255,255,255,0.3)', backdropFilter: 'blur(10px)' }}>
-                {i < step ? <CheckCircle2 size={20} /> : s.icon}
-              </motion.div>
-              <div style={{ marginTop: '12px', whiteSpace: 'nowrap', fontSize: '0.65rem', fontWeight: 800, color: i <= step ? 'var(--gold)' : 'rgba(255,255,255,0.3)', letterSpacing: '0.05em', textAlign: 'center' }}>
-                {s.label}
+            <div 
+              key={s.id} 
+              onClick={() => i < step && setStep(i)} 
+              className={`step-bubble ${i === step ? 'active' : ''}`}
+              style={{ cursor: i < step ? 'pointer' : 'default' }}
+            >
+              <div className="bubble-icon">
+                {i < step ? <CheckCircle2 size={18} /> : s.icon}
+              </div>
+              <div className="bubble-label">
+                {s.title}
               </div>
             </div>
           ))}
@@ -901,12 +891,12 @@ export default function PostProperty() {
                       <h4 style={{ color: 'white', fontSize: '1.2rem', fontWeight: 900 }}>Who are you?</h4>
                       <p style={{ color: 'var(--txt-muted)', fontSize: '0.8rem' }}>Choose your primary role for this listing.</p>
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                    <div className="responsive-form-grid" style={{ gap: '20px' }}>
                       <button 
                         type="button"
                         onClick={() => setFormData(p => ({ ...p, listerType: 'Individual Owner', isOwnerListing: true }))}
                         style={{ 
-                          padding: '3rem 1.5rem', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.1)',
+                          padding: '2.5rem 1.5rem', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.1)',
                           background: formData.listerType === 'Individual Owner' ? 'rgba(34,217,224,0.1)' : 'rgba(255,255,255,0.02)',
                           borderColor: formData.listerType === 'Individual Owner' ? 'var(--cyan)' : 'rgba(255,255,255,0.1)',
                           color: 'white', cursor: 'pointer', transition: 'all 0.3s',
@@ -915,13 +905,13 @@ export default function PostProperty() {
                       >
                         <User size={32} color={formData.listerType === 'Individual Owner' ? 'var(--cyan)' : 'rgba(255,255,255,0.4)'} />
                         <div style={{ fontWeight: 900, fontSize: '0.9rem' }}>DIRECT OWNER</div>
-                        <p style={{ fontSize: '0.65rem', opacity: 0.5 }}>I am the legal owner of this property.</p>
+                        <p style={{ fontSize: '0.65rem', opacity: 0.5, textAlign: 'center' }}>I am the legal owner of this property.</p>
                       </button>
                       <button 
                         type="button"
                         onClick={() => setFormData(p => ({ ...p, listerType: 'Verified Realtor', isOwnerListing: false }))}
                         style={{ 
-                          padding: '3rem 1.5rem', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.1)',
+                          padding: '2.5rem 1.5rem', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.1)',
                           background: formData.listerType === 'Verified Realtor' ? 'rgba(155,89,245,0.1)' : 'rgba(255,255,255,0.02)',
                           borderColor: formData.listerType === 'Verified Realtor' ? 'var(--violet)' : 'rgba(255,255,255,0.1)',
                           color: 'white', cursor: 'pointer', transition: 'all 0.3s',
@@ -930,7 +920,7 @@ export default function PostProperty() {
                       >
                         <ShieldCheck size={32} color={formData.listerType === 'Verified Realtor' ? 'var(--violet)' : 'rgba(255,255,255,0.4)'} />
                         <div style={{ fontWeight: 900, fontSize: '0.9rem' }}>VERIFIED REALTOR</div>
-                        <p style={{ fontSize: '0.65rem', opacity: 0.5 }}>I am a licensed agent or brokerage.</p>
+                        <p style={{ fontSize: '0.65rem', opacity: 0.5, textAlign: 'center' }}>I am a licensed agent or brokerage.</p>
                       </button>
                     </div>
                   </motion.div>

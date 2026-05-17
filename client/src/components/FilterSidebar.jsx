@@ -2,6 +2,7 @@ import { useRef, useEffect } from 'react';
 import { SlidersHorizontal, X, ArrowLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
+import { useSoundEffects } from '../utils/useSoundEffects';
 
 const DEFAULT_FILTERS = {
   bhk: '', minPrice: '', maxPrice: '', facing: 'Any', furnishing: 'N/A',
@@ -14,15 +15,17 @@ export default function FilterSidebar({ isOpen, onClose, filters, setFilters, on
   const { t } = useTranslation();
   const sidebarRef = useRef(null);
   const contentRef = useRef(null);
+  const { playPop, playTick } = useSoundEffects();
 
   useEffect(() => {
     if (isOpen) {
+      playPop();
       requestAnimationFrame(() => {
         if (sidebarRef.current) sidebarRef.current.scrollTop = 0;
         if (contentRef.current) contentRef.current.scrollTop = 0;
       });
     }
-  }, [isOpen]);
+  }, [isOpen, playPop]);
 
   useEffect(() => {
     if (isOpen) {
@@ -33,9 +36,13 @@ export default function FilterSidebar({ isOpen, onClose, filters, setFilters, on
     return () => { document.body.style.overflow = ''; };
   }, [isOpen]);
 
-  const set = (key, val) => setFilters(prev => ({ ...prev, [key]: val }));
+  const set = (key, val) => {
+    playTick();
+    setFilters(prev => ({ ...prev, [key]: val }));
+  };
 
   const handleClearAll = () => {
+    playTick();
     setFilters({ ...DEFAULT_FILTERS });
   };
 
@@ -91,29 +98,44 @@ export default function FilterSidebar({ isOpen, onClose, filters, setFilters, on
             ref={sidebarRef}
             className="filter-sidebar"
             onClick={e => e.stopPropagation()}
-            initial={window.innerWidth <= 600 ? { x: '100%', opacity: 1 } : { scale: 0.9, opacity: 0 }}
-            animate={window.innerWidth <= 600 ? { x: 0, opacity: 1 } : { scale: 1, opacity: 1 }}
-            exit={window.innerWidth <= 600 ? { x: '100%', opacity: 1 } : { scale: 0.9, opacity: 0 }}
-            transition={window.innerWidth <= 600 ? { type: 'tween', duration: 0.25 } : { type: 'spring', damping: 25, stiffness: 350 }}
+            drag={window.innerWidth <= 600 ? "y" : false}
+            dragConstraints={{ top: 0, bottom: 0 }}
+            dragElastic={{ top: 0.05, bottom: 0.7 }}
+            onDragEnd={(e, info) => {
+              if (window.innerWidth <= 600 && info.offset.y > 100) {
+                onClose();
+              }
+            }}
+            initial={window.innerWidth <= 600 ? { y: '100%', opacity: 1 } : { scale: 0.9, opacity: 0 }}
+            animate={window.innerWidth <= 600 ? { y: 0, opacity: 1 } : { scale: 1, opacity: 1 }}
+            exit={window.innerWidth <= 600 ? { y: '100%', opacity: 1 } : { scale: 0.9, opacity: 0 }}
+            transition={window.innerWidth <= 600 ? { type: 'spring', damping: 28, stiffness: 320 } : { type: 'spring', damping: 25, stiffness: 350 }}
             style={{
               background: 'rgba(10,10,20,0.95)',
               backdropFilter: 'blur(40px) saturate(200%)',
               WebkitBackdropFilter: 'blur(40px) saturate(200%)',
               border: '1px solid rgba(212,175,55,0.4)',
-              borderRadius: window.innerWidth <= 600 ? '0' : '28px',
+              borderRadius: window.innerWidth <= 600 ? '24px 24px 0 0' : '28px',
               width: window.innerWidth <= 600 ? '100vw' : '100%',
               maxWidth: '480px',
-              height: window.innerWidth <= 600 ? '100vh' : 'auto',
-              maxHeight: window.innerWidth <= 600 ? '100vh' : '90vh',
+              height: window.innerWidth <= 600 ? '80vh' : 'auto',
+              maxHeight: window.innerWidth <= 600 ? '80vh' : '90vh',
               display: 'flex',
               flexDirection: 'column',
               boxShadow: '0 40px 100px rgba(0,0,0,0.9)',
               overflow: 'hidden',
               position: window.innerWidth <= 600 ? 'fixed' : 'relative',
-              top: 0,
+              bottom: window.innerWidth <= 600 ? 0 : 'auto',
+              top: window.innerWidth <= 600 ? 'auto' : 0,
               right: 0
             }}
           >
+            {/* Drag Handle for Mobile */}
+            {window.innerWidth <= 600 && (
+              <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 0 4px 0', flexShrink: 0, cursor: 'grab' }}>
+                <div style={{ width: '40px', height: '4px', borderRadius: '2px', background: 'rgba(255,255,255,0.2)' }} />
+              </div>
+            )}
             {/* Header */}
             <div style={{ padding: '18px 20px', borderBottom: '1px solid rgba(212,175,55,0.15)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
               <button

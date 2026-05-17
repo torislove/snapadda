@@ -54,7 +54,7 @@ const MetricCard = ({ title, value, icon: Icon, color, sub, trend, link, index }
     transition={{ delay: index * 0.05 }}
     className="glass-3d hover-glow"
     style={{ 
-      padding: '1.75rem', 
+      padding: 'var(--metric-card-padding, 1.75rem)', 
       border: `1px solid ${color}33`,
       background: `linear-gradient(135deg, rgba(255,255,255,0.02) 0%, ${color}05 100%)`
     }}
@@ -76,7 +76,7 @@ const MetricCard = ({ title, value, icon: Icon, color, sub, trend, link, index }
           </span>
         )}
       </div>
-      <div className="metric-value" style={{ fontSize: '2.25rem', fontWeight: 950, color: 'white', letterSpacing: '-0.03em', lineHeight: 1, marginBottom: '0.5rem', fontFamily: 'var(--font-mono)' }}>
+      <div className="metric-value" style={{ fontSize: 'var(--metric-value-size, 2.25rem)', fontWeight: 950, color: 'white', letterSpacing: '-0.03em', lineHeight: 1, marginBottom: '0.5rem', fontFamily: 'var(--font-mono)' }}>
         <AnimatedNumber target={value} />
       </div>
       <div className="metric-label" style={{ fontSize: '0.75rem', fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.12em', opacity: 0.7 }}>

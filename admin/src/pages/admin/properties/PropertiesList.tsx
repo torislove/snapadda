@@ -14,14 +14,35 @@ interface PropertiesListProps {
   updateProperty: (id: string, payload: any) => Promise<any>;
   createProperty: (payload: any) => Promise<any>;
   loadProperties: () => void;
+  filters: any;
+  updateFilter: (key: string, val: any) => void;
 }
+
+const PROPERTY_TYPES = [
+  { label: 'Any Type', value: '' },
+  { label: 'Apartment', value: 'Apartment' },
+  { label: 'Independent House', value: 'Independent House' },
+  { label: 'Villa', value: 'Villa' },
+  { label: 'Residential Plot', value: 'Residential Plot' },
+  { label: 'Commercial Space', value: 'Commercial Space' },
+  { label: 'Agricultural Land', value: 'Agricultural Land' },
+];
+
+const BUDGET_PRESETS = [
+  { label: 'Any Budget', max: '' },
+  { label: 'Under 25L', max: '2500000' },
+  { label: 'Under 50L', max: '5000000' },
+  { label: 'Under 1Cr', max: '10000000' },
+  { label: 'Under 2Cr', max: '20000000' },
+  { label: '5Cr+', max: '990000000' },
+];
 
 export const PropertiesList: React.FC<PropertiesListProps> = ({
   filteredProperties, search, setSearch, viewMode, setViewMode,
-  handleEdit, updateProperty, createProperty, loadProperties
+  handleEdit, updateProperty, createProperty, loadProperties,
+  filters, updateFilter
 }) => {
   const { showToast } = useToast();
-  const [statusFilter, setStatusFilter] = React.useState('all');
   const [selectedIds, setSelectedIds] = React.useState<string[]>([]);
   const [isBulkUpdating, setIsBulkUpdating] = React.useState(false);
 
@@ -45,10 +66,9 @@ export const PropertiesList: React.FC<PropertiesListProps> = ({
   };
 
   const finalFiltered = React.useMemo(() => {
-    if (statusFilter === 'all') return filteredProperties;
-    if (statusFilter === 'Pending Review') return filteredProperties.filter(p => p.verificationStatus === 'Draft');
-    return filteredProperties.filter(p => p.status === statusFilter);
-  }, [filteredProperties, statusFilter]);
+    // With server-side filters, finalFiltered is just filteredProperties
+    return filteredProperties;
+  }, [filteredProperties]);
 
   return (
     <motion.div
@@ -101,21 +121,49 @@ export const PropertiesList: React.FC<PropertiesListProps> = ({
             <button onClick={() => { loadProperties(); showToast('Inventory synchronized. 🔄'); }} style={{ padding: '10px', borderRadius: '12px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', cursor: 'pointer' }}><RefreshCw size={16} /></button>
           </div>
 
-          <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '4px' }}>
+          <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px' }}>
               {['all', 'Active', 'Sold', 'Pending', 'Draft'].map(f => (
                 <button 
                   key={f}
-                  onClick={() => setStatusFilter(f)}
+                  onClick={() => updateFilter('status', f)}
                   style={{ 
                     padding: '8px 16px', borderRadius: '10px', fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer',
-                    background: statusFilter === f ? 'var(--violet)' : 'transparent',
-                    color: statusFilter === f ? 'white' : 'var(--text-muted)',
-                    border: 'none', whiteSpace: 'nowrap'
+                    background: filters.status === f ? 'var(--gold)' : 'transparent',
+                    color: filters.status === f ? 'black' : 'var(--text-muted)',
+                    border: filters.status === f ? 'none' : '1px solid rgba(255,255,255,0.05)', whiteSpace: 'nowrap',
+                    transition: 'all 0.2s'
                   }}
                 >
                   {f.toUpperCase()}
                 </button>
               ))}
+              
+              <div style={{ width: '1px', background: 'rgba(255,255,255,0.1)', margin: '0 8px' }} />
+
+              <select 
+                value={filters.type} 
+                onChange={e => updateFilter('type', e.target.value)}
+                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', padding: '8px 12px', borderRadius: '10px', fontSize: '0.7rem', fontWeight: 700, outline: 'none' }}
+              >
+                {PROPERTY_TYPES.map(t => <option key={t.value} value={t.value} style={{ background: '#111' }}>{t.label}</option>)}
+              </select>
+
+              <select 
+                value={filters.maxPrice} 
+                onChange={e => updateFilter('maxPrice', e.target.value)}
+                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', padding: '8px 12px', borderRadius: '10px', fontSize: '0.7rem', fontWeight: 700, outline: 'none' }}
+              >
+                {BUDGET_PRESETS.map(b => <option key={b.label} value={b.max} style={{ background: '#111' }}>{b.label}</option>)}
+              </select>
+
+              <select 
+                value={filters.bhk} 
+                onChange={e => updateFilter('bhk', e.target.value)}
+                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', padding: '8px 12px', borderRadius: '10px', fontSize: '0.7rem', fontWeight: 700, outline: 'none' }}
+              >
+                <option value="" style={{ background: '#111' }}>Any BHK</option>
+                {[1, 2, 3, 4, 5].map(b => <option key={b} value={b} style={{ background: '#111' }}>{b} BHK</option>)}
+              </select>
           </div>
         </div>
       </div>

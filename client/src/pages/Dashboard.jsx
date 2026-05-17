@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, Heart, User, Settings, LogOut, Star, MapPin, ShieldCheck, Phone, RefreshCw, MessageSquare, Sparkles, LayoutDashboard, Building } from 'lucide-react';
+import { Home, Heart, User, Settings, LogOut, Star, MapPin, ShieldCheck, Phone, RefreshCw, MessageSquare, Sparkles, LayoutDashboard, Building, ArrowRight } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { getFavorites, fetchUserQuestions, fetchMyProperties } from '../services/api';
 import PropertyCard from '../components/PropertyCard';
 import Logo from '../components/Logo';
 import ContactModal from '../components/ContactModal';
 import { useTranslation } from 'react-i18next';
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+import Chart from 'react-apexcharts';
 
 
 // Dashboard home tab
@@ -71,21 +71,75 @@ function DashboardHome({ user, stats, recent, setModalOpen }) {
               <Sparkles size={20} style={{ color: 'var(--gold)', filter: 'drop-shadow(0 0 8px var(--gold-glow))' }} />
             </div>
             <div style={{ height: isMobile ? '200px' : '260px', width: '100%' }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={[
-                  { name: 'Mon', views: 4 }, { name: 'Tue', views: 12 }, { name: 'Wed', views: 8 },
-                  { name: 'Thu', views: 18 }, { name: 'Fri', views: 14 }, { name: 'Sat', views: 25 }, { name: 'Sun', views: 20 }
-                ]}>
-                  <defs>
-                    <linearGradient id="yieldGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="var(--gold)" stopOpacity={0.4}/>
-                      <stop offset="95%" stopColor="var(--gold)" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <Tooltip contentStyle={{ background: 'var(--midnight)', borderColor: 'var(--gold-border)', borderRadius: '16px', backdropFilter: 'blur(10px)' }} />
-                  <Area type="monotone" dataKey="views" stroke="var(--gold)" strokeWidth={4} fill="url(#yieldGrad)" />
-                </AreaChart>
-              </ResponsiveContainer>
+              <Chart
+                options={{
+                  chart: {
+                    id: 'engagement-yield',
+                    type: 'area',
+                    toolbar: { show: false },
+                    sparkline: { enabled: false },
+                    fontFamily: 'var(--font-body)',
+                  },
+                  colors: ['#e8b84b'],
+                  stroke: {
+                    curve: 'smooth',
+                    width: 3.5,
+                  },
+                  fill: {
+                    type: 'gradient',
+                    gradient: {
+                      shadeIntensity: 1,
+                      opacityFrom: 0.45,
+                      opacityTo: 0.01,
+                      stops: [0, 100],
+                    },
+                  },
+                  grid: {
+                    borderColor: 'rgba(255, 255, 255, 0.04)',
+                    strokeDashArray: 4,
+                    padding: { left: 0, right: 0, top: 0, bottom: 0 },
+                  },
+                  xaxis: {
+                    categories: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                    labels: {
+                      style: {
+                        colors: 'rgba(255, 255, 255, 0.4)',
+                        fontWeight: 700,
+                        fontSize: '11px',
+                      },
+                    },
+                    axisBorder: { show: false },
+                    axisTicks: { show: false },
+                  },
+                  yaxis: {
+                    labels: {
+                      style: {
+                        colors: 'rgba(255, 255, 255, 0.4)',
+                        fontWeight: 700,
+                        fontSize: '11px',
+                      },
+                    },
+                  },
+                  tooltip: {
+                    theme: 'dark',
+                    custom: function({ series, seriesIndex, dataPointIndex }) {
+                      return `
+                        <div style="background: rgba(10,10,20,0.95); border: 1px solid rgba(232,184,75,0.4); padding: 8px 14px; border-radius: 12px; backdrop-filter: blur(15px); color: #fff; font-size: 0.8rem; font-weight: 800; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
+                          <span style="color: var(--gold); font-size: 0.65rem; text-transform: uppercase; display: block; margin-bottom: 2px; font-weight: 900; letter-spacing: 0.05em;">views</span>
+                          ✦ ${series[seriesIndex][dataPointIndex]} Inquiries
+                        </div>
+                      `;
+                    }
+                  },
+                }}
+                series={[{
+                  name: 'views',
+                  data: [4, 12, 8, 18, 14, 25, 20]
+                }]}
+                type="area"
+                height="100%"
+                width="100%"
+              />
             </div>
           </div>
 
