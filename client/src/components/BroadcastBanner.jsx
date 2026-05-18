@@ -2,19 +2,41 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Megaphone, X, Bell, Info, ShieldCheck, AlertTriangle } from 'lucide-react';
 import { fetchSetting } from '../services/api';
+import { db } from '../firebase';
+import { ref, onValue, off } from 'firebase/database';
 
 export default function BroadcastBanner() {
   const [config, setConfig] = useState(null);
   const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
-    fetchSetting('broadcast_config')
-      .then(data => {
-        if (data && data.isActive && data.message) {
-          setConfig(data);
-        }
-      })
-      .catch(() => {});
+    if (!db) {
+      // Automatic backward-compatible fallback if database is not ready
+      fetchSetting('broadcast_config')
+        .then(data => {
+          if (data && data.isActive && data.message) {
+            setConfig(data);
+          }
+        })
+        .catch(() => {});
+      return;
+    }
+
+    const broadcastRef = ref(db, 'settings/broadcast_config');
+    const unsubscribe = onValue(broadcastRef, (snapshot) => {
+      const val = snapshot.val();
+      if (val && val.isActive && val.message) {
+        setConfig(val);
+      } else {
+        setConfig(null); // Instantly hide broadcast banner in real time if disabled/deleted
+      }
+    }, (error) => {
+      console.warn("⚠️ Broadcast RTDB live listener note:", error.message);
+    });
+
+    return () => {
+      off(broadcastRef);
+    };
   }, []);
 
   if (!config || dismissed) return null;

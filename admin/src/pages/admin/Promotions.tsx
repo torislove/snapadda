@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   fetchAllPromotions, createPromotion, updatePromotion,
-  reorderPromotions, uploadMedia, sendPushNotification, fetchProperties
+  reorderPromotions, uploadMedia, sendPushNotification, fetchProperties,
+  deletePromotion
 } from '../../services/api';
 import {
   Plus, Loader2, Sparkles, TrendingUp, MousePointer2,
-  Zap, GripVertical, Eye, EyeOff, X, AlertCircle, Building, ArrowRight
+  Zap, GripVertical, Eye, EyeOff, X, AlertCircle, Building, ArrowRight,
+  Trash2
 } from 'lucide-react';
 import { useToast } from '../../components/ui/Toast';
 import { 
@@ -122,7 +124,7 @@ const calculateCTR = (views: number = 0, clicks: number = 0) => {
 
 /* ── Promotion Card in Grid (Precise Vertical 3:4 Aspect Ratio) ── */
 const PromoCard = ({
-  promo, onToggle, onEdit, onDragStart, onDragOver, onDrop, isDragging
+  promo, onToggle, onEdit, onDelete, onDragStart, onDragOver, onDrop, isDragging
 }: any) => {
   const cfg = TYPE_CONFIG[promo.type] || TYPE_CONFIG.offer;
   const color = COLOR_PRESETS.find(c => c.id === promo.cardColor)?.accent ?? '#71717a';
@@ -275,6 +277,19 @@ const PromoCard = ({
             }}
           >
             Edit
+          </button>
+          <button
+            onClick={() => onDelete(promo._id)}
+            style={{
+              padding: '6px 10px', fontSize: '0.7rem', fontWeight: 700,
+              borderRadius: '8px', cursor: 'pointer', border: 'none',
+              background: 'rgba(245,57,123,0.15)', color: '#f5397b',
+              transition: 'all 0.2s ease',
+              display: 'flex', alignItems: 'center', justifyContent: 'center'
+            }}
+            title="Delete Campaign"
+          >
+            <Trash2 size={12} />
           </button>
         </div>
       </div>
@@ -516,6 +531,17 @@ export const Promotions = () => {
     } catch { showToast('Update failed', 'error'); }
   };
 
+  const handleDelete = async (id: string) => {
+    if (!window.confirm('Are you sure you want to permanently delete this campaign? This action is irreversible.')) return;
+    try {
+      await deletePromotion(id);
+      setPromotions(ps => ps.filter(p => p._id !== id));
+      showToast('Campaign deleted successfully! 🗑️');
+    } catch {
+      showToast('Deletion failed', 'error');
+    }
+  };
+
   /* ── Drag-and-Drop ── */
   const handleDragStart = (idx: number) => { setDragSrcIdx(idx); };
   const handleDragOver = (idx: number) => {
@@ -665,6 +691,7 @@ export const Promotions = () => {
                   isDragging={dragSrcIdx === idx}
                   onToggle={handleToggle}
                   onEdit={handleEdit}
+                  onDelete={handleDelete}
                   onDragStart={() => handleDragStart(idx)}
                   onDragOver={() => handleDragOver(idx)}
                   onDrop={handleDrop}

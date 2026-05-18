@@ -35,8 +35,19 @@ const AdminBroadcast = () => {
     }
   };
 
-  const handleClear = () => {
-    setBroadcast({ ...broadcast, message: '', isActive: false });
+  const handleClear = async () => {
+    if (!window.confirm('Are you sure you want to stop transmission and clear this broadcast banner instantly?')) return;
+    setSaving(true);
+    try {
+      const cleared = { message: '', type: 'info', isActive: false, showUntil: '' };
+      await saveSetting('broadcast_config', cleared);
+      setBroadcast(cleared);
+      showToast('Broadcast stopped & cleared instantly! 🗑️');
+    } catch (err) {
+      showToast('Failed to clear broadcast', 'error');
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (loading) return <div style={{ color: 'white', padding: '2rem' }}>Scanning frequencies...</div>;

@@ -72,18 +72,32 @@ export const Logo = ({ className = '', size = 48, showText = false, textSize = '
         }}
       >
         <div style={{ position: 'relative', width: size, height: size, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <img 
-            src="/favicon-round.png" 
-            alt="SnapAdda" 
-            style={{ 
-              width: '100%', 
-              height: '100%', 
-              objectFit: 'contain',
-              filter: isHovered ? 'drop-shadow(0 0 20px rgba(232,184,75,0.4))' : 'drop-shadow(0 0 10px rgba(0,0,0,0.3))',
-              transition: 'all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
-              transform: isHovered ? 'scale(1.1) rotate(5deg)' : 'scale(1)'
-            }} 
-          />
+          <svg 
+            width="100%" 
+            height="100%" 
+            viewBox="0 0 400 400" 
+            fill="none" 
+            xmlns="http://www.w3.org/2000/svg"
+            className="logo-svg-main"
+          >
+            <defs>
+              <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#c5a059" />
+                <stop offset="50%" stopColor="#f4d03f" />
+                <stop offset="100%" stopColor="#c5a059" />
+              </linearGradient>
+            </defs>
+            <rect x="150" y="50" width="100" height="300" rx="6" fill="url(#goldGrad)" />
+            <path d="M150 50 L200 8 L250 50 Z" fill="url(#goldGrad)" />
+            <rect x="80" y="160" width="60" height="190" rx="5" fill="rgba(255,255,255,0.18)" stroke="url(#goldGrad)" strokeWidth="10" />
+            <rect x="260" y="160" width="60" height="190" rx="5" fill="rgba(255,255,255,0.18)" stroke="url(#goldGrad)" strokeWidth="10" />
+            <rect x="175" y="90" width="18" height="22" rx="3" fill="white" className="window-light" style={{ animationDelay: '0.1s' }} />
+            <rect x="207" y="90" width="18" height="22" rx="3" fill="white" className="window-light" style={{ animationDelay: '0.2s' }} />
+            <rect x="175" y="130" width="18" height="22" rx="3" fill="white" className="window-light" style={{ animationDelay: '0.3s' }} />
+            <rect x="207" y="130" width="18" height="22" rx="3" fill="white" className="window-light" style={{ animationDelay: '0.4s' }} />
+            <rect x="175" y="170" width="18" height="22" rx="3" fill="white" className="window-light" style={{ animationDelay: '0.5s' }} />
+            <rect x="207" y="170" width="18" height="22" rx="3" fill="white" className="window-light" style={{ animationDelay: '0.6s' }} />
+          </svg>
         </div>
 
         {showText && (

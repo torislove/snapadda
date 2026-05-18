@@ -8,6 +8,7 @@ import { GoogleLogin } from '@react-oauth/google';
 import { useAuth } from '../contexts/AuthContext';
 import { authGoogle } from '../services/api';
 import { triggerGoldBurst } from '../utils/CelebrationEngine';
+import GoldParticleNet from '../components/GoldParticleNet';
 
 export default function Login() {
   const { login, user } = useAuth();
@@ -63,6 +64,7 @@ export default function Login() {
       {/* Dynamic Background Elements */}
       <div style={{ position: 'absolute', top: '-10%', left: '-10%', width: '60vw', height: '60vw', background: 'radial-gradient(circle, rgba(232,184,75,0.08) 0%, transparent 70%)', filter: 'blur(100px)', borderRadius: '50%' }} />
       <div style={{ position: 'absolute', bottom: '-10%', right: '-10%', width: '50vw', height: '50vw', background: 'radial-gradient(circle, rgba(155,89,245,0.05) 0%, transparent 70%)', filter: 'blur(100px)', borderRadius: '50%' }} />
+      <GoldParticleNet />
 
       <motion.div
         ref={containerRef}

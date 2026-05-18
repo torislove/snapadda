@@ -3,18 +3,18 @@ import { motion } from 'framer-motion';
 import { MapPin, Navigation2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { fetchSetting } from '../services/api';
+import { useRealtimeSetting } from '../hooks/useRealtimeSetting';
 
 const CityMarquee = ({ cities, loading }) => {
   const navigate = useNavigate();
   const [speed, setSpeed] = React.useState(80);
+  const { data: liveMarquee } = useRealtimeSetting('marquee_strips');
 
   React.useEffect(() => {
-    fetchSetting('marquee_strips')
-      .then(res => {
-        if (res && res.citiesSpeed) setSpeed(res.citiesSpeed);
-      })
-      .catch(() => {});
-  }, []);
+    if (liveMarquee && liveMarquee.citiesSpeed) {
+      setSpeed(liveMarquee.citiesSpeed);
+    }
+  }, [liveMarquee]);
 
   if (loading) {
     return (

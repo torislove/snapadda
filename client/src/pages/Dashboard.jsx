@@ -9,6 +9,7 @@ import Logo from '../components/Logo';
 import ContactModal from '../components/ContactModal';
 import { useTranslation } from 'react-i18next';
 import Chart from 'react-apexcharts';
+import { useSoundEffects } from '../utils/useSoundEffects';
 
 
 // Dashboard home tab
@@ -277,6 +278,8 @@ function Profile({ user, logout, stats }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const { playChime } = useSoundEffects();
+  const [soundsActive, setSoundsActive] = useState(localStorage.getItem('snapadda_sound_effects') !== 'false');
 
   const avatarUrl = user?.picture || user?.avatar || user?.photo ||
     `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'U')}&background=e8b84b&color=000&bold=true&size=200`;
@@ -412,6 +415,51 @@ function Profile({ user, logout, stats }) {
         </div>
       </motion.div>
 
+      {/* ── Tactile Feedback Settings ────────────────────────────────────── */}
+      <motion.div
+        initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.14 }}
+        style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '24px', padding: '2rem', marginBottom: '1.5rem' }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <div style={{ fontSize: '0.65rem', fontWeight: 900, letterSpacing: '0.15em', color: 'var(--gold)', marginBottom: '6px' }}>AUDIO ENVIRONMENT</div>
+            <div style={{ fontWeight: 800, fontSize: '0.92rem', color: '#fff', marginBottom: '4px' }}>Tactile Sound Synthesis</div>
+            <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.45)', lineHeight: 1.4 }}>
+              Enable organic Web Audio click notches, pop sheets, and success chimes.
+            </div>
+          </div>
+          
+          <button
+            onClick={() => {
+              const nextState = !soundsActive;
+              setSoundsActive(nextState);
+              localStorage.setItem('snapadda_sound_effects', nextState ? 'true' : 'false');
+              if (nextState) {
+                playChime();
+              }
+            }}
+            style={{
+              width: '50px', height: '26px', borderRadius: '20px',
+              border: soundsActive ? '1px solid var(--gold)' : '1px solid rgba(255,255,255,0.15)',
+              background: soundsActive ? 'rgba(232,184,75,0.15)' : 'rgba(255,255,255,0.03)',
+              position: 'relative', cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
+              flexShrink: 0
+            }}
+          >
+            <motion.div
+              animate={{ x: soundsActive ? 24 : 2 }}
+              transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+              style={{
+                width: '20px', height: '20px', borderRadius: '50%',
+                background: soundsActive ? 'var(--gold)' : 'rgba(255,255,255,0.3)',
+                boxShadow: soundsActive ? '0 0 10px rgba(232,184,75,0.5)' : 'none',
+                position: 'absolute', top: '2px', left: 0
+              }}
+            />
+          </button>
+        </div>
+      </motion.div>
+
       {/* ── Preferences ────────────────────────────────────────────────── */}
       {(user?.preferences?.propertyType || user?.preferences?.city || user?.preferences?.budget) && (
         <motion.div
@@ -498,6 +546,7 @@ export default function Dashboard({ defaultTab = 'home' }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState(defaultTab);
+  const { playTick, playPop } = useSoundEffects();
   const [modalOpen, setModalOpen] = useState(false);
   const [saved, setSaved] = useState([]);
   const [myProperties, setMyProperties] = useState([]);
@@ -602,7 +651,7 @@ export default function Dashboard({ defaultTab = 'home' }) {
             justifyContent: 'flex-start'
           }}>
             {TABS.map(t => (
-              <button key={t.key} onClick={() => setActiveTab(t.key)}
+              <button key={t.key} onClick={() => { playTick(); setActiveTab(t.key); }}
                 style={{ 
                   display: 'flex', 
                   alignItems: 'center', 
@@ -624,7 +673,7 @@ export default function Dashboard({ defaultTab = 'home' }) {
             ))}
           </div>
           
-          <button onClick={() => window.location.href = '/'} className="hero-btn hero-btn-outline" style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.75rem 1.5rem', fontSize: '0.85rem', height: 'fit-content', borderRadius: '14px' }}>
+          <button onClick={() => { playTick(); window.location.href = '/'; }} className="hero-btn hero-btn-outline" style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.75rem 1.5rem', fontSize: '0.85rem', height: 'fit-content', borderRadius: '14px' }}>
             <Home size={18} /> {t('dashboard.backToSite')}
           </button>
         </div>
@@ -641,7 +690,7 @@ export default function Dashboard({ defaultTab = 'home' }) {
       </div>
 
       {/* FAB */}
-      <button className="fab-callback" onClick={() => setModalOpen(true)} style={{ width: '64px', height: '64px', borderRadius: '22px', boxShadow: '0 15px 30px rgba(212,175,55,0.3)' }}><Phone size={28} /></button>
+      <button className="fab-callback" onClick={() => { playPop(); setModalOpen(true); }} style={{ width: '64px', height: '64px', borderRadius: '22px', boxShadow: '0 15px 30px rgba(212,175,55,0.3)' }}><Phone size={28} /></button>
       <ContactModal isOpen={modalOpen} onClose={() => setModalOpen(false)} type="callback" />
     </div>
   );

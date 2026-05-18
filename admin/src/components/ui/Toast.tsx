@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle, AlertCircle, X } from 'lucide-react';
 
@@ -10,7 +10,15 @@ export interface ToastProps {
 }
 
 export const Toast: React.FC<ToastProps> = ({ message, type, onClose, duration = 3000 }) => {
-  useEffect(() => {
+  const [isMobile, setIsMobile] = React.useState(window.innerWidth <= 768);
+  
+  React.useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  React.useEffect(() => {
     const timer = setTimeout(onClose, duration);
     return () => clearTimeout(timer);
   }, [onClose, duration]);
@@ -19,15 +27,16 @@ export const Toast: React.FC<ToastProps> = ({ message, type, onClose, duration =
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 50, scale: 0.9 }}
+      initial={{ opacity: 0, y: isMobile ? 50 : 20, scale: 0.9 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: 20, scale: 0.95 }}
+      exit={{ opacity: 0, y: isMobile ? 30 : 20, scale: 0.95 }}
       style={{
         position: 'fixed',
-        bottom: '24px',
-        right: '24px',
+        bottom: isMobile ? 'calc(var(--bottom-nav-h, 0px) + 16px)' : '24px',
+        right: isMobile ? '16px' : '24px',
+        left: isMobile ? '16px' : 'auto',
         zIndex: 9999,
-        minWidth: '300px',
+        minWidth: isMobile ? 'calc(100% - 32px)' : '300px',
         background: isSuccess ? 'rgba(16, 217, 140, 0.1)' : 'rgba(245, 57, 123, 0.1)',
         backdropFilter: 'blur(20px) saturate(180%)',
         border: `1px solid ${isSuccess ? 'rgba(16, 217, 140, 0.3)' : 'rgba(245, 57, 123, 0.3)'}`,

@@ -6,6 +6,8 @@ import {
   getNearbyProperties, publicSubmitProperty, getMyProperties
 } from '../controllers/propertyController.js';
 
+import { getActiveViewers } from '../modules/webSocketHub.js';
+
 const router = express.Router();
 
 router.get('/nearby', getNearbyProperties);
@@ -14,6 +16,10 @@ router.get('/engagement', getEngagementStats);
 router.get('/', getProperties);
 router.post('/validate', validateProperties);
 router.post('/public-submit', publicSubmitProperty);
+router.get('/:id/viewers', (req, res) => {
+  const count = getActiveViewers(req.params.id);
+  res.status(200).json({ status: 'success', propertyId: req.params.id, count });
+});
 router.get('/:id', getPropertyById);
 router.get('/:id/similar', getSimilarProperties);
 router.post('/', createProperty);

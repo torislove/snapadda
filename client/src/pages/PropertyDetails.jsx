@@ -18,11 +18,19 @@ import EliteLightBox from '../components/EliteLightBox';
 import { useBehaviorTracker } from '../hooks/useBehaviorTracker';
 import { prefetchRoute } from '../utils/PerformanceUtilities';
 import { useRealtimeProperties } from '../hooks/useRealtimeProperties';
+import { useRealtimeSetting } from '../hooks/useRealtimeSetting';
 import SEO from '../components/SEO';
 import { Helmet } from 'react-helmet-async';
 import PropertyMap from '../components/PropertyMap';
 import ShareControlCenter from '../components/ShareControlCenter';
 import { DOMAIN } from '../utils/shareUtils';
+
+// Swiper 3D coverflow dependencies
+import { Swiper, SwiperSlide } from 'swiper/react';
+import { EffectCoverflow, Pagination, Autoplay } from 'swiper/modules';
+import 'swiper/css';
+import 'swiper/css/effect-coverflow';
+import 'swiper/css/pagination';
 
 // ----------------------------------------------------------------------------------
 // Toast
@@ -90,19 +98,30 @@ export default function PropertyDetails() {
   const [qna, setQna] = useState([]);
   const [supportInfo, setSupportInfo] = useState(null);
 
+  const { data: liveMarketing } = useRealtimeSetting('marketing_settings');
+  const { data: liveProfile } = useRealtimeSetting('admin_profile');
+  const { data: liveSupport } = useRealtimeSetting('support_info');
+
   useEffect(() => {
-    Promise.all([
-      fetchSetting('marketing_settings'),
-      fetchSetting('admin_profile')
-    ]).then(([mkt, prof]) => {
-      if (mkt) setSupportInfo({
-        phone: mkt.supportPhone,
-        whatsapp: mkt.waNumber,
-        email: mkt.supportEmail,
-        adminProfile: prof
-      });
-    });
-  }, []);
+    if (liveMarketing) {
+      setSupportInfo(prev => ({
+        ...prev,
+        phone: liveMarketing.supportPhone,
+        whatsapp: liveMarketing.waNumber,
+        email: liveMarketing.supportEmail,
+        adminProfile: liveProfile || prev?.adminProfile
+      }));
+    }
+  }, [liveMarketing, liveProfile]);
+
+  useEffect(() => {
+    if (liveSupport) {
+      setSupportInfo(prev => ({
+        ...prev,
+        ...liveSupport
+      }));
+    }
+  }, [liveSupport]);
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
   const [imgIdx, setImgIdx] = useState(0);
@@ -111,6 +130,79 @@ export default function PropertyDetails() {
   const [toast, setToast] = useState('');
   const [shareModal, setShareModal] = useState(false);
   const galleryRef = useRef(null);
+  
+  // Real-time Concurrent Viewer Density (WebSocket / HTTP Poll Fallback)
+  const [activeViewers, setActiveViewers] = useState(3);
+
+  useEffect(() => {
+    if (!id) return;
+    
+    let socket = null;
+    let fallbackInterval = null;
+    
+    const connectWS = () => {
+      try {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = process.env.NODE_ENV === 'production'
+          ? `${protocol}//${window.location.host}/ws`
+          : `ws://localhost:5000/ws`;
+          
+        socket = new WebSocket(wsUrl);
+        
+        socket.onopen = () => {
+          console.log('⚡ WS_CLIENT: Registered on Concurrent Viewer Hub');
+          socket.send(JSON.stringify({ type: 'VIEW_PROPERTY', propertyId: id }));
+        };
+        
+        socket.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            if (data.type === 'VIEWER_COUNT' && data.propertyId === id) {
+              setActiveViewers(data.count);
+            }
+          } catch (e) {
+            console.warn('WS parsing failed:', e);
+          }
+        };
+        
+        socket.onerror = (err) => {
+          console.warn('WS Connection error, switching to poller:', err);
+          initFallbackPolling();
+        };
+        
+        socket.onclose = () => {
+          console.log('⚡ WS_CLIENT: Viewer connection closed');
+        };
+      } catch (err) {
+        console.warn('WS startup error, loading fallback:', err);
+        initFallbackPolling();
+      }
+    };
+    
+    const initFallbackPolling = () => {
+      const pollViewers = () => {
+        const apiBase = process.env.NODE_ENV === 'production' ? '' : 'http://localhost:5000';
+        fetch(`${apiBase}/api/properties/${id}/viewers`)
+          .then(res => res.json())
+          .then(data => {
+            if (data.status === 'success' && data.count) {
+              setActiveViewers(data.count);
+            }
+          })
+          .catch(() => {});
+      };
+      
+      pollViewers();
+      fallbackInterval = setInterval(pollViewers, 15000);
+    };
+
+    connectWS();
+    
+    return () => {
+      if (socket) socket.close();
+      if (fallbackInterval) clearInterval(fallbackInterval);
+    };
+  }, [id]);
 
   // Derived from property — safe defaults prevent ReferenceError
   const isVerified = property?.isVerified ?? false;
@@ -206,7 +298,6 @@ export default function PropertyDetails() {
       .finally(() => setLoading(false));
 
     fetchPropertyFAQs(id).then(setQna).catch(() => setQna([]));
-    fetchSetting('support_info').then(setSupportInfo).catch(console.error);
   }, [id]);
 
   // Elite Image Priority logic: Filter dummies, limit to 10 photos, include up to 3 videos
@@ -597,36 +688,44 @@ export default function PropertyDetails() {
             {/* LEFT SIDE: Media & Gallery (Smaller) */}
             <div style={{ position: 'relative', width: '100%', borderRadius: isMobile ? '0' : '24px', overflow: 'hidden', boxShadow: isMobile ? 'none' : '0 30px 60px rgba(0,0,0,0.5)' }}>
               {isMobile ? (
-                <div style={{ position: 'relative' }}>
-                  <div 
-                    className="pd-snap-gallery hide-scrollbar" 
-                    style={{ 
-                      display: 'flex', 
-                      overflowX: 'auto', 
-                      scrollSnapType: 'x mandatory', 
-                      height: '45vh',
-                      width: '100%',
-                      background: '#000'
+                <div style={{ position: 'relative', background: 'radial-gradient(circle at center, #11121f 0%, #05050a 100%)', padding: '1.5rem 0' }}>
+                  <Swiper
+                    effect={'coverflow'}
+                    grabCursor={true}
+                    centeredSlides={true}
+                    slidesPerView={'auto'}
+                    coverflowEffect={{
+                      rotate: 30,
+                      stretch: -10,
+                      depth: 120,
+                      modifier: 1,
+                      slideShadows: true,
                     }}
+                    pagination={{ clickable: true }}
+                    modules={[EffectCoverflow, Pagination, Autoplay]}
+                    autoplay={{ delay: 3500, disableOnInteraction: false }}
+                    style={{ width: '100%', padding: '0.5rem 0 2rem' }}
                   >
                     {galleryMedia.map((media, i) => (
-                      <div key={i} style={{ flex: '0 0 100%', scrollSnapAlign: 'start', position: 'relative' }} onClick={() => { setImgIdx(i); setLightbox(true); }}>
-                        {media.type === 'video' ? (
-                          <div style={{ width: '100%', height: '100%', position: 'relative' }}>
-                            <video src={media.url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.3)' }}>
-                              <div style={{ width: '50px', height: '50px', borderRadius: '50%', background: 'rgba(232,184,75,0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <Play size={24} fill="black" color="black" />
+                      <SwiperSlide key={i} style={{ width: '280px', height: '360px', borderRadius: '24px', overflow: 'hidden', boxShadow: '0 20px 45px rgba(0,0,0,0.65)' }}>
+                        <div style={{ width: '100%', height: '100%', position: 'relative' }} onClick={() => { setImgIdx(i); setLightbox(true); }}>
+                          {media.type === 'video' ? (
+                            <div style={{ width: '100%', height: '100%', position: 'relative' }}>
+                              <video src={media.url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                              <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.35)' }}>
+                                <div style={{ width: '54px', height: '54px', borderRadius: '50%', background: 'rgba(232,184,75,0.95)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 15px rgba(232,184,75,0.4)' }}>
+                                  <Play size={22} fill="black" color="black" />
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        ) : (
-                          <img src={getOptimizedImg(media.url, 800)} alt={`${property.title} - ${i+1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        )}
-                        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.4) 0%, transparent 40%)' }} />
-                      </div>
+                          ) : (
+                            <img src={getOptimizedImg(media.url, 800)} alt={`${property.title} - ${i+1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          )}
+                          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.55) 0%, transparent 40%)' }} />
+                        </div>
+                      </SwiperSlide>
                     ))}
-                  </div>
+                  </Swiper>
                   <button 
                     onClick={() => setLightbox(true)}
                     style={{
@@ -713,10 +812,19 @@ export default function PropertyDetails() {
                   <div style={{ fontSize: isMobile ? '2rem' : '2.8rem', fontWeight: 950, color: 'var(--gold)', lineHeight: 1 }}>
                     {property.priceDisplay || formatSnapAddaPriceRange(property)}
                   </div>
-                  <div style={{ marginTop: '8px', fontSize: '0.85rem', color: '#27c97d', fontWeight: 700 }}>
-                    {property.pricePerUnit ? `≈ ${formatSnapAddaPrice(property.pricePerUnit)} ${pricePerUnitLabel}` : 'Exclusive Valuation'}
+                  <div style={{ marginTop: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                    <div style={{ fontSize: '0.85rem', color: '#27c97d', fontWeight: 700 }}>
+                      {property.pricePerUnit ? `≈ ${formatSnapAddaPrice(property.pricePerUnit)} ${pricePerUnitLabel}` : 'Exclusive Valuation'}
+                    </div>
+                    
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(232,184,75,0.1)', padding: '4px 10px', borderRadius: '10px', border: '1px solid rgba(232,184,75,0.2)' }}>
+                      <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10d98c', display: 'inline-block' }} className="live-pulse-dot" />
+                      <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'rgba(255,255,255,0.7)' }}>
+                        {activeViewers} users viewing
+                      </span>
+                    </div>
                   </div>
-               </div>
+                </div>
 
                <div style={{ display: 'flex', gap: '1rem' }}>
                   <button 

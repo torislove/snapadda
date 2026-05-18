@@ -7,9 +7,11 @@ import mongoose from 'mongoose';
 import helmet from 'helmet';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
+import hpp from 'hpp';
 import { v2 as cloudinary } from 'cloudinary';
 import { onRequest } from "firebase-functions/v2/https";
 import './firebase.js'; // Ensure Firebase is initialized
+import { initWebSocket } from './modules/webSocketHub.js';
 
 
 // Critical Environment Check
@@ -30,6 +32,7 @@ app.use(helmet({
   contentSecurityPolicy: false,
 }));
 app.use(compression());
+app.use(hpp());
 
 // Handle CORS early and consistently
 const allowedOrigins = [
@@ -354,8 +357,9 @@ export const api = onRequest({
 if (process.env.npm_lifecycle_event === 'start' && !process.env.FUNCTIONS_EMULATOR && !process.env.FIREBASE_CONFIG) {
   const PORT = process.env.PORT || 5000;
   try {
-    app.listen(PORT, () => {
+    const server = app.listen(PORT, () => {
       console.log(`🚀 Server fully running locally on port ${PORT}`);
+      initWebSocket(server);
     }).on('error', (err) => {
       if (err.code === 'EADDRINUSE') {
         console.error(`❌ PORT_ERROR: Port ${PORT} is already in use. Try: Stop-Process -Id (Get-NetTCPConnection -LocalPort ${PORT}).OwningProcess -Force`);

@@ -100,7 +100,7 @@ function AppContent() {
               <Route path="/login" element={<PageTransitionWrapper><Login /></PageTransitionWrapper>} />
               <Route path="/" element={<PageTransitionWrapper><Home /></PageTransitionWrapper>} />
               <Route path="/search" element={<PageTransitionWrapper><SearchResults /></PageTransitionWrapper>} />
-              <Route path="/property/:id" element={<PageTransitionWrapper><PropertyDetails /></PageTransitionWrapper>} />
+              <Route path="/property/:id" element={<ProtectedRoute><PageTransitionWrapper><PropertyDetails /></PageTransitionWrapper></ProtectedRoute>} />
               <Route path="/promotion/:id" element={<PageTransitionWrapper><PromotionDetail /></PageTransitionWrapper>} />
               <Route path="/local-agency/:city" element={<PageTransitionWrapper><LocalAgency /></PageTransitionWrapper>} />
               <Route path="/post-property" element={<PageTransitionWrapper><PostProperty /></PageTransitionWrapper>} />

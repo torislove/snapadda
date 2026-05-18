@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Landmark, ShieldCheck, IndianRupee, Home as HomeIcon, CheckCircle2, MapPin, Award, Square, Compass, Building2, Phone, ArrowRight, TrendingUp, Star } from 'lucide-react';
 import { fetchSetting } from '../services/api';
+import { useRealtimeSetting } from '../hooks/useRealtimeSetting';
 
 const ICONS = { Landmark, ShieldCheck, IndianRupee, Home: HomeIcon, CheckCircle2, MapPin, Award, Square, Compass, Building2, Phone, ArrowRight, TrendingUp, Star };
 
@@ -29,6 +30,7 @@ function MarqueeIcon({ name }) {
 export default function Marquee() {
   const [config, setConfig] = useState(DEFAULT);
   const [ready, setReady] = useState(false);
+  const { data: liveMarquee } = useRealtimeSetting('marquee_strips');
 
   useEffect(() => {
     const timer = setTimeout(() => setReady(true), 200);
@@ -36,17 +38,13 @@ export default function Marquee() {
   }, []);
 
   useEffect(() => {
-    fetchSetting('marquee_strips')
-      .then(data => {
-        if (data && (data.band1 || data.band2)) {
-          const merged = [...(data.band1 || []), ...(data.band2 || [])];
-          if (merged.length > 0) {
-            setConfig(prev => ({ ...prev, band1: merged, speed1: data.speed1 || prev.speed1 }));
-          }
-        }
-      })
-      .catch(() => {});
-  }, []);
+    if (liveMarquee && (liveMarquee.band1 || liveMarquee.band2)) {
+      const merged = [...(liveMarquee.band1 || []), ...(liveMarquee.band2 || [])];
+      if (merged.length > 0) {
+        setConfig(prev => ({ ...prev, band1: merged, speed1: liveMarquee.speed1 || prev.speed1 }));
+      }
+    }
+  }, [liveMarquee]);
 
   const items = config.band1 || DEFAULT.band1;
   const repeated = [...items, ...items, ...items, ...items];

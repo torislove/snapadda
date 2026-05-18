@@ -32,6 +32,7 @@ import MobileOnboarding from '../components/MobileOnboarding';
 import { useBehaviorTracker } from '../hooks/useBehaviorTracker';
 import { getCachedProperties, setCachedProperties } from '../hooks/usePropertyCache';
 import { useRealtimeProperties } from '../hooks/useRealtimeProperties';
+import { useRealtimeSetting } from '../hooks/useRealtimeSetting';
 import { prefetchRoute } from '../utils/PerformanceUtilities';
 import { triggerMicroLead } from '../utils/tracker';
 import SEO from '../components/SEO';
@@ -41,6 +42,7 @@ import FreeListingCTA from '../components/FreeListingCTA';
 import BroadcastBanner from '../components/BroadcastBanner';
 import PullToRefresh from '../components/PullToRefresh';
 import Interactive3DGlobe from '../components/Interactive3DGlobe';
+import GoldParticleNet from '../components/GoldParticleNet';
 
 // Lazy Loaded Regional Sitemap for SEO
 const RegionalSitemap = lazy(() => import('../components/RegionalSitemap'));
@@ -299,15 +301,53 @@ export default function Home() {
     return () => clearTimeout(handler);
   }, [keyword]);
 
+  const { data: liveHero } = useRealtimeSetting('hero_content');
+  const { data: liveStats } = useRealtimeSetting('site_stats');
+  const { data: liveSeo } = useRealtimeSetting('seo');
+  const { data: liveDesign } = useRealtimeSetting('design_tokens');
+  const { data: liveMarketing } = useRealtimeSetting('marketing_settings');
+  const { data: liveControl } = useRealtimeSetting('site_control');
+
+  useEffect(() => {
+    if (liveHero) setHeroContent(liveHero);
+  }, [liveHero]);
+
+  useEffect(() => {
+    if (liveStats) setSiteStats(liveStats);
+  }, [liveStats]);
+
+  useEffect(() => {
+    if (liveSeo) setSeoData(liveSeo);
+  }, [liveSeo]);
+
+  useEffect(() => {
+    if (liveDesign) setDesignTokens(liveDesign);
+  }, [liveDesign]);
+
+  useEffect(() => {
+    if (liveMarketing) {
+      setSupportInfo({
+        phone: liveMarketing.supportPhone,
+        whatsapp: liveMarketing.waNumber,
+        email: liveMarketing.supportEmail
+      });
+    }
+  }, [liveMarketing]);
+
+  useEffect(() => {
+    if (liveControl) {
+      setSiteControl(prev => ({ ...prev, ...liveControl }));
+    }
+  }, [liveControl]);
+
   // Critical Data Fetch (Hero & Initial Properties)
   const loadCritical = useCallback(async () => {
     try {
-      const [propData, agriData, plotData, promoData, control] = await Promise.all([
+      const [propData, agriData, plotData, promoData] = await Promise.all([
         fetchProperties({ limit: 12 }),
         fetchProperties({ type: 'Agricultural Land', limit: 8 }),
         fetchProperties({ type: 'Residential Plot', limit: 8 }),
-        fetchPromotions('segment=hero'),
-        fetchSetting('site_control')
+        fetchPromotions('segment=hero')
       ]);
 
       setProperties(propData?.data || (Array.isArray(propData) ? propData : []));
@@ -315,7 +355,6 @@ export default function Home() {
       setPlotProperties(plotData?.data || (Array.isArray(plotData) ? plotData : []));
       setPromotions(promoData?.data || (Array.isArray(promoData) ? promoData : []));
       setHeroPromotion(Array.isArray(promoData?.data) ? promoData?.data[0] : null);
-      setSiteControl(prev => ({ ...prev, ...(control || {}) }));
       setLoading(false);
     } catch (err) {
       console.error("Critical load failed:", err);
@@ -328,23 +367,10 @@ export default function Home() {
 
     // Deferred Data Fetch (Background / Idle)
     const loadDeferred = async () => {
-      fetchSetting('site_stats').then(setSiteStats);
-      fetchSetting('hero_content').then(res => {
-        if (res) setHeroContent(res);
-      });
       fetchTestimonials().then(setTestimonials);
-      fetchSetting('seo').then(setSeoData);
-      fetchSetting('design_tokens').then(setDesignTokens);
       fetchCities().then(data => {
         setCities(data);
         setCitiesLoading(false);
-      });
-      fetchSetting('marketing_settings').then(data => {
-        if (data) setSupportInfo({
-          phone: data.supportPhone,
-          whatsapp: data.waNumber,
-          email: data.supportEmail
-        });
       });
     };
 
@@ -691,6 +717,7 @@ export default function Home() {
             <source src={heroPromotion.videoUrl} type="video/mp4" />
           </video>
         )}
+        <GoldParticleNet />
           <div className="container" style={{ position: 'relative', zIndex: 10, height: '100%' }}>
             
             <div style={{ display: 'flex', flexDirection: isTablet ? 'column' : 'row', alignItems: 'center', justifyContent: 'space-between', gap: isTablet ? '1.5rem' : '3rem', marginBottom: '2.5rem' }}>

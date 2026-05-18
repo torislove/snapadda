@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAdminAuth } from './contexts/AdminAuthContext';
 import { Toaster } from 'react-hot-toast';
@@ -103,6 +103,14 @@ const AntiAuthRoute = ({ children }: { children: React.ReactNode }) => {
 
 
 function App() {
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   // --- BROWSWER CACHE & VERSIONING SYNC ---
   useEffect(() => {
     // @ts-ignore
@@ -133,7 +141,7 @@ function App() {
 
   return (
     <BrowserRouter>
-      <Toaster position="top-right" toastOptions={{
+      <Toaster position={isMobile ? "bottom-center" : "top-right"} toastOptions={{
         style: { 
           background: 'var(--bg-glass-heavy)', 
           color: 'var(--txt-primary)', 
@@ -142,7 +150,8 @@ function App() {
           borderRadius: '16px',
           padding: '12px 20px',
           fontWeight: 700,
-          boxShadow: 'var(--shadow-elite)'
+          boxShadow: 'var(--shadow-elite)',
+          marginBottom: isMobile ? 'calc(var(--bottom-nav-h, 0px) + 8px)' : '0px'
         }
       }} />
       <Suspense fallback={<AdminLoader />}>

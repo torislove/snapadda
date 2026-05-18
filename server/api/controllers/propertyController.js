@@ -6,6 +6,7 @@ import { getCitiesNearby } from '../data/apCoordinates.js';
 import { getCached, setCached, invalidateCache, buildCacheKey } from '../cache/propertyCache.js';
 import { cleanPropertyData } from '../utils/propertyCleaner.js';
 import { resolveAndExtractCoords } from '../utils/geoUtils.js';
+import { correctRegionalSpelling } from '../utils/spellingCorrector.js';
 
 // Lean projection for card list views (avoids fetching 50+ unused fields)
 const CARD_FIELDS = 'title price priceDisplay pricePerUnit location district type purpose subType images image status isVerified isFeatured bhk beds baths areaSize measurementUnit facing furnishing constructionStatus approvalAuthority approvalNumber layoutName isGated vastuCompliant cornerProperty boundaryWall surveyNo roadType roadWidth powerKVA ceilingHeight loadingDocks fireSafety floorType listerType isOwnerListing propertyCode googleMapsLink coordinates createdAt likeCount';
@@ -133,8 +134,14 @@ export const getProperties = async (req, res) => {
       }
     }
 
-    if (city) filter.location = { $regex: city, $options: 'i' };
-    if (district) filter.district = { $regex: district, $options: 'i' };
+    if (city) {
+      const resolvedCity = correctRegionalSpelling(city);
+      filter.location = { $regex: resolvedCity, $options: 'i' };
+    }
+    if (district) {
+      const resolvedDistrict = correctRegionalSpelling(district);
+      filter.district = { $regex: resolvedDistrict, $options: 'i' };
+    }
     if (facing && facing !== 'Any') filter.facing = facing;
     if (approval && approval !== 'All') filter.approvalAuthority = approval;
     if (verified === 'true') filter.isVerified = true;
@@ -171,7 +178,8 @@ export const getProperties = async (req, res) => {
 
     let projection = {};
     if (search) {
-      filter.$text = { $search: search };
+      const resolvedSearch = correctRegionalSpelling(search);
+      filter.$text = { $search: resolvedSearch };
       projection = { score: { $meta: 'textScore' } };
     }
 

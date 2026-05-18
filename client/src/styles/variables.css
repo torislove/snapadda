@@ -99,4 +99,12 @@
   --nav-h-mobile: 56px;
   --bottom-nav-h: 64px;
   --container-max: 1400px;
+
+  /* ── z-Index Isolation Stack (Anti-Collision Layering) ── */
+  --z-index-base: 1;
+  --z-index-sticky: 100;
+  --z-index-drawer: 200;
+  --z-index-backdrop: 900;
+  --z-index-modal: 1000;
+  --z-index-toast: 9999;
 }

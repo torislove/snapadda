@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Star, Quote, MapPin, X } from 'lucide-react';
 import { fetchSetting } from '../services/api';
+import { useRealtimeSetting } from '../hooks/useRealtimeSetting';
 import { db } from '../firebase';
 import { ref, onValue } from 'firebase/database';
 
@@ -13,14 +14,13 @@ export default function ClientReviews({ testimonials = [] }) {
   const [trackWidth, setTrackWidth] = useState(0);
   const [selectedReview, setSelectedReview] = useState(null);
   const [speed, setSpeed] = useState(100);
+  const { data: liveMarquee } = useRealtimeSetting('marquee_strips');
 
   useEffect(() => {
-    fetchSetting('marquee_strips')
-      .then(res => {
-        if (res && res.reviewsSpeed) setSpeed(res.reviewsSpeed);
-      })
-      .catch(() => {});
-  }, []);
+    if (liveMarquee && liveMarquee.reviewsSpeed) {
+      setSpeed(liveMarquee.reviewsSpeed);
+    }
+  }, [liveMarquee]);
 
   const FALLBACK_REVIEWS = [
     { id: 'f1', name: 'Ravi Teja', role: 'Investor', text: 'SnapAdda made my land investment in Amaravati seamless. Truly professional.', avatar: 'RT' },

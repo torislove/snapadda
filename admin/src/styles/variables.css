@@ -93,4 +93,12 @@
   --border-hover:      1px solid rgba(255,255,255,0.15);
   --glass-border-iridescent: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(232,184,75,0.15) 50%, rgba(255,255,255,0.05) 100%);
   --bg-glass-deep:     rgba(5, 5, 10, 0.65);
+
+  /* ── z-Index Isolation Stack (Anti-Collision Layering) ── */
+  --z-index-base: 1;
+  --z-index-sticky: 100;
+  --z-index-drawer: 200;
+  --z-index-backdrop: 900;
+  --z-index-modal: 1000;
+  --z-index-toast: 9999;
 }
